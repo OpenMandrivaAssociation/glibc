@@ -4,14 +4,16 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver 2.20
-%define linaro 2014.11
+%define ver		2.20
+%define linaro		2014.11
 
 %define	oname		glibc
 %define	major		6
 %if "%{linaro}" != ""
-%define source_dir	glibc-linaro-%{ver}-%{linaro}
+%define	fullver		%{ver}-%{linaro}
+%define source_dir	glibc-linaro-%{fullver}
 %else
+%define	fullver		%{ver}
 %define	source_dir	%{oname}-%{ver}
 %endif
 %define	checklist	%{_builddir}/%{source_dir}/Check.list
@@ -28,7 +30,7 @@
 %{expand: %{?cross:		%%global build_cross 1}}
 
 %if %{build_cross}
-%define	_srcrpmfilename	%{oname}-%{ver}-%{release}.src.rpm
+%define	_srcrpmfilename	%{oname}-%{fullver}-%{release}.src.rpm
 %define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
 %define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{SOURCE100}
 %define target_cpu	%{cross}
@@ -126,7 +128,7 @@ Name:		%{cross_prefix}%{oname}
 Epoch:		6
 %if "%{linaro}" != ""
 Version:	%{ver}_%{linaro}
-Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{ver}-%{linaro}.tar.xz
+Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.tar.xz
 %else
 Version:	2.20
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
@@ -572,7 +574,7 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
-%{_slibdir}/ld-%{ver}.so
+%{_slibdir}/ld-%{fullver}.so
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %{_slibdir}/i686
@@ -635,7 +637,7 @@ LANG variable to their preferred language in their
 %else
 %if %isarch mips mipsel
 %if %{build_biarch}
-%{_slibdir32}/ld-%{ver}.so
+%{_slibdir32}/ld-%{fullver}.so
 %{_slibdir32}/ld.so.1
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -697,7 +699,7 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %files -n	%{multilibc}
-%{_slibdir32}/ld-%{ver}.so
+%{_slibdir32}/ld-%{fullver}.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -1696,7 +1698,7 @@ export DONT_SYMLINK_LIBS=1
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
-export EXCLUDE_FROM_FULL_STRIP="ld-%{ver}.so libpthread libc-%{ver}.so libm-%{ver}.so"
+export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
 
 unset LD_LIBRARY_PATH
 
