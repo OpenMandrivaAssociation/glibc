@@ -454,7 +454,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Kannada", "kn", ["kn_IN"])}
 %{python:pkg("Korean", "ko", ["ko_KR"])}
 %{python:pkg("Konkani", "kok", ["kok_IN"])}
-%{python:pkg("Kashmiri", "ks", ["ks_IN", "ks_IN@devanagari"])}
+%{python:pkg("Kashmiri", "ks", ["ks_IN"])}
 %{python:pkg("Kurdish", "ku", ["ku_TR"])}
 %{python:pkg("Cornish", "kw", ["kw_GB"])}
 %{python:pkg("Kyrgyz", "ky", ["ky_KG"])}
@@ -501,7 +501,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Sanskrit", "sa", ["sa_IN"])}
 %{python:pkg("Santali", "sat", ["sat_IN"])}
 %{python:pkg("Sardinian", "sc", ["sc_IT"])}
-%{python:pkg("Sindhi", "sd", ["sd_IN", "sd_IN@devanagari"])}
+%{python:pkg("Sindhi", "sd", ["sd_IN"])}
 %{python:pkg("Saami", "se", ["se_NO"])}
 %{python:pkg("Secwepemctsin", "shs", ["shs_CA"])}
 %{python:pkg("Sinhala", "si", ["si_LK"])}
@@ -541,7 +541,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Yiddish", "yi", ["yi_US"])}
 %{python:pkg("Yoruba", "yo", ["yo_NG"])}
 %{python:pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
-%{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW", "nam_TW@latin"])}
+%{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW"])}
 %{python:pkg("Zulu", "zu", ["zu_ZA"])}
 %endif
 
