@@ -360,6 +360,8 @@ national language (locale) support.
 %package -n ldconfig
 Summary:	Creates a shared library cache and maintains symlinks for ld.so
 Group:		System/Base
+# explicit file provides
+Provides:	/sbin/ldconfig
 
 %description -n ldconfig
 Ldconfig is a basic system program which determines run-time link
