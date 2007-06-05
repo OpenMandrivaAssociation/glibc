@@ -920,11 +920,7 @@ ALT_ARCH=ppc-linux
 %endif
 mkdir -p $RPM_BUILD_ROOT/$ALT_ARCH
 make install_root=$RPM_BUILD_ROOT/$ALT_ARCH install -C build-$ALT_ARCH
-(cd build-$ALT_ARCH;
-  make $BuildJobs -C ../localedata objdir=`pwd` \
-	install_root=$RPM_BUILD_ROOT/$ALT_ARCH \
-	install-locales
-)
+
 # Dispatch */lib only
 mv $RPM_BUILD_ROOT/$ALT_ARCH/lib $RPM_BUILD_ROOT/
 rm -f  $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/pt_chown
