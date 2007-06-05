@@ -804,7 +804,7 @@ function BuildGlibc() {
   pushd  build-$cpu-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
-    $arch-mandrake-linux-gnu $BuildCross \
+    $arch-mandriva-linux-gnu $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/lib \
     --infodir=%{_infodir} \
