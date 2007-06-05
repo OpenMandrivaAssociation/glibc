@@ -289,23 +289,23 @@ Patch39:	glibc-2.4.90-slovenia-euro.patch
 Patch40:	glibc-2.4.90-unicode5.patch
 
 # Additional patches from 2.5-branch/trunk + Red Hat
-Patch50:	glibc182.patch
-Patch51:	glibc680.patch
-Patch52:	glibc683.patch
-Patch53:	glibc703.patch
-Patch54:	glibc766.patch
-Patch55:	glibc775.patch
-Patch56:	glibc792.patch
-Patch57:	glibc821.patch
-Patch58:	glibc841.patch
-Patch59:	glibc843.patch
-Patch60:	glibc892.patch
-Patch61:	glibc908.patch
-Patch62:	glibc998.patch
+Patch50:	glibc-bz2182.patch
+Patch51:	glibc-bz2680.patch
+Patch52:	glibc-bz2683.patch
+Patch53:	glibc-bz2703.patch
+Patch54:	glibc-bz2766.patch
+Patch55:	glibc-bz2775.patch
+Patch56:	glibc-bz2792.patch
+Patch57:	glibc-bz2821.patch
+Patch58:	glibc-bz2841.patch
+Patch59:	glibc-bz2843.patch
+Patch60:	glibc-bz2892.patch
+Patch61:	glibc-bz2908.patch
+Patch62:	glibc-bz2998.patch
 Patch63:	glibc-bz3123.patch
 Patch64:	glibc-bz3124.patch
 Patch65:	glibc-bz3155.patch
-Patch66:	glibc-2.4.90592.patch
+Patch66:	glibc-2.4.90-bz2592.patch
 Patch67:	glibc-2.4.90-powerpc-ldbl-fixes.patch
 Patch68:	glibc-2.4.90-powerpc-hwcaps.patch
 Patch69:	glibc-2.4.90-bz3225.patch
@@ -1486,7 +1486,7 @@ fi
 %if "%{name}" == "glibc"
 %{_libdir}/librpcsvc.a
 %endif
-%if %isarch ppc ppc64 sparc sparc64
+%if %isarch ppc ppc64 sparc
 %{_libdir}/libnldbl_nonshared.a
 %endif
 
