@@ -374,8 +374,8 @@ speeds the loading of programs which use shared libraries.
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Conflicts:	texinfo < 3.11
-Requires(post):	  /sbin/install-info
-Requires(preun):  /sbin/install-info
+Requires(post):	  info-install
+Requires(preun):  info-install
 Requires(post):   coreutils
 Requires(postun): coreutils, awk
 Obsoletes:	libc-debug, libc-headers, libc-devel, linuxthreads-devel, nptl-devel
