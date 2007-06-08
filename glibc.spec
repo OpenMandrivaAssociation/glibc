@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.4
-%define _glibcrelease	8
+%define _glibcrelease	9
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -201,8 +201,6 @@ Requires(post):		ash-static
 # we need an rpm with correct db4 lib
 Conflicts:		rpm < 4.2.2
 # we need an ldconfig with TLS support
-Requires(post):		ldconfig >= %{glibcepoch}:2.3.3-3mdk
-Requires(postun):	ldconfig >= %{glibcepoch}:2.3.3-3mdk
 %if %{build_cross}
 BuildPreReq:	%{cross_prefix}gcc >= 3.2.2-4mdk
 %endif
@@ -347,6 +345,9 @@ Obsoletes:	ld.so
 Provides:	ld.so
 %endif
 
+Obsoletes:	ldconfig
+Provides:	ldconfig = %{glibcepoch}:%{glibcversion}-%{glibcrelease} /sbin/ldconfig
+
 %description
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
@@ -357,15 +358,9 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.  The glibc package also contains
 national language (locale) support.
 
-%package -n ldconfig
-Summary:	Creates a shared library cache and maintains symlinks for ld.so
-Group:		System/Base
-# explicit file provides
-Provides:	/sbin/ldconfig
-
-%description -n ldconfig
-Ldconfig is a basic system program which determines run-time link
-bindings between ld.so and shared libraries. Ldconfig scans a running
+This package now also provides ldconfig which was package seperately in
+the past. Ldconfig is a basic system program which determines run-time
+link bindings between ld.so and shared libraries. Ldconfig scans a running
 system and sets up the symbolic links that are used to load shared
 libraries properly. It also creates a cache (/etc/ld.so.cache) which
 speeds the loading of programs which use shared libraries.
@@ -1452,12 +1447,10 @@ fi
 %dir %{_prefix}/lib/gconv
 %{_prefix}/lib/gconv/*
 %endif
-
 #
 # ldconfig
 #
 %if "%{name}" == "glibc"
-%files -n ldconfig
 %defattr(-,root,root)
 /sbin/ldconfig
 %{_mandir}/man8/ldconfig*
