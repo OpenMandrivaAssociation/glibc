@@ -320,6 +320,7 @@ Patch77:	glibc-2.4.90-x86_64-fix-pthread_mutex_timedlock.patch
 Patch100:	kernel-headers-include-%{kheaders_ver}.%{kheaders_rel}.patch
 Patch101:	kernel-headers-gnu-extensions.patch
 Patch102:	kernel-headers-syscall-mem-clobbers.patch
+Patch103:	glibc-2.4-avx-kernel-headers-audit_support.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -609,6 +610,7 @@ TARGET=%{target_cpu}
 %patch100 -p1
 %patch101 -p1
 %patch102 -p1
+%patch103 -p1 -b .audit
 %{expand:%(%__cat %{SOURCE11})}
 %{expand:%(%__cat %{SOURCE12})}
 popd
