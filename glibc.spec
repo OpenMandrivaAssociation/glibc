@@ -611,8 +611,8 @@ TARGET=%{target_cpu}
 %patch101 -p1
 %patch102 -p1
 %patch103 -p1 -b .audit
-%{expand:%(%__cat %{SOURCE11})}
-%{expand:%(%__cat %{SOURCE12})}
+%{expand:%(%__cat %{SOURCE11} 2>/dev/null)}
+%{expand:%(%__cat %{SOURCE12} 2>/dev/null)}
 popd
 
 %if %{build_selinux}
