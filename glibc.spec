@@ -3,8 +3,8 @@
 
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
-%define glibcversion	2.4
-%define _glibcrelease	9
+%define glibcversion	2.6
+%define _glibcrelease	1
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -18,7 +18,7 @@
 %define kheaders_rel	1mdk
 
 # CVS snapshots of glibc
-%define RELEASE		0
+%define RELEASE		1
 %if %{RELEASE}
 %define source_package	glibc-%{glibcversion}
 %define source_dir	glibc-%{glibcversion}
@@ -26,12 +26,6 @@
 %define snapshot	20060510
 %define source_package	glibc-%{glibccvsversion}-%{snapshot}
 %define source_dir	glibc-%{glibccvsversion}
-%endif
-
-# Add support for DT_GNU_HASH only for MDK >= 2007.1
-%define gnu_hash_support 0
-%if %{mdkversion} >= 200710
-%define gnu_hash_support 1
 %endif
 
 # Define "cross" to an architecture to which glibc is to be
@@ -135,12 +129,15 @@ License:	LGPL
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
+# FSF source
+Source0:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2
+Source1:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2.sig
+
 # Red Hat tarball
-Source0:	%{source_package}.tar.bz2
-Source1:	glibc-redhat.tar.bz2
-Source2:	glibc-manpages.tar.bz2
-Source3:	glibc-find-requires.sh
-Source4:	glibc-check.sh
+Source2:	glibc-redhat.tar.bz2
+Source3:	glibc-manpages.tar.bz2
+Source4:	glibc-find-requires.sh
+Source5:	glibc-check.sh
 
 # Generated from Kernel-RPM
 Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
@@ -172,21 +169,16 @@ Provides:	glibc-localedata
 Obsoletes:	%{name}-xen
 Provides:	%{name}-xen
 %endif
-%if %{gnu_hash_support}
 # The dynamic linker supports DT_GNU_HASH
 Provides: rtld(GNU_HASH)
-%endif
 Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
-%define binutils_version 2.13.90.0.18-2mdk
-%if %{gnu_hash_support}
 # we need suitable linker for -Wl,--hash-style=both
 %define binutils_version 2.16.91.0.7-%{mkrel 6}
-%endif
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
 # we need the static ash
 %if %{mdkversion} >= 200600
@@ -244,7 +236,6 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 
-Patch0:		glibc-2.4.90-revert-2.5-bits.patch
 Patch1:		glibc-2.2.2-fhs.patch
 Patch2:		glibc-2.3.4-ldd-non-exec.patch
 Patch3:		glibc-2.1.95-string2-pointer-arith.patch
@@ -252,7 +243,7 @@ Patch4:		glibc-2.2-nss-upgrade.patch
 Patch5:		glibc-2.2.5-ldconfig-exit-during-install.patch
 Patch6:		glibc-2.2.5-share-locale.patch
 Patch7:		glibc-2.3.6-nsswitch.conf.patch
-Patch8:		glibc-2.4.90-new-charsets.patch
+Patch8:		glibc-2.6-new-charsets.patch
 Patch9:		glibc-2.2.4-xterm-xvt.patch
 Patch10:	glibc-2.2.4-hack-includes.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
@@ -265,56 +256,24 @@ Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.4.90-x86_64-new-libm.patch
 Patch19:	glibc-2.4.90-amd64-fix-ceil.patch
 Patch20:	glibc-2.3.4-nscd-fixes.patch
-Patch21:	glibc-2.3.4-nscd-HUP.patch
+Patch21:	glibc-2.6-nscd_HUP.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
 Patch25:	glibc-2.3.4-run-test-program-prefix.patch
-Patch26:	glibc-2.3.3-nice-fix.patch
+Patch26:	glibc-2.6-nice_fix.patch
 Patch27:	glibc-2.3.6-ENOTTY-fr-translation.patch
 Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
-Patch30:	glibc-2.4.90-multiarch.patch
+Patch30:	glibc-2.6-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.4.90-amd64-string.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch35:	glibc-2.2.5-hwcap-check-platform.patch
-Patch36:	glibc-2.4.90-brazil-daylight.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.4.90-slovenia-euro.patch
-Patch40:	glibc-2.4.90-unicode5.patch
 
 # Additional patches from 2.5-branch/trunk + Red Hat
-Patch50:	glibc-bz2182.patch
-Patch51:	glibc-bz2680.patch
-Patch52:	glibc-bz2683.patch
-Patch53:	glibc-bz2703.patch
-Patch54:	glibc-bz2766.patch
-Patch55:	glibc-bz2775.patch
-Patch56:	glibc-bz2792.patch
-Patch57:	glibc-bz2821.patch
-Patch58:	glibc-bz2841.patch
-Patch59:	glibc-bz2843.patch
-Patch60:	glibc-bz2892.patch
-Patch61:	glibc-bz2908.patch
-Patch62:	glibc-bz2998.patch
-Patch63:	glibc-bz3123.patch
-Patch64:	glibc-bz3124.patch
-Patch65:	glibc-bz3155.patch
-Patch66:	glibc-2.4.90-bz2592.patch
-Patch67:	glibc-2.4.90-powerpc-ldbl-fixes.patch
-Patch68:	glibc-2.4.90-powerpc-hwcaps.patch
-Patch69:	glibc-2.4.90-bz3225.patch
-Patch70:	glibc-2.4.90-fix-nptl-testcases.patch
-Patch71:	glibc-2.4.90-powerpc-regdump.patch
-Patch72:	glibc-2.4.90-ttyname-dont-use-isatty.patch
-Patch73:	glibc-bz3291.patch
-Patch74:	glibc-2.4.90-DT_GNU_HASH.patch
-Patch75:	glibc-2.4.90-bz3451.patch
-Patch76:	glibc-2.4.90-fix-ppc32-setcontext.patch
-Patch77:	glibc-2.4.90-x86_64-fix-pthread_mutex_timedlock.patch
 
 # Generated from Kernel RPM
 Patch100:	kernel-headers-include-%{kheaders_ver}.%{kheaders_rel}.patch
@@ -527,8 +486,7 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a 10 -a 2 -a 1 -a 15
-%patch0 -p1 -E -R
+%setup -q -n %{source_dir} -a 10 -a 3 -a 2 -a 15
 %patch1 -p1 -b .fhs
 %patch2 -p1 -b .ldd-non-exec
 %patch3 -p1 -b .string2-pointer-arith
@@ -546,12 +504,12 @@ GNU C library in PDF format.
 %patch15 -p1 -b .nscd-no-host-cache
 %patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
-%patch18 -p0 -b .x86_64-new-libm -E
+#patch18 -p0 -b .x86_64-new-libm -E
 # remove duplicates (XXX merge into patch18)
-rm -f sysdeps/x86_64/fpu/s_sincos.S
-%patch19 -p1 -b .amd64-fix-ceil
+#rm -f sysdeps/x86_64/fpu/s_sincos.S
+#patch19 -p1 -b .amd64-fix-ceil
 %patch20 -p1 -b .nscd-fixes
-%patch21 -p1 -b .nscd-HUP
+%patch21 -p1 -b .nscd_HUP
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
@@ -565,45 +523,10 @@ rm -f sysdeps/x86_64/fpu/s_sincos.S
 %patch30 -p1 -b .multiarch-check
 %patch31 -p1 -b .i586-hptiming
 %patch32 -p1 -b .i586-if-no-cmov
-%patch33 -p2 -b .amd64-string -E
+#patch33 -p2 -b .amd64-string -E
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch35 -p1 -b .hwcap-check-platform
-%patch36 -p1 -b .brazil-daylight
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch39 -p1 -b .slovenia-euro
-%patch40 -p1 -b .unicode5
-
-%patch50 -p1 -b .bz2182
-%patch51 -p1 -b .bz2680
-%patch52 -p1 -b .bz2683
-%patch53 -p1 -b .bz2703
-%patch54 -p1 -b .bz2766
-%patch55 -p1 -b .bz2775
-%patch56 -p1 -b .bz2792
-%patch57 -p1 -b .bz2821
-%patch58 -p1 -b .bz2841
-%patch59 -p1 -b .bz2843
-%patch60 -p1 -b .bz2892
-%patch61 -p1 -b .bz2908
-%patch62 -p1 -b .bz2998
-%patch63 -p1 -b .bz3123
-%patch64 -p1 -b .bz3124
-%patch65 -p1 -b .bz3155
-%patch66 -p1 -b .bz2592
-%patch67 -p1 -b .powerpc-ldbl-fixes
-%patch68 -p1 -b .powerpc-hwcaps
-%patch69 -p1 -b .bz3225
-%patch70 -p1 -b .fix-nptl-testcases
-%patch71 -p1 -b .powerpc-regdump
-%patch72 -p1 -b .ttyname-dont-use-isatty
-%patch73 -p1 -b .bz3291
-%if %{gnu_hash_support}
-%patch74 -p1 -b .DT_GNU_HASH
-%endif
-%patch75 -p1 -b .bz3451
-%patch76 -p1 -b .fix-ppc32-setcontext
-%patch77 -p1 -b .x86_64-fix-pthread_mutex_timedlock
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
@@ -631,7 +554,7 @@ EOF
 chmod +x find_provides.sh
 
 cat > find_requires.bootstrap.sh << EOF
-/bin/sh %{SOURCE3} %{buildroot} %{_target_cpu} | grep -v "\(GLIBC_PRIVATE\|linux-gate\|linux-vdso\)"
+/bin/sh %{SOURCE4} %{buildroot} %{_target_cpu} | grep -v "\(GLIBC_PRIVATE\|linux-gate\|linux-vdso\)"
 exit 0
 EOF
 chmod +x find_requires.bootstrap.sh
@@ -877,7 +800,7 @@ esac
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
 Check="$PWD/glibc-check.sh"
-cat %{SOURCE4} > $Check
+cat %{SOURCE5} > $Check
 chmod +x $Check
 while read arglist; do
   $Check $arglist || exit 1
