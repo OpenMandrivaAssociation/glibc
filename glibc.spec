@@ -139,6 +139,12 @@ Source3:	glibc-manpages.tar.bz2
 Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
 
+# If using official FSF release we must get also libidn
+%if %{RELEASE}
+Source6:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2
+Source7:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2.sig
+%endif
+
 # Generated from Kernel-RPM
 Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
 Source11:	make_versionh.sh
@@ -487,6 +493,10 @@ GNU C library in PDF format.
 
 %prep
 %setup -q -n %{source_dir} -a 10 -a 3 -a 2 -a 15
+%if %{RELEASE}
+tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
+mv glibc-libidn-%{glibcversion} libidn
+%endif
 %patch1 -p1 -b .fhs
 %patch2 -p1 -b .ldd-non-exec
 %patch3 -p1 -b .string2-pointer-arith
