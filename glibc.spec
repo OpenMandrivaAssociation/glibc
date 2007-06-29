@@ -279,7 +279,11 @@ Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 
-# Additional patches from 2.5-branch/trunk + Red Hat
+# Additional patches from 2.6-branch/trunk + Red Hat/Suse
+Patch50:	glibc-2.6-epoll.patch
+Patch51:	glibc-2.6-futex-waiters.patch
+Patch52:	glibc-2.6-malloc.patch
+Patch53:	glibc-2.6-printf.patch
 
 # Generated from Kernel RPM
 Patch100:	kernel-headers-include-%{kheaders_ver}.%{kheaders_rel}.patch
@@ -537,6 +541,11 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
+
+%patch50 -p0 -b .epoll
+%patch51 -p0 -b .futex-waiters
+%patch52 -p0 -b .malloc
+%patch53 -p0 -b .printf
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
