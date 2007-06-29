@@ -700,8 +700,8 @@ function BuildGlibc() {
 
   # Extra configure flags
   ExtraFlags=
-  if [[ "%{build_profile}" = "0" ]]; then
-    ExtraFlags="$ExtraFlags --disable-profile"
+  if [[ "%{build_profile}" != "0" ]]; then
+    ExtraFlags="$ExtraFlags --enable-profile"
   fi
 
   # NPTL+TLS are now the default
