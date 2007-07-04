@@ -14,8 +14,8 @@
 %define glibcepoch	6
 # <version>-<release> tags from kernel package where headers were
 # actually extracted from
-%define kheaders_ver	2.6.17
-%define kheaders_rel	1mdk
+%define kheaders_ver	2.6.21
+%define kheaders_rel	2mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -145,7 +145,8 @@ Source6:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2
 Source7:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2.sig
 %endif
 
-# Generated from Kernel-RPM
+# kernel-headers tarball generated from mandriva kernel in svn with:
+# make INSTALL_HDR_PATH=<path> headers_install_all
 Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
 Source11:	make_versionh.sh
 Source12:	create_asm_headers.sh
@@ -285,11 +286,8 @@ Patch51:	glibc-2.6-futex-waiters.patch
 Patch52:	glibc-2.6-malloc.patch
 Patch53:	glibc-2.6-printf.patch
 
-# Generated from Kernel RPM
-Patch100:	kernel-headers-include-%{kheaders_ver}.%{kheaders_rel}.patch
-Patch101:	kernel-headers-gnu-extensions.patch
-Patch102:	kernel-headers-syscall-mem-clobbers.patch
-Patch103:	glibc-2.4-avx-kernel-headers-audit_support.patch
+# Patches for kernel-headers
+Patch100:	kernel-headers-gnu-extensions.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -550,9 +548,6 @@ mv glibc-libidn-%{glibcversion} libidn
 pushd kernel-headers/
 TARGET=%{target_cpu}
 %patch100 -p1
-%patch101 -p1
-%patch102 -p1
-%patch103 -p1 -b .audit
 %{expand:%(%__cat %{SOURCE11} 2>/dev/null)}
 %{expand:%(%__cat %{SOURCE12} 2>/dev/null)}
 popd
@@ -1426,7 +1421,10 @@ fi
 %{_includedir}/linux
 %{_includedir}/asm
 %{_includedir}/asm-generic
+%{_includedir}/mtd
+%{_includedir}/rdma
 %{_includedir}/sound
+%{_includedir}/video
 %if %isarch x86_64
 %dir %{_includedir}/asm-i386
 %{_includedir}/asm-i386/*.h
