@@ -616,11 +616,14 @@ function BuildGlibc() {
   BuildFlags=""
   case $arch in
     i[3456]86 | athlon)
-      BuildFlags="-march=$arch"
+      BuildFlags="-march=$arch -mtune=generic"
       if [[ "`uname -m`" = "x86_64" ]]; then
         BuildAltArch="yes"
         BuildCompFlags="-m32"
       fi
+      ;;
+    x86_64)
+      BuildFlags="-mtune=generic"
       ;;
     ppc)
       if [[ "`uname -m`" = "ppc64" ]]; then
