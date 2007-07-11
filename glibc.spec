@@ -609,8 +609,11 @@ exit 0
 EOF
 chmod +x find_requires.bootstrap.sh
 
+# XXX: use better way later to avoid LD_LIBRARY_PATH issue
+cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;'	> find_requires
+chmod +x find_requires
 cat > find_requires.noprivate.sh << EOF
-%{rpmscripts}/find-requires %{buildroot} %{_target_cpu} | grep -v GLIBC_PRIVATE
+./find-requires %{buildroot} %{_target_cpu} | grep -v GLIBC_PRIVATE
 exit 0
 EOF
 chmod +x find_requires.noprivate.sh
