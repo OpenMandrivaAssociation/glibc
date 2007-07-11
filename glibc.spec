@@ -275,16 +275,34 @@ Patch29:	glibc-2.3.5-biarch-utils.patch
 Patch30:	glibc-2.6-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
-Patch33:	glibc-2.4.90-amd64-string.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 
-# Additional patches from 2.6-branch/trunk + Red Hat/Suse
+# Additional patches from 2.6-branch/trunk (diffs from cvs/RH/Suse)
 Patch50:	glibc-2.6-epoll.patch
-Patch51:	glibc-2.6-futex-waiters.patch
+Patch51:	glibc-bz4512.patch
 Patch52:	glibc-2.6-malloc.patch
-Patch53:	glibc-2.6-printf.patch
+Patch53:	glibc-bz4514.patch
+Patch54:	glibc-cvs-x86_64_dummy_files_prevent_stub.patch
+Patch55:	glibc-cvs-i386_sync_file_range.patch
+Patch56:	glibc-cvs-tst_shm_fstat64.patch
+Patch57:	glibc-cvs-nscd_dont_cache_ttl0.patch
+Patch58:	glibc-cvs-utimensat.patch
+Patch59:	glibc-cvs-nscd_get_mapping_crash_fix.patch
+Patch60:	glibc-bz4586.patch
+Patch61:	glibc-cvs-ldbl128ibm_fixes.patch
+Patch62:	glibc-bz4599.patch
+Patch63:	glibc-bz4125.patch
+Patch64:	glibc-cvs-gcc_init_fini.patch
+Patch65:	glibc-cvs-init_tls_calls.patch
+Patch66:	glibc-bz4647.patch
+Patch67:	glibc-cvs-pthread_getattr_np_fix.patch
+Patch68:	glibc-bz4702.patch
+Patch69:	glibc-cvs-ld_hwcap_mask_handling_fix.patch
+Patch70:	glibc-bz4745.patch
+Patch71:	glibc-cvs-x86_64-memcpy_cacheinfo.patch
+Patch72:	glibc-bz4773.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -535,15 +553,33 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch30 -p1 -b .multiarch-check
 %patch31 -p1 -b .i586-hptiming
 %patch32 -p1 -b .i586-if-no-cmov
-#patch33 -p2 -b .amd64-string -E
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 
 %patch50 -p0 -b .epoll
-%patch51 -p0 -b .futex-waiters
+%patch51 -p1 -b .bz4512
 %patch52 -p0 -b .malloc
-%patch53 -p0 -b .printf
+%patch53 -p1 -b .bz4514
+%patch54 -p1 -b .x86_64_dummy_files_prevent_stub
+%patch55 -p1 -b .i386_sync_file_range
+%patch56 -p1 -b .tst_shm_fstat64
+%patch57 -p1 -b .nscd_dont_cache_ttl0
+%patch58 -p1 -b .utimensat
+%patch59 -p1 -b .nscd_get_mapping_crash_fix
+%patch60 -p1 -b .bz4586
+%patch61 -p1 -b .ldbl128ibm_fixes
+%patch62 -p1 -b .bz4599
+%patch63 -p1 -b .bz4125
+%patch64 -p1 -b .gcc_init_fini
+%patch65 -p1 -b .init_tls_calls
+%patch66 -p1 -b .bz4647
+%patch67 -p1 -b .pthread_getattr_np_fix
+%patch68 -p1 -b .bz4702
+%patch69 -p1 -b .ld_hwcap_mask_handling_fix
+%patch70 -p1 -b .bz4745
+%patch71 -p1 -b .x86_64-memcpy_cacheinfo
+%patch72 -p1 -b .bz4773
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
