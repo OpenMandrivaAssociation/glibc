@@ -840,7 +840,7 @@ function BuildGlibc() {
   # on the version of the kernel running
   case $arch in
   i[3456]86 | athlon | x86_64 | ia64 | ppc | ppc64)
-    if [ "`CompareKver %{check_min_kver}`" -ge 0 ]; then
+    if [ "`CompareKver %{check_min_kver}`" -lt 0 ]; then
       check_flags=""
     else
       check_flags="-k"
