@@ -70,6 +70,10 @@
 # Enable checking by default for arches where we know tests all pass
 %define build_check	1
 
+# Allow make check to fail only when running kernels where we know
+# tests must pass (no missing features or bugs in the kernel)
+%define check_min_kver 2.6.21
+
 # Define to build a biarch package
 %define build_biarch	0
 %if %isarch sparc64 x86_64 ppc64
@@ -303,6 +307,8 @@ Patch69:	glibc-cvs-ld_hwcap_mask_handling_fix.patch
 Patch70:	glibc-bz4745.patch
 Patch71:	glibc-cvs-x86_64-memcpy_cacheinfo.patch
 Patch72:	glibc-bz4773.patch
+Patch73:	glibc-_nl_explode_name_segfault_fix.patch
+Patch74:	glibc-bz4776.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -580,6 +586,8 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch70 -p1 -b .bz4745
 %patch71 -p1 -b .x86_64-memcpy_cacheinfo
 %patch72 -p1 -b .bz4773
+%patch73 -p1 -b ._nl_explode_name_segfault_fix
+%patch74 -p1 -b .bz4776
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
@@ -610,10 +618,11 @@ EOF
 chmod +x find_requires.bootstrap.sh
 
 # XXX: use better way later to avoid LD_LIBRARY_PATH issue
-cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;'	> find_requires
+cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;' > find_requires
 chmod +x find_requires
 cat > find_requires.noprivate.sh << EOF
-./find-requires %{buildroot} %{_target_cpu} | grep -v GLIBC_PRIVATE
+%{_builddir}/%{source_dir}/find_requires %{buildroot} %{_target_cpu} | \
+	grep -v GLIBC_PRIVATE
 exit 0
 EOF
 chmod +x find_requires.noprivate.sh
@@ -630,6 +639,43 @@ ln -s find_requires.noprivate.sh find_requires.sh
 CheckList=$PWD/Check.list
 rm -f $CheckList
 touch $CheckList
+
+#
+# CompareKver <kernel version>
+# function to compare the desired kernel version with running kernel
+# version (package releases not taken into account in comparison). The
+# function returns:
+# -1 = <kernel version> is lesser than current running kernel
+#  0 = <kernel version> is equal to the current running kernel
+#  1 = <kernel version> is greater than current running kernel
+#
+function CompareKver() {
+  v1=`echo $1 | sed 's/\.\?$/./'`
+  v2=`uname -r | sed 's/[^.0-9].*//' | sed 's/\.\?$/./'`
+  n=1
+  s=0
+  while true; do
+    c1=`echo "$v1" | cut -d "." -f $n`
+    c2=`echo "$v2" | cut -d "." -f $n`
+    if [ -z "$c1" -a -z "$c2" ]; then
+      break
+    elif [ -z "$c1" ]; then
+      s=-1
+      break
+    elif [ -z "$c2" ]; then
+      s=1
+      break
+    elif [ "$c1" -gt "$c2" ]; then
+      s=1
+      break
+    elif [ "$c2" -gt "$c1" ]; then
+      s=-1
+      break
+    fi
+    n=$((n + 1))
+  done
+  echo $s
+}
 
 #
 # BuildGlibc <arch> [<extra_configure_options>+]
@@ -790,10 +836,15 @@ function BuildGlibc() {
   %make -r PARALLELMFLAGS=-s
   popd
 
-  # All tests are expected to pass on certain platforms
+  # All tests are expected to pass on certain platforms, depending also
+  # on the version of the kernel running
   case $arch in
   i[3456]86 | athlon | x86_64 | ia64 | ppc | ppc64)
-    check_flags=""
+    if [ "`CompareKver %{check_min_kver}`" -ge 0 ]; then
+      check_flags=""
+    else
+      check_flags="-k"
+    fi
     ;;
   *)
     check_flags="-k"
