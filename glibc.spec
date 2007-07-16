@@ -1278,8 +1278,6 @@ if [ "$1" -gt 1 ]; then
   # On upgrade the services doesn't work because libnss couldn't be
   # loaded anymore.
     if [ -f %{upgradestamp} ]; then
-	# if X is running define the fontpath to something xfs-independent
-	[ -n "$DISPLAY" ] && xset fp= /usr/X11R6/lib/X11/fonts/misc
 	echo "Restarting all the services of this run level"
 	%{_sbindir}/glibc-post-upgrade
 	# if X is running, reset the fontpath to its default value
