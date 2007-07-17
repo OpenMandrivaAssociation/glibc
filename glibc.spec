@@ -155,8 +155,7 @@ Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
 Source11:	make_versionh.sh
 Source12:	create_asm_headers.sh
 
-# service --full-restart-all from initscripts 6.91-18mdk
-Source13:	glibc-post-upgrade
+# wrapper to avoid rpm circular dependencies
 Source14:	glibc-post-wrapper.c
 
 # <http://penguinppc.org/dev/glibc/glibc-powerpc-cpu-addon.html>
@@ -1117,9 +1116,6 @@ popd
 	-o $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
 chmod 700 $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
 
-# post upgrade script
-install -m 700 %{SOURCE13} $RPM_BUILD_ROOT%{_sbindir}/glibc-post-upgrade
-
 # rquota.x and rquota.h are now provided by quota
 rm -f $RPM_BUILD_ROOT%{_includedir}/rpcsvc/rquota.[hx]
 
@@ -1277,19 +1273,28 @@ fi
 if [ "$1" -gt 1 ]; then
   # On upgrade the services doesn't work because libnss couldn't be
   # loaded anymore.
-    if [ -f %{upgradestamp} ]; then
-	echo "Restarting all the services of this run level"
-	%{_sbindir}/glibc-post-upgrade
-	# if X is running, reset the fontpath to its default value
-	[ -n "$DISPLAY" ] && xset fp default        
+  if [ -f %{upgradestamp} ]; then
+    if /usr/bin/readlink /proc/1/exe >/dev/null && \
+       /usr/bin/readlink /proc/1/root >/dev/null; then
+       if [ -x /sbin/telinit -a -p /dev/initctl ]; then
+         /sbin/telinit u
+       fi
+       if [ -x /etc/init.d/sshd -a \
+            -x /usr/sbin/sshd -a \
+            -x /bin/bash ]; then
+         /etc/init.d/sshd condrestart
+       fi
     fi
-    if [ -f /bin/rm ]; then
-      for i in %broken_link; do
-        if [ -e $i ] && [ ! -L $i ]; then
-          /bin/rm -f $i
-	fi
-      done
-    fi
+  fi
+  if [ -f /bin/rm ]; then
+    for i in %broken_link; do
+      if [ -e $i ] && [ ! -L $i ]; then
+        /bin/rm -f $i
+      fi
+    done
+  fi
+  echo "Warning: glibc updated, you should restart your system to reload all"
+  echo "         programs that depend on glibc."
 fi
 [ -x /bin/rm ] && /bin/rm -f %{upgradestamp}
 
@@ -1461,7 +1466,6 @@ fi
 %{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
 %{_sbindir}/glibc-post-wrapper
-%{_sbindir}/glibc-post-upgrade
 %endif
 
 %if %{build_biarch}
