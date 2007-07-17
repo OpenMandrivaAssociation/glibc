@@ -155,6 +155,9 @@ Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
 Source11:	make_versionh.sh
 Source12:	create_asm_headers.sh
 
+# Warning message about glibc updates
+Source13:	README.upgrade.urpmi
+
 # wrapper to avoid rpm circular dependencies
 Source14:	glibc-post-wrapper.c
 
@@ -522,6 +525,9 @@ GNU C library in PDF format.
 tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
 %endif
+
+cp %{_sourcedir}/README.upgrade.urpmi .
+
 %patch1 -p1 -b .fhs
 %patch2 -p1 -b .ldd-non-exec
 %patch3 -p1 -b .string2-pointer-arith
@@ -1293,8 +1299,6 @@ if [ "$1" -gt 1 ]; then
       fi
     done
   fi
-  echo "Warning: glibc updated, you should restart your system to reload all"
-  echo "         programs that depend on glibc."
 fi
 [ -x /bin/rm ] && /bin/rm -f %{upgradestamp}
 
@@ -1411,6 +1415,7 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
+%doc README.upgrade.urpmi
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
 %{_mandir}/man8/ld.so*
