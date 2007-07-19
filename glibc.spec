@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6
-%define _glibcrelease	1
+%define _glibcrelease	2
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -14,8 +14,8 @@
 %define glibcepoch	6
 # <version>-<release> tags from kernel package where headers were
 # actually extracted from
-%define kheaders_ver	2.6.21
-%define kheaders_rel	2mdv
+%define kheaders_ver	2.6.22
+%define kheaders_rel	1mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -301,7 +301,7 @@ Patch61:	glibc-cvs-ldbl128ibm_fixes.patch
 Patch62:	glibc-bz4599.patch
 Patch63:	glibc-bz4125.patch
 Patch64:	glibc-cvs-gcc_init_fini.patch
-Patch65:	glibc-cvs-init_tls_calls.patch
+Patch65:	glibc-2.6-branch_misc_fixes.patch
 Patch66:	glibc-bz4647.patch
 Patch67:	glibc-cvs-pthread_getattr_np_fix.patch
 Patch68:	glibc-bz4702.patch
@@ -311,6 +311,7 @@ Patch71:	glibc-cvs-x86_64-memcpy_cacheinfo.patch
 Patch72:	glibc-bz4773.patch
 Patch73:	glibc-_nl_explode_name_segfault_fix.patch
 Patch74:	glibc-bz4776.patch
+Patch75:	glibc-bz4775.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -583,7 +584,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch62 -p1 -b .bz4599
 %patch63 -p1 -b .bz4125
 %patch64 -p1 -b .gcc_init_fini
-%patch65 -p1 -b .init_tls_calls
+%patch65 -p0 -b .branch_misc_fixes
 %patch66 -p1 -b .bz4647
 %patch67 -p1 -b .pthread_getattr_np_fix
 %patch68 -p1 -b .bz4702
@@ -593,6 +594,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch72 -p1 -b .bz4773
 %patch73 -p1 -b ._nl_explode_name_segfault_fix
 %patch74 -p1 -b .bz4776
+%patch75 -p1 -b .bz4775
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
