@@ -315,6 +315,7 @@ Patch75:	glibc-bz4775.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
+Patch101:	kernel-headers-dvb-video-fix-includes.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
