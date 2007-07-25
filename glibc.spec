@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6
-%define _glibcrelease	2
+%define _glibcrelease	3
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -284,6 +284,7 @@ Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
+Patch39:	glibc-2.6-provide_CFI_for_the_outermost_function.patch
 
 # Additional patches from 2.6-branch/trunk (diffs from cvs/RH/Suse)
 Patch50:	glibc-2.6-epoll.patch
@@ -312,6 +313,7 @@ Patch72:	glibc-bz4773.patch
 Patch73:	glibc-_nl_explode_name_segfault_fix.patch
 Patch74:	glibc-bz4776.patch
 Patch75:	glibc-bz4775.patch
+Patch76:	glibc-cvs-popen_bug_fix.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -569,6 +571,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
+%patch39 -p0 -R -b .provide_CFI_for_the_outermost_function
 
 %patch50 -p0 -b .epoll
 %patch51 -p1 -b .bz4512
@@ -596,6 +599,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch73 -p1 -b ._nl_explode_name_segfault_fix
 %patch74 -p1 -b .bz4776
 %patch75 -p1 -b .bz4775
+%patch76 -p1 -b .popen_bug_fix
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
