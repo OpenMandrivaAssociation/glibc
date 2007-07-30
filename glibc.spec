@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6
-%define _glibcrelease	3
+%define _glibcrelease	4
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -314,6 +314,15 @@ Patch73:	glibc-_nl_explode_name_segfault_fix.patch
 Patch74:	glibc-bz4776.patch
 Patch75:	glibc-bz4775.patch
 Patch76:	glibc-cvs-popen_bug_fix.patch
+Patch77:	glibc-2.6-sparc_build_fix.patch
+Patch78:	glibc-bz4792.patch
+Patch79:	glibc-cvs-_cs_posix_v6_width_restricted_envs.patch
+Patch80:	glibc-bz4813.patch
+Patch81:	glibc-bz4812.patch
+Patch82:	glibc-bz4772.patch
+Patch83:	glibc-cvs-warning_patrol_fixes.patch
+Patch84:	glibc-bz4858.patch
+Patch85:	glibc-cvs-getconf_add_missing_lvl4_cache_linesize.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -600,6 +609,15 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch74 -p1 -b .bz4776
 %patch75 -p1 -b .bz4775
 %patch76 -p1 -b .popen_bug_fix
+%patch77 -p1 -b .sparc_build_fix
+%patch78 -p1 -b .bz4792
+%patch79 -p1 -b ._cs_posix_v6_width_restricted_envs
+%patch80 -p1 -b .bz4813
+%patch81 -p1 -b .bz4812
+%patch82 -p1 -b .bz4772
+%patch83 -p1 -b .warning_patrol_fixes
+%patch84 -p1 -b .bz4858
+%patch85 -p1 -b .getconf_add_missing_lvl4_cache_linesize
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
