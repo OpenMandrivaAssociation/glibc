@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6
-%define _glibcrelease	4
+%define _glibcrelease	5
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -15,7 +15,7 @@
 # <version>-<release> tags from kernel package where headers were
 # actually extracted from
 %define kheaders_ver	2.6.22
-%define kheaders_rel	1mdv
+%define kheaders_rel	3mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
