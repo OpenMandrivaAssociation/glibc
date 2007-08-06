@@ -284,6 +284,7 @@ Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.6-provide_CFI_for_the_outermost_function.patch
+Patch40:	glibc-2.6-texi_buildpdf_fix.patch
 
 # Additional patches from 2.6-branch/trunk (diffs from cvs/RH/Suse)
 Patch50:	glibc-2.6-epoll.patch
@@ -580,6 +581,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch39 -p0 -R -b .provide_CFI_for_the_outermost_function
+%patch40 -p1 -b .texi_buildpdf_fix
 
 %patch50 -p0 -b .epoll
 %patch51 -p1 -b .bz4512
