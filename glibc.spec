@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6
-%define _glibcrelease	5
+%define _glibcrelease	6
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -622,6 +622,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 pushd kernel-headers/
 TARGET=%{target_cpu}
 %patch100 -p1
+%patch101 -p1
 %{expand:%(%__cat %{SOURCE11} 2>/dev/null)}
 %{expand:%(%__cat %{SOURCE12} 2>/dev/null)}
 popd
