@@ -64,8 +64,7 @@
 # Flag for build_pdf_doc:
 # 1	build glibc with PDF documentation
 # 0	don't build PDF glibc documentation (e.g. for bootstrap build)
-# XXX I am not sure I still want PDF docs anyway, someone used it already?
-%define build_pdf_doc	0
+%define build_pdf_doc	1
 
 # Enable checking by default for arches where we know tests all pass
 %define build_check	1
