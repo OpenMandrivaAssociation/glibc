@@ -3,8 +3,8 @@
 
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
-%define glibcversion	2.6
-%define _glibcrelease	6
+%define glibcversion	2.6.1
+%define _glibcrelease	1
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -283,46 +283,34 @@ Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.6-provide_CFI_for_the_outermost_function.patch
-Patch40:	glibc-2.6-texi_buildpdf_fix.patch
+Patch39:	glibc-2.6-texi_buildpdf_fix.patch
 
-# Additional patches from 2.6-branch/trunk (diffs from cvs/RH/Suse)
-Patch50:	glibc-2.6-epoll.patch
-Patch51:	glibc-bz4512.patch
-Patch52:	glibc-2.6-malloc.patch
-Patch53:	glibc-bz4514.patch
-Patch54:	glibc-cvs-x86_64_dummy_files_prevent_stub.patch
-Patch55:	glibc-cvs-i386_sync_file_range.patch
-Patch56:	glibc-cvs-tst_shm_fstat64.patch
-Patch57:	glibc-cvs-nscd_dont_cache_ttl0.patch
-Patch58:	glibc-cvs-utimensat.patch
-Patch59:	glibc-cvs-nscd_get_mapping_crash_fix.patch
-Patch60:	glibc-bz4586.patch
-Patch61:	glibc-cvs-ldbl128ibm_fixes.patch
-Patch62:	glibc-bz4599.patch
-Patch63:	glibc-bz4125.patch
-Patch64:	glibc-cvs-gcc_init_fini.patch
-Patch65:	glibc-2.6-branch_misc_fixes.patch
-Patch66:	glibc-bz4647.patch
-Patch67:	glibc-cvs-pthread_getattr_np_fix.patch
-Patch68:	glibc-bz4702.patch
-Patch69:	glibc-cvs-ld_hwcap_mask_handling_fix.patch
-Patch70:	glibc-bz4745.patch
-Patch71:	glibc-cvs-x86_64-memcpy_cacheinfo.patch
-Patch72:	glibc-bz4773.patch
-Patch73:	glibc-_nl_explode_name_segfault_fix.patch
-Patch74:	glibc-bz4776.patch
-Patch75:	glibc-bz4775.patch
-Patch76:	glibc-cvs-popen_bug_fix.patch
-Patch77:	glibc-2.6-sparc_build_fix.patch
-Patch78:	glibc-bz4792.patch
-Patch79:	glibc-cvs-_cs_posix_v6_width_restricted_envs.patch
-Patch80:	glibc-bz4813.patch
-Patch81:	glibc-bz4812.patch
-Patch82:	glibc-bz4772.patch
-Patch83:	glibc-cvs-warning_patrol_fixes.patch
-Patch84:	glibc-bz4858.patch
-Patch85:	glibc-cvs-getconf_add_missing_lvl4_cache_linesize.patch
+# Additional patches from 2.6-branch/trunk
+Patch50:	glibc-cvs-nscd_dont_cache_ttl0.patch
+Patch51:	glibc-cvs-utimensat.patch
+Patch52:	glibc-bz4599.patch
+Patch53:	glibc-bz4125.patch
+Patch54:	glibc-cvs-gcc_init_fini.patch
+Patch55:	glibc-bz4647.patch
+Patch56:	glibc-bz4773.patch
+Patch57:	glibc-_nl_explode_name_segfault_fix.patch
+Patch58:	glibc-bz4776.patch
+Patch59:	glibc-bz4775.patch
+Patch60:	glibc-cvs-popen_bug_fix.patch
+Patch61:	glibc-bz4792.patch
+Patch62:	glibc-cvs-_cs_posix_v6_width_restricted_envs.patch
+Patch63:	glibc-bz4813.patch
+Patch64:	glibc-bz4812.patch
+Patch65:	glibc-bz4772.patch
+Patch66:	glibc-cvs-warning_patrol_fixes.patch
+Patch67:	glibc-cvs-getconf_add_missing_lvl4_cache_linesize.patch
+Patch68:	glibc-cvs-libc_texinfo_update.patch
+Patch69:	glibc-cvs-ix86_rwlock_fixes.patch
+Patch70:	glibc-cvs-gettext_memleak_fixes.patch
+Patch71:	glibc-cvs-strtod_handle_minuszero.patch
+Patch72:	glibc-cvs-ar_SA-dz_BT-LC_TIME-fixes.patch
+Patch73:	glibc-cvs-po_updates.patch
+Patch74:	glibc-cvs-rh250492.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -580,45 +568,33 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch39 -p0 -R -b .provide_CFI_for_the_outermost_function
-%patch40 -p1 -b .texi_buildpdf_fix
+%patch39 -p1 -b .texi_buildpdf_fix
 
-%patch50 -p0 -b .epoll
-%patch51 -p1 -b .bz4512
-%patch52 -p0 -b .malloc
-%patch53 -p1 -b .bz4514
-%patch54 -p1 -b .x86_64_dummy_files_prevent_stub
-%patch55 -p1 -b .i386_sync_file_range
-%patch56 -p1 -b .tst_shm_fstat64
-%patch57 -p1 -b .nscd_dont_cache_ttl0
-%patch58 -p1 -b .utimensat
-%patch59 -p1 -b .nscd_get_mapping_crash_fix
-%patch60 -p1 -b .bz4586
-%patch61 -p1 -b .ldbl128ibm_fixes
-%patch62 -p1 -b .bz4599
-%patch63 -p1 -b .bz4125
-%patch64 -p1 -b .gcc_init_fini
-%patch65 -p0 -b .branch_misc_fixes
-%patch66 -p1 -b .bz4647
-%patch67 -p1 -b .pthread_getattr_np_fix
-%patch68 -p1 -b .bz4702
-%patch69 -p1 -b .ld_hwcap_mask_handling_fix
-%patch70 -p1 -b .bz4745
-%patch71 -p1 -b .x86_64-memcpy_cacheinfo
-%patch72 -p1 -b .bz4773
-%patch73 -p1 -b ._nl_explode_name_segfault_fix
-%patch74 -p1 -b .bz4776
-%patch75 -p1 -b .bz4775
-%patch76 -p1 -b .popen_bug_fix
-%patch77 -p1 -b .sparc_build_fix
-%patch78 -p1 -b .bz4792
-%patch79 -p1 -b ._cs_posix_v6_width_restricted_envs
-%patch80 -p1 -b .bz4813
-%patch81 -p1 -b .bz4812
-%patch82 -p1 -b .bz4772
-%patch83 -p1 -b .warning_patrol_fixes
-%patch84 -p1 -b .bz4858
-%patch85 -p1 -b .getconf_add_missing_lvl4_cache_linesize
+%patch50 -p1 -b .nscd_dont_cache_ttl0
+%patch51 -p1 -b .utimensat
+%patch52 -p1 -b .bz4599
+%patch53 -p1 -b .bz4125
+%patch54 -p1 -b .gcc_init_fini
+%patch55 -p1 -b .bz4647
+%patch56 -p1 -b .bz4773
+%patch57 -p1 -b ._nl_explode_name_segfault_fix
+%patch58 -p1 -b .bz4776
+%patch59 -p1 -b .bz4775
+%patch60 -p1 -b .popen_bug_fix
+%patch61 -p1 -b .bz4792
+%patch62 -p1 -b ._cs_posix_v6_width_restricted_envs
+%patch63 -p1 -b .bz4813
+%patch64 -p1 -b .bz4812
+%patch65 -p1 -b .bz4772
+%patch66 -p1 -b .warning_patrol_fixes
+%patch67 -p1 -b .getconf_add_missing_lvl4_cache_linesize
+%patch68 -p1 -b .libc_texinfo_update
+%patch69 -p1 -b .ix86_rwlock_fixes
+%patch70 -p1 -b .gettext_memleak_fixes
+%patch71 -p1 -b .strtod_handle_minuszero
+%patch72 -p1 -b .ar_SA-dz_BT-LC_TIME-fixes
+%patch73 -p1 -b .po_updates
+%patch74 -p1 -b .rh250492
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
@@ -824,7 +800,7 @@ function BuildGlibc() {
   TlsFlags="--with-tls --with-__thread"
 
   # Add-ons
-  AddOns="$Pthreads"
+  AddOns="$Pthreads,libidn"
   if [[ "$cpu" != "$arch" ]]; then
     AddOns="$AddOns,powerpc-cpu"
     BuildFlags="$BuildFlags -mcpu=$cpu"
