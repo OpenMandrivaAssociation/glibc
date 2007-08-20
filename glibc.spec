@@ -206,19 +206,19 @@ Requires(post):		ash-static
 Conflicts:		rpm < 4.2.2
 # we need an ldconfig with TLS support
 %if %{build_cross}
-BuildPreReq:	%{cross_prefix}gcc >= 3.2.2-4mdk
+BuildRequires:	%{cross_prefix}gcc >= 3.2.2-4mdk
 %endif
 %ifarch %{ix86} alpha
-BuildPreReq:	%{cross_prefix}gcc >= 2.96-0.50mdk
+BuildRequires:	%{cross_prefix}gcc >= 2.96-0.50mdk
 %endif
 %ifarch ia64
-BuildPreReq:	%{cross_prefix}gcc >= 3.2.3-1mdk
+BuildRequires:	%{cross_prefix}gcc >= 3.2.3-1mdk
 %endif
 %ifarch x86_64
-BuildPreReq:	%{cross_prefix}gcc >= 3.1.1-0.5mdk
+BuildRequires:	%{cross_prefix}gcc >= 3.1.1-0.5mdk
 %endif
 %if %{mdkversion} >= 200600
-BuildPreReq:	%{cross_prefix}gcc >= 4.0.1-2mdk
+BuildRequires:	%{cross_prefix}gcc >= 4.0.1-2mdk
 %endif
 %if !%{build_cross}
 %ifarch alpha
