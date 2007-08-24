@@ -279,11 +279,15 @@ Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
 Patch30:	glibc-2.6-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
+Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.6-texi_buildpdf_fix.patch
+
+# Upstream patch to speed up ldconfig (diff from suse)
+Patch49:	glibc-2.5-ldconfig-old-cache.diff
 
 # Additional patches from 2.6-branch/trunk
 Patch50:	glibc-cvs-nscd_dont_cache_ttl0.patch
@@ -565,10 +569,12 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch30 -p1 -b .multiarch-check
 %patch31 -p1 -b .i586-hptiming
 %patch32 -p1 -b .i586-if-no-cmov
+%patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch39 -p1 -b .texi_buildpdf_fix
+%patch49 -p0 -b .ldconfig-old-cache
 
 %patch50 -p1 -b .nscd_dont_cache_ttl0
 %patch51 -p1 -b .utimensat
@@ -1064,15 +1070,16 @@ install -m 755 nscd/nscd.init $RPM_BUILD_ROOT%{_initrddir}/nscd
 # Useless and takes place
 rm -rf %buildroot/%{_datadir}/zoneinfo/{posix,right}
 
-# Don't include ld.so.cache
-rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.cache
-
 # Include ld.so.conf
 %if "%{name}" == "glibc"
 echo "include ld.so.conf.d/*.conf" > $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
 chmod 644 $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
 mkdir -p  $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf.d
 %endif
+
+# ldconfig cache
+mkdir -p $RPM_BUILD_ROOT%{_var}/cache/ldconfig
+touch $RPM_BUILD_ROOT%{_var}/cache/ldconfig/aux-cache
 
 # Include %{_libdir}/gconv/gconv-modules.cache
 > $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
@@ -1415,10 +1422,12 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/nsswitch.conf
+%ghost %{_sysconfdir}/ld.so.cache
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
 %doc README.upgrade.urpmi
+%doc posix/gai.conf
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
 %{_mandir}/man8/ld.so*
@@ -1496,6 +1505,8 @@ fi
 %defattr(-,root,root)
 /sbin/ldconfig
 %{_mandir}/man8/ldconfig*
+%dir %{_var}/cache/ldconfig
+%ghost %{_var}/cache/ldconfig/aux-cache
 %endif
 
 #
