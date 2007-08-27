@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.6.1
-%define _glibcrelease	1
+%define _glibcrelease	2
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -279,8 +279,8 @@ Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
 Patch30:	glibc-2.6-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
-Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
+Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
@@ -574,7 +574,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch39 -p1 -b .texi_buildpdf_fix
-%patch49 -p0 -b .ldconfig-old-cache
+%patch49 -p1 -b .ldconfig-old-cache
 
 %patch50 -p1 -b .nscd_dont_cache_ttl0
 %patch51 -p1 -b .utimensat
@@ -1422,7 +1422,6 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/nsswitch.conf
-%ghost %{_sysconfdir}/ld.so.cache
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
@@ -1505,6 +1504,7 @@ fi
 %defattr(-,root,root)
 /sbin/ldconfig
 %{_mandir}/man8/ldconfig*
+%ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
 %endif
