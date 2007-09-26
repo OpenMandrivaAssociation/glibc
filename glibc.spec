@@ -285,6 +285,7 @@ Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.6-texi_buildpdf_fix.patch
+Patch40:	glibc-2.6-revert-pl_PL-LC_TIME-change.patch
 
 # Upstream patch to speed up ldconfig (diff from suse)
 Patch49:	glibc-2.5-ldconfig-old-cache.diff
@@ -574,6 +575,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch39 -p1 -b .texi_buildpdf_fix
+%patch40 -p1 -b .revert-pl_PL-LC_TIME-change
 %patch49 -p1 -b .ldconfig-old-cache
 
 %patch50 -p1 -b .nscd_dont_cache_ttl0
