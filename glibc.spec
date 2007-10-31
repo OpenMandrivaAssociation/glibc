@@ -1157,22 +1157,6 @@ find $RPM_BUILD_ROOT%{_prefix}/lib -maxdepth 1 -name "*.so" -o -name "*.o" | egr
 %endif
 perl -pi -e "s|$RPM_BUILD_ROOT||" devel.filelist
 
-%if %{build_utils}
-if [[ "%{_slibdir}" != "%{_libdir}" ]]; then
-mkdir -p $RPM_BUILD_ROOT%{_libdir}
-mv -f $RPM_BUILD_ROOT%{_slibdir}/lib{pcprofile,memusage}.so $RPM_BUILD_ROOT%{_libdir}
-[[ -f $RPM_BUILD_ROOT/lib/libmemusage.so ]] &&
-mv -f $RPM_BUILD_ROOT/lib/lib{pcprofile,memusage}.so $RPM_BUILD_ROOT%{_prefix}/lib/
-for i in $RPM_BUILD_ROOT%{_prefix}/bin/{xtrace,memusage}; do
-  cp -a $i $i.tmp
-  sed -e 's~=%{_slibdir}/libpcprofile.so~=%{_libdir}/libpcprofile.so~' \
-      -e 's~=%{_slibdir}/libmemusage.so~=%{_libdir}/libmemusage.so~' \
-    $i.tmp > $i
-  chmod 755 $i; rm -f $i.tmp
-done
-fi
-%endif
-
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{build_timezone}
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/localtime
@@ -1213,8 +1197,12 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
 rm -f  $RPM_BUILD_ROOT%{_datadir}/locale/locale-archive*
 
 %if !%{build_utils}
-rm -f  $RPM_BUILD_ROOT%{_libdir}/libmemusage.so
-rm -f  $RPM_BUILD_ROOT%{_libdir}/libpcprofile.so
+%if %{build_biarch}
+rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libmemusage.so
+rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libpcprofile.so
+%endif
+rm -f  $RPM_BUILD_ROOT%{_slibdir}/libmemusage.so
+rm -f  $RPM_BUILD_ROOT%{_slibdir}/libpcprofile.so
 rm -f  $RPM_BUILD_ROOT%{_bindir}/memusage
 rm -f  $RPM_BUILD_ROOT%{_bindir}/memusagestat
 rm -f  $RPM_BUILD_ROOT%{_bindir}/mtrace
@@ -1659,11 +1647,11 @@ fi
 %files utils
 %defattr(-,root,root)
 %if %{build_biarch}
-%{_prefix}/lib/libmemusage.so
-%{_prefix}/lib/libpcprofile.so
+%{_slibdir32}/libmemusage.so
+%{_slibdir32}/libpcprofile.so
 %endif
-%{_libdir}/libmemusage.so
-%{_libdir}/libpcprofile.so
+%{_slibdir}/libmemusage.so
+%{_slibdir}/libpcprofile.so
 %{_bindir}/memusage
 %{_bindir}/memusagestat
 %{_bindir}/mtrace
