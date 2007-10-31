@@ -1449,7 +1449,9 @@ fi
 %{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
 %dir %{_libdir}/gconv
-%{_libdir}/gconv/*
+%{_libdir}/gconv/*.so
+%{_libdir}/gconv/gconv-modules
+%ghost %{_libdir}/gconv/gconv-modules.cache
 # Don't package pt_chown. It is only needed if devpts is not used. But
 # since we are running kernel 2.4+, that's fine without.
 # (and it never actually worked, aka was not setuid, nor executable)
