@@ -169,6 +169,7 @@ Source14:	glibc-post-wrapper.c
 %endif
 Source15:	glibc-powerpc-cpu-addon-v0.03.tar.bz2
 
+Buildroot:	%{_tmppath}/glibc-%{PACKAGE_VERSION}-root
 %if %{build_cross}
 Autoreq:	false
 Autoprov:	false
