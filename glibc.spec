@@ -3,8 +3,8 @@
 
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
-%define glibcversion	2.6.1
-%define _glibcrelease	6
+%define glibcversion	2.7
+%define _glibcrelease	1
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -14,8 +14,8 @@
 %define glibcepoch	6
 # <version>-<release> tags from kernel package where headers were
 # actually extracted from
-%define kheaders_ver	2.6.22
-%define kheaders_rel	3mdv
+%define kheaders_ver	2.6.24
+%define kheaders_rel	0.rc6.3mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -255,7 +255,7 @@ Patch4:		glibc-2.2-nss-upgrade.patch
 Patch5:		glibc-2.2.5-ldconfig-exit-during-install.patch
 Patch6:		glibc-2.2.5-share-locale.patch
 Patch7:		glibc-2.3.6-nsswitch.conf.patch
-Patch8:		glibc-2.6-new-charsets.patch
+Patch8:		glibc-2.7-test-ldouble-gcc-4.2.patch
 Patch9:		glibc-2.2.4-xterm-xvt.patch
 Patch10:	glibc-2.2.4-hack-includes.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
@@ -282,44 +282,14 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch37:	glibc-2.4.90-powerpc-no-clock_gettime-vdso.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.6-texi_buildpdf_fix.patch
-Patch40:	glibc-2.6-revert-pl_PL-LC_TIME-change.patch
 
-# Upstream patch to speed up ldconfig (diff from suse)
-Patch49:	glibc-2.5-ldconfig-old-cache.diff
-
-# Additional patches from 2.6-branch/trunk
-Patch50:	glibc-cvs-nscd_dont_cache_ttl0.patch
-Patch51:	glibc-cvs-utimensat.patch
-Patch52:	glibc-bz4599.patch
-Patch53:	glibc-bz4125.patch
-Patch54:	glibc-cvs-gcc_init_fini.patch
-Patch55:	glibc-bz4647.patch
-Patch56:	glibc-bz4773.patch
-Patch57:	glibc-_nl_explode_name_segfault_fix.patch
-Patch58:	glibc-bz4776.patch
-Patch59:	glibc-bz4775.patch
-Patch60:	glibc-cvs-popen_bug_fix.patch
-Patch61:	glibc-bz4792.patch
-Patch62:	glibc-cvs-_cs_posix_v6_width_restricted_envs.patch
-Patch63:	glibc-bz4813.patch
-Patch64:	glibc-bz4812.patch
-Patch65:	glibc-bz4772.patch
-Patch66:	glibc-cvs-warning_patrol_fixes.patch
-Patch67:	glibc-cvs-getconf_add_missing_lvl4_cache_linesize.patch
-Patch68:	glibc-cvs-libc_texinfo_update.patch
-Patch69:	glibc-cvs-ix86_rwlock_fixes.patch
-Patch70:	glibc-cvs-gettext_memleak_fixes.patch
-Patch71:	glibc-cvs-strtod_handle_minuszero.patch
-Patch72:	glibc-cvs-ar_SA-dz_BT-LC_TIME-fixes.patch
-Patch73:	glibc-cvs-po_updates.patch
-Patch74:	glibc-cvs-rh250492.patch
+# Additional patches from glibc cvs
+Patch50:	glibc-2.7-memcpy_chk_i586.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
-Patch101:	kernel-headers-dvb-video-fix-includes.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -541,7 +511,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch5 -p1 -b .ldconfig-exit-during-install
 %patch6 -p1 -b .share-locale
 %patch7 -p1 -b .nsswitch.conf
-%patch8 -p1 -b .new-charsets
+%patch8 -p1 -b .test-ldouble-gcc-4.2
 %patch9 -p1 -b .xterm-xvt
 %patch10 -p1 -b .hack-includes
 %patch11 -p1 -b .compat-EUR-currencies
@@ -572,42 +542,14 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch37 -p1 -b .powerpc-no-clock_gettime-vdso
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch39 -p1 -b .texi_buildpdf_fix
-%patch40 -p1 -b .revert-pl_PL-LC_TIME-change
-%patch49 -p1 -b .ldconfig-old-cache
 
-%patch50 -p1 -b .nscd_dont_cache_ttl0
-%patch51 -p1 -b .utimensat
-%patch52 -p1 -b .bz4599
-%patch53 -p1 -b .bz4125
-%patch54 -p1 -b .gcc_init_fini
-%patch55 -p1 -b .bz4647
-%patch56 -p1 -b .bz4773
-%patch57 -p1 -b ._nl_explode_name_segfault_fix
-%patch58 -p1 -b .bz4776
-%patch59 -p1 -b .bz4775
-%patch60 -p1 -b .popen_bug_fix
-%patch61 -p1 -b .bz4792
-%patch62 -p1 -b ._cs_posix_v6_width_restricted_envs
-%patch63 -p1 -b .bz4813
-%patch64 -p1 -b .bz4812
-%patch65 -p1 -b .bz4772
-%patch66 -p1 -b .warning_patrol_fixes
-%patch67 -p1 -b .getconf_add_missing_lvl4_cache_linesize
-%patch68 -p1 -b .libc_texinfo_update
-%patch69 -p1 -b .ix86_rwlock_fixes
-%patch70 -p1 -b .gettext_memleak_fixes
-%patch71 -p1 -b .strtod_handle_minuszero
-%patch72 -p1 -b .ar_SA-dz_BT-LC_TIME-fixes
-%patch73 -p1 -b .po_updates
-%patch74 -p1 -b .rh250492
+%patch50 -p1 -b .memcpy_chk_i586
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
 %patch100 -p1
-%patch101 -p1
 %{expand:%(%__cat %{SOURCE11} 2>/dev/null)}
 %{expand:%(%__cat %{SOURCE12} 2>/dev/null)}
 popd
@@ -855,7 +797,7 @@ function BuildGlibc() {
   # All tests are expected to pass on certain platforms, depending also
   # on the version of the kernel running
   case $arch in
-  i[3456]86 | athlon | x86_64 | ia64 | ppc | ppc64)
+  athlon | x86_64 | ia64 | ppc | ppc64)
     if [ "`CompareKver %{check_min_kver}`" -lt 0 ]; then
       check_flags=""
     else
@@ -1531,12 +1473,6 @@ fi
 %{_includedir}/rdma
 %{_includedir}/sound
 %{_includedir}/video
-%if %isarch x86_64
-%dir %{_includedir}/asm-i386
-%{_includedir}/asm-i386/*.h
-%dir %{_includedir}/asm-x86_64
-%{_includedir}/asm-x86_64/*.h
-%endif
 %if %isarch ppc64
 %dir %{_includedir}/asm-ppc
 %{_includedir}/asm-ppc/*.h
