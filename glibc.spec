@@ -282,6 +282,7 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
+Patch35:	glibc-2.7-mtrace-perl-5.10.0.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 
 # Additional patches from glibc cvs
@@ -544,6 +545,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
+%patch35 -p1 -b .mtrace-perl-5.10.0
 %patch38 -p1 -b .testsuite-rt-notparallel
 
 %patch50 -p1 -b .memcpy_chk_i586
