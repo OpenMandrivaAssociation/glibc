@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	1
+%define _glibcrelease	2
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -15,7 +15,7 @@
 # <version>-<release> tags from kernel package where headers were
 # actually extracted from
 %define kheaders_ver	2.6.24
-%define kheaders_rel	0.rc6.3mdv
+%define kheaders_rel	1mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -283,10 +283,12 @@ Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.6-texi_buildpdf_fix.patch
 
 # Additional patches from glibc cvs
 Patch50:	glibc-2.7-memcpy_chk_i586.patch
+Patch51:	glibc-2.7-manual_update.patch
+Patch52:	glibc-2.7-bz5222.patch
+Patch53:	glibc-2.7-bz5600.patch
 
 # Patches for kernel-headers
 Patch100:	kernel-headers-gnu-extensions.patch
@@ -543,9 +545,11 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch39 -p1 -b .texi_buildpdf_fix
 
 %patch50 -p1 -b .memcpy_chk_i586
+%patch51 -p0 -b .manual_update
+%patch52 -p1 -b .bz5222
+%patch53 -p1 -b .bz5600
 
 pushd kernel-headers/
 TARGET=%{target_cpu}
