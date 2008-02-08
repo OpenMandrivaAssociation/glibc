@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	3
+%define _glibcrelease	4
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -12,10 +12,6 @@
 %define glibcrelease	%{_glibcrelease}mdk
 %endif
 %define glibcepoch	6
-# <version>-<release> tags from kernel package where headers were
-# actually extracted from
-%define kheaders_ver	2.6.24
-%define kheaders_rel	1mdv
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -148,12 +144,6 @@ Source6:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2
 Source7:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2.sig
 %endif
 
-# kernel-headers tarball generated from mandriva kernel in svn with:
-# make INSTALL_HDR_PATH=<path> headers_install_all
-Source10:	kernel-headers-%{kheaders_ver}.%{kheaders_rel}.tar.bz2
-Source11:	make_versionh.sh
-Source12:	create_asm_headers.sh
-
 # Warning message about glibc updates
 Source13:	README.upgrade.urpmi
 
@@ -186,7 +176,7 @@ Provides: rtld(GNU_HASH)
 Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
-#BuildRequires: kernel-headers
+BuildRequires:	kernel-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -292,9 +282,6 @@ Patch51:	glibc-2.7-manual_update.patch
 Patch52:	glibc-2.7-bz5222.patch
 Patch53:	glibc-2.7-bz5600.patch
 
-# Patches for kernel-headers
-Patch100:	kernel-headers-gnu-extensions.patch
-
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
 %if %isarch ppc ppc64
@@ -353,8 +340,7 @@ Obsoletes:	%{name}-debug < 6:2.3.2-15mdk
 %endif
 Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
 %if !%{build_cross}
-#Obsoletes:	kernel-headers
-#Provides:	kernel-headers = 1:%{kheaders_ver}
+Requires:	kernel-headers
 %endif
 %if !%isarch ppc
 Conflicts:	%{cross_prefix}gcc < 2.96-0.50mdk
@@ -553,13 +539,6 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch51 -p0 -b .manual_update
 %patch52 -p1 -b .bz5222
 %patch53 -p1 -b .bz5600
-
-pushd kernel-headers/
-TARGET=%{target_cpu}
-%patch100 -p1
-%{expand:%(%__cat %{SOURCE11} 2>/dev/null)}
-%{expand:%(%__cat %{SOURCE12} 2>/dev/null)}
-popd
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
@@ -772,7 +751,7 @@ function BuildGlibc() {
 %endif
 
   # Kernel headers directory
-  KernelHeaders=$PWD/kernel-headers
+  KernelHeaders=%{_includedir}
 
   # Determine library name
   glibc_cv_cc_64bit_output=no
@@ -1118,12 +1097,6 @@ cp -f $RPM_BUILD_ROOT%{_datadir}/zoneinfo/US/Eastern $RPM_BUILD_ROOT%{_sysconfdi
 (cd manual; texi2dvi -p -t @afourpaper -t @finalout libc.texinfo)
 %endif
 
-# Copy Kernel-Headers
-#mkdir -p $RPM_BUILD_ROOT%{_includedir}
-#mkdir -p $RPM_BUILD_ROOT/boot/
-#cp -avrf kernel-headers/* $RPM_BUILD_ROOT%{_includedir}
-#echo "#if 0" > $RPM_BUILD_ROOT/boot/kernel.h-%{kheaders_ver}
-
 # the last bit: more documentation
 rm -rf documentation
 mkdir documentation
@@ -1299,23 +1272,6 @@ fi
 %endif
 exit 0
 
-%if "%{name}" == "glibc"
-%post devel
-cd /boot
-rm -f kernel.h
-ln -snf kernel.h-%{kheaders_ver} kernel.h
-/sbin/service kheader start 2>/dev/null >/dev/null || :
-exit 0
-
-%postun devel
-if [ $1 = 0 ];then
-  if [ -L /boot/kernel.h -a `ls -l /boot/kernel.h 2>/dev/null| awk '{ print $11 }'` = "kernel.h-%{kheader}" ]; then
-    rm -f /boot/kernel.h
-  fi
-fi
-exit 0
-%endif
-
 %if %{build_doc}
 %post doc
 %_install_info libc.info
@@ -1472,31 +1428,6 @@ fi
 %if %isarch ppc ppc64 sparc
 %{_libdir}/libnldbl_nonshared.a
 %endif
-
-#%{_includedir}/linux
-#%{_includedir}/asm
-#%{_includedir}/asm-generic
-#%{_includedir}/mtd
-#%{_includedir}/rdma
-#%{_includedir}/sound
-#%{_includedir}/video
-#%if %isarch ppc64
-#%dir %{_includedir}/asm-ppc
-#%{_includedir}/asm-ppc/*.h
-#%dir %{_includedir}/asm-ppc64
-#%{_includedir}/asm-ppc64/*.h
-#%dir %{_includedir}/asm-ppc64/iseries
-#%{_includedir}/asm-ppc64/iseries/*.h
-#%endif
-#%if %isarch sparc64
-#%dir %{_includedir}/asm-sparc
-#%{_includedir}/asm-sparc/*.h
-#%dir %{_includedir}/asm-sparc64
-#%{_includedir}/asm-sparc64/*.h
-#%endif
-#%if "%{name}" == "glibc"
-#/boot/kernel.h-%{kheaders_ver}
-#%endif
 
 %if %{build_biarch}
 %{_prefix}/lib/libbsd-compat.a
