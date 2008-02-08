@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	2
+%define _glibcrelease	3
 %if %{mdkversion} >= 200700
 # XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
@@ -186,6 +186,7 @@ Provides: rtld(GNU_HASH)
 Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
+#BuildRequires: kernel-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -352,8 +353,8 @@ Obsoletes:	%{name}-debug < 6:2.3.2-15mdk
 %endif
 Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
 %if !%{build_cross}
-Obsoletes:	kernel-headers
-Provides:	kernel-headers = 1:%{kheaders_ver}
+#Obsoletes:	kernel-headers
+#Provides:	kernel-headers = 1:%{kheaders_ver}
 %endif
 %if !%isarch ppc
 Conflicts:	%{cross_prefix}gcc < 2.96-0.50mdk
@@ -1118,10 +1119,10 @@ cp -f $RPM_BUILD_ROOT%{_datadir}/zoneinfo/US/Eastern $RPM_BUILD_ROOT%{_sysconfdi
 %endif
 
 # Copy Kernel-Headers
-mkdir -p $RPM_BUILD_ROOT%{_includedir}
-mkdir -p $RPM_BUILD_ROOT/boot/
-cp -avrf kernel-headers/* $RPM_BUILD_ROOT%{_includedir}
-echo "#if 0" > $RPM_BUILD_ROOT/boot/kernel.h-%{kheaders_ver}
+#mkdir -p $RPM_BUILD_ROOT%{_includedir}
+#mkdir -p $RPM_BUILD_ROOT/boot/
+#cp -avrf kernel-headers/* $RPM_BUILD_ROOT%{_includedir}
+#echo "#if 0" > $RPM_BUILD_ROOT/boot/kernel.h-%{kheaders_ver}
 
 # the last bit: more documentation
 rm -rf documentation
@@ -1472,30 +1473,30 @@ fi
 %{_libdir}/libnldbl_nonshared.a
 %endif
 
-%{_includedir}/linux
-%{_includedir}/asm
-%{_includedir}/asm-generic
-%{_includedir}/mtd
-%{_includedir}/rdma
-%{_includedir}/sound
-%{_includedir}/video
-%if %isarch ppc64
-%dir %{_includedir}/asm-ppc
-%{_includedir}/asm-ppc/*.h
-%dir %{_includedir}/asm-ppc64
-%{_includedir}/asm-ppc64/*.h
-%dir %{_includedir}/asm-ppc64/iseries
-%{_includedir}/asm-ppc64/iseries/*.h
-%endif
-%if %isarch sparc64
-%dir %{_includedir}/asm-sparc
-%{_includedir}/asm-sparc/*.h
-%dir %{_includedir}/asm-sparc64
-%{_includedir}/asm-sparc64/*.h
-%endif
-%if "%{name}" == "glibc"
-/boot/kernel.h-%{kheaders_ver}
-%endif
+#%{_includedir}/linux
+#%{_includedir}/asm
+#%{_includedir}/asm-generic
+#%{_includedir}/mtd
+#%{_includedir}/rdma
+#%{_includedir}/sound
+#%{_includedir}/video
+#%if %isarch ppc64
+#%dir %{_includedir}/asm-ppc
+#%{_includedir}/asm-ppc/*.h
+#%dir %{_includedir}/asm-ppc64
+#%{_includedir}/asm-ppc64/*.h
+#%dir %{_includedir}/asm-ppc64/iseries
+#%{_includedir}/asm-ppc64/iseries/*.h
+#%endif
+#%if %isarch sparc64
+#%dir %{_includedir}/asm-sparc
+#%{_includedir}/asm-sparc/*.h
+#%dir %{_includedir}/asm-sparc64
+#%{_includedir}/asm-sparc64/*.h
+#%endif
+#%if "%{name}" == "glibc"
+#/boot/kernel.h-%{kheaders_ver}
+#%endif
 
 %if %{build_biarch}
 %{_prefix}/lib/libbsd-compat.a
