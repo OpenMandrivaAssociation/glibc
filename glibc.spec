@@ -486,7 +486,7 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a 10 -a 3 -a 2 -a 15
+%setup -q -n %{source_dir} -a 3 -a 2 -a 15
 %if %{RELEASE}
 tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
