@@ -260,8 +260,6 @@ Patch14:	glibc-2.3.2-config-amd64-alias.patch
 Patch15:	glibc-2.2.5-nscd-no-host-cache.patch
 Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
-Patch18:	glibc-2.4.90-x86_64-new-libm.patch
-Patch19:	glibc-2.4.90-amd64-fix-ceil.patch
 Patch20:	glibc-2.3.4-nscd-fixes.patch
 Patch21:	glibc-2.6-nscd_HUP.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
@@ -522,10 +520,6 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch15 -p1 -b .nscd-no-host-cache
 %patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
-#patch18 -p0 -b .x86_64-new-libm -E
-# remove duplicates (XXX merge into patch18)
-#rm -f sysdeps/x86_64/fpu/s_sincos.S
-#patch19 -p1 -b .amd64-fix-ceil
 %patch20 -p1 -b .nscd-fixes
 %patch21 -p1 -b .nscd_HUP
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
