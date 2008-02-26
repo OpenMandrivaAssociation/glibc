@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	5
+%define _glibcrelease	6
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -285,6 +285,13 @@ Patch50:	glibc-2.7-memcpy_chk_i586.patch
 Patch51:	glibc-2.7-manual_update.patch
 Patch52:	glibc-2.7-bz5222.patch
 Patch53:	glibc-2.7-bz5600.patch
+Patch54:	glibc-2.7-fix-tzh_version-check.patch
+Patch55:	glibc-2.7-x86_64-memset-add-missing-sfence.patch
+Patch56:	glibc-2.7-bz5346.patch
+Patch57:	glibc-2.7-bz5439.patch
+Patch58:	glibc-2.7-bz5441.patch
+Patch59:	glibc-2.7-bz5465.patch
+Patch60:	glibc-2.7-i486-memmove-with-fortify-fix.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -543,6 +550,13 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch51 -p0 -b .manual_update
 %patch52 -p1 -b .bz5222
 %patch53 -p1 -b .bz5600
+%patch54 -p1 -b .fix-tzh_version-check
+%patch55 -p1 -b .x86_64-memset-add-missing-sfence
+%patch56 -p1 -b .bz5346
+%patch57 -p1 -b .bz5439
+%patch58 -p1 -b .bz5441
+%patch59 -p1 -b .bz5465
+%patch60 -p1 -b .i486-memmove-with-fortify-fix
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
