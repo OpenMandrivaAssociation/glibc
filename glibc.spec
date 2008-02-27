@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	6
+%define _glibcrelease	7
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -187,16 +187,10 @@ BuildRequires:	libselinux-devel >= 1.17.10
 # we need suitable linker for -Wl,--hash-style=both
 %define binutils_version 2.16.91.0.7-%{mkrel 6}
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
-# we need the static ash
-%if %{mdkversion} >= 200600
-%define ash_bin		/bin/ash
-Requires(pre):		ash >= 0.3.8-7mdk
-Requires(post):		ash >= 0.3.8-7mdk
-%else
-%define ash_bin		/bin/ash.static
-Requires(pre):		ash-static
-Requires(post):		ash-static
-%endif
+# we need the static dash
+%define ash_bin		/bin/dash.static
+Requires(pre):		dash-static
+Requires(post):		dash-static
 # we need an rpm with correct db4 lib
 Conflicts:		rpm < 4.2.2
 # we need an ldconfig with TLS support
