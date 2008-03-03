@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	7
+%define _glibcrelease	8
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -227,6 +227,8 @@ Conflicts:	%{name}-devel < 2.2.3
 Conflicts:	initscripts < 6.91-18mdk
 # Ease Conectiva upgrades
 Conflicts:	%{name}-base <= 2.3.4
+
+Suggests: should-restart = system
 
 BuildRequires:	texinfo
 %if %{build_pdf_doc}
