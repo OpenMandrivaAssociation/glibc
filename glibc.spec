@@ -555,6 +555,7 @@ ln -s %{_includedir}/selinux selinux
 
 find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
 
+# (Anssi 03/2008) FIXME: use _provides_exceptions
 cat > find_provides.sh << EOF
 #!/bin/sh
 %{rpmscripts}/find-provides | grep -v GLIBC_PRIVATE
@@ -571,6 +572,7 @@ chmod +x find_requires.bootstrap.sh
 # XXX: use better way later to avoid LD_LIBRARY_PATH issue
 cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;' > find_requires
 chmod +x find_requires
+# (Anssi 03/2008) FIXME: use _requires_exceptions
 cat > find_requires.noprivate.sh << EOF
 %{_builddir}/%{source_dir}/find_requires %{buildroot} %{_target_cpu} | \
 	grep -v GLIBC_PRIVATE
