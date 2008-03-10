@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	9
+%define _glibcrelease	10
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -285,6 +285,8 @@ Patch57:	glibc-2.7-bz5439.patch
 Patch58:	glibc-2.7-bz5441.patch
 Patch59:	glibc-2.7-bz5465.patch
 Patch60:	glibc-2.7-i486-memmove-with-fortify-fix.patch
+Patch61:	glibc-2.7-update-cacheinfo-intel-tolapai.patch
+Patch62:	glibc-2.7-bz5541.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -546,6 +548,8 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch58 -p1 -b .bz5441
 %patch59 -p1 -b .bz5465
 %patch60 -p1 -b .i486-memmove-with-fortify-fix
+%patch61 -p1 -b .update-cacheinfo-intel-tolapai
+%patch62 -p1 -b .bz5541
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
