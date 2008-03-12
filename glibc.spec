@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	10
+%define _glibcrelease	11
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -255,6 +255,8 @@ Patch14:	glibc-2.3.2-config-amd64-alias.patch
 Patch15:	glibc-2.2.5-nscd-no-host-cache.patch
 Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
+Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
+Patch19:	glibc-2.7-workaround-gcc-4.2-ffloat-store.patch
 Patch20:	glibc-2.3.4-nscd-fixes.patch
 Patch21:	glibc-2.6-nscd_HUP.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
@@ -517,6 +519,8 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch15 -p1 -b .nscd-no-host-cache
 %patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
+%patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
+%patch19 -p1 -b .workaround-gcc-4.2-ffloat-store
 %patch20 -p1 -b .nscd-fixes
 %patch21 -p1 -b .nscd_HUP
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
@@ -796,7 +800,7 @@ function BuildGlibc() {
   # All tests are expected to pass on certain platforms, depending also
   # on the version of the kernel running
   case $arch in
-  athlon | x86_64 | ia64 | ppc | ppc64)
+  i[3456]86 | athlon | x86_64 | ia64 | ppc | ppc64)
     if [ "`CompareKver %{check_min_kver}`" -lt 0 ]; then
       check_flags=""
     else
