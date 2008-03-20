@@ -4,7 +4,7 @@
 # <version>-<release> tags for glibc main package
 %define glibccvsversion	2.4.90
 %define glibcversion	2.7
-%define _glibcrelease	11
+%define _glibcrelease	12
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -300,7 +300,7 @@ Conflicts:	kernel < %{enablekernel}
 
 # People changed location of rpm scripts...
 %if %{mdkversion} >= 200600
-%define rpmscripts	/usr/lib/rpm/mandriva
+%define rpmscripts	/usr/lib/rpm/%{_real_vendor}
 %else
 %define rpmscripts	/usr/lib/rpm
 %endif
