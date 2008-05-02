@@ -28,6 +28,9 @@
 %define source_dir	glibc-%{glibccvsversion}
 %endif
 
+# crypt blowfish support
+%define crypt_bf_ver	1.0.2
+
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
 %define build_cross		0
@@ -163,6 +166,11 @@ Source14:	glibc-post-wrapper.c
 %endif
 Source15:	glibc-powerpc-cpu-addon-v0.03.tar.bz2
 
+# Blowfish support
+Source16:	crypt_blowfish-%{crypt_bf_ver}.tar.gz
+Source17:	crypt_freesec.c
+Source18:	crypt_freesec.h
+
 Buildroot:	%{_tmppath}/glibc-%{PACKAGE_VERSION}-root
 %if %{build_cross}
 Autoreq:	false
@@ -170,6 +178,7 @@ Autoprov:	false
 %else
 Obsoletes:	zoneinfo, libc-static, libc-devel, libc-profile, libc-headers,
 Obsoletes: 	linuxthreads, gencat, locale, glibc-localedata
+Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
 %if %isarch %{xenarches}
@@ -274,6 +283,10 @@ Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
 Patch35:	glibc-2.7-mtrace-perl-5.10.0.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
+Patch39:	glibc-2.7-mdv-owl-crypt_freesec.patch
+Patch40:	glibc-2.3.5-avx-relocate_fcrypt.patch
+Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
+Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
 
 # Additional patches from glibc cvs
 Patch50:	glibc-2.7-memcpy_chk_i586.patch
@@ -363,6 +376,7 @@ Autoprov:	false
 %else
 Autoreq:	true
 %endif
+Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 
 %description devel
 The glibc-devel package contains the header and object files necessary
@@ -494,7 +508,7 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a 3 -a 2 -a 15
+%setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
 %if %{RELEASE}
 tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
@@ -554,6 +568,20 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch60 -p1 -b .i486-memmove-with-fortify-fix
 %patch61 -p1 -b .update-cacheinfo-intel-tolapai
 %patch62 -p1 -b .bz5541
+
+# copy freesec source
+cp %{_sourcedir}/crypt_freesec.[ch] crypt/
+echo "Applying crypt_blowfish patch:"
+%patch42 -p1
+#patch -p1 -s < crypt_blowfish-%{crypt_bf_ver}/glibc-2.3.2-crypt.diff
+mv crypt/crypt.h crypt/gnu-crypt.h
+cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
+
+## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
+%patch39 -p1
+%patch40 -p1
+%patch41 -p1
+
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
@@ -864,6 +892,8 @@ case %{target_cpu} in
     ;;
 esac
 
+make -C crypt_blowfish-%{crypt_bf_ver} man
+
 %if %{build_check}
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
@@ -1014,6 +1044,10 @@ mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 install -m 755 nscd/nscd.init $RPM_BUILD_ROOT%{_initrddir}/nscd
 %endif
 
+# These man pages require special attention
+mkdir -p %{buildroot}%{_mandir}/man3
+install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
+
 # Useless and takes place
 rm -rf %buildroot/%{_datadir}/zoneinfo/{posix,right}
 
@@ -1120,6 +1154,9 @@ mkdir documentation
 cp timezone/README documentation/README.timezone
 cp ChangeLog* documentation
 gzip -9 documentation/ChangeLog*
+mkdir documentation/crypt_blowfish-%{crypt_bf_ver}
+cp crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
+    documentation/crypt_blowfish-%{crypt_bf_ver}
 
 # Generate final rpm filelist, with localized libc.mo files
 rm -f rpm.filelist
@@ -1432,6 +1469,8 @@ fi
 %doc COPYING COPYING.LIB
 %doc documentation/* README.libm
 %doc hesiod/README.hesiod
+%doc crypt/README.ufc-crypt
+%{_mandir}/man3/*
 %{_libdir}/libbsd-compat.a
 %{_libdir}/libbsd.a
 %{_libdir}/libc_nonshared.a
