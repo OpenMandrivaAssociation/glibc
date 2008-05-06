@@ -287,6 +287,7 @@ Patch39:	glibc-2.7-mdv-owl-crypt_freesec.patch
 Patch40:	glibc-2.3.5-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
+Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 
 # Additional patches from glibc cvs
 Patch50:	glibc-2.7-memcpy_chk_i586.patch
@@ -581,6 +582,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch39 -p1
 %patch40 -p1
 %patch41 -p1
+# add sha256-crypt and sha512-crypt support to the Openwall wrapper
+%patch43 -p0 -b .vdanen
 
 
 %if %{build_selinux}
