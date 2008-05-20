@@ -2,9 +2,9 @@
 %define name		%{cross_prefix}glibc
 
 # <version>-<release> tags for glibc main package
-%define glibccvsversion	2.4.90
-%define glibcversion	2.7
-%define _glibcrelease	13
+%define glibccvsversion	2.8
+%define glibcversion	2.8
+%define _glibcrelease	1
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -18,12 +18,12 @@
 %define glibcepoch	6
 
 # CVS snapshots of glibc
-%define RELEASE		1
+%define RELEASE		0
 %if %{RELEASE}
 %define source_package	glibc-%{glibcversion}
 %define source_dir	glibc-%{glibcversion}
 %else
-%define snapshot	20060510
+%define snapshot	20080520
 %define source_package	glibc-%{glibccvsversion}-%{snapshot}
 %define source_dir	glibc-%{glibccvsversion}
 %endif
@@ -137,7 +137,9 @@ Url:		http://www.gnu.org/software/libc/
 
 # FSF source
 Source0:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2
+%if %{RELEASE}
 Source1:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2.sig
+%endif
 
 # Red Hat tarball
 Source2:	glibc-redhat.tar.bz2
@@ -266,8 +268,7 @@ Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.7-workaround-gcc-4.2-ffloat-store.patch
-Patch20:	glibc-2.3.4-nscd-fixes.patch
-Patch21:	glibc-2.6-nscd_HUP.patch
+Patch20:	glibc-nscd_fixes.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
@@ -281,28 +282,12 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch35:	glibc-2.7-mtrace-perl-5.10.0.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.7-mdv-owl-crypt_freesec.patch
 Patch40:	glibc-2.3.5-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
-
-# Additional patches from glibc cvs
-Patch50:	glibc-2.7-memcpy_chk_i586.patch
-Patch51:	glibc-2.7-manual_update.patch
-Patch52:	glibc-2.7-bz5222.patch
-Patch53:	glibc-2.7-bz5600.patch
-Patch54:	glibc-2.7-fix-tzh_version-check.patch
-Patch55:	glibc-2.7-x86_64-memset-add-missing-sfence.patch
-Patch56:	glibc-2.7-bz5346.patch
-Patch57:	glibc-2.7-bz5439.patch
-Patch58:	glibc-2.7-bz5441.patch
-Patch59:	glibc-2.7-bz5465.patch
-Patch60:	glibc-2.7-i486-memmove-with-fortify-fix.patch
-Patch61:	glibc-2.7-update-cacheinfo-intel-tolapai.patch
-Patch62:	glibc-2.7-bz5541.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -537,13 +522,13 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .workaround-gcc-4.2-ffloat-store
 %patch20 -p1 -b .nscd-fixes
-%patch21 -p1 -b .nscd_HUP
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
 %patch25 -p1 -b .run-test-program-prefix
 %patch26 -p1 -b .nice-fix
-%patch27 -p1 -b .ENOTTY-fr-translation
+# TODO: rediff this, verify with someone that knows french
+#patch27 -p1 -b .ENOTTY-fr-translation
 %if %{mdkversion} >= 200600
 %patch28 -p1 -b .gcc4-fortify
 %endif
@@ -553,22 +538,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch35 -p1 -b .mtrace-perl-5.10.0
 %patch38 -p1 -b .testsuite-rt-notparallel
-
-%patch50 -p1 -b .memcpy_chk_i586
-%patch51 -p0 -b .manual_update
-%patch52 -p1 -b .bz5222
-%patch53 -p1 -b .bz5600
-%patch54 -p1 -b .fix-tzh_version-check
-%patch55 -p1 -b .x86_64-memset-add-missing-sfence
-%patch56 -p1 -b .bz5346
-%patch57 -p1 -b .bz5439
-%patch58 -p1 -b .bz5441
-%patch59 -p1 -b .bz5465
-%patch60 -p1 -b .i486-memmove-with-fortify-fix
-%patch61 -p1 -b .update-cacheinfo-intel-tolapai
-%patch62 -p1 -b .bz5541
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
