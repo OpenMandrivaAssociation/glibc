@@ -274,7 +274,7 @@ Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
 Patch25:	glibc-2.3.4-run-test-program-prefix.patch
 Patch26:	glibc-2.6-nice_fix.patch
-Patch27:	glibc-2.3.6-ENOTTY-fr-translation.patch
+Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
 Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
 Patch30:	glibc-2.6-multiarch.patch
@@ -527,8 +527,7 @@ cp %{_sourcedir}/README.upgrade.urpmi .
 %patch24 -p1 -b .biarch-cpp-defines
 %patch25 -p1 -b .run-test-program-prefix
 %patch26 -p1 -b .nice-fix
-# TODO: rediff this, verify with someone that knows french
-#patch27 -p1 -b .ENOTTY-fr-translation
+%patch27 -p1 -b .ENOTTY-fr-translation
 %if %{mdkversion} >= 200600
 %patch28 -p1 -b .gcc4-fortify
 %endif
@@ -554,7 +553,6 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch41 -p1
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
 %patch43 -p0 -b .vdanen
-
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
