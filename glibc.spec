@@ -153,9 +153,6 @@ Source6:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2
 Source7:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2.sig
 %endif
 
-# Warning message about glibc updates
-Source13:	README.upgrade.urpmi
-
 # wrapper to avoid rpm circular dependencies
 Source14:	glibc-post-wrapper.c
 
@@ -499,8 +496,6 @@ GNU C library in PDF format.
 tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
 %endif
-
-cp %{_sourcedir}/README.upgrade.urpmi .
 
 %patch1 -p1 -b .fhs
 %patch2 -p1 -b .ldd-non-exec
@@ -1345,7 +1340,6 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
-%doc README.upgrade.urpmi
 %doc posix/gai.conf
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
