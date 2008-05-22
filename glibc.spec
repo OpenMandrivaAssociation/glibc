@@ -23,12 +23,7 @@
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
-%if %{mdkversion} >= 200700
-# XXX core_mkrel
 %define glibcrelease	%mkrel %{_glibcrelease}
-%else
-%define glibcrelease	%{_glibcrelease}mdk
-%endif
 %endif
 
 # crypt blowfish support
@@ -58,11 +53,7 @@
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
 
 # Define Xen arches to build with -mno-tls-direct-direct-seg-refs
-%if %{mdkversion} >= 200600
 %define xenarches	%{ix86} x86_64
-%else
-%define xenarches	noarch
-%endif
 
 # Define to build nscd with selinux support
 %define build_selinux	0
@@ -87,9 +78,7 @@
 
 # Define to build glibc-debug package
 %define build_debug	1
-%if %{mdkversion} >= 920
 %define _enable_debug_packages 1
-%endif
 %if "%{_enable_debug_packages}" == "1"
 %define build_debug	0
 %endif
@@ -218,9 +207,7 @@ BuildRequires:	%{cross_prefix}gcc >= 3.2.3-1mdk
 %ifarch x86_64
 BuildRequires:	%{cross_prefix}gcc >= 3.1.1-0.5mdk
 %endif
-%if %{mdkversion} >= 200600
 BuildRequires:	%{cross_prefix}gcc >= 4.0.1-2mdk
-%endif
 %if !%{build_cross}
 %ifarch alpha
 Provides:	ld.so.2
@@ -298,11 +285,7 @@ Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Conflicts:	kernel < %{enablekernel}
 
 # People changed location of rpm scripts...
-%if %{mdkversion} >= 200600
 %define rpmscripts	/usr/lib/rpm/%{_real_vendor}
-%else
-%define rpmscripts	/usr/lib/rpm
-%endif
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
 %define __find_provides	%{_builddir}/%{source_dir}/find_provides.sh
@@ -352,10 +335,8 @@ Requires:	kernel-headers
 %if !%isarch ppc
 Conflicts:	%{cross_prefix}gcc < 2.96-0.50mdk
 %endif
-%if %{mdkversion} >= 200600
 # needs a gcc4 fortify capable compiler
 Conflicts:	gcc4.0 < 4.0.1-2mdk
-%endif
 %if %{build_cross}
 Autoreq:	false
 Autoprov:	false
@@ -526,9 +507,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch25 -p1 -b .run-test-program-prefix
 %patch26 -p1 -b .nice-fix
 %patch27 -p1 -b .ENOTTY-fr-translation
-%if %{mdkversion} >= 200600
 %patch28 -p1 -b .gcc4-fortify
-%endif
 %patch29 -p1 -b .biarch-utils
 %patch30 -p1 -b .multiarch-check
 %patch31 -p1 -b .i586-hptiming
