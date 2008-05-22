@@ -1,10 +1,25 @@
 # RH 2.2.4-20, SuSE 2.3.1-32
 %define name		%{cross_prefix}glibc
 
-# <version>-<release> tags for glibc main package
+# <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.8
 %define glibcversion	2.8
-%define _glibcrelease	1
+%define __glibcrelease	2
+%define glibcepoch	6
+
+# CVS snapshots of glibc
+%define RELEASE		0
+%if %{RELEASE}
+%define source_package	glibc-%{glibcversion}
+%define source_dir	glibc-%{glibcversion}
+%define _glibcrelease	%{__glibcrelease}
+%else
+%define snapshot	20080520
+%define source_package	glibc-%{glibccvsversion}-%{snapshot}
+%define source_dir	glibc-%{glibccvsversion}
+%define _glibcrelease	1.%{snapshot}.%{__glibcrelease}
+%endif
+
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
 %define glibcrelease	%manbo_mkrel %{_glibcrelease}
 %else
@@ -14,18 +29,6 @@
 %else
 %define glibcrelease	%{_glibcrelease}mdk
 %endif
-%endif
-%define glibcepoch	6
-
-# CVS snapshots of glibc
-%define RELEASE		0
-%if %{RELEASE}
-%define source_package	glibc-%{glibcversion}
-%define source_dir	glibc-%{glibcversion}
-%else
-%define snapshot	20080520
-%define source_package	glibc-%{glibccvsversion}-%{snapshot}
-%define source_dir	glibc-%{glibccvsversion}
 %endif
 
 # crypt blowfish support
