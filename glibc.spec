@@ -243,7 +243,6 @@ Patch4:		glibc-2.2-nss-upgrade.patch
 Patch5:		glibc-2.2.5-ldconfig-exit-during-install.patch
 Patch6:		glibc-2.2.5-share-locale.patch
 Patch7:		glibc-2.3.6-nsswitch.conf.patch
-Patch8:		glibc-2.7-test-ldouble-gcc-4.2.patch
 Patch9:		glibc-2.2.4-xterm-xvt.patch
 Patch10:	glibc-2.2.4-hack-includes.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
@@ -254,7 +253,6 @@ Patch15:	glibc-2.2.5-nscd-no-host-cache.patch
 Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
-Patch19:	glibc-2.7-workaround-gcc-4.2-ffloat-store.patch
 Patch20:	glibc-nscd_fixes.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
@@ -488,7 +486,6 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch5 -p1 -b .ldconfig-exit-during-install
 %patch6 -p1 -b .share-locale
 %patch7 -p1 -b .nsswitch.conf
-%patch8 -p1 -b .test-ldouble-gcc-4.2
 %patch9 -p1 -b .xterm-xvt
 %patch10 -p1 -b .hack-includes
 %patch11 -p1 -b .compat-EUR-currencies
@@ -499,7 +496,6 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
-%patch19 -p1 -b .workaround-gcc-4.2-ffloat-store
 %patch20 -p1 -b .nscd-fixes
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
