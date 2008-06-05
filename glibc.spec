@@ -240,7 +240,6 @@ Patch1:		glibc-2.2.2-fhs.patch
 Patch2:		glibc-2.3.4-ldd-non-exec.patch
 Patch3:		glibc-2.1.95-string2-pointer-arith.patch
 Patch4:		glibc-2.2-nss-upgrade.patch
-Patch5:		glibc-2.2.5-ldconfig-exit-during-install.patch
 Patch6:		glibc-2.2.5-share-locale.patch
 Patch7:		glibc-2.3.6-nsswitch.conf.patch
 Patch9:		glibc-2.2.4-xterm-xvt.patch
@@ -486,7 +485,6 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch2 -p1 -b .ldd-non-exec
 %patch3 -p1 -b .string2-pointer-arith
 %patch4 -p1 -b .nss-upgrade
-%patch5 -p1 -b .ldconfig-exit-during-install
 %patch6 -p1 -b .share-locale
 %patch7 -p1 -b .nsswitch.conf
 %patch9 -p1 -b .xterm-xvt
@@ -1012,6 +1010,18 @@ mkdir -p  $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf.d
 mkdir -p $RPM_BUILD_ROOT%{_var}/cache/ldconfig
 touch $RPM_BUILD_ROOT%{_var}/cache/ldconfig/aux-cache
 
+# automatic ldconfig cache update on rpm installs/removals
+# (see http://wiki.mandriva.com/en/Rpm_filetriggers)
+install -d %buildroot%{_var}/lib/rpm/filetriggers
+cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
+^.(/lib|/usr/lib)/[^/]*\.so\.
+EOF
+cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
+#!/bin/sh
+ldconfig -X
+EOF
+chmod 755 %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script
+
 # Include %{_libdir}/gconv/gconv-modules.cache
 > $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 chmod 644 $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
@@ -1407,6 +1417,7 @@ fi
 %ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
+%{_var}/lib/rpm/filetriggers/ldconfig.*
 %endif
 
 #
