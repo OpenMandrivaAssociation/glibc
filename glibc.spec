@@ -1241,7 +1241,9 @@ fi
 # always generate the gconv-modules.cache
 %{_sbindir}/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv
 
+%if %mdkversion < 200900
 %postun -p /sbin/ldconfig
+%endif
 %endif
 
 %pre devel
@@ -1295,8 +1297,12 @@ exit 0
 %endif
 
 %if %{build_utils}
+%if %mdkversion < 200900
 %post utils -p /sbin/ldconfig
+%endif
+%if %mdkversion < 200900
 %postun utils -p /sbin/ldconfig
+%endif
 %endif
 
 %if %{build_nscd}
