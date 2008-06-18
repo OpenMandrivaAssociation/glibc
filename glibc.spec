@@ -439,6 +439,7 @@ can be helpful during program debugging.
 
 If unsure if you need this, don't install this package.
 
+%if %{build_i18ndata}
 %package i18ndata
 Summary:	Database sources for 'locale'
 Group:		System/Libraries
@@ -446,7 +447,9 @@ Group:		System/Libraries
 %description i18ndata
 This package contains the data needed to build the locale data files
 to use the internationalization features of the GNU libc.
+%endif
 
+%if %{build_timezone}
 %package -n timezone
 Summary:	Time zone descriptions
 Group:		System/Base
@@ -455,6 +458,7 @@ Conflicts:	glibc < 2.2.5-6mdk
 %description -n timezone
 These are configuration files that describe possible
 time zones.
+%endif
 
 %package doc
 Summary:	GNU C library documentation
