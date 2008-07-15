@@ -1016,7 +1016,7 @@ touch $RPM_BUILD_ROOT%{_var}/cache/ldconfig/aux-cache
 # (see http://wiki.mandriva.com/en/Rpm_filetriggers)
 install -d %buildroot%{_var}/lib/rpm/filetriggers
 cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
-^.(/lib|/usr/lib)/[^/]*\.so\.
+^.(/lib|/usr/lib)(64)?/[^/]*\.so\.
 EOF
 cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
 #!/bin/sh
