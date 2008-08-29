@@ -1202,7 +1202,8 @@ if [ "$1" -gt 1 ]; then
   ldso_conf=/etc/ld.so.conf
   while read i; do
     [ "$i" = "include /etc/ld.so.conf.d/*.conf" ] && keep=1
-    echo $i
+    # Remove previously used include line without absolute path
+    [ "$i" = "include ld.so.conf.d/*.conf" ] || echo $i
   done < $ldso_conf > $ldso_conf-
   if [ -z "$keep" ]; then
     echo "include /etc/ld.so.conf.d/*.conf" > $ldso_conf
