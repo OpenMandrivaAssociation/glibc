@@ -4,7 +4,7 @@
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.8
 %define glibcversion	2.8
-%define __glibcrelease	4
+%define __glibcrelease	5
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -1003,7 +1003,7 @@ rm -rf %buildroot/%{_datadir}/zoneinfo/{posix,right}
 
 # Include ld.so.conf
 %if "%{name}" == "glibc"
-echo "include ld.so.conf.d/*.conf" > $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
+echo "include /etc/ld.so.conf.d/*.conf" > $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
 chmod 644 $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
 mkdir -p  $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf.d
 %endif
@@ -1201,11 +1201,11 @@ if [ "$1" -gt 1 ]; then
   # without external commands but for removing the temporary file
   ldso_conf=/etc/ld.so.conf
   while read i; do
-    [ "$i" = "include ld.so.conf.d/*.conf" ] && keep=1
+    [ "$i" = "include /etc/ld.so.conf.d/*.conf" ] && keep=1
     echo $i
   done < $ldso_conf > $ldso_conf-
   if [ -z "$keep" ]; then
-    echo "include ld.so.conf.d/*.conf" > $ldso_conf
+    echo "include /etc/ld.so.conf.d/*.conf" > $ldso_conf
     while read i; do
       echo $i
     done < $ldso_conf- >> $ldso_conf
