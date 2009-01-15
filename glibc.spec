@@ -2,9 +2,9 @@
 %define name		%{cross_prefix}glibc
 
 # <epoch>:<version>-<release> tags for glibc main package
-%define glibccvsversion	2.8
-%define glibcversion	2.8
-%define __glibcrelease	5
+%define glibccvsversion	2.9
+%define glibcversion	2.9
+%define __glibcrelease	1
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -14,7 +14,7 @@
 %define source_dir	glibc-%{glibcversion}
 %define _glibcrelease	%{__glibcrelease}
 %else
-%define snapshot	20080520
+%define snapshot	20081113
 %define source_package	glibc-%{glibccvsversion}-%{snapshot}
 %define source_dir	glibc-%{glibccvsversion}
 %define _glibcrelease	1.%{snapshot}.%{__glibcrelease}
@@ -236,24 +236,21 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 
-Patch1:		glibc-2.2.2-fhs.patch
-Patch2:		glibc-2.3.4-ldd-non-exec.patch
-Patch3:		glibc-2.1.95-string2-pointer-arith.patch
-Patch4:		glibc-2.2-nss-upgrade.patch
-Patch6:		glibc-2.2.5-share-locale.patch
-Patch7:		glibc-2.3.6-nsswitch.conf.patch
-Patch9:		glibc-2.2.4-xterm-xvt.patch
+Patch01:	glibc-2.2.2-fhs.patch
+Patch02:	glibc-2.9-ldd-non-exec.patch
+Patch04:	glibc-2.2-nss-upgrade.patch
+Patch06:	glibc-2.9-share-locale.patch
+Patch07:	glibc-2.3.6-nsswitch.conf.patch
+Patch09:	glibc-2.2.4-xterm-xvt.patch
 Patch10:	glibc-2.2.4-hack-includes.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
-Patch14:	glibc-2.3.2-config-amd64-alias.patch
-Patch15:	glibc-2.2.5-nscd-no-host-cache.patch
+Patch14:	glibc-2.9-nscd-no-host-cache.patch
 Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
-Patch20:	glibc-nscd_fixes.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
@@ -267,10 +264,11 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch35:	glibc-2.8-tst-iconv-fixes.patch
+Patch36:	glibc-2.9-dns-no-gethostbyname4.patch
+Patch37:	glibc-2.9-fedora_upstream_fixes.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.7-mdv-owl-crypt_freesec.patch
-Patch40:	glibc-2.3.5-avx-relocate_fcrypt.patch
+Patch39:	glibc-2.9-mdv-owl-crypt_freesec.patch
+Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
@@ -484,28 +482,25 @@ tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
 %endif
 
-%patch1 -p1 -b .fhs
-%patch2 -p1 -b .ldd-non-exec
-%patch3 -p1 -b .string2-pointer-arith
-%patch4 -p1 -b .nss-upgrade
-%patch6 -p1 -b .share-locale
-%patch7 -p1 -b .nsswitch.conf
-%patch9 -p1 -b .xterm-xvt
+%patch01 -p1 -b .fhs
+%patch02 -p1 -b .ldd-non-exec
+%patch04 -p1 -b .nss-upgrade
+%patch06 -p1 -b .share-locale
+%patch07 -p1 -b .nsswitch.conf
+%patch09 -p1 -b .xterm-xvt
 %patch10 -p1 -b .hack-includes
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
-%patch14 -p1 -b .config-amd64-alias
-%patch15 -p1 -b .nscd-no-host-cache
+%patch14 -p1 -b .nscd-no-host-cache
 %patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
-%patch20 -p1 -b .nscd-fixes
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
-%patch25 -p1 -b .run-test-program-prefix
+#patch25 -p1 -b .run-test-program-prefix
 %patch26 -p1 -b .nice-fix
 %patch27 -p1 -b .ENOTTY-fr-translation
 %patch28 -p1 -b .gcc4-fortify
@@ -515,23 +510,24 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch35 -p1 -b .tst-iconv-fixes
+%patch36 -p1 -b .dns-no-gethostbyname4
+%patch37 -p1 -b .fedora_upstream_fixes
 %patch38 -p1 -b .testsuite-rt-notparallel
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
 echo "Applying crypt_blowfish patch:"
-%patch42 -p1
+%patch42 -p1 -b .mdv-avx-owl-crypt
 #patch -p1 -s < crypt_blowfish-%{crypt_bf_ver}/glibc-2.3.2-crypt.diff
 mv crypt/crypt.h crypt/gnu-crypt.h
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
-%patch39 -p1
-%patch40 -p1
-%patch41 -p1
+%patch39 -p1 -b .mdv-owl-crypt_freesec
+%patch40 -p1 -b .avx-relocate_fcrypt
+%patch41 -p1 -b .avx-increase_BF_FRAME
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch43 -p0 -b .vdanen
+%patch43 -p0 -b .mdv-wrapper_handle_sha
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
