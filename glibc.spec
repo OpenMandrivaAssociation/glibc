@@ -242,19 +242,16 @@ Patch04:	glibc-2.2-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
-Patch10:	glibc-2.2.4-hack-includes.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
 Patch14:	glibc-2.9-nscd-no-host-cache.patch
-Patch16:	glibc-2.3.1-quota.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
-Patch25:	glibc-2.3.4-run-test-program-prefix.patch
 Patch26:	glibc-2.6-nice_fix.patch
 Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
 Patch28:	glibc-2.4.90-gcc4-fortify.patch
@@ -272,6 +269,7 @@ Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
+Patch44:	glibc-2.9-dup2_avoid_access_through_PLT.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -488,19 +486,16 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
-%patch10 -p1 -b .hack-includes
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
 %patch14 -p1 -b .nscd-no-host-cache
-%patch16 -p1 -b .quota
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
-#patch25 -p1 -b .run-test-program-prefix
 %patch26 -p1 -b .nice-fix
 %patch27 -p1 -b .ENOTTY-fr-translation
 %patch28 -p1 -b .gcc4-fortify
@@ -513,6 +508,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch36 -p1 -b .dns-no-gethostbyname4
 %patch37 -p1 -b .fedora_upstream_fixes
 %patch38 -p1 -b .testsuite-rt-notparallel
+%patch44 -p1 -b .dup2_avoid_access_through_PLT
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
