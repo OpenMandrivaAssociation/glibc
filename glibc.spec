@@ -17,7 +17,7 @@
 %define snapshot	20081113
 %define source_package	glibc-%{glibccvsversion}-%{snapshot}
 %define source_dir	glibc-%{glibccvsversion}
-%define _glibcrelease	1.%{snapshot}.%{__glibcrelease}
+%define _glibcrelease	0.%{snapshot}.%{__glibcrelease}
 %endif
 
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
