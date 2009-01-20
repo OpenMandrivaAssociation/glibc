@@ -510,6 +510,10 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dup2_avoid_access_through_PLT
 
+# avoid backup file created with patch glibc-2.9-fedora_upstream_fixes.patch to
+# end up in glibc-i18ndata package
+rm -f localedata/locales/hne_IN.fedora_upstream_fixes
+
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
 echo "Applying crypt_blowfish patch:"
