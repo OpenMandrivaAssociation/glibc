@@ -4,7 +4,7 @@
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.9
 %define glibcversion	2.9
-%define __glibcrelease	1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -270,6 +270,16 @@ Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch44:	glibc-2.9-dup2_avoid_access_through_PLT.patch
+Patch45:	glibc-2.9-bz7067.patch
+Patch46:	glibc-2.9-bz6545.patch
+Patch47:	glibc-2.9-bz9694.patch
+Patch48:	glibc-2.9-_nss_dns_gethostbyaddr2_r-buffer-aligment.patch
+Patch49:	glibc-2.9-expm1-error.patch
+Patch50:	glibc-2.9-bug-hsearch1.patch
+Patch51:	glibc-2.9-bz9741.patch
+Patch52:	glibc-2.9-bz9750.patch
+Patch53:	glibc-2.9-SHM_EXEC.patch
+Patch54:	glibc-2.9-bz7040.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -509,6 +519,16 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch37 -p1 -b .fedora_upstream_fixes
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dup2_avoid_access_through_PLT
+%patch45 -p1 -b .bz7067
+%patch46 -p1 -b .bz6545
+%patch47 -p1 -b .bz9694
+%patch48 -p1 -b ._nss_dns_gethostbyaddr2_r-buffer-aligment
+%patch49 -p1 -b .expm1-error
+%patch50 -p1 -b .bug-hsearch1
+%patch51 -p1 -b .bz9741
+%patch52 -p1 -b .bz9750
+%patch53 -p1 -b .SHM_EXEC
+%patch54 -p1 -b .bz7040
 
 # avoid backup file created with patch glibc-2.9-fedora_upstream_fixes.patch to
 # end up in glibc-i18ndata package
