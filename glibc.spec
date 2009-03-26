@@ -4,7 +4,7 @@
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.9
 %define glibcversion	2.9
-%define __glibcrelease	2
+%define __glibcrelease	3
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -280,6 +280,8 @@ Patch51:	glibc-2.9-bz9741.patch
 Patch52:	glibc-2.9-bz9750.patch
 Patch53:	glibc-2.9-SHM_EXEC.patch
 Patch54:	glibc-2.9-bz7040.patch
+Patch55:	glibc-2.9-bz7056.patch
+Patch56:	glibc-2.9-newer-link-scripts-insert-_begin.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -529,6 +531,8 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch52 -p1 -b .bz9750
 %patch53 -p1 -b .SHM_EXEC
 %patch54 -p1 -b .bz7040
+%patch55 -p1 -b .bz7056
+%patch56 -p1 -b .newer-link-scripts-insert-_begin
 
 # avoid backup file created with patch glibc-2.9-fedora_upstream_fixes.patch to
 # end up in glibc-i18ndata package
