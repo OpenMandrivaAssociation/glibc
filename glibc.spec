@@ -4,7 +4,7 @@
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.9
 %define glibcversion	2.9
-%define __glibcrelease	3
+%define __glibcrelease	4
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -226,6 +226,8 @@ Conflicts:	%{name}-devel < 2.2.3
 Conflicts:	initscripts < 6.91-18mdk
 # Ease Conectiva upgrades
 Conflicts:	%{name}-base <= 2.3.4
+# https://qa.mandriva.com/show_bug.cgi?id=49589
+Conflicts:	findutils < 4.3.5
 
 BuildRequires:	texinfo
 %if %{build_pdf_doc}
