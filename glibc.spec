@@ -4,7 +4,7 @@
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibccvsversion	2.9
 %define glibcversion	2.9
-%define __glibcrelease	4
+%define __glibcrelease	5
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -240,6 +240,7 @@ BuildRequires:	autoconf2.5
 
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
+Patch03:	glibc-2.9-en_GB-first-week-work-day.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
@@ -496,6 +497,7 @@ mv glibc-libidn-%{glibcversion} libidn
 
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
+%patch03 -p1 -b .en_GB-first-week-work-day
 %patch04 -p1 -b .nss-upgrade
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
@@ -536,8 +538,9 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch55 -p1 -b .bz7056
 %patch56 -p1 -b .newer-link-scripts-insert-_begin
 
-# avoid backup file created with patch glibc-2.9-fedora_upstream_fixes.patch to
+# avoid backup file created with patches to localedata files to
 # end up in glibc-i18ndata package
+rm -f localedata/locales/en_GB.en_GB-first-week-work-day
 rm -f localedata/locales/hne_IN.fedora_upstream_fixes
 
 # copy freesec source
