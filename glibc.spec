@@ -2,21 +2,20 @@
 %define name		%{cross_prefix}glibc
 
 # <epoch>:<version>-<release> tags for glibc main package
-%define glibccvsversion	2.9
-%define glibcversion	2.9
-%define __glibcrelease	5
+%define glibcversion	2.10.1
+%define __glibcrelease	1
 %define glibcepoch	6
 
 # CVS snapshots of glibc
-%define RELEASE		0
+%define RELEASE		1
 %if %{RELEASE}
 %define source_package	glibc-%{glibcversion}
 %define source_dir	glibc-%{glibcversion}
 %define _glibcrelease	%{__glibcrelease}
 %else
 %define snapshot	20081113
-%define source_package	glibc-%{glibccvsversion}-%{snapshot}
-%define source_dir	glibc-%{glibccvsversion}
+%define source_package	glibc-%{glibcversion}-%{snapshot}
+%define source_dir	glibc-%{glibcversion}
 %define _glibcrelease	0.%{snapshot}.%{__glibcrelease}
 %endif
 
@@ -238,9 +237,9 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 
+Patch00:	glibc-2.10-branch.patch
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
-Patch03:	glibc-2.9-en_GB-first-week-work-day.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
@@ -254,37 +253,22 @@ Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
-Patch24:	glibc-2.4.90-biarch-cpp-defines.patch
+Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
 Patch26:	glibc-2.6-nice_fix.patch
 Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
 Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
-Patch30:	glibc-2.6-multiarch.patch
+Patch30:	glibc-2.10.1-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch36:	glibc-2.9-dns-no-gethostbyname4.patch
-Patch37:	glibc-2.9-fedora_upstream_fixes.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.9-mdv-owl-crypt_freesec.patch
+Patch39:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
 Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
-Patch42:	glibc-2.7-mdv-avx-owl-crypt.patch
+Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
-Patch44:	glibc-2.9-dup2_avoid_access_through_PLT.patch
-Patch45:	glibc-2.9-bz7067.patch
-Patch46:	glibc-2.9-bz6545.patch
-Patch47:	glibc-2.9-bz9694.patch
-Patch48:	glibc-2.9-_nss_dns_gethostbyaddr2_r-buffer-aligment.patch
-Patch49:	glibc-2.9-expm1-error.patch
-Patch50:	glibc-2.9-bug-hsearch1.patch
-Patch51:	glibc-2.9-bz9741.patch
-Patch52:	glibc-2.9-bz9750.patch
-Patch53:	glibc-2.9-SHM_EXEC.patch
-Patch54:	glibc-2.9-bz7040.patch
-Patch55:	glibc-2.9-bz7056.patch
-Patch56:	glibc-2.9-newer-link-scripts-insert-_begin.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -495,9 +479,9 @@ tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
 mv glibc-libidn-%{glibcversion} libidn
 %endif
 
+%patch00 -p1 -b .branch
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
-%patch03 -p1 -b .en_GB-first-week-work-day
 %patch04 -p1 -b .nss-upgrade
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
@@ -521,27 +505,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch36 -p1 -b .dns-no-gethostbyname4
-%patch37 -p1 -b .fedora_upstream_fixes
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch44 -p1 -b .dup2_avoid_access_through_PLT
-%patch45 -p1 -b .bz7067
-%patch46 -p1 -b .bz6545
-%patch47 -p1 -b .bz9694
-%patch48 -p1 -b ._nss_dns_gethostbyaddr2_r-buffer-aligment
-%patch49 -p1 -b .expm1-error
-%patch50 -p1 -b .bug-hsearch1
-%patch51 -p1 -b .bz9741
-%patch52 -p1 -b .bz9750
-%patch53 -p1 -b .SHM_EXEC
-%patch54 -p1 -b .bz7040
-%patch55 -p1 -b .bz7056
-%patch56 -p1 -b .newer-link-scripts-insert-_begin
-
-# avoid backup file created with patches to localedata files to
-# end up in glibc-i18ndata package
-rm -f localedata/locales/en_GB.en_GB-first-week-work-day
-rm -f localedata/locales/hne_IN.fedora_upstream_fixes
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
