@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.10.1
-%define __glibcrelease	1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -240,7 +240,9 @@ BuildRequires:	autoconf2.5
 Patch00:	glibc-2.10-branch.patch
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
+Patch03:	glibc-2.10.1-i386-futex-typo.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
+Patch05:	glibc-2.10.1-mdv51545.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
@@ -482,7 +484,9 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch00 -p1 -b .branch
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
+%patch03 -p1 -b .i386-futex-typo
 %patch04 -p1 -b .nss-upgrade
+%patch05 -p1 -b .mdv51545
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
@@ -760,7 +764,8 @@ function BuildGlibc() {
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns --without-cvs \
     $TlsFlags $ExtraFlags $SElinuxFlags \
-    --enable-kernel=%{enablekernel} --with-headers=$KernelHeaders ${1+"$@"}
+    --enable-kernel=%{enablekernel} \
+    --with-headers=$KernelHeaders ${1+"$@"}
   %make -r PARALLELMFLAGS=-s
   popd
 
