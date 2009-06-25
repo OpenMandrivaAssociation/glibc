@@ -236,6 +236,7 @@ BuildRequires:	tetex, tetex-latex
 BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
+BuildRequires:	spec-helper >= 0.30.5
 
 Patch00:	glibc-2.10-branch.patch
 Patch01:	glibc-2.2.2-fhs.patch
