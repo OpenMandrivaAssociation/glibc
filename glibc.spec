@@ -241,6 +241,7 @@ BuildRequires:	spec-helper >= 0.30.5
 Patch00:	glibc-2.10-branch.patch
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
+Patch03:	glibc-2.10.1-branch-revert-fix-permission-slave-dev-on-devpts.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch05:	glibc-2.10.1-mdv51545.patch
 Patch06:	glibc-2.9-share-locale.patch
@@ -484,6 +485,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch00 -p1 -b .branch
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
+%patch03 -p1 -b .branch-revert-fix-permission-slave-dev-on-devpts
 %patch04 -p1 -b .nss-upgrade
 %patch05 -p1 -b .mdv51545
 %patch06 -p1 -b .share-locale
