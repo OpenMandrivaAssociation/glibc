@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.10.1
-%define __glibcrelease	6
+%define __glibcrelease	7
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -246,6 +246,7 @@ Patch04:	glibc-2.2-nss-upgrade.patch
 Patch05:	glibc-2.10.1-mdv51545.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
+Patch08:	glibc-2.10.1-fix-preadv-pwritev-fallocate-__off_t.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
@@ -490,6 +491,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch05 -p1 -b .mdv51545
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
+%patch08 -p1 -b .fix-preadv-pwritev-fallocate-__off_t
 %patch09 -p1 -b .xterm-xvt
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
