@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.10.1
-%define __glibcrelease	7
+%define __glibcrelease	8
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -866,6 +866,7 @@ make install_root=$RPM_BUILD_ROOT install -C build-%{target_cpu}-linux
 	install_root=$RPM_BUILD_ROOT \
 	install-locales
 )
+install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT/%{_datadir}/i18n/
 %endif
 sh manpages/Script.sh
 
@@ -1592,6 +1593,7 @@ fi
 %{_datadir}/i18n/charmaps/*
 %dir %{_datadir}/i18n/locales
 %{_datadir}/i18n/locales/*
+%{_datadir}/i18n/SUPPORTED
 %endif
 
 
