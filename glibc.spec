@@ -2,8 +2,8 @@
 %define name		%{cross_prefix}glibc
 
 # <epoch>:<version>-<release> tags for glibc main package
-%define glibcversion	2.10.1
-%define __glibcrelease	8
+%define glibcversion	2.11
+%define __glibcrelease	0.1
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -127,9 +127,9 @@ Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
 # FSF source
-Source0:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2
+Source0:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.xz
 %if %{RELEASE}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.bz2.sig
+Source1:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.xz.sig
 %endif
 
 # Red Hat tarball
@@ -137,12 +137,6 @@ Source2:	glibc-redhat.tar.bz2
 Source3:	glibc-manpages.tar.bz2
 Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
-
-# If using official FSF release we must get also libidn
-%if %{RELEASE}
-Source6:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2
-Source7:	http://ftp.gnu.org/gnu/glibc/glibc-libidn-%{glibcversion}.tar.bz2.sig
-%endif
 
 # wrapper to avoid rpm circular dependencies
 Source14:	glibc-post-wrapper.c
@@ -238,10 +232,8 @@ BuildRequires:	gd-devel
 BuildRequires:	autoconf2.5
 BuildRequires:	spec-helper >= 0.30.5
 
-Patch00:	glibc-2.10-branch.patch
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
-Patch03:	glibc-2.10.1-branch-revert-fix-permission-slave-dev-on-devpts.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch05:	glibc-2.10.1-mdv51545.patch
 Patch06:	glibc-2.9-share-locale.patch
@@ -273,6 +265,7 @@ Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
+Patch44:	glibc-2.11-dont-tie-libcap-with-selinux.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -478,15 +471,9 @@ GNU C library in PDF format.
 
 %prep
 %setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
-%if %{RELEASE}
-tar -jxf %{_sourcedir}/glibc-libidn-%{glibcversion}.tar.bz2
-mv glibc-libidn-%{glibcversion} libidn
-%endif
 
-%patch00 -p1 -b .branch
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
-%patch03 -p1 -b .branch-revert-fix-permission-slave-dev-on-devpts
 %patch04 -p1 -b .nss-upgrade
 %patch05 -p1 -b .mdv51545
 %patch06 -p1 -b .share-locale
@@ -513,6 +500,7 @@ mv glibc-libidn-%{glibcversion} libidn
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
+%patch44 -p1 -b .dont-tie-libcap-with-selinux
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -889,7 +877,6 @@ make install_root=$RPM_BUILD_ROOT/$ALT_ARCH install -C build-$ALT_ARCH
 
 # Dispatch */lib only
 mv $RPM_BUILD_ROOT/$ALT_ARCH/lib $RPM_BUILD_ROOT/
-rm -f  $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/pt_chown
 mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/getconf/* $RPM_BUILD_ROOT%{_prefix}/lib/getconf/
 rmdir  $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/getconf
 mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/* $RPM_BUILD_ROOT%{_prefix}/lib/
@@ -980,10 +967,6 @@ ln -sf libbsd-compat.a $RPM_BUILD_ROOT%{_prefix}/lib/libbsd.a
 %if "%{name}" == "glibc"
 install -m 644 mandriva/nsswitch.conf $RPM_BUILD_ROOT%{_sysconfdir}/nsswitch.conf
 %endif
-
-# Take care of setuids
-# -- new security review sez that this shouldn't be needed anymore
-#chmod 755 $RPM_BUILD_ROOT%{_libdir}/pt_chown
 
 # This is for ncsd - in glibc 2.2
 %if %{build_nscd}
@@ -1128,7 +1111,6 @@ cat extralibs.filelist >> rpm.filelist
 
 # Remove unpackaged files
 rm -f  $RPM_BUILD_ROOT%{_infodir}/dir.old*
-rm -f  $RPM_BUILD_ROOT%{_prefix}/lib/pt_chown
 rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
 rm -f  $RPM_BUILD_ROOT%{_datadir}/locale/locale-archive*
 
@@ -1377,10 +1359,7 @@ fi
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-# Don't package pt_chown. It is only needed if devpts is not used. But
-# since we are running kernel 2.4+, that's fine without.
-# (and it never actually worked, aka was not setuid, nor executable)
-#%{_libdir}/pt_chown
+%attr(4755,root,root) %{_libdir}/pt_chown
 %{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
