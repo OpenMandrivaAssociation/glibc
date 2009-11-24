@@ -752,7 +752,7 @@ function BuildGlibc() {
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
     $arch-mandriva-linux-gnu $BuildCross \
     --prefix=%{_prefix} \
-    --libexecdir=%{_prefix}/lib \
+    --libexecdir=%{_libexecdir} \
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns --without-cvs \
     $TlsFlags $ExtraFlags $SElinuxFlags \
@@ -1360,7 +1360,7 @@ fi
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-%attr(4755,root,root) %{_libdir}/pt_chown
+%attr(4755,root,root) %{_libexecdir}/pt_chown
 %{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
