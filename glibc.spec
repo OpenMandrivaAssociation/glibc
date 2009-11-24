@@ -230,6 +230,7 @@ BuildRequires:	tetex, tetex-latex
 BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
+BuildRequires:	libcap-devel
 BuildRequires:	spec-helper >= 0.30.5
 
 Patch01:	glibc-2.2.2-fhs.patch
