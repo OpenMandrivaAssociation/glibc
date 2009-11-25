@@ -174,7 +174,7 @@ Provides: rtld(GNU_HASH)
 Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
-BuildRequires:	kernel-headers
+BuildRequires:	linux-userspace-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -322,7 +322,7 @@ Obsoletes:	%{name}-debug < 6:2.3.2-15mdk
 %endif
 Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
 %if !%{build_cross}
-Requires:	kernel-headers
+Requires:	linux-userspace-headers
 %endif
 %if !%isarch ppc
 Conflicts:	%{cross_prefix}gcc < 2.96-0.50mdk
