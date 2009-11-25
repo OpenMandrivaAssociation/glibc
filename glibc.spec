@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11
-%define __glibcrelease	0.1
+%define __glibcrelease	0.2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -696,9 +696,6 @@ function BuildGlibc() {
       BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
       ;;
   esac
-
-  # Disable fortify for glibc builds
-  BuildFlags="$BuildFlags -U_FORTIFY_SOURCE"
 
   # Arch specific compilation flags
   if [[ "$arch" = "ppc64" ]]; then
