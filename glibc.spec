@@ -752,7 +752,7 @@ function BuildGlibc() {
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
     $arch-mandriva-linux-gnu $BuildCross \
     --prefix=%{_prefix} \
-    --libexecdir=%{_libexecdir} \
+    --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns --without-cvs \
     $TlsFlags $ExtraFlags $SElinuxFlags \
@@ -878,8 +878,9 @@ make install_root=$RPM_BUILD_ROOT/$ALT_ARCH install -C build-$ALT_ARCH
 
 # Dispatch */lib only
 mv $RPM_BUILD_ROOT/$ALT_ARCH/lib $RPM_BUILD_ROOT/
-mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/getconf/* $RPM_BUILD_ROOT%{_prefix}/lib/getconf/
-rmdir  $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/getconf
+mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/libexec/getconf/* \
+       $RPM_BUILD_ROOT%{_prefix}/libexec/getconf/
+mkdir  $RPM_BUILD_ROOT%{_prefix}/lib
 mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/* $RPM_BUILD_ROOT%{_prefix}/lib/
 # We want 32-bit binaries on sparc64
 %if %isarch sparc64
@@ -1330,8 +1331,8 @@ fi
 %{_mandir}/man8/ld.so*
 %{_datadir}/locale/locale.alias
 /sbin/sln
-%dir %{_prefix}/lib/getconf
-%{_prefix}/lib/getconf/*
+%dir %{_prefix}/libexec/getconf
+%{_prefix}/libexec/getconf/*
 %endif
 %{_slibdir}/ld-%{glibcversion}.so
 %if %isarch i386 alpha sparc sparc64
@@ -1360,7 +1361,7 @@ fi
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-%attr(4755,root,root) %{_libexecdir}/pt_chown
+%attr(4755,root,root) %{_prefix}/libexec/pt_chown
 %{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
