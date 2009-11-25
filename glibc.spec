@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11
-%define __glibcrelease	0.2
+%define __glibcrelease	0.3
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -178,8 +178,9 @@ BuildRequires:	linux-userspace-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
-# we need suitable linker for -Wl,--hash-style=both
-%define binutils_version 2.16.91.0.7-%{mkrel 6}
+# need linker for -Wl,--hash-style=both (>= 2.16.91.0.7-%{mkrel 6})
+# need gnu indirect function for multiarch (>= 2.19.51.0.14-1mnb2)
+%define binutils_version 2.19.51.0.14-1mnb2
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
 # we need the static dash
 %define ash_bin		/bin/dash.static
@@ -670,6 +671,14 @@ function BuildGlibc() {
       ;;
   esac
 
+  # Choose multiarch support
+  MultiArchFlags=
+  case $arch in
+    i686 | x86_64)
+      MultiArchFlags="--enable-multi-arch"
+      ;;
+  esac
+
   # Determine C & C++ compilers
   BuildCC="%{__cc} $BuildCompFlags"
   BuildCXX="%{__cxx} $BuildCompFlags"
@@ -752,10 +761,10 @@ function BuildGlibc() {
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns --without-cvs \
-    $TlsFlags $ExtraFlags $SElinuxFlags \
+    $TlsFlags $ExtraFlags $MultiArchFlags $SElinuxFlags \
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"}
-  %make -r PARALLELMFLAGS=-s
+  %make -r
   popd
 
   # All tests are expected to pass on certain platforms, depending also
