@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11
-%define __glibcrelease	0.3
+%define __glibcrelease	0.4
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -237,7 +237,7 @@ BuildRequires:	spec-helper >= 0.30.5
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
-Patch05:	glibc-2.10.1-mdv51545.patch
+Patch05:	glibc-2.11-restore-locking-in-free_check.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch08:	glibc-2.10.1-fix-preadv-pwritev-fallocate-__off_t.patch
@@ -477,7 +477,7 @@ GNU C library in PDF format.
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
 %patch04 -p1 -b .nss-upgrade
-%patch05 -p1 -b .mdv51545
+%patch05 -p1 -b .restore-locking-in-free_check
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch08 -p1 -b .fix-preadv-pwritev-fallocate-__off_t
@@ -762,6 +762,7 @@ function BuildGlibc() {
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns --without-cvs \
     $TlsFlags $ExtraFlags $MultiArchFlags $SElinuxFlags \
+    --enable-experimental-malloc \
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"}
   %make -r
