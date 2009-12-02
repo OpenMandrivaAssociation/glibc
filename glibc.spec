@@ -222,6 +222,8 @@ Conflicts:	initscripts < 6.91-18mdk
 Conflicts:	%{name}-base <= 2.3.4
 # https://qa.mandriva.com/show_bug.cgi?id=49589
 Conflicts:	findutils < 4.3.5
+# Old prelink versions brakes the system with glibc 2.11
+Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 
 BuildRequires:	texinfo
 %if %{build_pdf_doc}
