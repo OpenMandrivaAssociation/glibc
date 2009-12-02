@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11
-%define __glibcrelease	0.4
+%define __glibcrelease	0.5
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -268,6 +268,26 @@ Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch44:	glibc-2.11-dont-tie-libcap-with-selinux.patch
+Patch45:	glibc-2.11-Properly-handle-STT_GNU_IFUNC-symbols-in-do_sym.patch
+Patch46:	glibc-2.11-Fix-spelling-in-memusagestat.c.patch
+Patch47:	glibc-2.11-Handle-running-out-of-buffer-space-with-IPv6-mapping.patch
+Patch48:	glibc-2.11-Fix-F_SETOWN_EX-and-F_GETOWN_EX-definitions.patch
+Patch49:	glibc-2.11-Add-missing-Linux-MADV_-definitions.patch
+Patch50:	glibc-2.11-Fixes-for-bz10968-bz10969.patch
+Patch51:	glibc-2.11-Fix-ranges-with-multibyte-characters-as-endpoints.patch
+Patch52:	glibc-2.11-Follow-kernel-F_OWNER_-GID-PGRP-change.patch
+Patch53:	glibc-2.11-Avoid-warnings-in-CPU_-macros-when-using-const-bitsets.patch
+Patch54:	glibc-2.11-Fix-getwc-and-putwc-on-non-wide-streams.patch
+Patch55:	glibc-2.11-Reinitialize-_create_xid-state-after-fork.patch
+Patch56:	glibc-2.11-Fix-week-information-for-nl_NL-locale.patch
+Patch57:	glibc-2.11-Try-harder-to-re-exec-nscd-in-paranoia-mode.patch
+Patch58:	glibc-2.11-Use-struct-timespec-for-timestamps-in-struct-stat-al.patch
+Patch59:	glibc-2.11-Define-week-first_weekday-and-first_workday-for-en_DK.patch
+Patch60:	glibc-2.11-Define-week-first_weekday-and-first_workday-for-hsb_DE.patch
+Patch61:	glibc-2.11-Fix-startup-to-security-relevant-static-binaries.patch
+Patch62:	glibc-2.11-Prevent-unintended-file-desriptor-leak-in-grantpt.patch
+Patch63:	glibc-2.11-Fix-infloop-in-__pthread_disable_asynccancel-on-x86_64.patch
+Patch64:	glibc-2.11-Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -503,6 +523,26 @@ GNU C library in PDF format.
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dont-tie-libcap-with-selinux
+%patch45 -p1 -b .Properly-handle-STT_GNU_IFUNC-symbols-in-do_sym
+%patch46 -p1 -b .Fix-spelling-in-memusagestat.c
+%patch47 -p1 -b .Handle-running-out-of-buffer-space-with-IPv6-mapping
+%patch48 -p1 -b .Fix-F_SETOWN_EX-and-F_GETOWN_EX-definitions
+%patch49 -p1 -b .Add-missing-Linux-MADV_-definitions
+%patch50 -p1 -b .Fixes-for-bz10968-bz10969
+%patch51 -p1 -b .Fix-ranges-with-multibyte-characters-as-endpoints
+%patch52 -p1 -b .Follow-kernel-F_OWNER_-GID-PGRP-change
+%patch53 -p1 -b .Avoid-warnings-in-CPU_-macros-when-using-const-bitsets
+%patch54 -p1 -b .Fix-getwc-and-putwc-on-non-wide-streams
+%patch55 -p1 -b .Reinitialize-_create_xid-state-after-fork
+%patch56 -p1 -b .Fix-week-information-for-nl_NL-locale
+%patch57 -p1 -b .Try-harder-to-re-exec-nscd-in-paranoia-mode
+%patch58 -p1 -b .Use-struct-timespec-for-timestamps-in-struct-stat-al
+%patch59 -p1 -b .Define-week-first_weekday-and-first_workday-for-en_DK
+%patch60 -p1 -b .Define-week-first_weekday-and-first_workday-for-hsb_DE
+%patch61 -p1 -b .Fix-startup-to-security-relevant-static-binaries
+%patch62 -p1 -b .Prevent-unintended-file-desriptor-leak-in-grantpt
+%patch63 -p1 -b .Fix-infloop-in-__pthread_disable_asynccancel-on-x86_64
+%patch64 -p1 -b .Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -558,6 +598,10 @@ ln -s find_requires.bootstrap.sh find_requires.sh
 %else
 ln -s find_requires.noprivate.sh find_requires.sh
 %endif
+
+# Remove patch backups from files we ship in glibc packages
+rm -f ChangeLog.[A-Za-z]*
+rm -f localedata/locales/{???_??,??_??}.*
 
 %build
 # Prepare test matrix in the next function
