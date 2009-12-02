@@ -236,6 +236,7 @@ BuildRequires:	spec-helper >= 0.30.5
 
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
+Patch03:	glibc-2.11-bz10851.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch05:	glibc-2.11-restore-locking-in-free_check.patch
 Patch06:	glibc-2.9-share-locale.patch
@@ -496,6 +497,7 @@ GNU C library in PDF format.
 
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
+%patch03 -p1 -b .bz10851
 %patch04 -p1 -b .nss-upgrade
 %patch05 -p1 -b .restore-locking-in-free_check
 %patch06 -p1 -b .share-locale
