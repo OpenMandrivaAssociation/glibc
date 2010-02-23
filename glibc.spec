@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11
-%define __glibcrelease	1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -291,6 +291,36 @@ Patch61:	glibc-2.11-Fix-startup-to-security-relevant-static-binaries.patch
 Patch62:	glibc-2.11-Prevent-unintended-file-desriptor-leak-in-grantpt.patch
 Patch63:	glibc-2.11-Fix-infloop-in-__pthread_disable_asynccancel-on-x86_64.patch
 Patch64:	glibc-2.11-Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux.patch
+Patch65:	glibc-2.11-Redefine-O_SYNC-and-O_DSYNC-to-match-2.6.33-kernels.patch
+Patch66:	glibc-2.11-Invalid-timeouts-in-i386-sem_timedwait.patch
+Patch67:	glibc-2.11-Avoid-ELF-lookup-race.patch
+Patch68:	glibc-2.11-Update-poll.h-header-for-POSIX-2008.patch
+Patch69:	glibc-2.11-check-fd-arg-in-futimens.patch
+Patch70:	glibc-2.11-Additional-setcontext-etc.-conformance-tests.patch
+Patch71:	glibc-2.11-Fix-typo-in-feature-selection-macro-use.patch
+Patch72:	glibc-2.11-Add-nonnull-attribute-to-unsetenv-declaration.patch
+Patch73:	glibc-2.11-Prevent-silent-errors-should-x86-64-strncmp-be-neede.patch
+Patch74:	glibc-2.11-Fix-malloc_info-without-prioor-allocations.patch
+Patch75:	glibc-2.11-Pass-sysdep-LDFLAGS-when-using-print-file-name.patch
+Patch76:	glibc-2.11-Make-unistd.h-pre-c-safe.patch
+Patch77:	glibc-2.11-regcomp.c-do-not-ignore-memory-allocation-failure.patch
+Patch78:	glibc-2.11-Always-use-IPv4-sockets-for-IPv4-addresses.patch
+Patch79:	glibc-2.11-Define-IPTOS_CLASS_-macros-according-to-RFC-2474.patch
+Patch80:	glibc-2.11-Fix-a-few-more-cases-of-ignored-return-values-in-reg.patch
+Patch81:	glibc-2.11-sysdeps-ieee754-ldbl-128-fixes.patch
+Patch82:	glibc-2.11-Ignore-negative-dynamic-entry-types.patch
+Patch83:	glibc-2.11-Use-correct-type-when-casting-d_tag.patch
+Patch84:	glibc-2.11-Remove-duplicate-definitions-of-O_DSYNC-and-O_RSYNC.patch
+Patch85:	glibc-2.11-Remove-unnecessary-returns.patch
+Patch86:	glibc-2.11-more-re-fixes.patch
+Patch87:	glibc-2.11-_nl_load_locale-incorrectly-handles-mmap-failures.patch
+Patch88:	glibc-2.11-Fix-error-checking-in-iconv.patch
+Patch89:	glibc-2.11-Don-t-map-U00DF-to-U1E9E-in-toupper-table.patch
+Patch90:	glibc-2.11-Avoid-alloca-in-setenv-for-long-strings.patch
+Patch91:	glibc-2.11-Fix-sorting-of-malayalam-letter-na.patch
+Patch92:	glibc-2.11-Fix-endless-loop-with-invalid-etc-shells-file.patch
+Patch93:	glibc-2.11-Update-constants-for-current-kernels.patch
+Patch94:	glibc-2.11-Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -547,6 +577,36 @@ GNU C library in PDF format.
 %patch62 -p1 -b .Prevent-unintended-file-desriptor-leak-in-grantpt
 %patch63 -p1 -b .Fix-infloop-in-__pthread_disable_asynccancel-on-x86_64
 %patch64 -p1 -b .Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux
+%patch65 -p1 -b .Redefine-O_SYNC-and-O_DSYNC-to-match-2.6.33-kernels
+%patch66 -p1 -b .Invalid-timeouts-in-i386-sem_timedwait
+%patch67 -p1 -b .Avoid-ELF-lookup-race
+%patch68 -p1 -b .Update-poll.h-header-for-POSIX-2008
+%patch69 -p1 -b .check-fd-arg-in-futimens
+%patch70 -p1 -b .Additional-setcontext-etc.-conformance-tests
+%patch71 -p1 -b .Fix-typo-in-feature-selection-macro-use
+%patch72 -p1 -b .Add-nonnull-attribute-to-unsetenv-declaration
+%patch73 -p1 -b .Prevent-silent-errors-should-x86-64-strncmp-be-neede
+%patch74 -p1 -b .Fix-malloc_info-without-prioor-allocations
+%patch75 -p1 -b .Pass-sysdep-LDFLAGS-when-using-print-file-name
+%patch76 -p1 -b .Make-unistd.h-pre-c-safe
+%patch77 -p1 -b .regcomp.c-do-not-ignore-memory-allocation-failure
+%patch78 -p1 -b .Always-use-IPv4-sockets-for-IPv4-addresses
+%patch79 -p1 -b .Define-IPTOS_CLASS_-macros-according-to-RFC-2474
+%patch80 -p1 -b .Fix-a-few-more-cases-of-ignored-return-values-in-reg
+%patch81 -p1 -b .sysdeps-ieee754-ldbl-128-fixes
+%patch82 -p1 -b .Ignore-negative-dynamic-entry-types
+%patch83 -p1 -b .Use-correct-type-when-casting-d_tag
+%patch84 -p1 -b .Remove-duplicate-definitions-of-O_DSYNC-and-O_RSYNC
+%patch85 -p1 -b .Remove-unnecessary-returns
+%patch86 -p1 -b .more-re-fixes
+%patch87 -p1 -b ._nl_load_locale-incorrectly-handles-mmap-failures
+%patch88 -p1 -b .Fix-error-checking-in-iconv
+%patch89 -p1 -b .Don-t-map-U00DF-to-U1E9E-in-toupper-table
+%patch90 -p1 -b .Avoid-alloca-in-setenv-for-long-strings
+%patch91 -p1 -b .Fix-sorting-of-malayalam-letter-na
+%patch92 -p1 -b .Fix-endless-loop-with-invalid-etc-shells-file
+%patch93 -p1 -b .Update-constants-for-current-kernels
+%patch94 -p1 -b .Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
