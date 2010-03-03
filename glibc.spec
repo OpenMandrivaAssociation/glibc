@@ -1147,11 +1147,13 @@ if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
 fi
 
 # Strip libpthread but keep some symbols
-find $RPM_BUILD_ROOT%{_slibdir} -type f -name "libpthread-*.so" | \
+find $RPM_BUILD_ROOT%{_slibdir} -type f -name "libpthread-*.so" \
+     -o -type f -name "libc-*.so" | \
      xargs $Strip -g -R .comment
 
 %if %{build_biarch}
-find $RPM_BUILD_ROOT/lib -type f -name "libpthread-*.so" | \
+find $RPM_BUILD_ROOT/lib -type f -name "libpthread-*.so" \
+     -o -type f -name "libc-*.so" | \
      xargs $Strip -g -R .comment
 %endif
 
@@ -1277,7 +1279,7 @@ export DONT_SYMLINK_LIBS=1
 export PATH=%{_bindir}:$PATH
 %endif
 
-EXCLUDE_FROM_STRIP="ld-%{glibcversion}.so libpthread $DEBUG_LIBS"
+EXCLUDE_FROM_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so $DEBUG_LIBS"
 export EXCLUDE_FROM_STRIP
 
 %if "%{name}" == "glibc"
