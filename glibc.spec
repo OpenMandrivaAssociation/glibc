@@ -234,7 +234,7 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
-BuildRequires:	spec-helper >= 0.30.5
+BuildRequires:	spec-helper >= 0.31.2 rpm-mandriva-setup-build >= 1.98
 
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
@@ -1133,11 +1133,6 @@ mkdir $RPM_BUILD_ROOT%{_libdir}/debug
 #rm -f $RPM_BUILD_ROOT%{_libdir}/debug/*_p.a
 cp -a $RPM_BUILD_ROOT%{_slibdir}/lib*.so* $RPM_BUILD_ROOT%{_libdir}/debug/
 
-pushd $RPM_BUILD_ROOT%{_libdir}/debug
-for lib in *.so*; do
-  [[ -f "$lib" ]] && DEBUG_LIBS="$DEBUG_LIBS %{_libdir}/debug/$lib"
-done
-popd
 %endif
 
 # Are we cross-compiling?
@@ -1145,17 +1140,6 @@ Strip="strip"
 if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
   Strip="%{target_cpu}-linux-$Strip"
 fi
-
-# Strip libpthread but keep some symbols
-find $RPM_BUILD_ROOT%{_slibdir} -type f -name "libpthread-*.so" \
-     -o -type f -name "libc-*.so" | \
-     xargs $Strip -g -R .comment
-
-%if %{build_biarch}
-find $RPM_BUILD_ROOT/lib -type f -name "libpthread-*.so" \
-     -o -type f -name "libc-*.so" | \
-     xargs $Strip -g -R .comment
-%endif
 
 # Strip debugging info from all static libraries
 pushd $RPM_BUILD_ROOT%{_libdir}
@@ -1278,9 +1262,6 @@ rm -rf $RPM_BUILD_ROOT%{_libdir}/gconv
 export DONT_SYMLINK_LIBS=1
 export PATH=%{_bindir}:$PATH
 %endif
-
-EXCLUDE_FROM_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so $DEBUG_LIBS"
-export EXCLUDE_FROM_STRIP
 
 %if "%{name}" == "glibc"
 %define upgradestamp %{_slibdir}/glibc.upgraded
