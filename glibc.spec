@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
