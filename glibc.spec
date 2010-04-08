@@ -237,6 +237,7 @@ BuildRequires:	libcap-devel
 BuildRequires:	rpm-mandriva-setup-build >= 1.98
 BuildRequires:	spec-helper >= 0.31.2
 
+Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
 Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
 Patch03:	glibc-2.11-bz10851.patch
@@ -510,6 +511,7 @@ GNU C library in PDF format.
 %prep
 %setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
 
+%patch00 -p1 -b .localedef-archive-follow-symlinks
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
 %patch03 -p1 -b .bz10851
