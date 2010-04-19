@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	2
+%define __glibcrelease	3
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -242,6 +242,7 @@ Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
 Patch03:	glibc-2.11-bz10851.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
+Patch05:	glibc-2.11-assign-global-scope-to-RFC-1918-addresses.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
@@ -516,6 +517,7 @@ GNU C library in PDF format.
 %patch02 -p1 -b .ldd-non-exec
 %patch03 -p1 -b .bz10851
 %patch04 -p1 -b .nss-upgrade
+%patch05 -p1 -b .assign-global-scope-to-RFC-1918-addresses
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
