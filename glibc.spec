@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	3
+%define __glibcrelease	4
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -234,7 +234,7 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
-BuildRequires:	rpm-mandriva-setup-build >= 1.98
+BuildRequires:	rpm-mandriva-setup-build >= 1.104
 BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
