@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	4
+%define __glibcrelease	5
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -633,8 +633,9 @@ ln -s find_requires.noprivate.sh find_requires.sh
 %endif
 
 # Remove patch backups from files we ship in glibc packages
-rm -f ChangeLog.[A-Za-z]*
+rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
+rm -f localedata/locales/[a-z_]*.*
 
 %build
 # Prepare test matrix in the next function
@@ -1102,6 +1103,11 @@ mkdir $RPM_BUILD_ROOT%{_libdir}/debug
 #rm -f $RPM_BUILD_ROOT%{_libdir}/debug/*_p.a
 cp -a $RPM_BUILD_ROOT%{_slibdir}/lib*.so* $RPM_BUILD_ROOT%{_libdir}/debug/
 
+pushd $RPM_BUILD_ROOT%{_libdir}/debug
+for lib in *.so*; do
+  [[ -f "$lib" ]] && DEBUG_LIBS="$DEBUG_LIBS %{_libdir}/debug/$lib"
+done
+popd
 %endif
 
 # Are we cross-compiling?
@@ -1109,6 +1115,17 @@ Strip="strip"
 if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
   Strip="%{target_cpu}-linux-$Strip"
 fi
+
+# Strip libpthread but keep some symbols
+find $RPM_BUILD_ROOT%{_slibdir} -type f -name "libpthread-*.so" \
+     -o -type f -name "libc-*.so" | \
+     xargs $Strip -g -R .comment
+
+%if %{build_biarch}
+find $RPM_BUILD_ROOT/lib -type f -name "libpthread-*.so" \
+     -o -type f -name "libc-*.so" | \
+     xargs $Strip -g -R .comment
+%endif
 
 # Strip debugging info from all static libraries
 pushd $RPM_BUILD_ROOT%{_libdir}
@@ -1231,6 +1248,9 @@ rm -rf $RPM_BUILD_ROOT%{_libdir}/gconv
 export DONT_SYMLINK_LIBS=1
 export PATH=%{_bindir}:$PATH
 %endif
+
+EXCLUDE_FROM_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so $DEBUG_LIBS"
+export EXCLUDE_FROM_STRIP
 
 %if "%{name}" == "glibc"
 %define upgradestamp %{_slibdir}/glibc.upgraded
