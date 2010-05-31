@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	6
+%define __glibcrelease	7
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -1187,8 +1187,8 @@ cp timezone/README documentation/README.timezone
 cp ChangeLog* documentation
 gzip -9 documentation/ChangeLog*
 mkdir documentation/crypt_blowfish-%{crypt_bf_ver}
-cp crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
-    documentation/crypt_blowfish-%{crypt_bf_ver}
+install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
+	documentation/crypt_blowfish-%{crypt_bf_ver}
 
 # Generate final rpm filelist, with localized libc.mo files
 rm -f rpm.filelist
