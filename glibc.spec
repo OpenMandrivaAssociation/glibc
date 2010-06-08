@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.11.1
-%define __glibcrelease	7
+%define __glibcrelease	8
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -306,6 +306,8 @@ Patch91:	glibc-2.11-Fix-sorting-of-malayalam-letter-na.patch
 Patch92:	glibc-2.11-Fix-endless-loop-with-invalid-etc-shells-file.patch
 Patch93:	glibc-2.11-Update-constants-for-current-kernels.patch
 Patch94:	glibc-2.11-Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR.patch
+Patch95:	glibc-2.6.1-CVE-2010-0015.diff
+Patch96:	glibc-2.6.1-CVE-2010-0296.diff
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -576,6 +578,8 @@ GNU C library in PDF format.
 %patch92 -p1 -b .Fix-endless-loop-with-invalid-etc-shells-file
 %patch93 -p1 -b .Update-constants-for-current-kernels
 %patch94 -p1 -b .Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR
+%patch95 -p1 -b .CVE-2010-0015
+%patch96 -p0 -b .CVE-2010-0296
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
