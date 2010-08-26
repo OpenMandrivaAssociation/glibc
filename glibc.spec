@@ -2,8 +2,8 @@
 %define name		%{cross_prefix}glibc
 
 # <epoch>:<version>-<release> tags for glibc main package
-%define glibcversion	2.11.1
-%define __glibcrelease	8
+%define glibcversion	2.12.1
+%define __glibcrelease	0.1
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -242,9 +242,10 @@ Patch01:	glibc-2.2.2-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
 Patch03:	glibc-2.11-bz10851.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
-Patch05:	glibc-2.11-assign-global-scope-to-RFC-1918-addresses.patch
+Patch05:	glibc-2.12.1-assign-global-scope-to-RFC-1918-addresses.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
+Patch08:	glibc-2.12.1-make-3.82-fix.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
@@ -272,42 +273,6 @@ Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch44:	glibc-2.11-dont-tie-libcap-with-selinux.patch
-Patch52:	glibc-2.11-Follow-kernel-F_OWNER_-GID-PGRP-change.patch
-Patch57:	glibc-2.11-Try-harder-to-re-exec-nscd-in-paranoia-mode.patch
-Patch58:	glibc-2.11-Use-struct-timespec-for-timestamps-in-struct-stat-al.patch
-Patch64:	glibc-2.11-Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux.patch
-Patch65:	glibc-2.11-Redefine-O_SYNC-and-O_DSYNC-to-match-2.6.33-kernels.patch
-Patch66:	glibc-2.11-Invalid-timeouts-in-i386-sem_timedwait.patch
-Patch67:	glibc-2.11-Avoid-ELF-lookup-race.patch
-Patch68:	glibc-2.11-Update-poll.h-header-for-POSIX-2008.patch
-Patch69:	glibc-2.11-check-fd-arg-in-futimens.patch
-Patch70:	glibc-2.11-Additional-setcontext-etc.-conformance-tests.patch
-Patch71:	glibc-2.11-Fix-typo-in-feature-selection-macro-use.patch
-Patch72:	glibc-2.11-Add-nonnull-attribute-to-unsetenv-declaration.patch
-Patch73:	glibc-2.11-Prevent-silent-errors-should-x86-64-strncmp-be-neede.patch
-Patch74:	glibc-2.11-Fix-malloc_info-without-prioor-allocations.patch
-Patch75:	glibc-2.11-Pass-sysdep-LDFLAGS-when-using-print-file-name.patch
-Patch76:	glibc-2.11-Make-unistd.h-pre-c-safe.patch
-Patch77:	glibc-2.11-regcomp.c-do-not-ignore-memory-allocation-failure.patch
-Patch78:	glibc-2.11-Always-use-IPv4-sockets-for-IPv4-addresses.patch
-Patch79:	glibc-2.11-Define-IPTOS_CLASS_-macros-according-to-RFC-2474.patch
-Patch80:	glibc-2.11-Fix-a-few-more-cases-of-ignored-return-values-in-reg.patch
-Patch81:	glibc-2.11-sysdeps-ieee754-ldbl-128-fixes.patch
-Patch82:	glibc-2.11-Ignore-negative-dynamic-entry-types.patch
-Patch83:	glibc-2.11-Use-correct-type-when-casting-d_tag.patch
-Patch84:	glibc-2.11-Remove-duplicate-definitions-of-O_DSYNC-and-O_RSYNC.patch
-Patch85:	glibc-2.11-Remove-unnecessary-returns.patch
-Patch86:	glibc-2.11-more-re-fixes.patch
-Patch87:	glibc-2.11-_nl_load_locale-incorrectly-handles-mmap-failures.patch
-Patch88:	glibc-2.11-Fix-error-checking-in-iconv.patch
-Patch89:	glibc-2.11-Don-t-map-U00DF-to-U1E9E-in-toupper-table.patch
-Patch90:	glibc-2.11-Avoid-alloca-in-setenv-for-long-strings.patch
-Patch91:	glibc-2.11-Fix-sorting-of-malayalam-letter-na.patch
-Patch92:	glibc-2.11-Fix-endless-loop-with-invalid-etc-shells-file.patch
-Patch93:	glibc-2.11-Update-constants-for-current-kernels.patch
-Patch94:	glibc-2.11-Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR.patch
-Patch95:	glibc-2.6.1-CVE-2010-0015.diff
-Patch96:	glibc-2.6.1-CVE-2010-0296.diff
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -522,6 +487,7 @@ GNU C library in PDF format.
 %patch05 -p1 -b .assign-global-scope-to-RFC-1918-addresses
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
+%patch08 -p1 -b .make-3.82-fix
 %patch09 -p1 -b .xterm-xvt
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
@@ -544,42 +510,6 @@ GNU C library in PDF format.
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dont-tie-libcap-with-selinux
-%patch52 -p1 -b .Follow-kernel-F_OWNER_-GID-PGRP-change
-%patch57 -p1 -b .Try-harder-to-re-exec-nscd-in-paranoia-mode
-%patch58 -p1 -b .Use-struct-timespec-for-timestamps-in-struct-stat-al
-%patch64 -p1 -b .Define-SCHED_IDLE-and-SCHED_RESET_ON_FORK-for-Linux
-%patch65 -p1 -b .Redefine-O_SYNC-and-O_DSYNC-to-match-2.6.33-kernels
-%patch66 -p1 -b .Invalid-timeouts-in-i386-sem_timedwait
-%patch67 -p1 -b .Avoid-ELF-lookup-race
-%patch68 -p1 -b .Update-poll.h-header-for-POSIX-2008
-%patch69 -p1 -b .check-fd-arg-in-futimens
-%patch70 -p1 -b .Additional-setcontext-etc.-conformance-tests
-%patch71 -p1 -b .Fix-typo-in-feature-selection-macro-use
-%patch72 -p1 -b .Add-nonnull-attribute-to-unsetenv-declaration
-%patch73 -p1 -b .Prevent-silent-errors-should-x86-64-strncmp-be-neede
-%patch74 -p1 -b .Fix-malloc_info-without-prioor-allocations
-%patch75 -p1 -b .Pass-sysdep-LDFLAGS-when-using-print-file-name
-%patch76 -p1 -b .Make-unistd.h-pre-c-safe
-%patch77 -p1 -b .regcomp.c-do-not-ignore-memory-allocation-failure
-%patch78 -p1 -b .Always-use-IPv4-sockets-for-IPv4-addresses
-%patch79 -p1 -b .Define-IPTOS_CLASS_-macros-according-to-RFC-2474
-%patch80 -p1 -b .Fix-a-few-more-cases-of-ignored-return-values-in-reg
-%patch81 -p1 -b .sysdeps-ieee754-ldbl-128-fixes
-%patch82 -p1 -b .Ignore-negative-dynamic-entry-types
-%patch83 -p1 -b .Use-correct-type-when-casting-d_tag
-%patch84 -p1 -b .Remove-duplicate-definitions-of-O_DSYNC-and-O_RSYNC
-%patch85 -p1 -b .Remove-unnecessary-returns
-%patch86 -p1 -b .more-re-fixes
-%patch87 -p1 -b ._nl_load_locale-incorrectly-handles-mmap-failures
-%patch88 -p1 -b .Fix-error-checking-in-iconv
-%patch89 -p1 -b .Don-t-map-U00DF-to-U1E9E-in-toupper-table
-%patch90 -p1 -b .Avoid-alloca-in-setenv-for-long-strings
-%patch91 -p1 -b .Fix-sorting-of-malayalam-letter-na
-%patch92 -p1 -b .Fix-endless-loop-with-invalid-etc-shells-file
-%patch93 -p1 -b .Update-constants-for-current-kernels
-%patch94 -p1 -b .Fix-file-descriotor-leak-in-nftw-with-FTW_CHDIR
-%patch95 -p1 -b .CVE-2010-0015
-%patch96 -p0 -b .CVE-2010-0296
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -1100,6 +1030,8 @@ chmod 755 %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script
 > $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 chmod 644 $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 
+touch $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.cache
+
 # Add libraries to debug sub-package
 %if %{build_debug}
 mkdir $RPM_BUILD_ROOT%{_libdir}/debug
@@ -1416,6 +1348,7 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
+%doc nis/nss
 %doc posix/gai.conf
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
