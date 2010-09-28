@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	0.1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -247,6 +247,7 @@ Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch08:	glibc-2.12.1-make-3.82-fix.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
+Patch10:	glibc-2.12.1-submitted-translit-colon.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
@@ -489,6 +490,7 @@ GNU C library in PDF format.
 %patch07 -p1 -b .nsswitch.conf
 %patch08 -p1 -b .make-3.82-fix
 %patch09 -p1 -b .xterm-xvt
+%patch10 -p1 -b .translit-colon
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
