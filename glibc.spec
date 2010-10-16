@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	3
+%define __glibcrelease	4
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -253,6 +253,7 @@ Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
 Patch14:	glibc-2.9-nscd-no-host-cache.patch
 Patch15:	glibc-2.12.1-ldconfig-chroot-aux-cache.patch
+Patch16:	glibc-2.12.1-workaround-shortest-stem-in-make-3.82.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
@@ -497,6 +498,7 @@ GNU C library in PDF format.
 %patch13 -p1 -b .nscd-enable
 %patch14 -p1 -b .nscd-no-host-cache
 %patch15 -p1 -b .ldconfig-chroot-aux-cache
+%patch16 -p1 -b .workaround-shortest-stem-in-make-3.82.patch
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
