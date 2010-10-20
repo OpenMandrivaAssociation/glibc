@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	4
+%define __glibcrelease	5
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -257,6 +257,7 @@ Patch16:	glibc-2.12.1-workaround-shortest-stem-in-make-3.82.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
+Patch20:	glibc-2.12.1-never-expand-ORIGIN-in-privileged-programs.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
@@ -502,6 +503,7 @@ GNU C library in PDF format.
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
+%patch20 -p1 -b .never-expand-ORIGIN-in-privileged-programs
 %patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
