@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	5
+%define __glibcrelease	6
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -277,6 +277,7 @@ Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch44:	glibc-2.11-dont-tie-libcap-with-selinux.patch
+Patch45:	glibc-2.12.1-CVE-2010-3856.diff
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -518,6 +519,7 @@ GNU C library in PDF format.
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dont-tie-libcap-with-selinux
+%patch45 -p1 -b .CVE-2010-3856
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
