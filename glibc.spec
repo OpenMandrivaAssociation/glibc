@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	6
+%define __glibcrelease	7
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -270,6 +270,9 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
+Patch35:	glibc-2.12.1-fix-error-handling-in-Linux-getlogin.patch
+Patch36:	glibc-2.12.1-more-fixes-to-error-handling-in-getlogin_r.patch
+Patch37:	glibc-2.12.1-__getlogin_r_loginuid-fail-if-tpwd-after-pwuid-is-NULL.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
 Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
@@ -517,6 +520,9 @@ GNU C library in PDF format.
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
+%patch35 -p1 -b .fix-error-handling-in-Linux-getlogin
+%patch36 -p1 -b .more-fixes-to-error-handling-in-getlogin_r
+%patch37 -p1 -b .__getlogin_r_loginuid-fail-if-tpwd-after-pwuid-is-NULL
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch44 -p1 -b .dont-tie-libcap-with-selinux
 %patch45 -p1 -b .CVE-2010-3856
