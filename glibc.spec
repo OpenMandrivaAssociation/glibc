@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.12.1
-%define __glibcrelease	7
+%define __glibcrelease	8
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -238,7 +238,7 @@ BuildRequires:	rpm-mandriva-setup-build >= 1.104
 BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-Patch01:	glibc-2.2.2-fhs.patch
+Patch01:	glibc-2.12.1-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
 Patch03:	glibc-2.11-bz10851.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
