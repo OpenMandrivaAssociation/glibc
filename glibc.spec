@@ -273,6 +273,7 @@ Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch46:	glibc-2.12.2-resolve-tls.patch
+Patch47:	glibc-2.13-fix-compile-error.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -510,6 +511,7 @@ GNU C library in PDF format.
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch46 -p1 -b .resolve-tls
+%patch47 -p0 -b .fix-compile-error
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
