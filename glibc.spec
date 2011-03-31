@@ -2,7 +2,7 @@
 %define name		%{cross_prefix}glibc
 
 # <epoch>:<version>-<release> tags for glibc main package
-%define glibcversion	2.12.1
+%define glibcversion	2.13
 %define __glibcrelease	9
 %define glibcepoch	6
 
@@ -240,20 +240,16 @@ BuildRequires:	spec-helper >= 0.31.2
 Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
 Patch01:	glibc-2.12.1-fhs.patch
 Patch02:	glibc-2.9-ldd-non-exec.patch
-Patch03:	glibc-2.11-bz10851.patch
 Patch04:	glibc-2.2-nss-upgrade.patch
 Patch05:	glibc-2.12.1-assign-global-scope-to-RFC-1918-addresses.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
-Patch08:	glibc-2.12.1-make-3.82-fix.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
 Patch10:	glibc-2.12.1-submitted-translit-colon.patch
 Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
 Patch14:	glibc-2.9-nscd-no-host-cache.patch
-Patch15:	glibc-2.12.1-ldconfig-chroot-aux-cache.patch
-Patch16:	glibc-2.12.1-workaround-shortest-stem-in-make-3.82.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
@@ -270,17 +266,12 @@ Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
 Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch35:	glibc-2.12.1-fix-error-handling-in-Linux-getlogin.patch
-Patch36:	glibc-2.12.1-more-fixes-to-error-handling-in-getlogin_r.patch
-Patch37:	glibc-2.12.1-__getlogin_r_loginuid-fail-if-tpwd-after-pwuid-is-NULL.patch
 Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
 Patch39:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
 Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
-Patch44:	glibc-2.11-dont-tie-libcap-with-selinux.patch
-Patch45:	glibc-2.12.1-CVE-2010-3856.diff
 Patch46:	glibc-2.12.2-resolve-tls.patch
 
 # Determine minium kernel versions
@@ -491,20 +482,16 @@ GNU C library in PDF format.
 %patch00 -p1 -b .localedef-archive-follow-symlinks
 %patch01 -p1 -b .fhs
 %patch02 -p1 -b .ldd-non-exec
-%patch03 -p1 -b .bz10851
 %patch04 -p1 -b .nss-upgrade
 %patch05 -p1 -b .assign-global-scope-to-RFC-1918-addresses
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
-%patch08 -p1 -b .make-3.82-fix
 %patch09 -p1 -b .xterm-xvt
 %patch10 -p1 -b .translit-colon
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
 %patch14 -p1 -b .nscd-no-host-cache
-%patch15 -p1 -b .ldconfig-chroot-aux-cache
-%patch16 -p1 -b .workaround-shortest-stem-in-make-3.82.patch
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
@@ -521,12 +508,7 @@ GNU C library in PDF format.
 %patch32 -p1 -b .i586-if-no-cmov
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
-%patch35 -p1 -b .fix-error-handling-in-Linux-getlogin
-%patch36 -p1 -b .more-fixes-to-error-handling-in-getlogin_r
-%patch37 -p1 -b .__getlogin_r_loginuid-fail-if-tpwd-after-pwuid-is-NULL
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch44 -p1 -b .dont-tie-libcap-with-selinux
-%patch45 -p1 -b .CVE-2010-3856
 %patch46 -p1 -b .resolve-tls
 
 # copy freesec source
