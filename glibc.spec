@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.13
-%define __glibcrelease	1
+%define __glibcrelease	2
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -274,6 +274,7 @@ Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
 Patch46:	glibc-2.12.2-resolve-tls.patch
 Patch47:	glibc-2.13-fix-compile-error.patch
+Patch48:	glibc-2.13-prelink.patch
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -512,6 +513,7 @@ GNU C library in PDF format.
 %patch38 -p1 -b .testsuite-rt-notparallel
 %patch46 -p1 -b .resolve-tls
 %patch47 -p0 -b .fix-compile-error
+%patch48 -p1 -b .prelink
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
