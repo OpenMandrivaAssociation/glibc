@@ -3,7 +3,7 @@
 
 # <epoch>:<version>-<release> tags for glibc main package
 %define glibcversion	2.13
-%define __glibcrelease	2
+%define __glibcrelease	3
 %define glibcepoch	6
 
 # CVS snapshots of glibc
@@ -276,6 +276,11 @@ Patch46:	glibc-2.12.2-resolve-tls.patch
 Patch47:	glibc-2.13-fix-compile-error.patch
 Patch48:	glibc-2.13-prelink.patch
 
+# https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
+# https://bugzilla.redhat.com/show_bug.cgi?id=696096
+# https://bugzilla.redhat.com/attachment.cgi?id=491198
+Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
+
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
 %if %isarch ppc ppc64
@@ -514,6 +519,7 @@ GNU C library in PDF format.
 %patch46 -p1 -b .resolve-tls
 %patch47 -p0 -b .fix-compile-error
 %patch48 -p1 -b .prelink
+%patch49 -p1 -b .memcpy
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
