@@ -227,7 +227,7 @@ Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 
 BuildRequires:	texinfo
 %if %{build_pdf_doc}
-BuildRequires:	tetex, tetex-latex
+BuildRequires:	texlive
 %endif
 %if %{build_utils}
 BuildRequires:	gd-devel
