@@ -5,6 +5,12 @@
 %define glibcversion	2.13
 %define __glibcrelease	4
 %define glibcepoch	6
+# for added ports support for arches like arm
+%define build_ports	0
+# add ports arches here
+%ifarch %arm
+%define build_ports	1
+%endif
 
 # CVS snapshots of glibc
 %define RELEASE		1
@@ -17,6 +23,7 @@
 %define source_package	glibc-%{glibcversion}-%{snapshot}
 %define source_dir	glibc-%{glibcversion}
 %define _glibcrelease	0.%{snapshot}.%{__glibcrelease}
+%define build_ports	0
 %endif
 
 %if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
@@ -50,6 +57,12 @@
 # Define target (base) architecture
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/" -e "s/\\(sun4.*\\|sparcv[89]\\)/sparc/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
+
+%if %isarch %arm
+%define gnuext		-gnueabi
+%else
+%define gnuext		-gnu
+%endif
 
 # Define Xen arches to build with -mno-tls-direct-direct-seg-refs
 %define xenarches	%{ix86} x86_64
@@ -137,6 +150,11 @@ Source2:	glibc-redhat.tar.bz2
 Source3:	glibc-manpages.tar.bz2
 Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
+
+%if %{build_ports}
+Source8:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{glibcversion}.tar.bz2
+Source9:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{glibcversion}.tar.bz2.sig
+%endif
 
 # wrapper to avoid rpm circular dependencies
 Source14:	glibc-post-wrapper.c
@@ -280,6 +298,8 @@ Patch48:	glibc-2.13-prelink.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
 Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
+# shamlessly taken in linaro. just look dirty woraround
+Patch50:	glibc_local-syscall-mcount.diff
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -485,6 +505,10 @@ GNU C library in PDF format.
 
 %prep
 %setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
+%if %{build_ports}
+tar -xjf %SOURCE8
+mv glibc-ports-%{glibcversion} ports
+%endif
 
 %patch00 -p1 -b .localedef-archive-follow-symlinks
 %patch01 -p1 -b .fhs
@@ -520,6 +544,9 @@ GNU C library in PDF format.
 %patch47 -p0 -b .fix-compile-error
 %patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
+%if %build_ports
+%patch50 -p1 -b .mcount
+%endif
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -691,6 +718,15 @@ function BuildGlibc() {
       BuildFlags="-mcpu=ultrasparc -mvis -fcall-used-g6"
       BuildCompFlags="-m64 -mcpu=ultrasparc"
       ;;
+    armv5t*)
+      BuildFlags="-march=armv5t"
+      BuildCompFlags="-march=armv5t"
+      ;;
+    # to check
+    armv7*)
+      BuildFlags="-march=armv7-a"
+      BuildCompFlags="-march=armv7-a"
+      ;;
   esac
 
   # Choose multiarch support
@@ -740,7 +776,11 @@ function BuildGlibc() {
   fi
 
   # NPTL+TLS are now the default
+%if %build_ports
+  Pthreads="ports,nptl"
+%else
   Pthreads="nptl"
+%endif
   TlsFlags="--with-tls --with-__thread"
 
   # Add-ons
@@ -778,7 +818,7 @@ function BuildGlibc() {
   pushd  build-$cpu-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
-    $arch-mandriva-linux-gnu $BuildCross \
+    $arch-%{_real_vendor}-linux%{gnuext} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
@@ -1303,6 +1343,11 @@ fi
 if [ -L %{_includedir}/asm-sparc ]; then
   rm -f %{_includedir}/asm-sparc
 fi
+%if %isarch %arm
+if [ -L %{_includedir}/asm-arm ]; then
+  rm -f %{_includedir}/asm-arm
+fi
+%endif
 %endif
 exit 0
 
@@ -1386,6 +1431,9 @@ fi
 %endif
 %if %isarch m68k
 %{_slibdir}/ld.so.1
+%endif
+%if %isarch %arm
+%{_slibdir}/ld-linux.so.3
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
