@@ -252,7 +252,7 @@ BuildRequires:	gd-devel
 %endif
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
-BuildRequires:	rpm-mandriva-setup-build >= 1.104
+BuildRequires:	rpm-mandriva-setup-build >= 1.130
 BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
@@ -1107,18 +1107,6 @@ Strip="strip"
 if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
   Strip="%{target_cpu}-linux-$Strip"
 fi
-
-# Strip libpthread but keep some symbols
-find $RPM_BUILD_ROOT%{_slibdir} -type f -name "libpthread-*.so" \
-     -o -type f -name "libc-*.so" | \
-     xargs $Strip -g -R .comment
-
-%if %{build_biarch}
-find $RPM_BUILD_ROOT/lib -type f -name "libpthread-*.so" \
-     -o -type f -name "libc-*.so" | \
-     xargs $Strip -g -R .comment
-%endif
-
 # Strip debugging info from all static libraries
 pushd $RPM_BUILD_ROOT%{_libdir}
 for i in *.a; do
@@ -1241,8 +1229,14 @@ export DONT_SYMLINK_LIBS=1
 export PATH=%{_bindir}:$PATH
 %endif
 
-EXCLUDE_FROM_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so $DEBUG_LIBS"
-export EXCLUDE_FROM_STRIP
+# deprecated, can probably remove this build option completely now..
+%if %{build_debug}
+export EXCLUDE_FROM_STRIP="$DEBUG_LIBS"
+%endif
+# This will make the '-g' argument to be passed to eu-strip for these libraries, so that
+# some info is kept that's required to make valgrind work without depending on glibc-debug
+# package to be installed.
+export EXCLUDE_FROM_FULL_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so"
 
 %if "%{name}" == "glibc"
 %define upgradestamp %{_slibdir}/glibc.upgraded
