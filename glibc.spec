@@ -106,8 +106,9 @@
 %define build_i18ndata	1
 %define build_timezone	0
 
+%bcond_with	minimal
 # Disable a few defaults when cross-compiling a glibc
-%if %{build_cross}
+%if %{build_cross} || %{with minimal}
 %define build_doc	0
 %define build_pdf_doc	0
 %define build_biarch	0
