@@ -1044,6 +1044,12 @@ install -m 644 mandriva/nsswitch.conf $RPM_BUILD_ROOT%{_sysconfdir}/nsswitch.con
 install -m 644 nscd/nscd.conf $RPM_BUILD_ROOT%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 install -m 755 nscd/nscd.init $RPM_BUILD_ROOT%{_initrddir}/nscd
+%else
+rm -f %{buildroot}%{_sbindir}/nscd
+%endif
+
+%if !%{build_doc}
+rm -f %{buildroot}%{_infodir}/libc.info*
 %endif
 
 # These man pages require special attention
