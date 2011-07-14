@@ -1,10 +1,3 @@
-# RH 2.2.4-20, SuSE 2.3.1-32
-%define name		%{cross_prefix}glibc
-
-# <epoch>:<version>-<release> tags for glibc main package
-%define glibcversion	2.13
-%define __glibcrelease	4
-%define glibcepoch	6
 # for added ports support for arches like arm
 %define build_ports	0
 # add ports arches here
@@ -15,21 +8,13 @@
 # CVS snapshots of glibc
 %define RELEASE		1
 %if %{RELEASE}
-%define source_package	glibc-%{glibcversion}
-%define source_dir	glibc-%{glibcversion}
-%define _glibcrelease	%{__glibcrelease}
+%define source_package	glibc-%{version}
+%define source_dir	glibc-%{version}
 %else
 %define snapshot	20081113
-%define source_package	glibc-%{glibcversion}-%{snapshot}
-%define source_dir	glibc-%{glibcversion}
-%define _glibcrelease	0.%{snapshot}.%{__glibcrelease}
+%define source_package	glibc-%{version}-%{snapshot}
+%define source_dir	glibc-%{version}
 %define build_ports	0
-%endif
-
-%if "%{?manbo_mkrel:has_manbo}" == "has_manbo"
-%define glibcrelease	%manbo_mkrel %{_glibcrelease}
-%else
-%define glibcrelease	%mkrel %{_glibcrelease}
 %endif
 
 # crypt blowfish support
@@ -124,10 +109,10 @@
 %{expand: %{?_with_BOOTSTRAP:	%%global build_bootstrap 1}}
 
 Summary:	The GNU libc libraries
-Name:		%{name}
-Version:	%{glibcversion}
-Release:	%{glibcrelease}
-Epoch:		%{glibcepoch}
+Name:		%{cross_prefix}glibc
+Version:	2.13
+Release:	4
+Epoch:		6
 License:	LGPL
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -145,8 +130,8 @@ Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
 
 %if %{build_ports}
-Source8:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{glibcversion}.tar.bz2
-Source9:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{glibcversion}.tar.bz2.sig
+Source8:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{version}.tar.bz2
+Source9:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{version}.tar.bz2.sig
 %endif
 
 # wrapper to avoid rpm circular dependencies
@@ -166,7 +151,6 @@ Source16:	crypt_blowfish-%{crypt_bf_ver}.tar.gz
 Source17:	crypt_freesec.c
 Source18:	crypt_freesec.h
 
-Buildroot:	%{_tmppath}/glibc-%{PACKAGE_VERSION}-root
 %if %{build_cross}
 Autoreq:	false
 Autoprov:	false
@@ -177,11 +161,10 @@ Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
 %if %isarch %{xenarches}
-Obsoletes:	%{name}-xen
-Provides:	%{name}-xen
+%rename		%{name}-xen
 %endif
 # The dynamic linker supports DT_GNU_HASH
-Provides: rtld(GNU_HASH)
+Provides:	rtld(GNU_HASH)
 Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
@@ -194,9 +177,9 @@ BuildRequires:	libselinux-devel >= 1.17.10
 %define binutils_version 2.19.51.0.14-1mnb2
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
 # we need the static dash
-%define ash_bin		/bin/dash.static
-Requires(pre):		dash-static
-Requires(post):		dash-static
+%define ash_bin	/bin/dash.static
+Requires(pre):	dash-static
+Requires(post):	dash-static
 # we need an rpm with correct db4 lib
 Conflicts:		rpm < 4.2.2
 # we need an ldconfig with TLS support
@@ -225,12 +208,6 @@ Obsoletes:	libc
 %endif
 %endif
 
-Conflicts:	rpm <= 4.0-0.65
-Conflicts:	%{name}-devel < 2.2.3
-# We need initscripts recent enough to not restart service dm
-Conflicts:	initscripts < 6.91-18mdk
-# Ease Conectiva upgrades
-Conflicts:	%{name}-base <= 2.3.4
 # https://qa.mandriva.com/show_bug.cgi?id=49589
 Conflicts:	findutils < 4.3.5
 # Old prelink versions brakes the system with glibc 2.11
@@ -314,8 +291,8 @@ Obsoletes:	ld.so
 Provides:	ld.so
 %endif
 
-Obsoletes:	ldconfig
-Provides:	ldconfig = %{glibcepoch}:%{glibcversion}-%{glibcrelease} /sbin/ldconfig
+%rename		ldconfig
+Provides:	/sbin/ldconfig
 
 %description
 The glibc package contains standard libraries which are used by
@@ -334,16 +311,16 @@ system and sets up the symbolic links that are used to load shared
 libraries properly. It also creates a cache (/etc/ld.so.cache) which
 speeds the loading of programs which use shared libraries.
 
-%package devel
+%package	devel
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Conflicts:	texinfo < 3.11
-Requires(post):	  info-install
-Requires(preun):  info-install
-Requires(post):   coreutils
-Requires(postun): coreutils, awk
+Requires(post):	info-install
+Requires(preun):info-install
+Requires(post):	coreutils
+Requires(postun):coreutils, awk
 Obsoletes:	libc-debug, libc-headers, libc-devel, linuxthreads-devel, nptl-devel
-Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
+Requires:	%{name} = %{EVRD}
 %if !%{build_cross}
 Requires:	linux-userspace-headers
 %endif
@@ -360,7 +337,7 @@ Autoreq:	true
 %endif
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 
-%description devel
+%description	devel
 The glibc-devel package contains the header and object files necessary
 for developing programs which use the standard C libraries (which are
 used by nearly all programs).  If you are developing programs which
@@ -376,10 +353,10 @@ rebuilding the kernel.
 Install glibc-devel if you are going to develop programs which will
 use the standard C libraries.
 
-%package static-devel
+%package	static-devel
 Summary:	Static libraries for GNU C library
 Group:		Development/C
-Requires:	%{name}-devel = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
+Requires:	%{name}-devel = %{EVRD}
 
 %description static-devel
 The glibc-static-devel package contains the static libraries necessary
@@ -387,11 +364,10 @@ for developing programs which use the standard C libraries. Install
 glibc-static-devel if you need to statically link your program or
 library.
 
-%package profile
+%package	profile
 Summary:	The GNU libc libraries, including support for gprof profiling
 Group:		Development/C
-Obsoletes:	libc-profile
-Provides:	libc-profile = %{glibcversion}-%{glibcrelease}
+%rename		libc-profile
 Autoreq:	true
 
 %description profile
@@ -406,17 +382,17 @@ libraries included in the glibc package).
 If you are going to use the gprof program to profile a program, you'll
 need to install the glibc-profile program.
 
-%package -n nscd
+%package -n	nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
-Requires(pre):	  rpm-helper
-Requires(preun):  rpm-helper
-Requires(post):   rpm-helper
-Requires(postun): rpm-helper
+Requires(pre):	rpm-helper
+Requires(preun):rpm-helper
+Requires(post):	rpm-helper
+Requires(postun):rpm-helper
 Autoreq:	true
 
-%description -n nscd
+%description -n	nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well. Note that you
 can't use nscd with 2.0 kernels because of bugs in the kernel-side
@@ -426,12 +402,12 @@ particularly hard.
 Install nscd if you need a name service lookup caching daemon, and
 you're not using a version 2.0 kernel.
 
-%package utils
+%package	utils
 Summary:	Development utilities from GNU C library
 Group:		Development/Other
-Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
+Requires:	%{name} = %{EVRD}
 
-%description utils
+%description	utils
 The glibc-utils package contains memusage, a memory usage profiler,
 mtrace, a memory leak tracer and xtrace, a function call tracer which
 can be helpful during program debugging.
@@ -439,27 +415,26 @@ can be helpful during program debugging.
 If unsure if you need this, don't install this package.
 
 %if %{build_i18ndata}
-%package i18ndata
+%package	i18ndata
 Summary:	Database sources for 'locale'
 Group:		System/Libraries
 
-%description i18ndata
+%description	i18ndata
 This package contains the data needed to build the locale data files
 to use the internationalization features of the GNU libc.
 %endif
 
 %if %{build_timezone}
-%package -n timezone
+%package -n	timezone
 Summary:	Time zone descriptions
 Group:		System/Base
-Conflicts:	glibc < 2.2.5-6mdk
 
-%description -n timezone
+%description -n	timezone
 These are configuration files that describe possible
 time zones.
 %endif
 
-%package doc
+%package	doc
 Summary:	GNU C library documentation
 Group:		Development/Other
 
@@ -468,11 +443,11 @@ The glibc-doc package contains documentation for the GNU C library in
 info format.
 
 %if %{build_pdf_doc}
-%package doc-pdf
+%package	doc-pdf
 Summary:	GNU C library documentation
 Group:		Development/Other
 
-%description doc-pdf
+%description	doc-pdf
 The glibc-doc-pdf package contains the printable documentation for the
 GNU C library in PDF format.
 %endif
@@ -480,8 +455,8 @@ GNU C library in PDF format.
 %prep
 %setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
 %if %{build_ports}
-tar -xjf %SOURCE8
-mv glibc-ports-%{glibcversion} ports
+tar -xjf %{SOURCE8}
+mv glibc-ports-%{version} ports
 %endif
 
 %patch00 -p1 -b .localedef-archive-follow-symlinks
@@ -885,8 +860,6 @@ done < $CheckList
 %endif
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 # force use of _NPROCESSORS_ONLN jobs since RPM_BUILD_NCPUS could be
 # greater for icecream
 BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
@@ -1018,12 +991,6 @@ install -m 644 mandriva/nsswitch.conf $RPM_BUILD_ROOT%{_sysconfdir}/nsswitch.con
 install -m 644 nscd/nscd.conf $RPM_BUILD_ROOT%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 install -m 755 nscd/nscd.init $RPM_BUILD_ROOT%{_initrddir}/nscd
-%else
-rm -f %{buildroot}%{_sbindir}/nscd
-%endif
-
-%if !%{build_doc}
-rm -f %{buildroot}%{_infodir}/libc.info*
 %endif
 
 # These man pages require special attention
@@ -1143,6 +1110,14 @@ rm -f  $RPM_BUILD_ROOT%{_infodir}/dir.old*
 rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
 rm -f  $RPM_BUILD_ROOT%{_datadir}/locale/locale-archive*
 
+%if !%{build_nscd}
+rm -f %{buildroot}%{_sbindir}/nscd
+%endif
+
+%if !%{build_doc}
+rm -f %{buildroot}%{_infodir}/libc.info*
+%endif
+
 %if !%{build_utils}
 %if %{build_biarch}
 rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libmemusage.so
@@ -1192,7 +1167,7 @@ export PATH=%{_bindir}:$PATH
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
-export EXCLUDE_FROM_FULL_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcversion}.so"
+export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %if "%{name}" == "glibc"
 %define upgradestamp %{_slibdir}/glibc.upgraded
@@ -1200,7 +1175,7 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{glibcversion}.so libpthread libc-%{glibcver
 
 %pre -p %{ash_bin}
 # test(1) and echo(1) are built-ins
-if [ -d %{_slibdir} ] && [ ! -f %{_slibdir}/libnss_files-%{glibcversion}.so ]; then
+if [ -d %{_slibdir} ] && [ ! -f %{_slibdir}/libnss_files-%{version}.so ]; then
   echo > %{upgradestamp}
 fi
 
@@ -1255,9 +1230,6 @@ fi
 # always generate the gconv-modules.cache
 %{_sbindir}/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv
 
-%if %mdkversion < 200900
-%postun -p /sbin/ldconfig
-%endif
 %endif
 
 %pre devel
@@ -1315,15 +1287,6 @@ exit 0
 %_remove_install_info libc.info
 %endif
 
-%if %{build_utils}
-%if %mdkversion < 200900
-%post utils -p /sbin/ldconfig
-%endif
-%if %mdkversion < 200900
-%postun utils -p /sbin/ldconfig
-%endif
-%endif
-
 %if %{build_nscd}
 %pre -n nscd
 %_pre_useradd nscd / /bin/false
@@ -1342,15 +1305,10 @@ if [ "$1" -ge "1" ]; then
 fi
 %endif
 
-%clean
-#rm -rf "$RPM_BUILD_ROOT"
-#rm -f *.filelist*
-
 #
 # glibc
 #
 %files -f rpm.filelist
-%defattr(-,root,root)
 %if "%{name}" == "glibc"
 %if %{build_timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
@@ -1369,7 +1327,7 @@ fi
 %dir %{_prefix}/libexec/getconf
 %{_prefix}/libexec/getconf/*
 %endif
-%{_slibdir}/ld-%{glibcversion}.so
+%{_slibdir}/ld-%{version}.so
 %if %isarch i386 alpha sparc sparc64
 %{_slibdir}/ld-linux.so.2
 %endif
@@ -1421,7 +1379,7 @@ fi
 %endif
 
 %if %{build_biarch}
-%{_slibdir32}/ld-%{glibcversion}.so
+%{_slibdir32}/ld-%{version}.so
 %if %isarch ppc64
 %{_slibdir32}/ld.so.1
 %else
@@ -1437,7 +1395,6 @@ fi
 # ldconfig
 #
 %if "%{name}" == "glibc"
-%defattr(-,root,root)
 /sbin/ldconfig
 %{_mandir}/man8/ldconfig*
 %ghost %{_sysconfdir}/ld.so.cache
@@ -1450,7 +1407,6 @@ fi
 # glibc-devel
 #
 %files devel -f devel.filelist
-%defattr(-,root,root)
 %doc README NEWS INSTALL FAQ BUGS NOTES PROJECTS CONFORMANCE
 %doc COPYING COPYING.LIB
 %doc documentation/* README.libm
@@ -1489,7 +1445,6 @@ fi
 # glibc-static-devel
 #
 %files static-devel
-%defattr(-,root,root)
 %doc COPYING COPYING.LIB
 %{_libdir}/libBrokenLocale.a
 %{_libdir}/libanl.a
@@ -1522,7 +1477,6 @@ fi
 #
 %if %{build_doc}
 %files doc
-%defattr(-,root,root)
 %{_infodir}/libc.info*
 %endif
 
@@ -1531,7 +1485,6 @@ fi
 #
 %if %{build_pdf_doc}
 %files doc-pdf
-%defattr(-,root,root)
 %doc manual/libc.pdf
 %endif
 
@@ -1540,7 +1493,6 @@ fi
 #
 %if %{build_profile}
 %files profile
-%defattr(-,root,root)
 %{_libdir}/lib*_p.a
 %if %{build_biarch}
 %{_prefix}/lib/lib*_p.a
@@ -1552,7 +1504,6 @@ fi
 #
 %if %{build_utils}
 %files utils
-%defattr(-,root,root)
 %if %{build_biarch}
 %{_slibdir32}/libmemusage.so
 %{_slibdir32}/libpcprofile.so
@@ -1571,7 +1522,6 @@ fi
 #
 %if %{build_nscd}
 %files -n nscd
-%defattr(-,root,root)
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %config(noreplace) %{_initrddir}/nscd
 %{_sbindir}/nscd
@@ -1582,7 +1532,6 @@ fi
 #
 %if %{build_timezone}
 %files -n timezone
-%defattr(-,root,root)
 %{_sbindir}/zdump
 %{_sbindir}/zic
 %{_mandir}/man1/zdump.1*
@@ -1595,7 +1544,6 @@ fi
 #
 %if %{build_i18ndata}
 %files i18ndata
-%defattr(-,root,root)
 %dir %{_datadir}/i18n
 %dir %{_datadir}/i18n/charmaps
 %{_datadir}/i18n/charmaps/*
@@ -1603,5 +1551,3 @@ fi
 %{_datadir}/i18n/locales/*
 %{_datadir}/i18n/SUPPORTED
 %endif
-
-
