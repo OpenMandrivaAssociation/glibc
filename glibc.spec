@@ -88,13 +88,6 @@
 %define build_biarch	1
 %endif
 
-# Define to build glibc-debug package
-%define build_debug	1
-%define _enable_debug_packages 1
-%if "%{_enable_debug_packages}" == "1"
-%define build_debug	0
-%endif
-
 # Define to bootstrap new glibc
 %define build_bootstrap	0
 %{expand: %{!?build_cross_bootstrap: %global build_cross_bootstrap 0}}
@@ -113,7 +106,6 @@
 %define build_pdf_doc	0
 %define build_biarch	0
 %define build_check	0
-%define build_debug	0
 %define build_nscd	0
 %define build_profile	0
 %define build_utils	0
@@ -351,9 +343,6 @@ Requires(preun):  info-install
 Requires(post):   coreutils
 Requires(postun): coreutils, awk
 Obsoletes:	libc-debug, libc-headers, libc-devel, linuxthreads-devel, nptl-devel
-%if !%{build_debug}
-Obsoletes:	%{name}-debug < 6:2.3.2-15mdk
-%endif
 Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
 %if !%{build_cross}
 Requires:	linux-userspace-headers
@@ -436,22 +425,6 @@ particularly hard.
 
 Install nscd if you need a name service lookup caching daemon, and
 you're not using a version 2.0 kernel.
-
-%if %{build_debug}
-%package	debug
-Summary:	Shared standard C libraries with debugging information
-Group:		System/Libraries
-Requires:	%{name} = %{glibcepoch}:%{glibcversion}-%{glibcrelease}
-Autoreq:	false
-
-%description debug
-The glibc-debug package contains shared standard C libraries with
-debugging information. You need this only if you want to step into C
-library routines during debugging.
-
-To use these libraries, you need to add %{_libdir}/debug to your
-LD_LIBRARY_PATH variable prior to starting the debugger.
-%endif
 
 %package utils
 Summary:	Development utilities from GNU C library
@@ -1089,20 +1062,6 @@ chmod 644 $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 
 touch $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.cache
 
-# Add libraries to debug sub-package
-%if %{build_debug}
-mkdir $RPM_BUILD_ROOT%{_libdir}/debug
-#cp -a $RPM_BUILD_ROOT%{_libdir}/*.a $RPM_BUILD_ROOT%{_libdir}/debug/
-#rm -f $RPM_BUILD_ROOT%{_libdir}/debug/*_p.a
-cp -a $RPM_BUILD_ROOT%{_slibdir}/lib*.so* $RPM_BUILD_ROOT%{_libdir}/debug/
-
-pushd $RPM_BUILD_ROOT%{_libdir}/debug
-for lib in *.so*; do
-  [[ -f "$lib" ]] && DEBUG_LIBS="$DEBUG_LIBS %{_libdir}/debug/$lib"
-done
-popd
-%endif
-
 # Are we cross-compiling?
 Strip="strip"
 if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
@@ -1230,10 +1189,6 @@ export DONT_SYMLINK_LIBS=1
 export PATH=%{_bindir}:$PATH
 %endif
 
-# deprecated, can probably remove this build option completely now..
-%if %{build_debug}
-export EXCLUDE_FROM_STRIP="$DEBUG_LIBS"
-%endif
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
@@ -1578,17 +1533,6 @@ fi
 %files doc-pdf
 %defattr(-,root,root)
 %doc manual/libc.pdf
-%endif
-
-#
-# glibc-debug
-#
-%if %{build_debug}
-%files debug
-%defattr(-,root,root)
-%dir %{_libdir}/debug
-%{_libdir}/debug/*.so
-%{_libdir}/debug/*.so.*
 %endif
 
 #
