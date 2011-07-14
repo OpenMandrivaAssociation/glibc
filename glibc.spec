@@ -1113,7 +1113,7 @@ for i in *.a; do
   if [ -f "$i" ]; then
     case "$i" in
     *_p.a) ;;
-    *) $Strip -g -R .comment $i ;;
+    *) $Strip -g -R .comment -R .GCC.command.line $i ;;
     esac
   fi
 done
