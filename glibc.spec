@@ -111,7 +111,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.13
-Release:	4
+Release:	5
 Epoch:		6
 License:	LGPL
 Group:		System/Libraries
