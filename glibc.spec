@@ -110,8 +110,8 @@
 
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
-Version:	2.13
-Release:	5
+Version:	2.14
+Release:	1
 Epoch:		6
 License:	LGPL
 Group:		System/Libraries
@@ -241,7 +241,7 @@ Patch14:	glibc-2.9-nscd-no-host-cache.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
-Patch20:	glibc-2.12.1-never-expand-ORIGIN-in-privileged-programs.patch
+Patch20:	glibc-2.14-never-expand-ORIGIN-in-privileged-programs.patch
 Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
@@ -467,7 +467,7 @@ mv glibc-ports-%{version} ports
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
-%patch10 -p1 -b .translit-colon
+#%%patch10 -p1 -b .translit-colon
 %patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
@@ -489,9 +489,9 @@ mv glibc-ports-%{version} ports
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
-%patch46 -p1 -b .resolve-tls
+#%%patch46 -p1 -b .resolve-tls
 %patch47 -p0 -b .fix-compile-error
-%patch48 -p1 -b .prelink
+#%%patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
 %if %build_ports
 %patch50 -p1 -b .mcount
@@ -1373,7 +1373,7 @@ fi
 %{_bindir}/rpcgen
 %{_bindir}/sprof
 %{_bindir}/tzselect
-%{_sbindir}/rpcinfo
+#%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
 %{_sbindir}/glibc-post-wrapper
 %endif
@@ -1507,13 +1507,18 @@ fi
 %if %{build_biarch}
 %{_slibdir32}/libmemusage.so
 %{_slibdir32}/libpcprofile.so
+%dir %{_prefix}/lib/audit
+%{_prefix}/lib/audit/sotruss-lib.so
 %endif
 %{_slibdir}/libmemusage.so
 %{_slibdir}/libpcprofile.so
+%dir %{_libdir}/audit
+%{_libdir}/audit/sotruss-lib.so
 %{_bindir}/memusage
 %{_bindir}/memusagestat
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
+%{_bindir}/sotruss
 %{_bindir}/xtrace
 %endif
 
