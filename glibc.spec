@@ -271,6 +271,8 @@ Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 # shamlessly taken in linaro. just look dirty woraround
 Patch50:	glibc_local-syscall-mcount.diff
 
+# upstream bug #12946, patch picked up from arch linux
+Patch51:	glibc-2.14-fix-resolver-crash-typo.patch
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
 %if %isarch ppc ppc64
@@ -496,6 +498,7 @@ mv glibc-ports-%{version} ports
 %if %build_ports
 %patch50 -p1 -b .mcount
 %endif
+%patch51 -p1 -b .resolv_crash~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
