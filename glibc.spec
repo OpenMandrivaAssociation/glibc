@@ -634,6 +634,7 @@ function BuildGlibc() {
     i[3456]86 | athlon)
       BuildFlags="-march=$arch -mtune=generic"
       if [[ "`uname -m`" = "x86_64" ]]; then
+	BuildFlags="-march=pentium4 -mtune=generic"
         BuildAltArch="yes"
         BuildCompFlags="-m32"
       fi
