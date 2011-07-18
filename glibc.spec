@@ -113,7 +113,7 @@ Name:		%{cross_prefix}glibc
 Version:	2.14
 Release:	1
 Epoch:		6
-License:	LGPL
+License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
