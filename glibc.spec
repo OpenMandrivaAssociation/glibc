@@ -273,6 +273,10 @@ Patch50:	glibc_local-syscall-mcount.diff
 
 # upstream bug #12946, patch picked up from arch linux
 Patch51:	glibc-2.14-fix-resolver-crash-typo.patch
+# http://sourceware.org/git/?p=glibc.git;a=commitdiff;h=675155e9 (only fedora branch...)
+# http://sourceware.org/ml/libc-alpha/2011-06/msg00006.html
+Patch52:	glibc-2.14-libdl-crash.patch
+
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
 %if %isarch ppc ppc64
@@ -499,6 +503,7 @@ mv glibc-ports-%{version} ports
 %patch50 -p1 -b .mcount
 %endif
 %patch51 -p1 -b .resolv_crash~
+%patch52 -p1 -b .libdl_crash~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
