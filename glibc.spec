@@ -1132,12 +1132,15 @@ rm -f %{buildroot}%{_infodir}/libc.info*
 rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libmemusage.so
 rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libpcprofile.so
 %endif
+rm -rf $RPM_BUILD_ROOT%{_libdir}/audit
 rm -f  $RPM_BUILD_ROOT%{_slibdir}/libmemusage.so
 rm -f  $RPM_BUILD_ROOT%{_slibdir}/libpcprofile.so
+
 rm -f  $RPM_BUILD_ROOT%{_bindir}/memusage
 rm -f  $RPM_BUILD_ROOT%{_bindir}/memusagestat
 rm -f  $RPM_BUILD_ROOT%{_bindir}/mtrace
 rm -f  $RPM_BUILD_ROOT%{_bindir}/pcprofiledump
+rm -f  $RPM_BUILD_ROOT%{_bindir}/sotruss
 rm -f  $RPM_BUILD_ROOT%{_bindir}/xtrace
 %endif
 
