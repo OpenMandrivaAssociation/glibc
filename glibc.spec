@@ -276,6 +276,8 @@ Patch51:	glibc-2.14-fix-resolver-crash-typo.patch
 # http://sourceware.org/git/?p=glibc.git;a=commitdiff;h=675155e9 (only fedora branch...)
 # http://sourceware.org/ml/libc-alpha/2011-06/msg00006.html
 Patch52:	glibc-2.14-libdl-crash.patch
+# http://sourceware.org/git/?p=glibc.git;a=commitdiff;h=706c34743628c9d573ce1f6c9c949cd79687658e
+Patch53:	glibc-2.14-nscd-dont-free-non-malloced-memory.pach
 
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
@@ -504,6 +506,7 @@ mv glibc-ports-%{version} ports
 %endif
 %patch51 -p1 -b .resolv_crash~
 %patch52 -p1 -b .libdl_crash~
+%patch53 -p1 -b .alloca_account~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
