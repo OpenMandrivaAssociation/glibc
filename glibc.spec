@@ -1146,6 +1146,10 @@ rm -rf $RPM_BUILD_ROOT%{_prefix}/etc
 rm -rf $RPM_BUILD_ROOT%{_libdir}/gconv
 %endif
 
+%if %{build_biarch}
+rm -rf %{buildroot}%{_prefix}/lib/gconv
+%endif
+
 # In case we are cross-compiling, don't bother to remake symlinks and
 # fool spec-helper when stripping files
 %if "%{name}" != "glibc"
@@ -1386,8 +1390,6 @@ fi
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
-%dir %{_prefix}/lib/gconv
-%{_prefix}/lib/gconv/*
 %endif
 #
 # ldconfig
