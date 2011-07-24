@@ -83,6 +83,12 @@
 %define build_i18ndata	1
 %define build_timezone	0
 
+%if %isarch %{ix86} x86_64
+%define enable_systap	1
+%else
+%define enable_systap	0
+%endif
+
 %bcond_with	minimal
 # Disable a few defaults when cross-compiling a glibc
 %if %{build_cross} || %{with minimal}
@@ -95,6 +101,7 @@
 %define build_utils	0
 %define build_i18ndata	0
 %define build_timezone	0
+%define enable_systap	0
 %endif
 
 # Allow --with[out] <feature> at rpm command line build
@@ -215,6 +222,9 @@ BuildRequires:	texlive
 %endif
 %if %{build_utils}
 BuildRequires:	gd-devel
+%endif
+%if %{enable_systap}
+BuildRequires:	systemtap
 %endif
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
@@ -753,6 +763,9 @@ function BuildGlibc() {
     --with-selinux \
 %else
     --without-selinux \
+%endif
+%if %{enable_systap}
+    --enable-systemtap \
 %endif
     --enable-bind-now \
     --with-tls \
