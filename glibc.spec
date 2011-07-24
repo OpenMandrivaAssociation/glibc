@@ -848,18 +848,9 @@ done < $CheckList
 %endif
 
 %install
-# force use of _NPROCESSORS_ONLN jobs since RPM_BUILD_NCPUS could be
-# greater for icecream
-BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
-
 make install_root=$RPM_BUILD_ROOT install -C build-%{target_cpu}-linux
 %if %{build_i18ndata}
-pushd build-%{target_cpu}-linux;
-  make $BuildJobs -C ../localedata objdir=`pwd` \
-	install_root=$RPM_BUILD_ROOT \
-	install-locales
-popd
-install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT/%{_datadir}/i18n/
+install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
 %endif
 sh manpages/Script.sh
 
