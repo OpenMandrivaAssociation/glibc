@@ -1085,7 +1085,7 @@ rm -rf documentation
 mkdir documentation
 cp timezone/README documentation/README.timezone
 cp ChangeLog* documentation
-gzip -9 documentation/ChangeLog*
+xz -0 --text documentation/ChangeLog*
 mkdir documentation/crypt_blowfish-%{crypt_bf_ver}
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
 	documentation/crypt_blowfish-%{crypt_bf_ver}
