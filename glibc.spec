@@ -6,14 +6,13 @@
 %endif
 
 # CVS snapshots of glibc
-%define RELEASE		1
+%define RELEASE		0
 %if %{RELEASE}
-%define source_package	glibc-%{version}
-%define source_dir	glibc-%{version}
+%define glibcsrcdir	glibc-%{version}
+%define glibcportsdir	glibc-%{version}
 %else
-%define snapshot	20081113
-%define source_package	glibc-%{version}-%{snapshot}
-%define source_dir	glibc-%{version}
+%define glibcsrcdir	glibc-2.14-121-g5551a7b
+%define glibcportsdir	glibc-ports-2.14-3-ge5cd24d
 %define build_ports	0
 %endif
 
@@ -110,7 +109,7 @@
 
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
-Version:	2.14
+Version:	2.14.90
 Release:	1
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -118,9 +117,9 @@ Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
 # FSF source
-Source0:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.xz
+Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %if %{RELEASE}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{source_package}.tar.xz.sig
+Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 
 # Red Hat tarball
@@ -130,8 +129,10 @@ Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
 
 %if %{build_ports}
-Source8:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{version}.tar.bz2
-Source9:	http://ftp.gnu.org/gnu/glibc/glibc-ports-%{version}.tar.bz2.sig
+Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
+%if %{RELEASE}
+Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
+%endif
 %endif
 
 # wrapper to avoid rpm circular dependencies
@@ -225,31 +226,26 @@ BuildRequires:	libcap-devel
 BuildRequires:	rpm-mandriva-setup-build >= 1.130
 BuildRequires:	spec-helper >= 0.31.2
 
-Patch00:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-Patch01:	glibc-2.12.1-fhs.patch
-Patch02:	glibc-2.9-ldd-non-exec.patch
-Patch04:	glibc-2.2-nss-upgrade.patch
-Patch05:	glibc-2.12.1-assign-global-scope-to-RFC-1918-addresses.patch
+Patch00:	glibc-fedora.patch
+Patch01:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
+# _PATH_VARDB defined to /var/lib/misc, do we really want this..?
+Patch02:	glibc-2.14.90-fhs.patch
+Patch04:	glibc-2.14.90-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
-Patch10:	glibc-2.12.1-submitted-translit-colon.patch
-Patch11:	glibc-2.4.90-compat-EUR-currencies.patch
 Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
 Patch14:	glibc-2.9-nscd-no-host-cache.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
 Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
-Patch20:	glibc-2.14-never-expand-ORIGIN-in-privileged-programs.patch
-Patch22:	glibc-2.3.2-tcsetattr-kernel-bug-workaround.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
 Patch26:	glibc-2.6-nice_fix.patch
 Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
-Patch28:	glibc-2.4.90-gcc4-fortify.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
-Patch30:	glibc-2.10.1-multiarch.patch
+Patch30:	glibc-2.14.90-multiarch.patch
 Patch31:	glibc-2.4.90-i586-hptiming.patch
 Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
 Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
@@ -271,14 +267,6 @@ Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 # shamlessly taken in linaro. just look dirty woraround
 Patch50:	glibc_local-syscall-mcount.diff
 
-# upstream bug #12946, patch picked up from arch linux
-Patch51:	glibc-2.14-fix-resolver-crash-typo.patch
-# http://sourceware.org/git/?p=glibc.git;a=commitdiff;h=675155e9 (only fedora branch...)
-# http://sourceware.org/ml/libc-alpha/2011-06/msg00006.html
-Patch52:	glibc-2.14-libdl-crash.patch
-# http://sourceware.org/git/?p=glibc.git;a=commitdiff;h=706c34743628c9d573ce1f6c9c949cd79687658e
-Patch53:	glibc-2.14-nscd-dont-free-non-malloced-memory.pach
-
 # Determine minium kernel versions
 %define		enablekernel 2.6.9
 %if %isarch ppc ppc64
@@ -291,8 +279,8 @@ Conflicts:	kernel < %{enablekernel}
 %define rpmscripts	/usr/lib/rpm/%{_real_vendor}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
-%define __find_provides	%{_builddir}/%{source_dir}/find_provides.sh
-%define __find_requires %{_builddir}/%{source_dir}/find_requires.sh
+%define __find_provides	%{_builddir}/%{glibcsrcdir}/find_provides.sh
+%define __find_requires %{_builddir}/%{glibcsrcdir}/find_requires.sh
 
 %if !%{build_cross}
 Obsoletes:	ld.so
@@ -461,35 +449,28 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a 3 -a 2 -a 15 -a 16
+%setup -q -n %{glibcsrcdir} -a 3 -a 2 -a 15 -a 16
 %if %{build_ports}
 tar -xjf %{SOURCE8}
-mv glibc-ports-%{version} ports
+mv %{glibcportsdir} ports
 %endif
 
-%patch00 -p1 -b .localedef-archive-follow-symlinks
-%patch01 -p1 -b .fhs
-%patch02 -p1 -b .ldd-non-exec
+%patch00 -p1 -b .fedora~
+%patch01 -p1 -b .localedef-archive-follow-symlinks
+%patch02 -p1 -b .fhs~
 %patch04 -p1 -b .nss-upgrade
-%patch05 -p1 -b .assign-global-scope-to-RFC-1918-addresses
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
-#%%patch10 -p1 -b .translit-colon
-%patch11 -p1 -b .compat-EUR-currencies
 %patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
 %patch14 -p1 -b .nscd-no-host-cache
 %patch17 -p1 -b .i386-hwcapinfo
 %patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
 %patch19 -p1 -b .nscd-init-should-start
-%patch20 -p1 -b .never-expand-ORIGIN-in-privileged-programs
-%patch22 -p1 -b .tcsetattr-kernel-bug-workaround
 %patch23 -p1 -b .timezone
 %patch24 -p1 -b .biarch-cpp-defines
-%patch26 -p1 -b .nice-fix
 %patch27 -p1 -b .ENOTTY-fr-translation
-%patch28 -p1 -b .gcc4-fortify
 %patch29 -p1 -b .biarch-utils
 %patch30 -p1 -b .multiarch-check
 %patch31 -p1 -b .i586-hptiming
@@ -504,9 +485,6 @@ mv glibc-ports-%{version} ports
 %if %build_ports
 %patch50 -p1 -b .mcount
 %endif
-%patch51 -p1 -b .resolv_crash~
-%patch52 -p1 -b .libdl_crash~
-%patch53 -p1 -b .alloca_account~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -550,7 +528,7 @@ cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;' > find_requires
 chmod +x find_requires
 # (Anssi 03/2008) FIXME: use _requires_exceptions
 cat > find_requires.noprivate.sh << EOF
-%{_builddir}/%{source_dir}/find_requires %{buildroot} %{_target_cpu} | \
+%{_builddir}/%{glibcsrcdir}/find_requires %{buildroot} %{_target_cpu} | \
 	grep -v GLIBC_PRIVATE
 exit 0
 EOF
@@ -878,11 +856,11 @@ BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
 
 make install_root=$RPM_BUILD_ROOT install -C build-%{target_cpu}-linux
 %if %{build_i18ndata}
-(cd build-%{target_cpu}-linux;
+pushd build-%{target_cpu}-linux;
   make $BuildJobs -C ../localedata objdir=`pwd` \
 	install_root=$RPM_BUILD_ROOT \
 	install-locales
-)
+popd
 install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT/%{_datadir}/i18n/
 %endif
 sh manpages/Script.sh
@@ -1135,7 +1113,6 @@ rm -f %{buildroot}%{_infodir}/libc.info*
 rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libmemusage.so
 rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libpcprofile.so
 %endif
-rm -rf $RPM_BUILD_ROOT%{_libdir}/audit
 rm -f  $RPM_BUILD_ROOT%{_slibdir}/libmemusage.so
 rm -f  $RPM_BUILD_ROOT%{_slibdir}/libpcprofile.so
 
@@ -1143,7 +1120,6 @@ rm -f  $RPM_BUILD_ROOT%{_bindir}/memusage
 rm -f  $RPM_BUILD_ROOT%{_bindir}/memusagestat
 rm -f  $RPM_BUILD_ROOT%{_bindir}/mtrace
 rm -f  $RPM_BUILD_ROOT%{_bindir}/pcprofiledump
-rm -f  $RPM_BUILD_ROOT%{_bindir}/sotruss
 rm -f  $RPM_BUILD_ROOT%{_bindir}/xtrace
 %endif
 
@@ -1368,6 +1344,12 @@ fi
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
+%if %{build_biarch}
+%dir %{_prefix}/lib/audit
+%{_prefix}/lib/audit/sotruss-lib.so
+%endif
+%dir %{_libdir}/audit
+%{_libdir}/audit/sotruss-lib.so
 %dir %{_libdir}/gconv
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
@@ -1385,7 +1367,10 @@ fi
 %endif
 %{_bindir}/locale
 %{_bindir}/localedef
+%{_bindir}/makedb
+%{_bindir}/pldd
 %{_bindir}/rpcgen
+%{_bindir}/sotruss
 %{_bindir}/sprof
 %{_bindir}/tzselect
 #%{_sbindir}/rpcinfo
@@ -1416,6 +1401,7 @@ fi
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
 %{_var}/lib/rpm/filetriggers/ldconfig.*
+%{_var}/db/Makefile
 %endif
 
 #
@@ -1522,18 +1508,13 @@ fi
 %if %{build_biarch}
 %{_slibdir32}/libmemusage.so
 %{_slibdir32}/libpcprofile.so
-%dir %{_prefix}/lib/audit
-%{_prefix}/lib/audit/sotruss-lib.so
 %endif
 %{_slibdir}/libmemusage.so
 %{_slibdir}/libpcprofile.so
-%dir %{_libdir}/audit
-%{_libdir}/audit/sotruss-lib.so
 %{_bindir}/memusage
 %{_bindir}/memusagestat
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
-%{_bindir}/sotruss
 %{_bindir}/xtrace
 %endif
 
