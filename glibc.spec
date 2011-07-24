@@ -1036,7 +1036,7 @@ done
 popd
 
 # post install wrapper
-%__cc -Os -DSLIBDIR="\"%{_slibdir}\"" -DASH_BIN="\"%{ash_bin}\"" %{SOURCE14} -static \
+gcc %{optflags} -Os -DSLIBDIR="\"%{_slibdir}\"" -DASH_BIN="\"%{ash_bin}\"" %{SOURCE14} -static \
 	-L $RPM_BUILD_ROOT%{_libdir}/ \
 	-o $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
 chmod 700 $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
