@@ -226,7 +226,10 @@ BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-fedora.patch
 Patch01:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-# _PATH_VARDB defined to /var/lib/misc, do we really want this..?
+# _PATH_VARDB defined to /var/lib/misc, seems like main motivation being
+# anally pursuing FHS compliance..
+# After patch existing for over a half decade and not being picked up by
+# OpenSuSE, Fedora or upstream, we'll drop it as well for easier maintenance.
 Patch02:	glibc-2.14.90-fhs.patch
 Patch04:	glibc-2.14.90-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
@@ -455,7 +458,7 @@ mv %{glibcportsdir} ports
 
 %patch00 -p1 -b .fedora~
 %patch01 -p1 -b .localedef-archive-follow-symlinks
-%patch02 -p1 -b .fhs~
+#%%patch02 -p1 -b .fhs~
 %patch04 -p1 -b .nss-upgrade
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
