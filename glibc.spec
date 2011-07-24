@@ -128,11 +128,9 @@ Source3:	glibc-manpages.tar.bz2
 Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
 
-%if %{build_ports}
 Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
 %if %{RELEASE}
 Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
-%endif
 %endif
 
 # wrapper to avoid rpm circular dependencies
