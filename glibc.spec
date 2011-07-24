@@ -959,7 +959,7 @@ install -m644 bits/stdio-lock.h $RPM_BUILD_ROOT%{_includedir}/bits/stdio-lock.h
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
 # section but with glibc that is simply not an option
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/locale/ru_RU/LC_MESSAGES
+mkdir -p $RPM_BUILD_ROOT%{_localedir}/ru_RU/LC_MESSAGES
 
 # Remove the files we don't want to distribute
 rm -f $RPM_BUILD_ROOT%{_libdir}/libNoVersion*
@@ -1046,7 +1046,7 @@ rm -f $RPM_BUILD_ROOT%{_includedir}/rpcsvc/rquota.[hx]
 # Hardlink identical locale files together
 %if %{build_i18ndata}
 gcc -O2 -o build-%{_target_cpu}-linux/hardlink redhat/hardlink.c
-build-%{_target_cpu}-linux/hardlink -vc $RPM_BUILD_ROOT%{_datadir}/locale
+build-%{_target_cpu}-linux/hardlink -vc $RPM_BUILD_ROOT%{_localedir}
 %endif
 
 rm -rf $RPM_BUILD_ROOT%{_includedir}/netatalk/
@@ -1096,9 +1096,9 @@ cat extralibs.filelist >> rpm.filelist
 # Remove unpackaged files
 rm -f  $RPM_BUILD_ROOT%{_infodir}/dir.old*
 rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
-rm -f  $RPM_BUILD_ROOT%{_datadir}/locale/locale-archive*
+rm -f  $RPM_BUILD_ROOT%{_localedir}/locale-archive*
 # XXX: verify
-find %{buildroot}%{_datadir}/locale -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
+find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{build_nscd}
 rm -f %{buildroot}%{_sbindir}/nscd
@@ -1317,7 +1317,7 @@ fi
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
 %{_mandir}/man8/ld.so*
-%{_datadir}/locale/locale.alias
+%{_localedir}/locale.alias
 /sbin/sln
 %dir %{_prefix}/libexec/getconf
 %{_prefix}/libexec/getconf/*
