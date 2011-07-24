@@ -711,9 +711,6 @@ function BuildGlibc() {
 
   # Extra configure flags
   ExtraFlags=
-  if [[ "%{build_profile}" != "0" ]]; then
-    ExtraFlags="$ExtraFlags --enable-profile"
-  fi
 
   # NPTL+TLS are now the default
 %if %build_ports
@@ -721,7 +718,6 @@ function BuildGlibc() {
 %else
   Pthreads="nptl"
 %endif
-  TlsFlags="--with-tls --with-__thread"
 
   # Add-ons
   AddOns="$Pthreads,libidn"
@@ -730,13 +726,6 @@ function BuildGlibc() {
     BuildFlags="$BuildFlags -mcpu=$cpu"
     ExtraFlags="$ExtraFlags --with-cpu=$cpu"
   fi
-
-  # Build with selinux support?
-%if %{build_selinux}
-  SElinuxFlags="--with-selinux"
-%else
-  SElinuxFlags="--without-selinux"
-%endif
 
   # Kernel headers directory
   KernelHeaders=%{_includedir}
@@ -762,8 +751,20 @@ function BuildGlibc() {
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
-    --enable-add-ons=$AddOns --without-cvs \
-    $TlsFlags $ExtraFlags $MultiArchFlags $SElinuxFlags \
+    --enable-add-ons=$AddOns \
+    --without-cvs \
+%if %{build_profile}
+    --enable-profile \
+%endif
+%if %{build_selinux}
+    --with-selinux \
+%else
+    --without-selinux \
+%endif
+    --with-tls \
+    --with-__thread \
+    $ExtraFlags \
+    $MultiArchFlags \
     --enable-experimental-malloc \
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"}
@@ -855,7 +856,7 @@ done < $CheckList
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
-> extralibs.filelist
+touch extralibs.filelist
 
 # Install biarch libraries
 %if %{build_biarch}
@@ -886,7 +887,7 @@ mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_bindir}/* $RPM_BUILD_ROOT%{_bindir}
 mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_sbindir}/* $RPM_BUILD_ROOT%{_sbindir}
 rm -rf   $RPM_BUILD_ROOT/$ALT_ARCH
 %else
-make DESTDIR=%{buildroot} install-lib -C build-$ALT_ARCH
+make DESTDIR=%{buildroot} subdir_stubs install-lib -C build-$ALT_ARCH
 make DESTDIR=%{buildroot} -C elf/ objdir=`pwd`/build-$ALT_ARCH ldso_install
 # XXX: find install rule?
 install -m644 build-$ALT_ARCH/libc.a -D %{buildroot}%{_prefix}/lib/libc.a
@@ -894,7 +895,7 @@ install -m644 build-$ALT_ARCH/libc_nonshared.a -D %{buildroot}%{_prefix}/lib/lib
 %endif
 
 # XXX Dispatch 32-bit stubs
-(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
+sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs) \
 > $RPM_BUILD_ROOT%{_includedir}/gnu/stubs-32.h
 %endif
 
@@ -1012,7 +1013,7 @@ EOF
 chmod 755 %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script
 
 # Include %{_libdir}/gconv/gconv-modules.cache
-> $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
+touch $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 chmod 644 $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
 
 touch $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.cache
@@ -1074,7 +1075,9 @@ cp -f $RPM_BUILD_ROOT%{_datadir}/zoneinfo/US/Eastern $RPM_BUILD_ROOT%{_sysconfdi
 
 # [gg] build PDF documentation
 %if %{build_pdf_doc}
-(cd manual; texi2dvi -p -t @afourpaper -t @finalout libc.texinfo)
+pushd manual
+texi2dvi -p -t @afourpaper -t @finalout libc.texinfo
+popd
 %endif
 
 # the last bit: more documentation
