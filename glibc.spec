@@ -761,6 +761,7 @@ function BuildGlibc() {
 %else
     --without-selinux \
 %endif
+    --enable-bind-now \
     --with-tls \
     --with-__thread \
     $ExtraFlags \
