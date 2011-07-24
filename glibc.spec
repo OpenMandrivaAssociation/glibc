@@ -122,8 +122,8 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 
-# Red Hat tarball
-Source2:	glibc-redhat.tar.bz2
+# Fedora tarball
+Source2:	%{glibcsrcdir}-fedora.tar.xz
 Source3:	glibc-manpages.tar.bz2
 Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
@@ -132,9 +132,6 @@ Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
 %if %{RELEASE}
 Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
 %endif
-
-# wrapper to avoid rpm circular dependencies
-Source14:	glibc-post-wrapper.c
 
 # <http://penguinppc.org/dev/glibc/glibc-powerpc-cpu-addon.html>
 # NOTE: this check is weak. The rationale is: Cell PPU optimized by
@@ -268,12 +265,8 @@ Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 # shamlessly taken in linaro. just look dirty woraround
 Patch50:	glibc_local-syscall-mcount.diff
 
-# Determine minium kernel versions
-%define		enablekernel 2.6.9
-%if %isarch ppc ppc64
-# waitid syscall is available in 2.6.12+ there
-%define		enablekernel 2.6.12
-%endif
+# Determine minimum kernel versions (rhbz#619538)
+%define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
 
 # People changed location of rpm scripts...
@@ -450,7 +443,7 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{glibcsrcdir} -a 3 -a 2 -a 15 -a 16
+%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 15 -a 16
 %if %{build_ports}
 tar -xjf %{SOURCE8}
 mv %{glibcportsdir} ports
@@ -841,6 +834,13 @@ esac
 
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
+# post install wrapper
+gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgrade.c -o build-%{target_cpu}-linux/glibc_post_upgrade \
+  '-DLIBTLS="/%{_lib}/tls/"' \
+  '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
+  '-DLD_SO_CONF="/etc/ld.so.conf"' \
+  '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
+
 %if %{build_check}
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
@@ -854,6 +854,7 @@ done < $CheckList
 
 %install
 %makeinstall_std -C build-%{target_cpu}-linux
+install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
@@ -956,7 +957,7 @@ done
 
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
-install -m644 bits/stdio-lock.h $RPM_BUILD_ROOT%{_includedir}/bits/stdio-lock.h
+install -m644 bits/stdio-lock.h -D $RPM_BUILD_ROOT%{_includedir}/bits/stdio-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
@@ -1036,21 +1037,11 @@ for i in *.a; do
 done
 popd
 
-# post install wrapper
-gcc %{optflags} -Os -DSLIBDIR="\"%{_slibdir}\"" -DASH_BIN="\"%{ash_bin}\"" %{SOURCE14} -static \
-	-L $RPM_BUILD_ROOT%{_libdir}/ \
-	-o $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
-chmod 700 $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
-
 # rquota.x and rquota.h are now provided by quota
 rm -f $RPM_BUILD_ROOT%{_includedir}/rpcsvc/rquota.[hx]
 
 %if %{build_i18ndata}
-install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
-
-# Hardlink identical locale files together
-gcc -O2 -o build-%{_target_cpu}-linux/hardlink redhat/hardlink.c
-build-%{_target_cpu}-linux/hardlink -vc $RPM_BUILD_ROOT%{_localedir}
+install -m644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
 %endif
 
 rm -rf $RPM_BUILD_ROOT%{_includedir}/netatalk/
@@ -1167,65 +1158,20 @@ export PATH=%{_bindir}:$PATH
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %if "%{name}" == "glibc"
-%define upgradestamp %{_slibdir}/glibc.upgraded
-%define broken_link %{_slibdir}/libnss_nis.so.1 %{_slibdir}/libnss_files.so.1 %{_slibdir}/libnss_dns.so.1 %{_slibdir}/libnss_compat.so.1
 
-%pre -p %{ash_bin}
-# test(1) and echo(1) are built-ins
-if [ -d %{_slibdir} ] && [ ! -f %{_slibdir}/libnss_files-%{version}.so ]; then
-  echo > %{upgradestamp}
-fi
+%if 0
+#TODO: we haven't built lua with the necessary features used in this scriptlet,
+#      so we need to perform the comparision in some other way
+%pre -p <lua>
+-- Check that the running kernel is new enough
+required = '%{enablekernel}'
+rel = posix.uname("%r")
+if rpm.vercmp(rel, required) < 0 then
+  error("FATAL: kernel too old", 0)
+end
+%endif
 
-%post -p %{_sbindir}/glibc-post-wrapper
-export LC_ALL=C
-
-if [ "$1" -gt 1 ]; then
-  # migrate /etc/ld.so.conf to include the new /etc/ld.so.conf.d/
-  # without external commands but for removing the temporary file
-  ldso_conf=/etc/ld.so.conf
-  while read i; do
-    [ "$i" = "include /etc/ld.so.conf.d/*.conf" ] && keep=1
-    # Remove previously used include line without absolute path
-    [ "$i" = "include ld.so.conf.d/*.conf" ] || echo $i
-  done < $ldso_conf > $ldso_conf-
-  if [ -z "$keep" ]; then
-    echo "include /etc/ld.so.conf.d/*.conf" > $ldso_conf
-    while read i; do
-      echo $i
-    done < $ldso_conf- >> $ldso_conf
-  fi
-  [ -x /bin/rm ] && /bin/rm -f $ldso_conf-
-fi
-/sbin/ldconfig
-
-if [ "$1" -gt 1 ]; then
-  # On upgrade the services doesn't work because libnss couldn't be
-  # loaded anymore.
-  if [ -f %{upgradestamp} ]; then
-    if /usr/bin/readlink /proc/1/exe >/dev/null && \
-       /usr/bin/readlink /proc/1/root >/dev/null; then
-       if [ -x /sbin/telinit -a -p /dev/initctl ]; then
-         /sbin/telinit u
-       fi
-       if [ -x /etc/init.d/sshd -a \
-            -x /usr/sbin/sshd -a \
-            -x /bin/bash ]; then
-         /etc/init.d/sshd condrestart
-       fi
-    fi
-  fi
-  if [ -f /bin/rm ]; then
-    for i in %broken_link; do
-      if [ -e $i ] && [ ! -L $i ]; then
-        /bin/rm -f $i
-      fi
-    done
-  fi
-fi
-[ -x /bin/rm ] && /bin/rm -f %{upgradestamp}
-
-# always generate the gconv-modules.cache
-%{_sbindir}/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv
+%post -p %{_sbindir}/glibc_post_upgrade
 
 %endif
 
@@ -1377,7 +1323,7 @@ fi
 %{_bindir}/tzselect
 #%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
-%{_sbindir}/glibc-post-wrapper
+%{_sbindir}/glibc_post_upgrade
 %endif
 
 %if %{build_biarch}
