@@ -1098,7 +1098,7 @@ rm -f  $RPM_BUILD_ROOT%{_infodir}/dir.old*
 rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
 rm -f  $RPM_BUILD_ROOT%{_datadir}/locale/locale-archive*
 # XXX: verify
-find %{buildroot}%{_datadir}/locale -type f -name LC_\* -o -name SYS_LC_|xargs rm -f
+find %{buildroot}%{_datadir}/locale -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{build_nscd}
 rm -f %{buildroot}%{_sbindir}/nscd
