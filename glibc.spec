@@ -958,6 +958,8 @@ done
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
 install -m644 bits/stdio-lock.h -D $RPM_BUILD_ROOT%{_includedir}/bits/stdio-lock.h
+# And <bits/libc-lock.h> needs sanitizing as well.
+install -m644 fedora/libc-lock.h -D $RPM_BUILD_ROOT%{_prefix}/include/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
