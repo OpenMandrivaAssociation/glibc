@@ -848,10 +848,7 @@ done < $CheckList
 %endif
 
 %install
-make install_root=$RPM_BUILD_ROOT install -C build-%{target_cpu}-linux
-%if %{build_i18ndata}
-install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
-%endif
+%makeinstall_std -C build-%{target_cpu}-linux
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
@@ -868,8 +865,11 @@ ALT_ARCH=i686-linux
 %if %isarch ppc64
 ALT_ARCH=ppc-linux
 %endif
-mkdir -p $RPM_BUILD_ROOT/$ALT_ARCH
-make install_root=$RPM_BUILD_ROOT/$ALT_ARCH install -C build-$ALT_ARCH
+
+# We want 32-bit binaries on sparc64
+%if %isarch sparc64
+# TODO: clean up
+make DESTDIR=%{buildroot}/$ALT_ARCH install -C build-$ALT_ARCH
 
 # Dispatch */lib only
 mv $RPM_BUILD_ROOT/$ALT_ARCH/lib $RPM_BUILD_ROOT/
@@ -877,13 +877,19 @@ mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/libexec/getconf/* \
        $RPM_BUILD_ROOT%{_prefix}/libexec/getconf/
 mkdir  $RPM_BUILD_ROOT%{_prefix}/lib
 mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/* $RPM_BUILD_ROOT%{_prefix}/lib/
-# We want 32-bit binaries on sparc64
-%if %isarch sparc64
+
 mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/sbin/* $RPM_BUILD_ROOT/sbin
 mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_bindir}/* $RPM_BUILD_ROOT%{_bindir}
 mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_sbindir}/* $RPM_BUILD_ROOT%{_sbindir}
+rm -rf   $RPM_BUILD_ROOT/$ALT_ARCH
+%else
+make DESTDIR=%{buildroot} install-lib -C build-$ALT_ARCH
+make DESTDIR=%{buildroot} -C elf/ objdir=`pwd`/build-$ALT_ARCH ldso_install
+# XXX: find install rule?
+install -m644 build-$ALT_ARCH/libc.a -D %{buildroot}%{_prefix}/lib/libc.a
+install -m644 build-$ALT_ARCH/libc_nonshared.a -D %{buildroot}%{_prefix}/lib/libc_nonshared.a
 %endif
-rm -rf $RPM_BUILD_ROOT/$ALT_ARCH
+
 # XXX Dispatch 32-bit stubs
 (sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
 > $RPM_BUILD_ROOT%{_includedir}/gnu/stubs-32.h
@@ -1034,8 +1040,10 @@ chmod 700 $RPM_BUILD_ROOT%{_sbindir}/glibc-post-wrapper
 # rquota.x and rquota.h are now provided by quota
 rm -f $RPM_BUILD_ROOT%{_includedir}/rpcsvc/rquota.[hx]
 
-# Hardlink identical locale files together
 %if %{build_i18ndata}
+install -m 0644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
+
+# Hardlink identical locale files together
 gcc -O2 -o build-%{_target_cpu}-linux/hardlink redhat/hardlink.c
 build-%{_target_cpu}-linux/hardlink -vc $RPM_BUILD_ROOT%{_localedir}
 %endif
@@ -1137,10 +1145,6 @@ rm -rf $RPM_BUILD_ROOT%{_mandir}
 rm -rf $RPM_BUILD_ROOT%{_infodir}
 rm -rf $RPM_BUILD_ROOT%{_prefix}/etc
 rm -rf $RPM_BUILD_ROOT%{_libdir}/gconv
-%endif
-
-%if %{build_biarch}
-rm -rf %{buildroot}%{_prefix}/lib/gconv
 %endif
 
 # In case we are cross-compiling, don't bother to remake symlinks and
@@ -1339,10 +1343,6 @@ fi
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
-%if %{build_biarch}
-%dir %{_prefix}/lib/audit
-%{_prefix}/lib/audit/sotruss-lib.so
-%endif
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
 %dir %{_libdir}/gconv
