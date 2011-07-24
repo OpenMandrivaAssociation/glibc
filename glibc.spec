@@ -767,6 +767,7 @@ function BuildGlibc() {
 %if %{enable_systap}
     --enable-systemtap \
 %endif
+    --enable-nss-crypt \
     --enable-bind-now \
     --with-tls \
     --with-__thread \
