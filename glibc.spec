@@ -83,8 +83,9 @@
 %define build_i18ndata	1
 %define build_timezone	0
 
+# enable later
 %if %isarch %{ix86} x86_64
-%define enable_systap	1
+%define enable_systap	0
 %else
 %define enable_systap	0
 %endif
