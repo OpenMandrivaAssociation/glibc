@@ -454,7 +454,7 @@ GNU C library in PDF format.
 %prep
 %setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 15 -a 16
 %if %{build_ports}
-tar -xjf %{SOURCE8}
+tar -xf %{SOURCE8}
 mv %{glibcportsdir} ports
 %endif
 
