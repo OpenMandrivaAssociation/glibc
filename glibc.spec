@@ -270,8 +270,6 @@ Patch48:	glibc-2.13-prelink.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
 Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
-# shamlessly taken in linaro. just look dirty woraround
-Patch50:	glibc_local-syscall-mcount.diff
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -485,9 +483,6 @@ mv %{glibcportsdir} ports
 %patch47 -p0 -b .fix-compile-error
 #%%patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
-%if %build_ports
-%patch50 -p1 -b .mcount
-%endif
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
