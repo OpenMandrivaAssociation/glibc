@@ -83,9 +83,9 @@
 %define build_i18ndata	1
 %define build_timezone	0
 
-# enable later
+%define enable_nsscrypt	1
 %if %isarch %{ix86} x86_64
-%define enable_systap	0
+%define enable_systap	1
 %else
 %define enable_systap	0
 %endif
@@ -103,6 +103,7 @@
 %define build_i18ndata	0
 %define build_timezone	0
 %define enable_systap	0
+%define enable_nsscrypt	0
 %endif
 
 # Allow --with[out] <feature> at rpm command line build
@@ -716,6 +717,20 @@ function BuildGlibc() {
   # Extra configure flags
   ExtraFlags=
 
+   # We'll be having issues with biarch builds of these two as longs as their
+   # build dependencies aren't provided as biarch packages as well.
+   # But as the alternate arch is less likely to make any use of the
+   # functionality and that we might just ditch biarch packaging completely,
+   # we just enable it on the main arch for now.
+   if [[ "$BuildAltArch" = "no" ]]; then
+%if %{enable_nsscrypt}
+   ExtraFlags="$ExtraFlags --enable-nss-crypt"
+%endif
+%if %{enable_systap}
+   ExtraFlags="$ExtraFlags --enable-systemtap"
+%endif
+   fi
+
   # NPTL+TLS are now the default
 %if %build_ports
   Pthreads="ports,nptl"
@@ -764,9 +779,6 @@ function BuildGlibc() {
     --with-selinux \
 %else
     --without-selinux \
-%endif
-%if %{enable_systap}
-    --enable-systemtap \
 %endif
     --enable-bind-now \
     --with-tls \
