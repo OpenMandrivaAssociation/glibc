@@ -119,7 +119,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.14.90
-Release:	1
+Release:	2
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -295,6 +295,7 @@ Provides:	ld.so
 
 %rename		ldconfig
 Provides:	/sbin/ldconfig
+Obsoletes:	nss_db
 
 %description
 The glibc package contains standard libraries which are used by
