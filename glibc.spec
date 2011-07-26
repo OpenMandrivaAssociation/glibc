@@ -13,7 +13,6 @@
 %else
 %define glibcsrcdir	glibc-2.14-121-g5551a7b
 %define glibcportsdir	glibc-ports-2.14-3-ge5cd24d
-%define build_ports	0
 %endif
 
 # crypt blowfish support
