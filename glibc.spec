@@ -153,8 +153,8 @@ Source15:	glibc-powerpc-cpu-addon-v0.03.tar.bz2
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
 Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.sign
-Source52:	crypt_freesec.c
-Source53:	crypt_freesec.h
+Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
+Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
 %if %{build_cross}
 Autoreq:	false
