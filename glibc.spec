@@ -151,9 +151,10 @@ Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
 Source15:	glibc-powerpc-cpu-addon-v0.03.tar.bz2
 
 # Blowfish support
-Source16:	crypt_blowfish-%{crypt_bf_ver}.tar.gz
-Source17:	crypt_freesec.c
-Source18:	crypt_freesec.h
+Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
+Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.sign
+Source52:	crypt_freesec.c
+Source53:	crypt_freesec.h
 
 %if %{build_cross}
 Autoreq:	false
@@ -449,7 +450,7 @@ GNU C library in PDF format.
 %endif
 
 %prep
-%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 15 -a 16
+%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 15 -a 50
 %if %{build_ports}
 tar -xf %{SOURCE8}
 mv %{glibcportsdir} ports
