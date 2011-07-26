@@ -1,7 +1,7 @@
 # for added ports support for arches like arm
 %define build_ports	0
 # add ports arches here
-%if %isarch %arm
+%if %isarch %arm %mipsx
 %define build_ports	1
 %endif
 
