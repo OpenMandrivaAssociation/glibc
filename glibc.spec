@@ -1,10 +1,3 @@
-# for added ports support for arches like arm
-%define build_ports	0
-# add ports arches here
-%if %isarch %arm %mipsx
-%define build_ports	1
-%endif
-
 # CVS snapshots of glibc
 %define RELEASE		0
 %if %{RELEASE}
@@ -40,6 +33,13 @@
 # Define target (base) architecture
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/" -e "s/\\(sun4.*\\|sparcv[89]\\)/sparc/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
+
+# for added ports support for arches like arm
+%define build_ports	0
+# add ports arches here
+%if %isarch %arm %mipsx
+%define build_ports	1
+%endif
 
 %if %isarch %arm
 %define gnuext		-gnueabi
