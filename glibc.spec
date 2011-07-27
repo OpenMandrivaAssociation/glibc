@@ -224,6 +224,9 @@ BuildRequires:	gd-devel
 %if %{enable_systap}
 BuildRequires:	systemtap
 %endif
+%if %{enable_nsscrypt}
+BuildRequires:	nss-devel
+%endif
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
 BuildRequires:	rpm-mandriva-setup-build >= 1.130
