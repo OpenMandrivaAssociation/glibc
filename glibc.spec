@@ -274,6 +274,10 @@ Patch48:	glibc-2.13-prelink.patch
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
 Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 
+# odd, for some reason the fedora patch applied earlier removes install of
+# streams header.. just add them back for now :|
+Patch50:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
+
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
@@ -486,6 +490,7 @@ mv %{glibcportsdir} ports
 %patch47 -p0 -b .fix-compile-error
 #%%patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
+%patch50 -p1 -b .fed_streams~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
