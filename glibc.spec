@@ -278,6 +278,9 @@ Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 # streams header.. just add them back for now :|
 Patch50:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
 
+# Requires to link thumb mode build
+Patch51:	glibc-2.14-arm-thumb.patch
+
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
@@ -461,6 +464,7 @@ GNU C library in PDF format.
 %if %{build_ports}
 tar -xf %{SOURCE8}
 mv %{glibcportsdir} ports
+%patch51 -p1
 %endif
 
 %patch00 -p1 -b .fedora~
