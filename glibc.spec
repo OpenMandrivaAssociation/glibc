@@ -122,7 +122,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.14.90
-Release:	3
+Release:	4
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -560,7 +560,6 @@ rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
 rm -f localedata/locales/[a-z_]*.*
 
-# FIXME - remove once gold version is detected
 %if %{using_gold}
 perl -pi -e 's|\.\*GNU ld\.\*|\.\*GNU\.\*ld\.\*Binutils|;' configure
 %endif
@@ -777,20 +776,6 @@ function BuildGlibc() {
   rm -rf build-$cpu-linux
   mkdir  build-$cpu-linux
   pushd  build-$cpu-linux
-  # >> FIXME remove once multiarch is functional again (after this build)
-%ifarch x86_64
-  if [ x$cpu = xi686 ]; then
-      # http://sourceware.org/bugzilla/show_bug.cgi?id=12343
-      # default is "no" starting at binutils 2.21.51.0.3
-      echo libc_cv_ctors_header=no > config.cache
-      echo libc_cv_forced_unwind=yes >> config.cache
-      echo libc_cv_c_cleanup=yes >> config.cache
-      ExtraFlags=--cache-file=config.cache
-      # even uglier hack... (just do not core dump please...)
-      perl -pi -e 's|\$\(built-program-cmd\)|%{_builddir}/%{glibcsrcdir}/build-i686-linux/sunrpc/rpcgen|;' ../sunrpc/Makefile
-  fi
-%endif
-  # << FIXME remove once multiarch is functional again
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
     $arch-%{_real_vendor}-linux%{gnuext} $BuildCross \
@@ -910,7 +895,7 @@ done < $CheckList
     # We want 32-bit binaries on sparc64
     %if %isarch sparc64
         # FIXME should only add support for what is being built
-        # as this adaptation is most likely broken...
+        # (frequently) as this adaptation is most likely broken...
         %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
         %make install install_root=%{buildroot} -C build-sparcv9-linux
     %else
@@ -920,18 +905,7 @@ done < $CheckList
 	%if %isarch ppc64
 	    ALT_ARCH=ppc
 	%endif
-	# >> FIXME remove once multiarch is functional again (after this build)
-%ifarch x86_64
-	perl -pi -e 's|\$\(built-program-cmd\)|%{_builddir}/%{glibcsrcdir}/build-i686-linux/timezone/zic|;' timezone/Makefile
-%endif
-	# << FIXME remove once multiarch is functional again (after this build)
 	%make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
-
-	# >> FIXME remove once multiarch is functional again (after this build)
-%ifarch x86_64
-	perl -pi -e 's|%{_builddir}/%{glibcsrcdir}/build-i686-linux/timezone/zic|\$\(built-program-cmd\)|;' timezone/Makefile
-%endif
-	# << FIXME remove once multiarch is functional again (after this build)
 	%make install install_root=%{buildroot} -C build-%{target_cpu}-linux
     %endif
 %else
