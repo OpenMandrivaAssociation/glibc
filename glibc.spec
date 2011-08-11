@@ -34,6 +34,10 @@
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/" -e "s/\\(sun4.*\\|sparcv[89]\\)/sparc/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
 
+# Not a good idea as of 20111008, because it will generate a broken
+# glibc for x86_64 and most binaries just core dump on i586
+%define using_gold	%(if test x`ld --version 2>&1 | head -1 | sed -e 's/GNU \\([a-zA-Z0-9]*\\).*/\\1/'` = xgold; then echo 1; else echo 0; fi)
+
 # for added ports support for arches like arm
 %define build_ports	0
 # add ports arches here
@@ -118,7 +122,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.14.90
-Release:	2
+Release:	3
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -556,6 +560,11 @@ rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
 rm -f localedata/locales/[a-z_]*.*
 
+# FIXME - remove once gold version is detected
+%if %{using_gold}
+perl -pi -e 's|\.\*GNU ld\.\*|\.\*GNU\.\*ld\.\*Binutils|;' configure
+%endif
+
 %build
 # Prepare test matrix in the next function
 CheckList=$PWD/Check.list
@@ -768,6 +777,20 @@ function BuildGlibc() {
   rm -rf build-$cpu-linux
   mkdir  build-$cpu-linux
   pushd  build-$cpu-linux
+  # >> FIXME remove once multiarch is functional again (after this build)
+%ifarch x86_64
+  if [ x$cpu = xi686 ]; then
+      # http://sourceware.org/bugzilla/show_bug.cgi?id=12343
+      # default is "no" starting at binutils 2.21.51.0.3
+      echo libc_cv_ctors_header=no > config.cache
+      echo libc_cv_forced_unwind=yes >> config.cache
+      echo libc_cv_c_cleanup=yes >> config.cache
+      ExtraFlags=--cache-file=config.cache
+      # even uglier hack... (just do not core dump please...)
+      perl -pi -e 's|\$\(built-program-cmd\)|%{_builddir}/%{glibcsrcdir}/build-i686-linux/sunrpc/rpcgen|;' ../sunrpc/Makefile
+  fi
+%endif
+  # << FIXME remove once multiarch is functional again
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
     $arch-%{_real_vendor}-linux%{gnuext} $BuildCross \
@@ -883,53 +906,43 @@ done < $CheckList
 %endif
 
 %install
-%makeinstall_std -C build-%{target_cpu}-linux
+%if %{build_biarch}
+    # We want 32-bit binaries on sparc64
+    %if %isarch sparc64
+        # FIXME should only add support for what is being built
+        # as this adaptation is most likely broken...
+        %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
+        %make install install_root=%{buildroot} -C build-sparcv9-linux
+    %else
+        %if %isarch x86_64
+	    ALT_ARCH=i686
+	%endif
+	%if %isarch ppc64
+	    ALT_ARCH=ppc
+	%endif
+	# >> FIXME remove once multiarch is functional again (after this build)
+%ifarch x86_64
+	perl -pi -e 's|\$\(built-program-cmd\)|%{_builddir}/%{glibcsrcdir}/build-i686-linux/timezone/zic|;' timezone/Makefile
+%endif
+	# << FIXME remove once multiarch is functional again (after this build)
+	%make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
+
+	# >> FIXME remove once multiarch is functional again (after this build)
+%ifarch x86_64
+	perl -pi -e 's|%{_builddir}/%{glibcsrcdir}/build-i686-linux/timezone/zic|\$\(built-program-cmd\)|;' timezone/Makefile
+%endif
+	# << FIXME remove once multiarch is functional again (after this build)
+	%make install install_root=%{buildroot} -C build-%{target_cpu}-linux
+    %endif
+%else
+    %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
+%endif
+
 install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
 touch extralibs.filelist
-
-# Install biarch libraries
-%if %{build_biarch}
-%if %isarch sparc64
-ALT_ARCH=sparcv9-linux
-%endif
-%if %isarch x86_64
-ALT_ARCH=i686-linux
-%endif
-%if %isarch ppc64
-ALT_ARCH=ppc-linux
-%endif
-
-# We want 32-bit binaries on sparc64
-%if %isarch sparc64
-# TODO: clean up
-make DESTDIR=%{buildroot}/$ALT_ARCH install -C build-$ALT_ARCH
-
-# Dispatch */lib only
-mv $RPM_BUILD_ROOT/$ALT_ARCH/lib $RPM_BUILD_ROOT/
-mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/libexec/getconf/* \
-       $RPM_BUILD_ROOT%{_prefix}/libexec/getconf/
-mkdir  $RPM_BUILD_ROOT%{_prefix}/lib
-mv     $RPM_BUILD_ROOT/$ALT_ARCH%{_prefix}/lib/* $RPM_BUILD_ROOT%{_prefix}/lib/
-
-mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/sbin/* $RPM_BUILD_ROOT/sbin
-mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_bindir}/* $RPM_BUILD_ROOT%{_bindir}
-mv -f    $RPM_BUILD_ROOT/$ALT_ARCH/%{_sbindir}/* $RPM_BUILD_ROOT%{_sbindir}
-rm -rf   $RPM_BUILD_ROOT/$ALT_ARCH
-%else
-make DESTDIR=%{buildroot} subdir_stubs install-lib -C build-$ALT_ARCH
-make DESTDIR=%{buildroot} -C elf/ objdir=`pwd`/build-$ALT_ARCH ldso_install
-# XXX: find install rule?
-install -m644 build-$ALT_ARCH/libc.a -D %{buildroot}%{_prefix}/lib/libc.a
-install -m644 build-$ALT_ARCH/libc_nonshared.a -D %{buildroot}%{_prefix}/lib/libc_nonshared.a
-%endif
-
-# XXX Dispatch 32-bit stubs
-sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs) \
-> $RPM_BUILD_ROOT%{_includedir}/gnu/stubs-32.h
-%endif
 
 # Install extra glibc libraries
 function InstallGlibc() {
@@ -1342,7 +1355,7 @@ fi
 #%{_bindir}/glibcbug
 %{_bindir}/iconv
 %{_bindir}/ldd
-%if %isarch i386 ppc sparc sparc64
+%if %isarch i386 x86_64 ppc sparc sparc64
 %{_bindir}/lddlibc4
 %endif
 %{_bindir}/locale
@@ -1368,6 +1381,11 @@ fi
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
+%dir %{_prefix}/lib/audit
+%{_prefix}/lib/audit/sotruss-lib.so
+%dir %{_prefix}/lib/gconv
+%{_prefix}/lib/gconv/*.so
+%{_prefix}/lib/gconv/gconv-modules
 %endif
 #
 # ldconfig
