@@ -34,7 +34,7 @@
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/" -e "s/\\(sun4.*\\|sparcv[89]\\)/sparc/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
 
-# Not a good idea as of 20111008, because it will generate a broken
+# Not a good idea as of 20110810, because it will generate a broken
 # glibc for x86_64 and most binaries just core dump on i586
 %define using_gold	%(if test x`ld --version 2>&1 | head -1 | sed -e 's/GNU \\([a-zA-Z0-9]*\\).*/\\1/'` = xgold; then echo 1; else echo 0; fi)
 
