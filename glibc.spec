@@ -174,7 +174,6 @@ Provides:	should-restart = system
 %endif
 # The dynamic linker supports DT_GNU_HASH
 Provides:	rtld(GNU_HASH)
-Autoreq:	false
 %endif
 BuildRequires:	patch, gettext, perl
 BuildRequires:	linux-userspace-headers
@@ -343,8 +342,6 @@ Conflicts:	gcc4.0 < 4.0.1-2mdk
 %if %{build_cross}
 Autoreq:	false
 Autoprov:	false
-%else
-Autoreq:	true
 %endif
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 
@@ -379,7 +376,6 @@ library.
 Summary:	The GNU libc libraries, including support for gprof profiling
 Group:		Development/C
 %rename		libc-profile
-Autoreq:	true
 
 %description profile
 The glibc-profile package includes the GNU libc libraries and support
@@ -401,7 +397,6 @@ Requires(pre):	rpm-helper
 Requires(preun):rpm-helper
 Requires(post):	rpm-helper
 Requires(postun):rpm-helper
-Autoreq:	true
 
 %description -n	nscd
 Nscd caches name service lookups and can dramatically improve
