@@ -284,6 +284,9 @@ Patch50:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
 # Requires to link thumb mode build
 Patch51:	glibc-2.14-arm-thumb.patch
 
+# http://sourceware.org/ml/libc-ports/2011-08/msg00000.html
+Patch52:	glibc-2.14.90-arm-hardfp.patch
+
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
@@ -464,6 +467,9 @@ GNU C library in PDF format.
 tar -xf %{SOURCE8}
 mv %{glibcportsdir} ports
 %patch51 -p1
+%ifarch armv7hl
+%patch52 -p1
+%endif
 %endif
 
 %patch00 -p1 -b .fedora~
