@@ -9,7 +9,7 @@
 %endif
 
 # crypt blowfish support
-%define crypt_bf_ver	1.0.2
+%define crypt_bf_ver	1.2
 
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
@@ -512,9 +512,9 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
 %patch39 -p1 -b .mdv-owl-crypt_freesec
 %patch40 -p1 -b .avx-relocate_fcrypt
-%patch41 -p1 -b .avx-increase_BF_FRAME
+%patch41 -p0 -b .avx-increase_BF_FRAME
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch43 -p0 -b .mdv-wrapper_handle_sha
+%patch43 -p1 -b .mdv-wrapper_handle_sha
 
 %if %{build_selinux}
 # XXX kludge to build nscd with selinux support as it added -nostdinc
