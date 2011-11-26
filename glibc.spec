@@ -4,8 +4,8 @@
 %define glibcsrcdir	glibc-%{version}
 %define glibcportsdir	glibc-%{version}
 %else
-%define glibcsrcdir	glibc-2.14-121-g5551a7b
-%define glibcportsdir	glibc-ports-2.14-3-ge5cd24d
+%define glibcsrcdir	glibc-2.14-394-g8f3b1ff
+%define glibcportsdir	glibc-ports-2.14-25-gd3d9bde
 %endif
 
 # crypt blowfish support
@@ -286,13 +286,14 @@ Patch51:	glibc-2.14-arm-thumb.patch
 
 # http://sourceware.org/ml/libc-ports/2011-08/msg00000.html
 Patch52:	glibc-2.14.90-arm-hardfp.patch
+Patch53:	glibc-no-leaf-attribute.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
 
 # People changed location of rpm scripts...
-%define rpmscripts	/usr/lib/rpm/%{_real_vendor}
+%define rpmscripts	/usr/lib/rpm/%{_target_vendor}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
 %define __find_provides	%{_builddir}/%{glibcsrcdir}/find_provides.sh
@@ -500,6 +501,7 @@ mv %{glibcportsdir} ports
 #%%patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
 %patch50 -p1 -b .fed_streams~
+%patch53 -p1 -b .leaf~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
@@ -779,7 +781,7 @@ function BuildGlibc() {
   pushd  build-$cpu-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
-    $arch-%{_real_vendor}-linux%{gnuext} $BuildCross \
+    $arch-%{_target_vendor}-%{_target_alias} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
