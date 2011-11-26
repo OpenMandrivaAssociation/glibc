@@ -674,11 +674,6 @@ function BuildGlibc() {
   fi
 
   BuildFlags="$BuildFlags -DNDEBUG=1 -O3 -finline-functions -g"
-  if $BuildCC -v 2>&1 | grep -q 'gcc version 3.0'; then
-    # gcc3.0 had really poor inlining heuristics causing problems in
-    # resulting ld.so
-    BuildFlags="$BuildFlags -finline-limit=2000"
-  fi
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
