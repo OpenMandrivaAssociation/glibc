@@ -122,7 +122,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.14.90
-Release:	7
+Release:	8
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -137,7 +137,6 @@ Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 # Fedora tarball
 Source2:	%{glibcsrcdir}-fedora.tar.xz
 Source3:	glibc-manpages.tar.bz2
-Source4:	glibc-find-requires.sh
 Source5:	glibc-check.sh
 
 Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
@@ -292,12 +291,9 @@ Patch53:	glibc-no-leaf-attribute.patch
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
 
-# People changed location of rpm scripts...
-%define rpmscripts	/usr/lib/rpm/%{_target_vendor}
-
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
-%define __find_provides	%{_builddir}/%{glibcsrcdir}/find_provides.sh
-%define __find_requires %{_builddir}/%{glibcsrcdir}/find_requires.sh
+%define _provides_exceptions GLIBC_PRIVATE
+%define _requires_exceptions GLIBC_PRIVATE
 
 %if !%{build_cross}
 Obsoletes:	ld.so
@@ -525,38 +521,6 @@ ln -s %{_includedir}/selinux selinux
 %endif
 
 find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
-
-# (Anssi 03/2008) FIXME: use _provides_exceptions
-cat > find_provides.sh << EOF
-#!/bin/sh
-%{rpmscripts}/find-provides | grep -v GLIBC_PRIVATE
-exit 0
-EOF
-chmod +x find_provides.sh
-
-cat > find_requires.bootstrap.sh << EOF
-/bin/sh %{SOURCE4} %{buildroot} %{_target_cpu} | grep -v "\(GLIBC_PRIVATE\|linux-gate\|linux-vdso\)"
-exit 0
-EOF
-chmod +x find_requires.bootstrap.sh
-
-# XXX: use better way later to avoid LD_LIBRARY_PATH issue
-cat %{rpmscripts}/find-requires | sed '/.*LD_LIBRARY_PATH.*/d;' > find_requires
-chmod +x find_requires
-# (Anssi 03/2008) FIXME: use _requires_exceptions
-cat > find_requires.noprivate.sh << EOF
-%{_builddir}/%{glibcsrcdir}/find_requires %{buildroot} %{_target_cpu} | \
-	grep -v GLIBC_PRIVATE
-exit 0
-EOF
-chmod +x find_requires.noprivate.sh
-
-# FIXME: fix system rpm find-requires to use the prefix cross version
-%if %{build_bootstrap} || "%{_target_cpu}" != "%{target_cpu}"
-ln -s find_requires.bootstrap.sh find_requires.sh
-%else
-ln -s find_requires.noprivate.sh find_requires.sh
-%endif
 
 # Remove patch backups from files we ship in glibc packages
 rm -f ChangeLog.[^0-9]*
