@@ -1083,6 +1083,7 @@ rm -f %{buildroot}%{_sbindir}/nscd
 %if !%{build_doc}
 rm -f %{buildroot}%{_infodir}/libc.info*
 %endif
+rm -f %{buildroot}%{_infodir}/dir
 
 %if !%{build_utils}
 %if %{build_biarch}
