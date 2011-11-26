@@ -46,9 +46,7 @@
 %endif
 
 %if %isarch %arm
-%define gnuext		-gnueabi
-%else
-%define gnuext		-gnu
+%define _gnu		-gnueabi
 %endif
 
 # Define Xen arches to build with -mno-tls-direct-direct-seg-refs
@@ -232,7 +230,6 @@ BuildRequires:	nss-devel
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
 BuildRequires:	rpm-mandriva-setup-build >= 1.133
-BuildRequires:	rpm >= 1:5.4.4-13
 BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-fedora.patch
@@ -741,7 +738,7 @@ function BuildGlibc() {
   pushd  build-$cpu-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
-    $arch-%{_target_vendor}-%{_target_alias} $BuildCross \
+    $arch-%{_target_vendor}-%{_target_os}%{?_gnu} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
