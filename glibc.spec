@@ -695,6 +695,7 @@ function BuildGlibc() {
    # But as the alternate arch is less likely to make any use of the
    # functionality and that we might just ditch biarch packaging completely,
    # we just enable it on the main arch for now.
+%if %{enable_nsscrypt} || %{enable_systap}
    if [[ "$BuildAltArch" = "no" ]]; then
 %if %{enable_nsscrypt}
    ExtraFlags="$ExtraFlags --enable-nss-crypt"
@@ -703,6 +704,7 @@ function BuildGlibc() {
    ExtraFlags="$ExtraFlags --enable-systemtap"
 %endif
    fi
+%endif
 
   # NPTL+TLS are now the default
 %if %build_ports
