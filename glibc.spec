@@ -672,7 +672,7 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 -O3 -finline-functions -g"
+  BuildFlags="$BuildFlags -DNDEBUG=1 -O3 -finline-functions %{debugcflags}"
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
