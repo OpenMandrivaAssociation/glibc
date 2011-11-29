@@ -38,6 +38,8 @@
 # glibc for x86_64 and most binaries just core dump on i586
 %define using_gold	%(if test x`ld --version 2>&1 | head -1 | sed -e 's/GNU \\([a-zA-Z0-9]*\\).*/\\1/'` = xgold; then echo 1; else echo 0; fi)
 
+%undefine _fortify_cflags
+
 # for added ports support for arches like arm
 %define build_ports	0
 # add ports arches here
@@ -660,7 +662,11 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 -O3 -finline-functions %{debugcflags}"
+  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
+
+  # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
+  BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
+
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
