@@ -145,6 +145,9 @@ Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
 Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
 %endif
 
+# minimal kernel version check to prevent upgrade on systems running too old kernels
+Source10:	glibc-checkkernelversion.c
+
 # <http://penguinppc.org/dev/glibc/glibc-powerpc-cpu-addon.html>
 # NOTE: this check is weak. The rationale is: Cell PPU optimized by
 # default for MDV 2007.0, power5 et al. on Corporate side
@@ -838,6 +841,8 @@ gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgrad
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
   '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
+gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE10} -o build-%{target_cpu}-linux/glibc_pre_upgrade \
+  '-DKERNEL_RELEASE="%{enablekernel}"'
 
 %if %{build_check}
 export TMPDIR=/tmp
@@ -873,6 +878,7 @@ done < $CheckList
 %endif
 
 install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
+install -m700 build-%{target_cpu}-linux/glibc_pre_upgrade -D %{buildroot}%{_sbindir}/glibc_pre_upgrade
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
@@ -1139,17 +1145,8 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %if "%{name}" == "glibc"
 
-%if 0
-#TODO: we haven't built lua with the necessary features used in this scriptlet,
-#      so we need to perform the comparision in some other way
-%pre -p <lua>
--- Check that the running kernel is new enough
-required = '%{enablekernel}'
-rel = posix.uname("%r")
-if rpm.vercmp(rel, required) < 0 then
-  error("FATAL: kernel too old", 0)
-end
-%endif
+%pre
+%{_sbindir}/glibc_pre_upgrade
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
@@ -1305,6 +1302,7 @@ fi
 %{_bindir}/tzselect
 #%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
+%{_sbindir}/glibc_pre_upgrade
 %{_sbindir}/glibc_post_upgrade
 %endif
 
