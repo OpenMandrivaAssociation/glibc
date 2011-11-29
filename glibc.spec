@@ -38,6 +38,7 @@
 # glibc for x86_64 and most binaries just core dump on i586
 %define using_gold	%(if test x`ld --version 2>&1 | head -1 | sed -e 's/GNU \\([a-zA-Z0-9]*\\).*/\\1/'` = xgold; then echo 1; else echo 0; fi)
 
+%define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
 
 # for added ports support for arches like arm
@@ -734,7 +735,7 @@ function BuildGlibc() {
   mkdir  build-$cpu-linux
   pushd  build-$cpu-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags}" ../configure \
     $arch-%{_target_vendor}-%{_target_os}%{?_gnu} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
