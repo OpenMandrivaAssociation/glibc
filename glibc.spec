@@ -1209,7 +1209,7 @@ exit 0
 
 %if %{build_nscd}
 %pre -n nscd
-%_pre_useradd nscd / /bin/false
+%_pre_useradd nscd / /sbin/noogin
 
 %post -n nscd
 %_post_service nscd
