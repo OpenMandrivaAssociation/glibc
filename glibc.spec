@@ -1293,8 +1293,10 @@ fi
 #%{_bindir}/glibcbug
 %{_bindir}/iconv
 %{_bindir}/ldd
+%if !%{with minimal}
 %if %isarch i386 x86_64 ppc sparc sparc64
 %{_bindir}/lddlibc4
+%endif
 %endif
 %{_bindir}/locale
 %{_bindir}/localedef
