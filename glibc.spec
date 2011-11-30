@@ -224,7 +224,7 @@ BuildRequires:	nss-devel
 BuildRequires:	autoconf2.5
 BuildRequires:	libcap-devel
 BuildRequires:	rpm-mandriva-setup-build >= 1.133
-BuildRequires:	rpm >= 1:5.4.4-17
+BuildRequires:	rpm >= 1:5.4.4-20
 BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-fedora.patch
