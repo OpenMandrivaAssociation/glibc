@@ -891,19 +891,19 @@ function InstallGlibc() {
   [[ -z "$LibDir" ]] && LibDir="%{_slibdir}"
 
   pushd $BuildDir
-  mkdir -p $RPM_BUILD_ROOT$LibDir/$SubDir/
-  install -m755 libc.so $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libc-*.so`
-  ln -sf `basename $RPM_BUILD_ROOT$LibDir/libc-*.so` $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libc.so.*`
-  install -m755 math/libm.so $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libm-*.so`
-  ln -sf `basename $RPM_BUILD_ROOT$LibDir/libm-*.so` $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libm.so.*`
-  install -m755 $Pthreads/libpthread.so $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libpthread-*.so`
-  ln -sf `basename $RPM_BUILD_ROOT$LibDir/libpthread-*.so` $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libpthread.so.*`
-  install -m755 ${Pthreads}_db/libthread_db.so $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libthread_db-*.so`
-  ln -sf `basename $RPM_BUILD_ROOT$LibDir/libthread_db-*.so` $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/libthread_db.so.*`
-  install -m755 rt/librt.so $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/librt-*.so`
-  ln -sf `basename $RPM_BUILD_ROOT$LibDir/librt-*.so` $RPM_BUILD_ROOT$LibDir/$SubDir/`basename $RPM_BUILD_ROOT$LibDir/librt.so.*`
+  mkdir -p %{buildroot}$LibDir/$SubDir/
+  install -m755 libc.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc-*.so`
+  ln -sf `basename %{buildroot}$LibDir/libc-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc.so.*`
+  install -m755 math/libm.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm-*.so`
+  ln -sf `basename %{buildroot}$LibDir/libm-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm.so.*`
+  install -m755 $Pthreads/libpthread.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread-*.so`
+  ln -sf `basename %{buildroot}$LibDir/libpthread-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread.so.*`
+  install -m755 ${Pthreads}_db/libthread_db.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db-*.so`
+  ln -sf `basename %{buildroot}$LibDir/libthread_db-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db.so.*`
+  install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
+  ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
   echo "%dir $LibDir/$SubDir" >> ../extralibs.filelist
-  find $RPM_BUILD_ROOT$LibDir/$SubDir -maxdepth 1  -type f -o -type l | sed -e "s|$RPM_BUILD_ROOT||" >> ../extralibs.filelist
+  find %{buildroot}$LibDir/$SubDir -maxdepth 1  -type f -o -type l | sed -e "s|%{buildroot}||" >> ../extralibs.filelist
   popd
 }
 
@@ -922,45 +922,45 @@ for cpu in %{powerpc_cpu_list}; do
 done
 # Use hardlinks, not symlinks
 # see upper NOTE if you really want dedicated power5+ hwcap...
-[[ -d "$RPM_BUILD_ROOT/%{_lib}/power5" ]] && {
-  mkdir -p $RPM_BUILD_ROOT/%{_lib}/power5+
-  ln -v	$RPM_BUILD_ROOT/%{_lib}/power5/*.so \
-	$RPM_BUILD_ROOT/%{_lib}/power5+/
-  $RPM_BUILD_ROOT/sbin/ldconfig -n $RPM_BUILD_ROOT/%{_lib}/power5+/
+[[ -d "%{buildroot}/%{_lib}/power5" ]] && {
+  mkdir -p %{buildroot}/%{_lib}/power5+
+  ln -v	%{buildroot}/%{_lib}/power5/*.so \
+	%{buildroot}/%{_lib}/power5+/
+  %{buildroot}/sbin/ldconfig -n %{buildroot}/%{_lib}/power5+/
   echo "%dir /%{_lib}/power5+" >> extralibs.filelist
-  find $RPM_BUILD_ROOT$LibDir/%{_lib}/power5+/ -maxdepth 1  -type f -o -type l | sed -e "s|$RPM_BUILD_ROOT||" >> extralibs.filelist
+  find %{buildroot}$LibDir/%{_lib}/power5+/ -maxdepth 1  -type f -o -type l | sed -e "s|%{buildroot}||" >> extralibs.filelist
 }
 %endif
 
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
-install -m644 bits/stdio-lock.h -D $RPM_BUILD_ROOT%{_includedir}/bits/stdio-lock.h
+install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
-install -m644 fedora/libc-lock.h -D $RPM_BUILD_ROOT%{_prefix}/include/bits/libc-lock.h
+install -m644 fedora/libc-lock.h -D %{buildroot}%{_prefix}/include/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
 # section but with glibc that is simply not an option
-mkdir -p $RPM_BUILD_ROOT%{_localedir}/ru_RU/LC_MESSAGES
+mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 
 # Remove the files we don't want to distribute
-rm -f $RPM_BUILD_ROOT%{_libdir}/libNoVersion*
-rm -f $RPM_BUILD_ROOT%{_slibdir}/libNoVersion*
+rm -f %{buildroot}%{_libdir}/libNoVersion*
+rm -f %{buildroot}%{_slibdir}/libNoVersion*
 
-ln -sf libbsd-compat.a $RPM_BUILD_ROOT%{_libdir}/libbsd.a
+ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
 %if %{build_biarch}
-ln -sf libbsd-compat.a $RPM_BUILD_ROOT%{_prefix}/lib/libbsd.a
+ln -sf libbsd-compat.a %{buildroot}%{_prefix}/lib/libbsd.a
 %endif
 
 %if "%{name}" == "glibc"
-install -m 644 mandriva/nsswitch.conf $RPM_BUILD_ROOT%{_sysconfdir}/nsswitch.conf
+install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 %endif
 
 # This is for ncsd - in glibc 2.2
 %if %{build_nscd}
-install -m 644 nscd/nscd.conf $RPM_BUILD_ROOT%{_sysconfdir}
-mkdir -p $RPM_BUILD_ROOT%{_initrddir}
-install -m 755 nscd/nscd.init $RPM_BUILD_ROOT%{_initrddir}/nscd
+install -m 644 nscd/nscd.conf %{buildroot}%{_sysconfdir}
+mkdir -p %{buildroot}%{_initrddir}
+install -m 755 nscd/nscd.init %{buildroot}%{_initrddir}/nscd
 %endif
 
 # These man pages require special attention
@@ -972,14 +972,14 @@ rm -rf %buildroot/%{_datadir}/zoneinfo/{posix,right}
 
 # Include ld.so.conf
 %if "%{name}" == "glibc"
-echo "include /etc/ld.so.conf.d/*.conf" > $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
-chmod 644 $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf
-mkdir -p  $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.conf.d
+echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
+chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
+mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 %endif
 
 # ldconfig cache
-mkdir -p $RPM_BUILD_ROOT%{_var}/cache/ldconfig
-touch $RPM_BUILD_ROOT%{_var}/cache/ldconfig/aux-cache
+mkdir -p %{buildroot}%{_var}/cache/ldconfig
+touch %{buildroot}%{_var}/cache/ldconfig/aux-cache
 
 # automatic ldconfig cache update on rpm installs/removals
 # (see http://wiki.mandriva.com/en/Rpm_filetriggers)
@@ -994,10 +994,10 @@ EOF
 chmod 755 %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script
 
 # Include %{_libdir}/gconv/gconv-modules.cache
-touch $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
-chmod 644 $RPM_BUILD_ROOT%{_libdir}/gconv/gconv-modules.cache
+touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
+chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 
-touch $RPM_BUILD_ROOT%{_sysconfdir}/ld.so.cache
+touch %{buildroot}%{_sysconfdir}/ld.so.cache
 
 # Are we cross-compiling?
 Strip="strip"
@@ -1005,7 +1005,7 @@ if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
   Strip="%{target_cpu}-linux-$Strip"
 fi
 # Strip debugging info from all static libraries
-pushd $RPM_BUILD_ROOT%{_libdir}
+pushd %{buildroot}%{_libdir}
 for i in *.a; do
   if [ -f "$i" ]; then
     case "$i" in
@@ -1017,31 +1017,31 @@ done
 popd
 
 # rquota.x and rquota.h are now provided by quota
-rm -f $RPM_BUILD_ROOT%{_includedir}/rpcsvc/rquota.[hx]
+rm -f %{buildroot}%{_includedir}/rpcsvc/rquota.[hx]
 
 %if %{build_i18ndata}
-install -m644 localedata/SUPPORTED $RPM_BUILD_ROOT%{_datadir}/i18n/
+install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
 %endif
 
-rm -rf $RPM_BUILD_ROOT%{_includedir}/netatalk/
+rm -rf %{buildroot}%{_includedir}/netatalk/
 
 # Build file list for devel package
-find $RPM_BUILD_ROOT%{_includedir} -type f -or -type l > devel.filelist
-find $RPM_BUILD_ROOT%{_includedir} -type d  | sed "s/^/%dir /" | \
+find %{buildroot}%{_includedir} -type f -or -type l > devel.filelist
+find %{buildroot}%{_includedir} -type d  | sed "s/^/%dir /" | \
   grep -v "%{_libdir}/libnss1.*.so$" | \
   grep -v "%{_includedir}$" | >> devel.filelist
-find $RPM_BUILD_ROOT%{_libdir} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
+find %{buildroot}%{_libdir} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
 # biarch libs
 %if %{build_biarch}
-find $RPM_BUILD_ROOT%{_prefix}/lib -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
+find %{buildroot}%{_prefix}/lib -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
 %endif
-perl -pi -e "s|$RPM_BUILD_ROOT||" devel.filelist
+perl -pi -e "s|%{buildroot}||" devel.filelist
 
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{build_timezone}
-rm -f $RPM_BUILD_ROOT%{_sysconfdir}/localtime
-cp -f $RPM_BUILD_ROOT%{_datadir}/zoneinfo/US/Eastern $RPM_BUILD_ROOT%{_sysconfdir}/localtime
-#ln -sf ..%{_datadir}/zoneinfo/US/Eastern $RPM_BUILD_ROOT%{_sysconfdir}/localtime
+rm -f %{buildroot}%{_sysconfdir}/localtime
+cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
+#ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
 %endif
 
 # [gg] build PDF documentation
@@ -1070,9 +1070,9 @@ perl -ne '/^\s*$/ or print' libc.lang > rpm.filelist
 cat extralibs.filelist >> rpm.filelist
 
 # Remove unpackaged files
-rm -f  $RPM_BUILD_ROOT%{_infodir}/dir.old*
-rm -rf $RPM_BUILD_ROOT%{_includedir}/asm-*/mach-*/
-rm -f  $RPM_BUILD_ROOT%{_localedir}/locale-archive*
+rm -f  %{buildroot}%{_infodir}/dir.old*
+rm -rf %{buildroot}%{_includedir}/asm-*/mach-*/
+rm -f  %{buildroot}%{_localedir}/locale-archive*
 # XXX: verify
 find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
@@ -1087,42 +1087,42 @@ rm -f %{buildroot}%{_infodir}/dir
 
 %if !%{build_utils}
 %if %{build_biarch}
-rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libmemusage.so
-rm -f  $RPM_BUILD_ROOT%{_slibdir32}/libpcprofile.so
+rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
+rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
 %endif
-rm -f  $RPM_BUILD_ROOT%{_slibdir}/libmemusage.so
-rm -f  $RPM_BUILD_ROOT%{_slibdir}/libpcprofile.so
+rm -f  %{buildroot}%{_slibdir}/libmemusage.so
+rm -f  %{buildroot}%{_slibdir}/libpcprofile.so
 
-rm -f  $RPM_BUILD_ROOT%{_bindir}/memusage
-rm -f  $RPM_BUILD_ROOT%{_bindir}/memusagestat
-rm -f  $RPM_BUILD_ROOT%{_bindir}/mtrace
-rm -f  $RPM_BUILD_ROOT%{_bindir}/pcprofiledump
-rm -f  $RPM_BUILD_ROOT%{_bindir}/xtrace
+rm -f  %{buildroot}%{_bindir}/memusage
+rm -f  %{buildroot}%{_bindir}/memusagestat
+rm -f  %{buildroot}%{_bindir}/mtrace
+rm -f  %{buildroot}%{_bindir}/pcprofiledump
+rm -f  %{buildroot}%{_bindir}/xtrace
 %endif
 
 %if !%{build_timezone}
-rm -f  $RPM_BUILD_ROOT%{_sysconfdir}/localtime
-rm -f  $RPM_BUILD_ROOT%{_sbindir}/zdump
-rm -f  $RPM_BUILD_ROOT%{_sbindir}/zic
-rm -f  $RPM_BUILD_ROOT%{_mandir}/man1/zdump.1*
-rm -rf $RPM_BUILD_ROOT%{_datadir}/zoneinfo
+rm -f  %{buildroot}%{_sysconfdir}/localtime
+rm -f  %{buildroot}%{_sbindir}/zdump
+rm -f  %{buildroot}%{_sbindir}/zic
+rm -f  %{buildroot}%{_mandir}/man1/zdump.1*
+rm -rf %{buildroot}%{_datadir}/zoneinfo
 %endif
 
 %if !%{build_i18ndata}
-rm -rf $RPM_BUILD_ROOT%{_datadir}/i18n
+rm -rf %{buildroot}%{_datadir}/i18n
 %endif
 
 %if "%{name}" != "glibc"
-rm -rf $RPM_BUILD_ROOT/boot
-rm -rf $RPM_BUILD_ROOT/sbin
-rm -rf $RPM_BUILD_ROOT/usr/share
-rm -rf $RPM_BUILD_ROOT%{_bindir}
-rm -rf $RPM_BUILD_ROOT%{_sbindir}
-rm -rf $RPM_BUILD_ROOT%{_datadir}
-rm -rf $RPM_BUILD_ROOT%{_mandir}
-rm -rf $RPM_BUILD_ROOT%{_infodir}
-rm -rf $RPM_BUILD_ROOT%{_prefix}/etc
-rm -rf $RPM_BUILD_ROOT%{_libdir}/gconv
+rm -rf %{buildroot}/boot
+rm -rf %{buildroot}/sbin
+rm -rf %{buildroot}/usr/share
+rm -rf %{buildroot}%{_bindir}
+rm -rf %{buildroot}%{_sbindir}
+rm -rf %{buildroot}%{_datadir}
+rm -rf %{buildroot}%{_mandir}
+rm -rf %{buildroot}%{_infodir}
+rm -rf %{buildroot}%{_prefix}/etc
+rm -rf %{buildroot}%{_libdir}/gconv
 %endif
 
 # In case we are cross-compiling, don't bother to remake symlinks and
