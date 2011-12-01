@@ -873,7 +873,6 @@ done < $CheckList
 %endif
 
 install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
-install -m700 build-%{target_cpu}-linux/glibc_pre_upgrade -D %{buildroot}%{_sbindir}/glibc_pre_upgrade
 sh manpages/Script.sh
 
 # Empty filelist for non i686/athlon targets
@@ -1299,7 +1298,6 @@ fi
 %{_bindir}/tzselect
 #%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
-%{_sbindir}/glibc_pre_upgrade
 %{_sbindir}/glibc_post_upgrade
 %endif
 
