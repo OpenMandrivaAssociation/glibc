@@ -123,7 +123,7 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}glibc
 Version:	2.14.90
-Release:	10
+Release:	11
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -144,9 +144,6 @@ Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
 %if %{RELEASE}
 Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
 %endif
-
-# minimal kernel version check to prevent upgrade on systems running too old kernels
-Source10:	glibc-checkkernelversion.c
 
 # <http://penguinppc.org/dev/glibc/glibc-powerpc-cpu-addon.html>
 # NOTE: this check is weak. The rationale is: Cell PPU optimized by
@@ -841,8 +838,6 @@ gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgrad
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
   '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
-gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE10} -o build-%{target_cpu}-linux/glibc_pre_upgrade \
-  '-DKERNEL_RELEASE="%{enablekernel}"'
 
 %if %{build_check}
 export TMPDIR=/tmp
@@ -1145,8 +1140,10 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %if "%{name}" == "glibc"
 
+%if 0
 %pre
-%{_sbindir}/glibc_pre_upgrade
+#TODO: bail out if kernel < %{enablekernel}
+%endif
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
