@@ -280,6 +280,7 @@ Patch54:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
 Patch55:	glibc-localegrouping.patch
 Patch56:	glibc-arenalock.patch
 Patch57:	glibc-rh757881.patch
+Patch58:	glibc-rh750858.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -496,6 +497,7 @@ mv %{glibcportsdir} ports
 %patch55 -p1 -b .localegrouping~
 %patch56 -p1 -b .arenalock~
 %patch57 -p1 -b .rh757881~
+%patch58 -p1 -b .rh750858~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
