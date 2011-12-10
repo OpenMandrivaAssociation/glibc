@@ -277,6 +277,7 @@ Patch51:	glibc-2.14-arm-thumb.patch
 Patch52:	glibc-2.14.90-arm-hardfp.patch
 Patch53:	glibc-no-leaf-attribute.patch
 Patch54:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
+Patch55:	glibc-localegrouping.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -490,6 +491,7 @@ mv %{glibcportsdir} ports
 %patch50 -p1 -b .fed_streams~
 %patch53 -p1 -b .leaf~
 %patch54 -p1 -b .str_fmt~
+%patch55 -p1 -b .localegrouping~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
