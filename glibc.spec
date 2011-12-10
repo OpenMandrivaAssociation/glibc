@@ -665,6 +665,7 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
+  %undefine _fortify_cflags
   BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
