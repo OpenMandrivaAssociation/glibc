@@ -684,7 +684,7 @@ function BuildGlibc() {
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
   case $arch in
-    i[3456]86 | x86_64)
+    i[3456]86)
       BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
       ;;
   esac
