@@ -279,6 +279,7 @@ Patch53:	glibc-no-leaf-attribute.patch
 Patch54:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
 Patch55:	glibc-localegrouping.patch
 Patch56:	glibc-arenalock.patch
+Patch57:	glibc-rh757881.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -494,6 +495,7 @@ mv %{glibcportsdir} ports
 %patch54 -p1 -b .str_fmt~
 %patch55 -p1 -b .localegrouping~
 %patch56 -p1 -b .arenalock~
+%patch57 -p1 -b .rh757881~
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
