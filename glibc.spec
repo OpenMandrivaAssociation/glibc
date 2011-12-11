@@ -169,6 +169,9 @@ Obsoletes: 	linuxthreads, gencat, locale, glibc-localedata
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
+# we'll be the only package requiring this, avoiding any other package
+# dependencies on '/bin/sh' or 'bash'
+Requires:	bash
 %if %isarch %{xenarches}
 %rename		%{name}-xen
 %endif
