@@ -1161,53 +1161,6 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %endif
 
-%pre devel
-if [ -L %{_includedir}/scsi ]; then
-  rm -f %{_includedir}/scsi
-fi
-if [ -L %{_includedir}/sound ]; then
-  rm -f %{_includedir}/sound
-fi
-if [ -L %{_includedir}/linux ]; then
-  rm -f %{_includedir}/linux
-fi
-if [ -L %{_includedir}/asm ]; then
-  rm -f %{_includedir}/asm
-fi
-if [ -L %{_includedir}/asm-generic ]; then
-  rm -f %{_includedir}/asm-generic
-fi
-%if %isarch x86_64
-if [ -L %{_includedir}/asm-x86_64 ]; then
-  rm -f %{_includedir}/asm-x86_64
-fi
-if [ -L %{_includedir}/asm-i386 ]; then
-  rm -f %{_includedir}/asm-i386
-fi
-%endif
-%if %isarch ppc64
-if [ -L %{_includedir}/asm-ppc64 ]; then
-  rm -f %{_includedir}/asm-ppc64
-fi
-if [ -L %{_includedir}/asm-ppc ]; then
-  rm -f %{_includedir}/asm-ppc
-fi
-%endif
-%if %isarch sparc64
-if [ -L %{_includedir}/asm-sparc64 ]; then
-  rm -f %{_includedir}/asm-sparc64
-fi
-if [ -L %{_includedir}/asm-sparc ]; then
-  rm -f %{_includedir}/asm-sparc
-fi
-%if %isarch %arm
-if [ -L %{_includedir}/asm-arm ]; then
-  rm -f %{_includedir}/asm-arm
-fi
-%endif
-%endif
-exit 0
-
 %if %{build_doc}
 %post doc
 %_install_info libc.info
