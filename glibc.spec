@@ -187,8 +187,6 @@ BuildRequires:	libselinux-devel >= 1.17.10
 # need gnu indirect function for multiarch (>= 2.19.51.0.14-1mnb2)
 %define binutils_version 2.19.51.0.14-1mnb2
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
-# we need an rpm with correct db4 lib
-Conflicts:	rpm < 4.2.2
 # we need an ldconfig with TLS support
 BuildRequires:	%{cross_prefix}gcc >= 4.0.1-2mdk
 %if !%{build_cross}
