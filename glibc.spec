@@ -225,11 +225,6 @@ BuildRequires:	spec-helper >= 0.31.2
 
 Patch00:	glibc-fedora.patch
 Patch01:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-# _PATH_VARDB defined to /var/lib/misc, seems like main motivation being
-# anally pursuing FHS compliance..
-# After patch existing for over a half decade and not being picked up by
-# OpenSuSE, Fedora or upstream, we'll drop it as well for easier maintenance.
-Patch02:	glibc-2.14.90-fhs.patch
 Patch04:	glibc-2.14.90-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
@@ -242,7 +237,6 @@ Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
 Patch19:	glibc-2.8-nscd-init-should-start.patch
 Patch23:	glibc-2.3.4-timezone.patch
 Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
-Patch26:	glibc-2.6-nice_fix.patch
 Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
 Patch29:	glibc-2.3.5-biarch-utils.patch
 Patch30:	glibc-2.14.90-multiarch.patch
@@ -256,9 +250,7 @@ Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
 Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
 Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
 Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
-Patch46:	glibc-2.12.2-resolve-tls.patch
 Patch47:	glibc-2.13-fix-compile-error.patch
-Patch48:	glibc-2.13-prelink.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
@@ -466,7 +458,6 @@ mv %{glibcportsdir} ports
 
 %patch00 -p1 -b .fedora~
 %patch01 -p1 -b .localedef-archive-follow-symlinks
-#%%patch02 -p1 -b .fhs~
 %patch04 -p1 -b .nss-upgrade
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
@@ -487,9 +478,7 @@ mv %{glibcportsdir} ports
 %patch33 -p1 -b .pt_BR-i18nfixes
 %patch34 -p1 -b .testsuite-ldbl-bits
 %patch38 -p1 -b .testsuite-rt-notparallel
-#%%patch46 -p1 -b .resolve-tls
 %patch47 -p0 -b .fix-compile-error
-#%%patch48 -p1 -b .prelink
 %patch49 -p1 -b .memcpy
 %patch50 -p1 -b .fed_streams~
 %patch53 -p1 -b .leaf~
@@ -1167,7 +1156,7 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %if %{build_nscd}
 %pre -n nscd
-%_pre_useradd nscd / /sbin/noogin
+%_pre_useradd nscd / /sbin/nologin
 
 %post -n nscd
 %_post_service nscd
