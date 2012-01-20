@@ -34,10 +34,6 @@
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/" -e "s/\\(sun4.*\\|sparcv[89]\\)/sparc/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
 
-# Not a good idea as of 20110810, because it will generate a broken
-# glibc for x86_64 and most binaries just core dump on i586
-%define using_gold	%(if test x`ld --version 2>&1 | head -1 | sed -e 's/GNU \\([a-zA-Z0-9]*\\).*/\\1/'` = xgold; then echo 1; else echo 0; fi)
-
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
 
@@ -80,7 +76,6 @@
 %define build_bootstrap	0
 %{expand: %{!?build_cross_bootstrap: %global build_cross_bootstrap 0}}
 
-%define build_profile	1
 %define build_nscd	1
 %define build_doc	1
 %define build_utils	1
@@ -102,7 +97,6 @@
 %define build_biarch	0
 %define build_check	0
 %define build_nscd	0
-%define build_profile	0
 %define build_utils	0
 %define build_i18ndata	0
 %define build_timezone	0
@@ -165,7 +159,7 @@ Autoreq:	false
 Autoprov:	false
 %else
 Obsoletes:	zoneinfo, libc-static, libc-devel, libc-profile, libc-headers,
-Obsoletes: 	linuxthreads, gencat, locale, glibc-localedata
+Obsoletes: 	linuxthreads, gencat, locale, glibc-localedata, glibc-profile
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
@@ -359,23 +353,6 @@ for developing programs which use the standard C libraries. Install
 glibc-static-devel if you need to statically link your program or
 library.
 
-%package	profile
-Summary:	The GNU libc libraries, including support for gprof profiling
-Group:		Development/C
-%rename		libc-profile
-
-%description profile
-The glibc-profile package includes the GNU libc libraries and support
-for profiling using the gprof program.  Profiling is analyzing a
-program's functions to see how much CPU time they use and determining
-which functions are calling other functions during execution.  To use
-gprof to profile a program, your program needs to use the GNU libc
-libraries included in glibc-profile (instead of the standard GNU libc
-libraries included in the glibc package).
-
-If you are going to use the gprof program to profile a program, you'll
-need to install the glibc-profile program.
-
 %package -n	nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
@@ -516,10 +493,6 @@ find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
 rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
 rm -f localedata/locales/[a-z_]*.*
-
-%if %{using_gold}
-perl -pi -e 's|\.\*GNU ld\.\*|\.\*GNU\.\*ld\.\*Binutils|;' configure
-%endif
 
 %build
 # Prepare test matrix in the next function
@@ -672,7 +645,7 @@ function BuildGlibc() {
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
   case $arch in
-    i[3456]86)
+    i[345]86)
       BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
       ;;
   esac
@@ -741,21 +714,15 @@ function BuildGlibc() {
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
     --enable-add-ons=$AddOns \
-    --without-cvs \
-%if %{build_profile}
-    --enable-profile \
-%endif
+    --disable-profile \
 %if %{build_selinux}
     --with-selinux \
 %else
     --without-selinux \
 %endif
     --enable-bind-now \
-    --with-tls \
-    --with-__thread \
     $ExtraFlags \
     $MultiArchFlags \
-    --enable-experimental-malloc \
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"}
   %make -r
@@ -815,7 +782,7 @@ BuildGlibc ppc
 %if %isarch ppc ppc64
 for cpu in %{powerpc_cpu_list}; do
   [[ "$cpu" = "noarch" ]] && continue
-  BuildGlibc cpu-addon,$cpu,%{_arch} --disable-profile
+  BuildGlibc cpu-addon,$cpu,%{_arch}
 done
 %endif
 
@@ -823,8 +790,8 @@ done
 case %{target_cpu} in
   i686 | athlon)
     ;;
-  i[3-6]86)
-    BuildGlibc i686 --disable-profile
+  i[3-5]86)
+    BuildGlibc i686
     ;;
 esac
 
@@ -1364,17 +1331,6 @@ fi
 %if %{build_pdf_doc}
 %files doc-pdf
 %doc manual/libc.pdf
-%endif
-
-#
-# glibc-profile
-#
-%if %{build_profile}
-%files profile
-%{_libdir}/lib*_p.a
-%if %{build_biarch}
-%{_prefix}/lib/lib*_p.a
-%endif
 %endif
 
 #
