@@ -49,7 +49,7 @@
 %endif
 
 # Define Xen arches to build with -mno-tls-direct-direct-seg-refs
-%define xenarches	%{ix86} x86_64
+%define xenarches	%{ix86}
 
 # Define to build nscd with selinux support
 %define build_selinux	0
@@ -644,11 +644,9 @@ function BuildGlibc() {
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
-  case $arch in
-    i[345]86)
-      BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
-      ;;
-  esac
+%if %isarch %{xenarches}
+  BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
+%endif
 
   # Arch specific compilation flags
   if [[ "$arch" = "ppc64" ]]; then
