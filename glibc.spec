@@ -325,6 +325,12 @@ Autoreq:	false
 Autoprov:	false
 %endif
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
+%if %{build_doc}
+%rename		glibc-doc
+%endif
+%if %{build_pdf_doc}
+%rename		glibc-doc-pdf
+%endif
 
 %description	devel
 The glibc-devel package contains the header and object files necessary
@@ -402,24 +408,6 @@ Group:		System/Base
 %description -n	timezone
 These are configuration files that describe possible
 time zones.
-%endif
-
-%package	doc
-Summary:	GNU C library documentation
-Group:		Development/Other
-
-%description doc
-The glibc-doc package contains documentation for the GNU C library in
-info format.
-
-%if %{build_pdf_doc}
-%package	doc-pdf
-Summary:	GNU C library documentation
-Group:		Development/Other
-
-%description	doc-pdf
-The glibc-doc-pdf package contains the printable documentation for the
-GNU C library in PDF format.
 %endif
 
 %prep
@@ -1010,19 +998,21 @@ cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/loc
 # [gg] build PDF documentation
 %if %{build_pdf_doc}
 pushd manual
-texi2dvi -p -t @afourpaper -t @finalout libc.texinfo
+    texi2dvi -p -t @afourpaper -t @finalout libc.texinfo
+    install -m644 -D libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 popd
 %endif
 
 # the last bit: more documentation
-rm -rf documentation
-mkdir documentation
-cp timezone/README documentation/README.timezone
-cp ChangeLog* documentation
-xz -0 --text documentation/ChangeLog*
-mkdir documentation/crypt_blowfish-%{crypt_bf_ver}
+install -m 644 COPYING COPYING.LIB README NEWS INSTALL FAQ BUGS		\
+    NOTES PROJECTS CONFORMANCE README.libm hesiod/README.hesiod		\
+    ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
+    %{buildroot}%{_docdir}/glibc
+xz -0 --text %{buildroot}%{_docdir}/glibc/ChangeLog*
+install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
+install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
-	documentation/crypt_blowfish-%{crypt_bf_ver}
+    %{buildroot}%{_docdir}/glibc/crypt_blowfish
 
 # Generate final rpm filelist, with localized libc.mo files
 rm -f rpm.filelist
@@ -1112,11 +1102,11 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 %endif
 
 %if %{build_doc}
-%post doc
-%_install_info libc.info
+%post devel
+    %_install_info libc.info
 
-%preun doc
-%_remove_install_info libc.info
+%preun devel
+    %_remove_install_info libc.info
 %endif
 
 %if %{build_nscd}
@@ -1149,8 +1139,9 @@ fi
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
-%doc nis/nss
-%doc posix/gai.conf
+%doc %dir %{_docdir}/glibc
+%doc %{_docdir}/glibc/nss
+%doc %{_docdir}/glibc/gai.conf
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
 %{_mandir}/man8/ld.so*
@@ -1250,11 +1241,6 @@ fi
 # glibc-devel
 #
 %files devel -f devel.filelist
-%doc README NEWS INSTALL FAQ BUGS NOTES PROJECTS CONFORMANCE
-%doc COPYING COPYING.LIB
-%doc documentation/* README.libm
-%doc hesiod/README.hesiod
-%doc crypt/README.ufc-crypt
 %{_mandir}/man3/*
 %{_libdir}/libbsd-compat.a
 %{_libdir}/libbsd.a
@@ -1283,12 +1269,17 @@ fi
 %{_prefix}/lib/libnldbl_nonshared.a
 %endif
 %endif
+%if %{build_doc}
+%{_infodir}/libc.info*
+%endif
+%doc %{_docdir}/glibc/*
+%exclude %{_docdir}/glibc/nss
+%exclude %{_docdir}/glibc/gai.conf
 
 #
 # glibc-static-devel
 #
 %files static-devel
-%doc COPYING COPYING.LIB
 %{_libdir}/libBrokenLocale.a
 %{_libdir}/libanl.a
 %{_libdir}/libc.a
@@ -1313,22 +1304,6 @@ fi
 %{_prefix}/lib/libresolv.a
 %{_prefix}/lib/librt.a
 %{_prefix}/lib/libutil.a
-%endif
-
-#
-# glibc-doc
-#
-%if %{build_doc}
-%files doc
-%{_infodir}/libc.info*
-%endif
-
-#
-# glibc-doc-pdf
-#
-%if %{build_pdf_doc}
-%files doc-pdf
-%doc manual/libc.pdf
 %endif
 
 #
