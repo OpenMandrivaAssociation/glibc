@@ -11,7 +11,6 @@
 # crypt blowfish support
 %define crypt_bf_ver	1.2
 
-%define target_cpu	%{_target_cpu}
 %define cross_prefix	%{nil}
 %define _slibdir	/%{_lib}
 %define _slibdir32	/lib
@@ -106,8 +105,8 @@ Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.si
 Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
-Obsoletes:	zoneinfo, libc-static, libc-devel, libc-profile, libc-headers,
-Obsoletes: 	linuxthreads, gencat, locale, glibc-localedata, glibc-profile
+Obsoletes:	zoneinfo, libc-static, libc-devel, libc-headers
+Obsoletes: 	gencat, locale, glibc-localedata, glibc-profile
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
@@ -128,8 +127,6 @@ BuildRequires:	libselinux-devel >= 1.17.10
 # need gnu indirect function for multiarch (>= 2.19.51.0.14-1mnb2)
 %define binutils_version 2.19.51.0.14-1mnb2
 BuildRequires:	binutils >= %{binutils_version}
-# we need an ldconfig with TLS support
-BuildRequires:	gcc >= 4.0.1-2mdk
 
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
@@ -238,16 +235,13 @@ speeds the loading of programs which use shared libraries.
 %package	devel
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
-Conflicts:	texinfo < 3.11
 Requires(post):	info-install
 Requires(preun):info-install
 Requires(post):	coreutils
 Requires(postun):coreutils, awk
-Obsoletes:	libc-debug, libc-headers, libc-devel, linuxthreads-devel, nptl-devel
+Obsoletes:	libc-debug, libc-headers, libc-devel
 Requires:	%{name} = %{EVRD}
 Requires:	linux-userspace-headers
-# needs a gcc4 fortify capable compiler
-Conflicts:	gcc4.0 < 4.0.1-2mdk
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
 %if %{build_pdf_doc}
@@ -774,10 +768,10 @@ cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/loc
 
 install -m 755 -d %{buildroot}%{_docdir}/glibc
 %if %{build_doc}
-    make -C build-%{target_cpu}-linux html
+    make -C build-%{_target_cpu}-linux html
     cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
     %if %{build_pdf_doc}
-	make -C build-%{target_cpu}-linux pdf
+	make -C build-%{_target_cpu}-linux pdf
 	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
     %endif
 %endif
