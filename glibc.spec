@@ -48,7 +48,7 @@
 %define _gnu		-gnueabi
 %endif
 
-# Define Xen arches to build with -mno-tls-direct-direct-seg-refs
+# Define Xen arches to build with -mno-tls-direct-seg-refs
 %define xenarches	%{ix86}
 
 # Define to build nscd with selinux support
@@ -68,7 +68,7 @@
 
 # Define to build a biarch package
 %define build_biarch	0
-%if %isarch sparc64 x86_64 ppc64
+%if %isarch x86_64
 %define build_biarch	1
 %endif
 
@@ -139,15 +139,6 @@ Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
 Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
 %endif
 
-# <http://penguinppc.org/dev/glibc/glibc-powerpc-cpu-addon.html>
-# NOTE: this check is weak. The rationale is: Cell PPU optimized by
-# default for MDV 2007.0, power5 et al. on Corporate side
-%define powerpc_cpu_list noarch
-%if "%{?distsuffix:%{distsuffix}}" == "mlcs4"
-%define powerpc_cpu_list power5
-%endif
-Source15:	glibc-powerpc-cpu-addon-v0.03.tar.bz2
-
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
 Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.sign
@@ -183,17 +174,6 @@ BuildRequires:	libselinux-devel >= 1.17.10
 BuildRequires:	%{cross_prefix}binutils >= %{binutils_version}
 # we need an ldconfig with TLS support
 BuildRequires:	%{cross_prefix}gcc >= 4.0.1-2mdk
-%if !%{build_cross}
-%ifarch alpha
-Provides:	ld.so.2
-%endif
-%ifarch ppc
-Provides:	ld.so.1
-%endif
-%ifarch sparc
-Obsoletes:	libc
-%endif
-%endif
 
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
@@ -223,7 +203,6 @@ Patch04:	glibc-2.14.90-nss-upgrade.patch
 Patch06:	glibc-2.9-share-locale.patch
 Patch07:	glibc-2.3.6-nsswitch.conf.patch
 Patch09:	glibc-2.2.4-xterm-xvt.patch
-Patch12:	glibc-2.3.6-ppc-build-lddlibc4.patch
 Patch13:	glibc-2.3.3-nscd-enable.patch
 Patch14:	glibc-2.9-nscd-no-host-cache.patch
 Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
@@ -314,9 +293,6 @@ Obsoletes:	libc-debug, libc-headers, libc-devel, linuxthreads-devel, nptl-devel
 Requires:	%{name} = %{EVRD}
 %if !%{build_cross}
 Requires:	linux-userspace-headers
-%endif
-%if !%isarch ppc
-Conflicts:	%{cross_prefix}gcc < 2.96-0.50mdk
 %endif
 # needs a gcc4 fortify capable compiler
 Conflicts:	gcc4.0 < 4.0.1-2mdk
@@ -411,7 +387,7 @@ time zones.
 %endif
 
 %prep
-%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 15 -a 50
+%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 50
 %if %{build_ports}
 tar -xf %{SOURCE8}
 mv %{glibcportsdir} ports
@@ -427,7 +403,6 @@ mv %{glibcportsdir} ports
 %patch06 -p1 -b .share-locale
 %patch07 -p1 -b .nsswitch.conf
 %patch09 -p1 -b .xterm-xvt
-%patch12 -p1 -b .ppc-lddlibc4
 %patch13 -p1 -b .nscd-enable
 %patch14 -p1 -b .nscd-no-host-cache
 %patch17 -p1 -b .i386-hwcapinfo
@@ -532,16 +507,7 @@ function BuildGlibc() {
   arch="$1"
   shift 1
 
-  # PowerPC CPU add-on
-  case $arch in
-    cpu-addon,*)
-      cpu=` echo "$arch" | sed -n "/.*,\([^,]*\),.*$/s//\1/p"`
-      arch=`echo "$arch" | sed -n "/.*,.*,\([^,]*\)$/s//\1/p"`
-      ;;
-    *)
-      cpu=$arch
-      ;;
-  esac
+  cpu=$arch
 
   # Select optimization flags and compiler to use
   BuildAltArch="no"
@@ -558,40 +524,6 @@ function BuildGlibc() {
       ;;
     x86_64)
       BuildFlags="-mtune=generic"
-      ;;
-    ppc)
-      if [[ "`uname -m`" = "ppc64" ]]; then
-        BuildAltArch="yes"
-        BuildCompFlags="-m32"
-        # 64-bit processors we support do support power4+ ISA (2.01)
-        if [[ "$cpu" != "$arch" ]]; then
-          BuildFlags="-mcpu=$cpu"
-        else
-          BuildFlags="-mcpu=power4 -mtune=cell"
-        fi
-      fi
-      ;;
-    ppc64)
-      if [[ "$cpu" != "$arch" ]]; then
-        BuildFlags="-mcpu=$cpu"
-      else
-        BuildFlags="-mcpu=power4 -mtune=cell"
-      fi
-      ;;
-    alphaev6)
-      BuildFlags="-mcpu=ev6"
-      ;;
-    sparc)
-      BuildFlags="-fcall-used-g6"
-      BuildCompFlags="-m32"
-      ;;
-    sparcv9)
-      BuildFlags="-mcpu=ultrasparc -fcall-used-g6"
-      BuildCompFlags="-m32"
-      ;;
-    sparc64)
-      BuildFlags="-mcpu=ultrasparc -mvis -fcall-used-g6"
-      BuildCompFlags="-m64 -mcpu=ultrasparc"
       ;;
     armv5t*)
       BuildFlags="-march=armv5t"
@@ -636,11 +568,6 @@ function BuildGlibc() {
   BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
 %endif
 
-  # Arch specific compilation flags
-  if [[ "$arch" = "ppc64" ]]; then
-    BuildFlags="$BuildFlags -fno-inline-functions -mno-minimal-toc"
-  fi
-
   # Extra configure flags
   ExtraFlags=
 
@@ -669,11 +596,6 @@ function BuildGlibc() {
 
   # Add-ons
   AddOns="$Pthreads,libidn"
-  if [[ "$cpu" != "$arch" ]]; then
-    AddOns="$AddOns,powerpc-cpu"
-    BuildFlags="$BuildFlags -mcpu=$cpu"
-    ExtraFlags="$ExtraFlags --with-cpu=$cpu"
-  fi
 
   # Kernel headers directory
   KernelHeaders=%{_includedir}
@@ -717,7 +639,7 @@ function BuildGlibc() {
   # All tests are expected to pass on certain platforms, depending also
   # on the version of the kernel running
   case $arch in
-  athlon | ia64 | ppc | ppc64)
+  athlon)
     if [ "`CompareKver %{check_min_kver}`" -lt 0 ]; then
       check_flags=""
     else
@@ -739,7 +661,6 @@ function BuildGlibc() {
 
   case $cpu in
   i686|athlon)	base_arch=i586;;
-  power*)	base_arch=$arch;;
   *)		base_arch=none;;
   esac
 
@@ -754,22 +675,9 @@ function BuildGlibc() {
 BuildGlibc %{target_cpu}
 
 %if %{build_biarch}
-%if %isarch sparc64
-BuildGlibc sparcv9
-%endif
 %if %isarch x86_64
 BuildGlibc i686
 %endif
-%if %isarch ppc64
-BuildGlibc ppc
-%endif
-%endif
-
-%if %isarch ppc ppc64
-for cpu in %{powerpc_cpu_list}; do
-  [[ "$cpu" = "noarch" ]] && continue
-  BuildGlibc cpu-addon,$cpu,%{_arch}
-done
 %endif
 
 # Build i686 libraries if not already building for i686/athlon
@@ -803,22 +711,11 @@ done < $CheckList
 
 %install
 %if %{build_biarch}
-    # We want 32-bit binaries on sparc64
-    %if %isarch sparc64
-        # FIXME should only add support for what is being built
-        # (frequently) as this adaptation is most likely broken...
-        %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
-        %make install install_root=%{buildroot} -C build-sparcv9-linux
-    %else
-        %if %isarch x86_64
-	    ALT_ARCH=i686
-	%endif
-	%if %isarch ppc64
-	    ALT_ARCH=ppc
-	%endif
-	%make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
-	%make install install_root=%{buildroot} -C build-%{target_cpu}-linux
+    %if %isarch x86_64
+	ALT_ARCH=i686
     %endif
+    %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
+    %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
 %else
     %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
 %endif
@@ -859,29 +756,11 @@ function InstallGlibc() {
 }
 
 # Install arch-specific optimized libraries
-%if %isarch %{ix86}
 case %{target_cpu} in
 i[3-5]86)
   InstallGlibc build-i686-linux i686
   ;;
 esac
-%endif
-%if %isarch ppc ppc64
-for cpu in %{powerpc_cpu_list}; do
-  [[ "$cpu" = "noarch" ]] && continue
-  InstallGlibc build-$cpu-linux $cpu
-done
-# Use hardlinks, not symlinks
-# see upper NOTE if you really want dedicated power5+ hwcap...
-[[ -d "%{buildroot}/%{_lib}/power5" ]] && {
-  mkdir -p %{buildroot}/%{_lib}/power5+
-  ln -v	%{buildroot}/%{_lib}/power5/*.so \
-	%{buildroot}/%{_lib}/power5+/
-  %{buildroot}/sbin/ldconfig -n %{buildroot}/%{_lib}/power5+/
-  echo "%dir /%{_lib}/power5+" >> extralibs.filelist
-  find %{buildroot}$LibDir/%{_lib}/power5+/ -maxdepth 1  -type f -o -type l | sed -e "s|%{buildroot}||" >> extralibs.filelist
-}
-%endif
 
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
@@ -1151,23 +1030,11 @@ fi
 %{_prefix}/libexec/getconf/*
 %endif
 %{_slibdir}/ld-%{version}.so
-%if %isarch i386 alpha sparc sparc64
+%if %isarch i386
 %{_slibdir}/ld-linux.so.2
-%endif
-%if %isarch ppc
-%{_slibdir}/ld.so.1
-%endif
-%if %isarch ppc64
-%{_slibdir}/ld64.so.1
-%endif
-%if %isarch ia64
-%{_slibdir}/ld-linux-ia64.so.2
 %endif
 %if %isarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
-%endif
-%if %isarch m68k
-%{_slibdir}/ld.so.1
 %endif
 %if %isarch %arm
 %{_slibdir}/ld-linux.so.3
@@ -1191,7 +1058,7 @@ fi
 %{_bindir}/iconv
 %{_bindir}/ldd
 %if !%{with minimal}
-%if %isarch i386 x86_64 ppc sparc sparc64
+%if %isarch i386 x86_64
 %{_bindir}/lddlibc4
 %endif
 %endif
@@ -1210,11 +1077,7 @@ fi
 
 %if %{build_biarch}
 %{_slibdir32}/ld-%{version}.so
-%if %isarch ppc64
-%{_slibdir32}/ld.so.1
-%else
 %{_slibdir32}/ld-linux*.so.2
-%endif
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
@@ -1252,9 +1115,6 @@ fi
 %if "%{name}" == "glibc"
 %{_libdir}/librpcsvc.a
 %endif
-%if %isarch ppc ppc64 sparc
-%{_libdir}/libnldbl_nonshared.a
-%endif
 
 %if %{build_biarch}
 %{_prefix}/lib/libbsd-compat.a
@@ -1265,9 +1125,6 @@ fi
 %{_prefix}/lib/libmcheck.a
 %{_prefix}/lib/libpthread_nonshared.a
 %{_prefix}/lib/librpcsvc.a
-%if %isarch ppc64 sparc64
-%{_prefix}/lib/libnldbl_nonshared.a
-%endif
 %endif
 %if %{build_doc}
 %{_infodir}/libc.info*
