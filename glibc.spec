@@ -540,17 +540,6 @@ function BuildGlibc() {
   # Kernel headers directory
   KernelHeaders=%{_includedir}
 
-  # Determine library name
-  glibc_cv_cc_64bit_output=no
-  if echo ".text" | $BuildCC -c -o test.o -xassembler -; then
-    case `/usr/bin/file test.o` in
-    *"ELF 64"*)
-      glibc_cv_cc_64bit_output=yes
-      ;;
-    esac
-  fi
-  rm -f test.o
-
   # Force a separate and clean object dir
   rm -rf build-$cpu-linux
   mkdir  build-$cpu-linux
