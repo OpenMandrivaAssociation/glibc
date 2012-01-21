@@ -249,9 +249,7 @@ Requires:	linux-userspace-headers
 # needs a gcc4 fortify capable compiler
 Conflicts:	gcc4.0 < 4.0.1-2mdk
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
-%if %{build_doc}
 %rename		glibc-doc
-%endif
 %if %{build_pdf_doc}
 %rename		glibc-doc-pdf
 %endif
@@ -774,12 +772,14 @@ cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/loc
 #ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
 %endif
 
-# [gg] build PDF documentation
-%if %{build_pdf_doc}
-pushd manual
-    texi2dvi -p -t @afourpaper -t @finalout libc.texinfo
-    install -m644 -D libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
-popd
+install -m 755 -d %{buildroot}%{_docdir}/glibc
+%if %{build_doc}
+    make -C build-%{target_cpu}-linux html
+    cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
+    %if %{build_pdf_doc}
+	make -C build-%{target_cpu}-linux pdf
+	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
+    %endif
 %endif
 
 # the last bit: more documentation
@@ -810,9 +810,6 @@ find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm 
 rm -f %{buildroot}%{_sbindir}/nscd
 %endif
 
-%if !%{build_doc}
-rm -f %{buildroot}%{_infodir}/libc.info*
-%endif
 rm -f %{buildroot}%{_infodir}/dir
 
 %if !%{build_utils}
@@ -854,13 +851,11 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
-%if %{build_doc}
 %post devel
     %_install_info libc.info
 
 %preun devel
     %_remove_install_info libc.info
-%endif
 
 %if %{build_nscd}
 %pre -n nscd
@@ -894,6 +889,8 @@ fi
 %doc %dir %{_docdir}/glibc
 %doc %{_docdir}/glibc/nss
 %doc %{_docdir}/glibc/gai.conf
+%doc %{_docdir}/glibc/COPYING
+%doc %{_docdir}/glibc/COPYING.LIB
 %{_mandir}/man1/*
 %{_mandir}/man8/rpcinfo.8*
 %{_mandir}/man8/ld.so*
@@ -990,12 +987,12 @@ fi
 %{_prefix}/lib/libpthread_nonshared.a
 %{_prefix}/lib/librpcsvc.a
 %endif
-%if %{build_doc}
 %{_infodir}/libc.info*
-%endif
 %doc %{_docdir}/glibc/*
 %exclude %{_docdir}/glibc/nss
 %exclude %{_docdir}/glibc/gai.conf
+%exclude %{_docdir}/glibc/COPYING
+%exclude %{_docdir}/glibc/COPYING.LIB
 
 #
 # glibc-static-devel
