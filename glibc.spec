@@ -22,11 +22,11 @@
 # for added ports support for arches like arm
 %define build_ports	0
 # add ports arches here
-%ifarch %arm %mipsx
+%ifarch %{arm} %{mipsx}
 %define build_ports	1
 %endif
 
-%ifarch %arm
+%ifarch %{arm}
 %define _gnu		-gnueabi
 %endif
 
@@ -527,7 +527,7 @@ function BuildGlibc() {
 %endif
 
   # NPTL+TLS are now the default
-%if %build_ports
+%if %{build_ports}
   Pthreads="ports,nptl"
 %else
   Pthreads="nptl"
@@ -708,7 +708,7 @@ mkdir -p %{buildroot}%{_mandir}/man3
 install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
 
 # Useless and takes place
-rm -rf %buildroot/%{_datadir}/zoneinfo/{posix,right}
+rm -rf %{buildroot}/%{_datadir}/zoneinfo/{posix,right}
 
 # Include ld.so.conf
 echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
@@ -721,15 +721,15 @@ touch %{buildroot}%{_var}/cache/ldconfig/aux-cache
 
 # automatic ldconfig cache update on rpm installs/removals
 # (see http://wiki.mandriva.com/en/Rpm_filetriggers)
-install -d %buildroot%{_var}/lib/rpm/filetriggers
-cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
+install -d %{buildroot}%{_var}/lib/rpm/filetriggers
+cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
 ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
 EOF
-cat > %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
+cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
 #!/bin/sh
 ldconfig -X
 EOF
-chmod 755 %buildroot%{_var}/lib/rpm/filetriggers/ldconfig.script
+chmod 755 %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script
 
 # Include %{_libdir}/gconv/gconv-modules.cache
 touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
