@@ -455,20 +455,19 @@ function BuildGlibc() {
   arch="$1"
   shift 1
 
-  cpu=$arch
-
   # Select optimization flags and compiler to use
   BuildAltArch="no"
   BuildCompFlags=""
   BuildFlags=""
   case $arch in
-    i[3456]86 | athlon)
-      BuildFlags="-march=$arch -mtune=generic"
-      if [[ "`uname -m`" = "x86_64" ]]; then
+    i[3-6]86)
+%ifarch x86_64
 	BuildFlags="-march=pentium4 -mtune=generic"
-        BuildAltArch="yes"
-        BuildCompFlags="-m32"
-      fi
+	BuildAltArch="yes"
+	BuildCompFlags="-m32"
+%else
+	BuildFlags="-march=$arch -mtune=generic"
+%endif
       ;;
     x86_64)
       BuildFlags="-mtune=generic"
@@ -537,13 +536,10 @@ function BuildGlibc() {
   # Add-ons
   AddOns="$Pthreads,libidn"
 
-  # Kernel headers directory
-  KernelHeaders=%{_includedir}
-
   # Force a separate and clean object dir
-  rm -rf build-$cpu-linux
-  mkdir  build-$cpu-linux
-  pushd  build-$cpu-linux
+  rm -rf build-$arch-linux
+  mkdir  build-$arch-linux
+  pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags}" ../configure \
     $arch-%{_target_vendor}-%{_target_os}%{?_gnu} \
@@ -561,24 +557,11 @@ function BuildGlibc() {
     $ExtraFlags \
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \
-    --with-headers=$KernelHeaders ${1+"$@"}
+    --with-headers=%{_includedir} ${1+"$@"}
   %make -r
   popd
 
-  # All tests are expected to pass on certain platforms, depending also
-  # on the version of the kernel running
-  case $arch in
-  athlon)
-    if [ "`CompareKver %{check_min_kver}`" -lt 0 ]; then
-      check_flags=""
-    else
-      check_flags="-k"
-    fi
-    ;;
-  *)
-    check_flags="-k"
-    ;;
-  esac
+  check_flags="-k"
 
   # Generate test matrix
   [[ -d "build-$arch-linux" ]] || {
@@ -588,8 +571,8 @@ function BuildGlibc() {
   local BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
   echo "$BuildJobs -d build-$arch-linux $check_flags" >> $CheckList
 
-  case $cpu in
-  i686|athlon)	base_arch=i586;;
+  case $arch in
+  i686)		base_arch=i586;;
   *)		base_arch=none;;
   esac
 
@@ -604,19 +587,19 @@ function BuildGlibc() {
 BuildGlibc %{_target_cpu}
 
 %if %{build_biarch}
-%ifarch x86_64
-BuildGlibc i686
+    %ifarch x86_64
+	BuildGlibc i686
+    %endif
+%else
+    # Build i686 libraries if not already building for i686
+    case %{_target_cpu} in
+    i686)
+	;;
+    i[3-5]86)
+	BuildGlibc i686
+	;;
+    esac
 %endif
-%endif
-
-# Build i686 libraries if not already building for i686/athlon
-case %{_target_cpu} in
-  i686 | athlon)
-    ;;
-  i[3-5]86)
-    BuildGlibc i686
-    ;;
-esac
 
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
@@ -652,7 +635,7 @@ done < $CheckList
 install -m700 build-%{_target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
 
-# Empty filelist for non i686/athlon targets
+# Empty filelist for non i686 targets
 touch extralibs.filelist
 
 # Install extra glibc libraries
@@ -755,16 +738,12 @@ chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 touch %{buildroot}%{_sysconfdir}/ld.so.cache
 
 # Strip debugging info from all static libraries
-Strip="strip"
 pushd %{buildroot}%{_libdir}
-for i in *.a; do
-  if [ -f "$i" ]; then
-    case "$i" in
-    *_p.a) ;;
-    *) $Strip -g -R .comment -R .GCC.command.line $i ;;
-    esac
-  fi
-done
+    for i in *.a; do
+	if [ -f "$i" ]; then
+	    strip -g -R .comment -R .GCC.command.line $i
+	fi
+    done
 popd
 
 # rquota.x and rquota.h are now provided by quota
@@ -929,7 +908,7 @@ fi
 %ifarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
-%ifarch %arm
+%ifarch %{arm}
 %{_slibdir}/ld-linux.so.3
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
