@@ -96,10 +96,8 @@ Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.si
 Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
-Obsoletes:	zoneinfo, libc-static, libc-devel, libc-headers
-Obsoletes:	gencat, locale, glibc-localedata, glibc-profile
+Obsoletes:	glibc-profile
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
-Provides:	glibc-localedata
 Provides:	should-restart = system
 # we'll be the only package requiring this, avoiding any other package
 # dependencies on '/bin/sh' or 'bash'
@@ -110,7 +108,7 @@ Requires:	bash
 # The dynamic linker supports DT_GNU_HASH
 Provides:	rtld(GNU_HASH)
 BuildRequires:	patch, gettext, perl
-BuildRequires:	linux-userspace-headers
+BuildRequires:	kernel-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -213,15 +211,7 @@ memory, as well as to make upgrading easier, common system code is
 kept in one place and shared between programs. This particular package
 contains the most important sets of shared libraries: the standard C
 library and the standard math library. Without these two libraries, a
-Linux system will not function.  The glibc package also contains
-national language (locale) support.
-
-This package now also provides ldconfig which was package seperately in
-the past. Ldconfig is a basic system program which determines run-time
-link bindings between ld.so and shared libraries. Ldconfig scans a running
-system and sets up the symbolic links that are used to load shared
-libraries properly. It also creates a cache (/etc/ld.so.cache) which
-speeds the loading of programs which use shared libraries.
+Linux system will not function.
 
 %if 0
 %pre
@@ -318,9 +308,8 @@ Requires(post):	info-install
 Requires(preun):info-install
 Requires(post):	coreutils
 Requires(postun):coreutils, awk
-Obsoletes:	libc-debug, libc-headers, libc-devel
 Requires:	%{name} = %{EVRD}
-Requires:	linux-userspace-headers
+Requires:	kernel-headers
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
 %if %{with pdf}
@@ -334,14 +323,6 @@ used by nearly all programs).  If you are developing programs which
 will use the standard C libraries, your system needs to have these
 standard header and object files available in order to create the
 executables.
-
-This package also includes the C header files for the Linux kernel.
-The header files define structures and constants that are needed for
-building most standard programs. The header files are also needed for
-rebuilding the kernel.
-
-Install glibc-devel if you are going to develop programs which will
-use the standard C libraries.
 
 %post		devel
     %_install_info libc.info
@@ -433,13 +414,7 @@ Requires(postun):rpm-helper
 
 %description	-n nscd
 Nscd caches name service lookups and can dramatically improve
-performance with NIS+, and may help with DNS as well. Note that you
-can't use nscd with 2.0 kernels because of bugs in the kernel-side
-thread support. Unfortunately, nscd happens to hit these bugs
-particularly hard.
-
-Install nscd if you need a name service lookup caching daemon, and
-you're not using a version 2.0 kernel.
+performance with NIS+, and may help with DNS as well.
 
 %pre -n nscd
     %_pre_useradd nscd / /sbin/nologin
@@ -501,6 +476,7 @@ If unsure if you need this, don't install this package.
 %package	i18ndata
 Summary:	Database sources for 'locale'
 Group:		System/Libraries
+%rename		glibc-localedata
 
 %description	i18ndata
 This package contains the data needed to build the locale data files
@@ -523,10 +499,10 @@ to use the internationalization features of the GNU libc.
 %package	-n timezone
 Summary:	Time zone descriptions
 Group:		System/Base
+Obsoletes:	zoneinfo
 
 %description	-n timezone
-These are configuration files that describe possible
-time zones.
+These are configuration files that describe possible time zones.
 
 %files		-n timezone
 %{_sbindir}/zdump
