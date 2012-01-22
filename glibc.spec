@@ -17,6 +17,12 @@
 %define _slibdir32	/lib
 %define _libdir32	%{_prefix}/lib
 
+%define		libc_major		6
+%define		libc			%mklibname c %{libc_major}
+%define		libc_devel		%mklibname -d c
+%define		libc_static_devel	%mklibname -d -s c
+%define		multilibc		libc%{libc_major}
+
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
 
@@ -68,7 +74,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.14.90
-Release:	12
+Release:	12.1
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -213,11 +219,6 @@ contains the most important sets of shared libraries: the standard C
 library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
-%if 0
-%pre
-#TODO: bail out if kernel < %{enablekernel}
-%endif
-
 %post -p %{_sbindir}/glibc_post_upgrade
 
 %files		-f libc.lang
@@ -238,8 +239,15 @@ Linux system will not function.
 %{_mandir}/man8/ld.so*
 %{_localedir}/locale.alias
 /sbin/sln
-%dir %{_prefix}/libexec/getconf
-%{_prefix}/libexec/getconf/*
+%{_prefix}/libexec/getconf
+%ifarch x86_64
+%exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
+%exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFFBIG
+%exclude %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFF32
+%exclude %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFFBIG
+%exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
+%exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
+%endif
 %{_slibdir}/ld-%{version}.so
 %ifarch %{ix86}
 %{_slibdir}/ld-linux.so.2
@@ -267,7 +275,7 @@ Linux system will not function.
 %{_bindir}/getent
 %{_bindir}/iconv
 %{_bindir}/ldd
-%ifarch %{ix86} x86_64
+%ifarch %{ix86}
 %{_bindir}/lddlibc4
 %endif
 %{_bindir}/locale
@@ -280,18 +288,6 @@ Linux system will not function.
 %{_bindir}/tzselect
 %{_sbindir}/iconvconfig
 %{_sbindir}/glibc_post_upgrade
-%if %{build_multiarch}
-%{_slibdir32}/ld-%{version}.so
-%{_slibdir32}/ld-linux*.so.2
-%{_slibdir32}/lib*-[.0-9]*.so
-%{_slibdir32}/lib*.so.[0-9]*
-%{_slibdir32}/libSegFault.so
-%dir %{_libdir32}/audit
-%{_libdir32}/audit/sotruss-lib.so
-%dir %{_libdir32}/gconv
-%{_libdir32}/gconv/*.so
-%{_libdir32}/gconv/gconv-modules
-%endif
 /sbin/ldconfig
 %{_mandir}/man8/ldconfig*
 %ghost %{_sysconfdir}/ld.so.cache
@@ -299,6 +295,43 @@ Linux system will not function.
 %ghost %{_var}/cache/ldconfig/aux-cache
 %{_var}/lib/rpm/filetriggers/ldconfig.*
 %{_var}/db/Makefile
+
+########################################################################
+%if %{build_multiarch}
+#-----------------------------------------------------------------------
+%package	-n %{multilibc}
+Summary:	The GNU libc libraries
+Group:		System/Libraries
+
+%description	-n %{multilibc}
+The glibc package contains standard libraries which are used by
+multiple programs on the system. In order to save disk space and
+memory, as well as to make upgrading easier, common system code is
+kept in one place and shared between programs. This particular package
+contains the most important sets of shared libraries: the standard C
+library and the standard math library. Without these two libraries, a
+Linux system will not function.
+
+%files		-n %{multilibc}
+%{_slibdir32}/ld-%{version}.so
+%{_slibdir32}/ld-linux*.so.2
+%{_slibdir32}/lib*-[.0-9]*.so
+%{_slibdir32}/lib*.so.[0-9]*
+%{_slibdir32}/libSegFault.so
+%dir %{_libdir32}/audit
+%{_libdir32}/audit/sotruss-lib.so
+%{_libdir32}/gconv/*.so
+%{_libdir32}/gconv/gconv-modules
+%ghost %{_libdir32}/gconv/gconv-modules.cache
+%{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
+%{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFFBIG
+%{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFF32
+%{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFFBIG
+%{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
+%{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
+#-----------------------------------------------------------------------
+# build_multiarch
+%endif
 
 #-----------------------------------------------------------------------
 %package	devel
@@ -309,6 +342,9 @@ Requires(preun):info-install
 Requires(post):	coreutils
 Requires(postun):coreutils, awk
 Requires:	%{name} = %{EVRD}
+%if %{build_multiarch}
+Requires:	%{multilibc} = %{EVRD}
+%endif
 Requires:	kernel-headers
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
@@ -331,6 +367,13 @@ executables.
     %_remove_install_info libc.info
 
 %files		devel
+%{_mandir}/man3/*
+%{_infodir}/libc.info*
+%doc %{_docdir}/glibc/*
+%exclude %{_docdir}/glibc/nss
+%exclude %{_docdir}/glibc/gai.conf
+%exclude %{_docdir}/glibc/COPYING
+%exclude %{_docdir}/glibc/COPYING.LIB
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
@@ -354,13 +397,6 @@ executables.
 %{_libdir32}/libpthread_nonshared.a
 %{_libdir32}/librpcsvc.a
 %endif
-%{_mandir}/man3/*
-%{_infodir}/libc.info*
-%doc %{_docdir}/glibc/*
-%exclude %{_docdir}/glibc/nss
-%exclude %{_docdir}/glibc/gai.conf
-%exclude %{_docdir}/glibc/COPYING
-%exclude %{_docdir}/glibc/COPYING.LIB
 
 #-----------------------------------------------------------------------
 %package	static-devel
@@ -591,43 +627,6 @@ rm -f localedata/locales/[a-z_]*.*
 > %{checklist}
 
 #
-# CompareKver <kernel version>
-# function to compare the desired kernel version with running kernel
-# version (package releases not taken into account in comparison). The
-# function returns:
-# -1 = <kernel version> is lesser than current running kernel
-#  0 = <kernel version> is equal to the current running kernel
-#  1 = <kernel version> is greater than current running kernel
-#
-function CompareKver() {
-  v1=`echo $1 | sed 's/\.\?$/./'`
-  v2=`uname -r | sed 's/[^.0-9].*//' | sed 's/\.\?$/./'`
-  n=1
-  s=0
-  while true; do
-    c1=`echo "$v1" | cut -d "." -f $n`
-    c2=`echo "$v2" | cut -d "." -f $n`
-    if [ -z "$c1" -a -z "$c2" ]; then
-      break
-    elif [ -z "$c1" ]; then
-      s=-1
-      break
-    elif [ -z "$c2" ]; then
-      s=1
-      break
-    elif [ "$c1" -gt "$c2" ]; then
-      s=1
-      break
-    elif [ "$c2" -gt "$c1" ]; then
-      s=-1
-      break
-    fi
-    n=$((n + 1))
-  done
-  echo $s
-}
-
-#
 # BuildGlibc <arch> [<extra_configure_options>+]
 #
 function BuildGlibc() {
@@ -678,7 +677,6 @@ function BuildGlibc() {
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
   BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
-
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
@@ -806,6 +804,11 @@ done < %{checklist}
     %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
 %endif
 %make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
+%if %{build_multiarch}
+    %ifarch x86_64
+	rm -f %{buildroot}%{_bindir}/lddlibc4
+    %endif
+%endif
 
 install -m700 build-%{_target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
@@ -897,9 +900,13 @@ ldconfig -X
 EOF
 chmod 755 %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script
 
-# Include %{_libdir}/gconv/gconv-modules.cache
+# gconv-modules.cache
 touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
+%if %{build_multiarch}
+    touch %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
+    chmod 644 %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
+%endif
 
 touch %{buildroot}%{_sysconfdir}/ld.so.cache
 
@@ -928,6 +935,7 @@ rm -rf %{buildroot}%{_includedir}/netatalk/
     #ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
 %endif
 
+# Documentation
 install -m 755 -d %{buildroot}%{_docdir}/glibc
 %if %{with doc}
     make -C build-%{_target_cpu}-linux html
@@ -937,8 +945,6 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
     make -C build-%{_target_cpu}-linux pdf
     install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
-
-# the last bit: more documentation
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL FAQ BUGS		\
     NOTES PROJECTS CONFORMANCE README.libm hesiod/README.hesiod		\
     ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
@@ -949,7 +955,7 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
     %{buildroot}%{_docdir}/glibc/crypt_blowfish
 
-# Generate localized libc.mo files list
+# Localization
 %find_lang libc
 
 # Remove unpackaged files
