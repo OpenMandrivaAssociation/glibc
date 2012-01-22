@@ -64,6 +64,7 @@
 # enable utils by default
 %bcond_without		utils
 
+#-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.14.90
@@ -222,6 +223,94 @@ system and sets up the symbolic links that are used to load shared
 libraries properly. It also creates a cache (/etc/ld.so.cache) which
 speeds the loading of programs which use shared libraries.
 
+%if 0
+%pre
+#TODO: bail out if kernel < %{enablekernel}
+%endif
+
+%post -p %{_sbindir}/glibc_post_upgrade
+
+%files		-f libc.lang
+%if %{build_timezone}
+%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
+%endif
+%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/nsswitch.conf
+%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
+%dir %{_sysconfdir}/ld.so.conf.d
+%config(noreplace) %{_sysconfdir}/rpc
+%doc %dir %{_docdir}/glibc
+%doc %{_docdir}/glibc/nss
+%doc %{_docdir}/glibc/gai.conf
+%doc %{_docdir}/glibc/COPYING
+%doc %{_docdir}/glibc/COPYING.LIB
+%{_mandir}/man1/*
+%{_mandir}/man8/rpcinfo.8*
+%{_mandir}/man8/ld.so*
+%{_localedir}/locale.alias
+/sbin/sln
+%dir %{_prefix}/libexec/getconf
+%{_prefix}/libexec/getconf/*
+%{_slibdir}/ld-%{version}.so
+%ifarch %{ix86}
+%{_slibdir}/ld-linux.so.2
+%{_slibdir}/i686
+%endif
+%ifarch x86_64
+%{_slibdir}/ld-linux-x86-64.so.2
+%endif
+%ifarch %{arm}
+%{_slibdir}/ld-linux.so.3
+%endif
+%{_slibdir}/lib*-[.0-9]*.so
+%{_slibdir}/lib*.so.[0-9]*
+%{_slibdir}/libSegFault.so
+%dir %{_libdir}/audit
+%{_libdir}/audit/sotruss-lib.so
+%dir %{_libdir}/gconv
+%{_libdir}/gconv/*.so
+%{_libdir}/gconv/gconv-modules
+%ghost %{_libdir}/gconv/gconv-modules.cache
+%attr(4755,root,root) %{_prefix}/libexec/pt_chown
+%{_bindir}/catchsegv
+%{_bindir}/gencat
+%{_bindir}/getconf
+%{_bindir}/getent
+%{_bindir}/iconv
+%{_bindir}/ldd
+%ifarch %{ix86} x86_64
+%{_bindir}/lddlibc4
+%endif
+%{_bindir}/locale
+%{_bindir}/localedef
+%{_bindir}/makedb
+%{_bindir}/pldd
+%{_bindir}/rpcgen
+%{_bindir}/sotruss
+%{_bindir}/sprof
+%{_bindir}/tzselect
+%{_sbindir}/iconvconfig
+%{_sbindir}/glibc_post_upgrade
+%if %{build_multiarch}
+%{_slibdir32}/ld-%{version}.so
+%{_slibdir32}/ld-linux*.so.2
+%{_slibdir32}/lib*-[.0-9]*.so
+%{_slibdir32}/lib*.so.[0-9]*
+%{_slibdir32}/libSegFault.so
+%dir %{_libdir32}/audit
+%{_libdir32}/audit/sotruss-lib.so
+%dir %{_libdir32}/gconv
+%{_libdir32}/gconv/*.so
+%{_libdir32}/gconv/gconv-modules
+%endif
+/sbin/ldconfig
+%{_mandir}/man8/ldconfig*
+%ghost %{_sysconfdir}/ld.so.cache
+%dir %{_var}/cache/ldconfig
+%ghost %{_var}/cache/ldconfig/aux-cache
+%{_var}/lib/rpm/filetriggers/ldconfig.*
+%{_var}/db/Makefile
+
+#-----------------------------------------------------------------------
 %package	devel
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
@@ -254,18 +343,86 @@ rebuilding the kernel.
 Install glibc-devel if you are going to develop programs which will
 use the standard C libraries.
 
+%post		devel
+    %_install_info libc.info
+
+%preun		devel
+    %_remove_install_info libc.info
+
+%files		devel
+%{_includedir}/*
+%{_libdir}/*.o
+%{_libdir}/*.so
+%{_libdir}/libbsd-compat.a
+%{_libdir}/libbsd.a
+%{_libdir}/libc_nonshared.a
+%{_libdir}/libg.a
+%{_libdir}/libieee.a
+%{_libdir}/libmcheck.a
+%{_libdir}/libpthread_nonshared.a
+%{_libdir}/librpcsvc.a
+%if %{build_multiarch}
+%{_libdir32}/*.o
+%{_libdir32}/*.so
+%{_libdir32}/libbsd-compat.a
+%{_libdir32}/libbsd.a
+%{_libdir32}/libc_nonshared.a
+%{_libdir32}/libg.a
+%{_libdir32}/libieee.a
+%{_libdir32}/libmcheck.a
+%{_libdir32}/libpthread_nonshared.a
+%{_libdir32}/librpcsvc.a
+%endif
+%{_mandir}/man3/*
+%{_infodir}/libc.info*
+%doc %{_docdir}/glibc/*
+%exclude %{_docdir}/glibc/nss
+%exclude %{_docdir}/glibc/gai.conf
+%exclude %{_docdir}/glibc/COPYING
+%exclude %{_docdir}/glibc/COPYING.LIB
+
+#-----------------------------------------------------------------------
 %package	static-devel
 Summary:	Static libraries for GNU C library
 Group:		Development/C
 Requires:	%{name}-devel = %{EVRD}
 
-%description static-devel
+%description	static-devel
 The glibc-static-devel package contains the static libraries necessary
 for developing programs which use the standard C libraries. Install
 glibc-static-devel if you need to statically link your program or
 library.
 
-%package -n	nscd
+%files		static-devel
+%{_libdir}/libBrokenLocale.a
+%{_libdir}/libanl.a
+%{_libdir}/libc.a
+%{_libdir}/libcrypt.a
+%{_libdir}/libdl.a
+%{_libdir}/libm.a
+%{_libdir}/libnsl.a
+%{_libdir}/libpthread.a
+%{_libdir}/libresolv.a
+%{_libdir}/librt.a
+%{_libdir}/libutil.a
+%if %{build_multiarch}
+%{_libdir32}/libBrokenLocale.a
+%{_libdir32}/libanl.a
+%{_libdir32}/libc.a
+%{_libdir32}/libcrypt.a
+%{_libdir32}/libdl.a
+%{_libdir32}/libm.a
+%{_libdir32}/libnsl.a
+%{_libdir32}/libpthread.a
+%{_libdir32}/libresolv.a
+%{_libdir32}/librt.a
+%{_libdir32}/libutil.a
+%endif
+
+########################################################################
+%if %{build_nscd}
+#-----------------------------------------------------------------------
+%package	-n nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
@@ -274,7 +431,7 @@ Requires(preun):rpm-helper
 Requires(post):	rpm-helper
 Requires(postun):rpm-helper
 
-%description -n	nscd
+%description	-n nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well. Note that you
 can't use nscd with 2.0 kernels because of bugs in the kernel-side
@@ -284,6 +441,32 @@ particularly hard.
 Install nscd if you need a name service lookup caching daemon, and
 you're not using a version 2.0 kernel.
 
+%pre -n nscd
+    %_pre_useradd nscd / /sbin/nologin
+
+%post -n nscd
+    %_post_service nscd
+
+%preun -n nscd
+    %_preun_service nscd
+
+%postun -n nscd
+    %_postun_userdel nscd
+    if [ "$1" -ge "1" ]; then
+	/sbin/service nscd condrestart > /dev/null 2>&1 || :
+    fi
+
+%files		-n nscd
+%config(noreplace) %{_sysconfdir}/nscd.conf
+%config(noreplace) %{_initrddir}/nscd
+%{_sbindir}/nscd
+#-----------------------------------------------------------------------
+# build_nscd
+%endif
+
+########################################################################
+%if %{with utils}
+#-----------------------------------------------------------------------
 %package	utils
 Summary:	Development utilities from GNU C library
 Group:		Development/Other
@@ -296,7 +479,25 @@ can be helpful during program debugging.
 
 If unsure if you need this, don't install this package.
 
+%files		utils
+%{_bindir}/memusage
+%{_bindir}/memusagestat
+%{_bindir}/mtrace
+%{_bindir}/pcprofiledump
+%{_bindir}/xtrace
+%{_slibdir}/libmemusage.so
+%{_slibdir}/libpcprofile.so
+%if %{build_multiarch}
+%{_slibdir32}/libmemusage.so
+%{_slibdir32}/libpcprofile.so
+%endif
+#-----------------------------------------------------------------------
+# with utils
+%endif
+
+########################################################################
 %if %{build_i18ndata}
+#-----------------------------------------------------------------------
 %package	i18ndata
 Summary:	Database sources for 'locale'
 Group:		System/Libraries
@@ -304,18 +505,39 @@ Group:		System/Libraries
 %description	i18ndata
 This package contains the data needed to build the locale data files
 to use the internationalization features of the GNU libc.
+
+%files		i18ndata
+%dir %{_datadir}/i18n
+%dir %{_datadir}/i18n/charmaps
+%{_datadir}/i18n/charmaps/*
+%dir %{_datadir}/i18n/locales
+%{_datadir}/i18n/locales/*
+%{_datadir}/i18n/SUPPORTED
+#-----------------------------------------------------------------------
+# build_i18ndata
 %endif
 
+########################################################################
 %if %{build_timezone}
-%package -n	timezone
+#-----------------------------------------------------------------------
+%package	-n timezone
 Summary:	Time zone descriptions
 Group:		System/Base
 
-%description -n	timezone
+%description	-n timezone
 These are configuration files that describe possible
 time zones.
+
+%files		-n timezone
+%{_sbindir}/zdump
+%{_sbindir}/zic
+%{_mandir}/man1/zdump.1*
+%{_datadir}/zoneinfo
+#-----------------------------------------------------------------------
+# build_timezone
 %endif
 
+########################################################################
 %prep
 %setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 50
 %if %{build_ports}
@@ -375,9 +597,9 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch43 -p1 -b .mdv-wrapper_handle_sha
 
 %if %{build_selinux}
-# XXX kludge to build nscd with selinux support as it added -nostdinc
-# so /usr/include/selinux is not found
-ln -s %{_includedir}/selinux selinux
+    # XXX kludge to build nscd with selinux support as it added -nostdinc
+    # so /usr/include/selinux is not found
+    ln -s %{_includedir}/selinux selinux
 %endif
 
 find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
@@ -387,6 +609,7 @@ rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
 rm -f localedata/locales/[a-z_]*.*
 
+#-----------------------------------------------------------------------
 %build
 # Prepare test matrix in the next function
 > %{checklist}
@@ -590,6 +813,7 @@ gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgra
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
   '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
 
+#-----------------------------------------------------------------------
 %check
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
@@ -597,6 +821,7 @@ while read arglist; do
   %{SOURCE5} $arglist || exit 1
 done < %{checklist}
 
+#-----------------------------------------------------------------------
 %install
 %if %{build_multiarch}
     %ifarch x86_64
@@ -656,16 +881,16 @@ rm -f %{buildroot}%{_slibdir}/libNoVersion*
 
 ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
 %if %{build_multiarch}
-ln -sf libbsd-compat.a %{buildroot}%{_libdir32}/libbsd.a
+    ln -sf libbsd-compat.a %{buildroot}%{_libdir32}/libbsd.a
 %endif
 
 install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 
 # This is for ncsd - in glibc 2.2
 %if %{build_nscd}
-install -m 644 nscd/nscd.conf %{buildroot}%{_sysconfdir}
-mkdir -p %{buildroot}%{_initrddir}
-install -m 755 nscd/nscd.init %{buildroot}%{_initrddir}/nscd
+    install -m 644 nscd/nscd.conf %{buildroot}%{_sysconfdir}
+    mkdir -p %{buildroot}%{_initrddir}
+    install -m 755 nscd/nscd.init %{buildroot}%{_initrddir}/nscd
 %endif
 
 # These man pages require special attention
@@ -715,16 +940,16 @@ popd
 rm -f %{buildroot}%{_includedir}/rpcsvc/rquota.[hx]
 
 %if %{build_i18ndata}
-install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
+    install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
 %endif
 
 rm -rf %{buildroot}%{_includedir}/netatalk/
 
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{build_timezone}
-rm -f %{buildroot}%{_sysconfdir}/localtime
-cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
-#ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
+    rm -f %{buildroot}%{_sysconfdir}/localtime
+    cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
+    #ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
 %endif
 
 install -m 755 -d %{buildroot}%{_docdir}/glibc
@@ -759,273 +984,38 @@ rm -f  %{buildroot}%{_localedir}/locale-archive*
 find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{build_nscd}
-rm -f %{buildroot}%{_sbindir}/nscd
+    rm -f %{buildroot}%{_sbindir}/nscd
 %endif
 
 rm -f %{buildroot}%{_infodir}/dir
 
 %if %{without utils}
-%if %{build_multiarch}
-rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
-rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
-%endif
-rm -f  %{buildroot}%{_slibdir}/libmemusage.so
-rm -f  %{buildroot}%{_slibdir}/libpcprofile.so
-
-rm -f  %{buildroot}%{_bindir}/memusage
-rm -f  %{buildroot}%{_bindir}/memusagestat
-rm -f  %{buildroot}%{_bindir}/mtrace
-rm -f  %{buildroot}%{_bindir}/pcprofiledump
-rm -f  %{buildroot}%{_bindir}/xtrace
+    rm -f  %{buildroot}%{_bindir}/memusage
+    rm -f  %{buildroot}%{_bindir}/memusagestat
+    rm -f  %{buildroot}%{_bindir}/mtrace
+    rm -f  %{buildroot}%{_bindir}/pcprofiledump
+    rm -f  %{buildroot}%{_bindir}/xtrace
+    rm -f  %{buildroot}%{_slibdir}/libmemusage.so
+    rm -f  %{buildroot}%{_slibdir}/libpcprofile.so
+    %if %{build_multiarch}
+	rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
+	rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
+    %endif
 %endif
 
 %if !%{build_timezone}
-rm -f  %{buildroot}%{_sysconfdir}/localtime
-rm -f  %{buildroot}%{_sbindir}/zdump
-rm -f  %{buildroot}%{_sbindir}/zic
-rm -f  %{buildroot}%{_mandir}/man1/zdump.1*
-rm -rf %{buildroot}%{_datadir}/zoneinfo
+    rm -f  %{buildroot}%{_sysconfdir}/localtime
+    rm -f  %{buildroot}%{_sbindir}/zdump
+    rm -f  %{buildroot}%{_sbindir}/zic
+    rm -f  %{buildroot}%{_mandir}/man1/zdump.1*
+    rm -rf %{buildroot}%{_datadir}/zoneinfo
 %endif
 
 %if !%{build_i18ndata}
-rm -rf %{buildroot}%{_datadir}/i18n
+    rm -rf %{buildroot}%{_datadir}/i18n
 %endif
 
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
-
-%if 0
-%pre
-#TODO: bail out if kernel < %{enablekernel}
-%endif
-
-%post -p %{_sbindir}/glibc_post_upgrade
-
-%post devel
-    %_install_info libc.info
-
-%preun devel
-    %_remove_install_info libc.info
-
-%if %{build_nscd}
-%pre -n nscd
-%_pre_useradd nscd / /sbin/nologin
-
-%post -n nscd
-%_post_service nscd
-
-%preun -n nscd
-%_preun_service nscd
-
-%postun -n nscd
-%_postun_userdel nscd
-
-if [ "$1" -ge "1" ]; then
-  /sbin/service nscd condrestart > /dev/null 2>&1 || :
-fi
-%endif
-
-#
-# glibc
-#
-%files -f libc.lang
-%if %{build_timezone}
-%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
-%endif
-%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/nsswitch.conf
-%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
-%dir %{_sysconfdir}/ld.so.conf.d
-%config(noreplace) %{_sysconfdir}/rpc
-%doc %dir %{_docdir}/glibc
-%doc %{_docdir}/glibc/nss
-%doc %{_docdir}/glibc/gai.conf
-%doc %{_docdir}/glibc/COPYING
-%doc %{_docdir}/glibc/COPYING.LIB
-%{_mandir}/man1/*
-%{_mandir}/man8/rpcinfo.8*
-%{_mandir}/man8/ld.so*
-%{_localedir}/locale.alias
-/sbin/sln
-%dir %{_prefix}/libexec/getconf
-%{_prefix}/libexec/getconf/*
-%{_slibdir}/ld-%{version}.so
-%ifarch %{ix86}
-%{_slibdir}/ld-linux.so.2
-%{_slibdir}/i686
-%endif
-%ifarch x86_64
-%{_slibdir}/ld-linux-x86-64.so.2
-%endif
-%ifarch %{arm}
-%{_slibdir}/ld-linux.so.3
-%endif
-%{_slibdir}/lib*-[.0-9]*.so
-%{_slibdir}/lib*.so.[0-9]*
-%{_slibdir}/libSegFault.so
-%dir %{_libdir}/audit
-%{_libdir}/audit/sotruss-lib.so
-%dir %{_libdir}/gconv
-%{_libdir}/gconv/*.so
-%{_libdir}/gconv/gconv-modules
-%ghost %{_libdir}/gconv/gconv-modules.cache
-%attr(4755,root,root) %{_prefix}/libexec/pt_chown
-%{_bindir}/catchsegv
-%{_bindir}/gencat
-%{_bindir}/getconf
-%{_bindir}/getent
-%{_bindir}/iconv
-%{_bindir}/ldd
-%ifarch %{ix86} x86_64
-%{_bindir}/lddlibc4
-%endif
-%{_bindir}/locale
-%{_bindir}/localedef
-%{_bindir}/makedb
-%{_bindir}/pldd
-%{_bindir}/rpcgen
-%{_bindir}/sotruss
-%{_bindir}/sprof
-%{_bindir}/tzselect
-%{_sbindir}/iconvconfig
-%{_sbindir}/glibc_post_upgrade
-%if %{build_multiarch}
-%{_slibdir32}/ld-%{version}.so
-%{_slibdir32}/ld-linux*.so.2
-%{_slibdir32}/lib*-[.0-9]*.so
-%{_slibdir32}/lib*.so.[0-9]*
-%{_slibdir32}/libSegFault.so
-%dir %{_libdir32}/audit
-%{_libdir32}/audit/sotruss-lib.so
-%dir %{_libdir32}/gconv
-%{_libdir32}/gconv/*.so
-%{_libdir32}/gconv/gconv-modules
-%endif
-#
-# ldconfig
-#
-/sbin/ldconfig
-%{_mandir}/man8/ldconfig*
-%ghost %{_sysconfdir}/ld.so.cache
-%dir %{_var}/cache/ldconfig
-%ghost %{_var}/cache/ldconfig/aux-cache
-%{_var}/lib/rpm/filetriggers/ldconfig.*
-%{_var}/db/Makefile
-
-#
-# glibc-devel
-#
-%files devel
-%{_includedir}/*
-%{_libdir}/*.o
-%{_libdir}/*.so
-%{_libdir}/libbsd-compat.a
-%{_libdir}/libbsd.a
-%{_libdir}/libc_nonshared.a
-%{_libdir}/libg.a
-%{_libdir}/libieee.a
-%{_libdir}/libmcheck.a
-%{_libdir}/libpthread_nonshared.a
-%{_libdir}/librpcsvc.a
-%if %{build_multiarch}
-%{_libdir32}/*.o
-%{_libdir32}/*.so
-%{_libdir32}/libbsd-compat.a
-%{_libdir32}/libbsd.a
-%{_libdir32}/libc_nonshared.a
-%{_libdir32}/libg.a
-%{_libdir32}/libieee.a
-%{_libdir32}/libmcheck.a
-%{_libdir32}/libpthread_nonshared.a
-%{_libdir32}/librpcsvc.a
-%endif
-%{_mandir}/man3/*
-%{_infodir}/libc.info*
-%doc %{_docdir}/glibc/*
-%exclude %{_docdir}/glibc/nss
-%exclude %{_docdir}/glibc/gai.conf
-%exclude %{_docdir}/glibc/COPYING
-%exclude %{_docdir}/glibc/COPYING.LIB
-
-#
-# glibc-static-devel
-#
-%files static-devel
-%{_libdir}/libBrokenLocale.a
-%{_libdir}/libanl.a
-%{_libdir}/libc.a
-%{_libdir}/libcrypt.a
-%{_libdir}/libdl.a
-%{_libdir}/libm.a
-%{_libdir}/libnsl.a
-%{_libdir}/libpthread.a
-%{_libdir}/libresolv.a
-%{_libdir}/librt.a
-%{_libdir}/libutil.a
-%if %{build_multiarch}
-%{_libdir32}/libBrokenLocale.a
-%{_libdir32}/libanl.a
-%{_libdir32}/libc.a
-%{_libdir32}/libcrypt.a
-%{_libdir32}/libdl.a
-%{_libdir32}/libm.a
-%{_libdir32}/libnsl.a
-%{_libdir32}/libpthread.a
-%{_libdir32}/libresolv.a
-%{_libdir32}/librt.a
-%{_libdir32}/libutil.a
-%endif
-
-#
-# glibc-utils
-#
-%if %{with utils}
-%files utils
-%if %{build_multiarch}
-%{_slibdir32}/libmemusage.so
-%{_slibdir32}/libpcprofile.so
-%endif
-%{_slibdir}/libmemusage.so
-%{_slibdir}/libpcprofile.so
-%{_bindir}/memusage
-%{_bindir}/memusagestat
-%{_bindir}/mtrace
-%{_bindir}/pcprofiledump
-%{_bindir}/xtrace
-%endif
-
-#
-# nscd
-#
-%if %{build_nscd}
-%files -n nscd
-%config(noreplace) %{_sysconfdir}/nscd.conf
-%config(noreplace) %{_initrddir}/nscd
-%{_sbindir}/nscd
-%endif
-
-#
-# timezone
-#
-%if %{build_timezone}
-%files -n timezone
-%{_sbindir}/zdump
-%{_sbindir}/zic
-%{_mandir}/man1/zdump.1*
-%dir %{_datadir}/zoneinfo
-%{_datadir}/zoneinfo/*
-%endif
-
-#
-# glibc-i18ndata
-#
-%if %{build_i18ndata}
-%files i18ndata
-%dir %{_datadir}/i18n
-%dir %{_datadir}/i18n/charmaps
-%{_datadir}/i18n/charmaps/*
-%dir %{_datadir}/i18n/locales
-%{_datadir}/i18n/locales/*
-%{_datadir}/i18n/SUPPORTED
-%endif
