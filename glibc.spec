@@ -8,6 +8,8 @@
 %define glibcportsdir	glibc-ports-2.14-25-gd3d9bde
 %endif
 
+%define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
+
 # crypt blowfish support
 %define crypt_bf_ver	1.2
 
@@ -35,14 +37,6 @@
 # Define to build nscd with selinux support
 %define build_selinux	0
 
-# Flag for build_pdf_doc:
-# 1	build glibc with PDF documentation
-# 0	don't build PDF glibc documentation
-%define build_pdf_doc	1
-
-# Enable checking by default for arches where we know tests all pass
-%define build_check	1
-
 # Allow make check to fail only when running kernels where we know
 # tests must pass (no missing features or bugs in the kernel)
 %define check_min_kver 2.6.21
@@ -54,8 +48,6 @@
 %endif
 
 %define build_nscd	1
-%define build_doc	1
-%define build_utils	1
 %define build_i18ndata	1
 %define build_timezone	0
 
@@ -66,13 +58,11 @@
 %define enable_systap	0
 %endif
 
-# Allow --with[out] <feature> at rpm command line build
-%{expand: %{?_without_PDF:	%%global build_pdf_doc 0}}
-%{expand: %{?_without_CHECK:	%%global build_check 0}}
-%{expand: %{?_without_UTILS:	%%global build_utils 0}}
-%{expand: %{?_with_PDF:		%%global build_pdf_doc 1}}
-%{expand: %{?_with_CHECK:	%%global build_check 1}}
-%{expand: %{?_with_UTILS:	%%global build_utils 1}}
+# build documentation by default
+%bcond_without		doc
+%bcond_without		pdf
+# enable utils by default
+%bcond_without		utils
 
 Summary:	The GNU libc libraries
 Name:		glibc
@@ -132,10 +122,10 @@ BuildRequires:	binutils >= %{binutils_version}
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 
 BuildRequires:	texinfo
-%if %{build_pdf_doc}
+%if %{with pdf}
 BuildRequires:	texlive
 %endif
-%if %{build_utils}
+%if %{with utils}
 BuildRequires:	gd-devel
 %endif
 %if %{enable_systap}
@@ -244,7 +234,7 @@ Requires:	%{name} = %{EVRD}
 Requires:	linux-userspace-headers
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
-%if %{build_pdf_doc}
+%if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
 
@@ -399,9 +389,7 @@ rm -f localedata/locales/[a-z_]*.*
 
 %build
 # Prepare test matrix in the next function
-CheckList=$PWD/Check.list
-rm -f $CheckList
-touch $CheckList
+> %{checklist}
 
 #
 # CompareKver <kernel version>
@@ -561,7 +549,7 @@ function BuildGlibc() {
     return 1
   }
   local BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
-  echo "$BuildJobs -d build-$arch-linux $check_flags" >> $CheckList
+  echo "$BuildJobs -d build-$arch-linux $check_flags" >> %{checklist}
 
   case $arch in
   i686)		base_arch=i586;;
@@ -570,7 +558,7 @@ function BuildGlibc() {
 
   [[ -d "build-$base_arch-linux" ]] && {
     check_flags="$check_flags -l build-$base_arch-linux/elf/ld.so"
-    echo "$BuildJobs -d build-$arch-linux $check_flags" >> $CheckList
+    echo "$BuildJobs -d build-$arch-linux $check_flags" >> %{checklist}
   }
   return 0
 }
@@ -602,16 +590,12 @@ gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgra
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
   '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
 
-%if %{build_check}
+%check
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
-Check="$PWD/glibc-check.sh"
-cat %{SOURCE5} > $Check
-chmod +x $Check
 while read arglist; do
-  $Check $arglist || exit 1
-done < $CheckList
-%endif
+  %{SOURCE5} $arglist || exit 1
+done < %{checklist}
 
 %install
 %if %{build_biarch}
@@ -636,10 +620,6 @@ function InstallGlibc() {
   local SubDir="$2"
   local LibDir="$3"
 
-  case $BuildDir in
-  *)      Pthreads=nptl         ;;
-  esac
-
   [[ -z "$LibDir" ]] && LibDir="%{_slibdir}"
 
   pushd $BuildDir
@@ -648,9 +628,9 @@ function InstallGlibc() {
   ln -sf `basename %{buildroot}$LibDir/libc-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc.so.*`
   install -m755 math/libm.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm-*.so`
   ln -sf `basename %{buildroot}$LibDir/libm-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm.so.*`
-  install -m755 $Pthreads/libpthread.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread-*.so`
+  install -m755 nptl/libpthread.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread-*.so`
   ln -sf `basename %{buildroot}$LibDir/libpthread-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread.so.*`
-  install -m755 ${Pthreads}_db/libthread_db.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db-*.so`
+  install -m755 nptl_db/libthread_db.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db-*.so`
   ln -sf `basename %{buildroot}$LibDir/libthread_db-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db.so.*`
   install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
   ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
@@ -767,13 +747,13 @@ cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/loc
 %endif
 
 install -m 755 -d %{buildroot}%{_docdir}/glibc
-%if %{build_doc}
+%if %{with doc}
     make -C build-%{_target_cpu}-linux html
     cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
-    %if %{build_pdf_doc}
-	make -C build-%{_target_cpu}-linux pdf
-	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
-    %endif
+%endif
+%if %{with pdf}
+    make -C build-%{_target_cpu}-linux pdf
+    install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
 
 # the last bit: more documentation
@@ -806,7 +786,7 @@ rm -f %{buildroot}%{_sbindir}/nscd
 
 rm -f %{buildroot}%{_infodir}/dir
 
-%if !%{build_utils}
+%if %{without utils}
 %if %{build_biarch}
 rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
 rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
@@ -1021,7 +1001,7 @@ fi
 #
 # glibc-utils
 #
-%if %{build_utils}
+%if %{with utils}
 %files utils
 %if %{build_biarch}
 %{_slibdir32}/libmemusage.so
