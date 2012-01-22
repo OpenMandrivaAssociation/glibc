@@ -96,7 +96,7 @@ Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glib
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
 Obsoletes:	zoneinfo, libc-static, libc-devel, libc-headers
-Obsoletes: 	gencat, locale, glibc-localedata, glibc-profile
+Obsoletes:	gencat, locale, glibc-localedata, glibc-profile
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	glibc-localedata
 Provides:	should-restart = system
@@ -609,9 +609,6 @@ done < %{checklist}
 install -m700 build-%{_target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
 
-# Empty filelist for non i686 targets
-touch extralibs.filelist
-
 # Install extra glibc libraries
 function InstallGlibc() {
   local BuildDir="$1"
@@ -632,8 +629,6 @@ function InstallGlibc() {
   ln -sf `basename %{buildroot}$LibDir/libthread_db-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db.so.*`
   install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
   ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
-  echo "%dir $LibDir/$SubDir" >> ../extralibs.filelist
-  find %{buildroot}$LibDir/$SubDir -maxdepth 1  -type f -o -type l | sed -e "s|%{buildroot}||" >> ../extralibs.filelist
   popd
 }
 
@@ -725,18 +720,6 @@ install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
 
 rm -rf %{buildroot}%{_includedir}/netatalk/
 
-# Build file list for devel package
-find %{buildroot}%{_includedir} -type f -or -type l > devel.filelist
-find %{buildroot}%{_includedir} -type d  | sed "s/^/%dir /" | \
-  grep -v "%{_libdir}/libnss1.*.so$" | \
-  grep -v "%{_includedir}$" | >> devel.filelist
-find %{buildroot}%{_libdir} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
-# biarch libs
-%if %{build_multiarch}
-find %{buildroot}%{_libdir32} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
-%endif
-perl -pi -e "s|%{buildroot}||" devel.filelist
-
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{build_timezone}
 rm -f %{buildroot}%{_sysconfdir}/localtime
@@ -765,11 +748,8 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
     %{buildroot}%{_docdir}/glibc/crypt_blowfish
 
-# Generate final rpm filelist, with localized libc.mo files
-rm -f rpm.filelist
+# Generate localized libc.mo files list
 %find_lang libc
-perl -ne '/^\s*$/ or print' libc.lang > rpm.filelist
-cat extralibs.filelist >> rpm.filelist
 
 # Remove unpackaged files
 rm -f  %{buildroot}%{_infodir}/dir.old*
@@ -850,7 +830,7 @@ fi
 #
 # glibc
 #
-%files -f rpm.filelist
+%files -f libc.lang
 %if %{build_timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
@@ -873,6 +853,7 @@ fi
 %{_slibdir}/ld-%{version}.so
 %ifarch %{ix86}
 %{_slibdir}/ld-linux.so.2
+%{_slibdir}/i686
 %endif
 %ifarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
@@ -894,7 +875,6 @@ fi
 %{_bindir}/gencat
 %{_bindir}/getconf
 %{_bindir}/getent
-#%{_bindir}/glibcbug
 %{_bindir}/iconv
 %{_bindir}/ldd
 %ifarch %{ix86} x86_64
@@ -908,7 +888,6 @@ fi
 %{_bindir}/sotruss
 %{_bindir}/sprof
 %{_bindir}/tzselect
-#%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
 %{_sbindir}/glibc_post_upgrade
 %if %{build_multiarch}
@@ -937,8 +916,10 @@ fi
 #
 # glibc-devel
 #
-%files devel -f devel.filelist
-%{_mandir}/man3/*
+%files devel
+%{_includedir}/*
+%{_libdir}/*.o
+%{_libdir}/*.so
 %{_libdir}/libbsd-compat.a
 %{_libdir}/libbsd.a
 %{_libdir}/libc_nonshared.a
@@ -948,6 +929,8 @@ fi
 %{_libdir}/libpthread_nonshared.a
 %{_libdir}/librpcsvc.a
 %if %{build_multiarch}
+%{_libdir32}/*.o
+%{_libdir32}/*.so
 %{_libdir32}/libbsd-compat.a
 %{_libdir32}/libbsd.a
 %{_libdir32}/libc_nonshared.a
@@ -957,6 +940,7 @@ fi
 %{_libdir32}/libpthread_nonshared.a
 %{_libdir32}/librpcsvc.a
 %endif
+%{_mandir}/man3/*
 %{_infodir}/libc.info*
 %doc %{_docdir}/glibc/*
 %exclude %{_docdir}/glibc/nss
