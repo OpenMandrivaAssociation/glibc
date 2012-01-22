@@ -13,9 +13,9 @@
 # crypt blowfish support
 %define crypt_bf_ver	1.2
 
-%define cross_prefix	%{nil}
 %define _slibdir	/%{_lib}
 %define _slibdir32	/lib
+%define _libdir32	%{_prefix}/lib
 
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
@@ -42,9 +42,9 @@
 %define check_min_kver 2.6.21
 
 # Define to build a biarch package
-%define build_biarch	0
+%define build_multiarch	0
 %ifarch x86_64
-%define build_biarch	1
+%define build_multiarch	1
 %endif
 
 %define build_nscd	1
@@ -566,7 +566,7 @@ function BuildGlibc() {
 # Build main glibc
 BuildGlibc %{_target_cpu}
 
-%if %{build_biarch}
+%if %{build_multiarch}
     %ifarch x86_64
 	BuildGlibc i686
     %endif
@@ -598,15 +598,13 @@ while read arglist; do
 done < %{checklist}
 
 %install
-%if %{build_biarch}
+%if %{build_multiarch}
     %ifarch x86_64
 	ALT_ARCH=i686
     %endif
     %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
-    %make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
-%else
-    %make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
 %endif
+%make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
 
 install -m700 build-%{_target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
 sh manpages/Script.sh
@@ -650,7 +648,7 @@ esac
 # the generic one (RH#162634)
 install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
-install -m644 fedora/libc-lock.h -D %{buildroot}%{_prefix}/include/bits/libc-lock.h
+install -m644 fedora/libc-lock.h -D %{buildroot}%{_includedir}/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
@@ -662,8 +660,8 @@ rm -f %{buildroot}%{_libdir}/libNoVersion*
 rm -f %{buildroot}%{_slibdir}/libNoVersion*
 
 ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
-%if %{build_biarch}
-ln -sf libbsd-compat.a %{buildroot}%{_prefix}/lib/libbsd.a
+%if %{build_multiarch}
+ln -sf libbsd-compat.a %{buildroot}%{_libdir32}/libbsd.a
 %endif
 
 install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
@@ -734,8 +732,8 @@ find %{buildroot}%{_includedir} -type d  | sed "s/^/%dir /" | \
   grep -v "%{_includedir}$" | >> devel.filelist
 find %{buildroot}%{_libdir} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
 # biarch libs
-%if %{build_biarch}
-find %{buildroot}%{_prefix}/lib -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
+%if %{build_multiarch}
+find %{buildroot}%{_libdir32} -maxdepth 1 -name "*.so" -o -name "*.o" | egrep -v "(libmemusage.so|libpcprofile.so)" >> devel.filelist
 %endif
 perl -pi -e "s|%{buildroot}||" devel.filelist
 
@@ -787,7 +785,7 @@ rm -f %{buildroot}%{_sbindir}/nscd
 rm -f %{buildroot}%{_infodir}/dir
 
 %if %{without utils}
-%if %{build_biarch}
+%if %{build_multiarch}
 rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
 rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
 %endif
@@ -885,7 +883,6 @@ fi
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
-
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
 %dir %{_libdir}/gconv
@@ -914,17 +911,17 @@ fi
 #%{_sbindir}/rpcinfo
 %{_sbindir}/iconvconfig
 %{_sbindir}/glibc_post_upgrade
-%if %{build_biarch}
+%if %{build_multiarch}
 %{_slibdir32}/ld-%{version}.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
-%dir %{_prefix}/lib/audit
-%{_prefix}/lib/audit/sotruss-lib.so
-%dir %{_prefix}/lib/gconv
-%{_prefix}/lib/gconv/*.so
-%{_prefix}/lib/gconv/gconv-modules
+%dir %{_libdir32}/audit
+%{_libdir32}/audit/sotruss-lib.so
+%dir %{_libdir32}/gconv
+%{_libdir32}/gconv/*.so
+%{_libdir32}/gconv/gconv-modules
 %endif
 #
 # ldconfig
@@ -950,16 +947,15 @@ fi
 %{_libdir}/libmcheck.a
 %{_libdir}/libpthread_nonshared.a
 %{_libdir}/librpcsvc.a
-
-%if %{build_biarch}
-%{_prefix}/lib/libbsd-compat.a
-%{_prefix}/lib/libbsd.a
-%{_prefix}/lib/libc_nonshared.a
-%{_prefix}/lib/libg.a
-%{_prefix}/lib/libieee.a
-%{_prefix}/lib/libmcheck.a
-%{_prefix}/lib/libpthread_nonshared.a
-%{_prefix}/lib/librpcsvc.a
+%if %{build_multiarch}
+%{_libdir32}/libbsd-compat.a
+%{_libdir32}/libbsd.a
+%{_libdir32}/libc_nonshared.a
+%{_libdir32}/libg.a
+%{_libdir32}/libieee.a
+%{_libdir32}/libmcheck.a
+%{_libdir32}/libpthread_nonshared.a
+%{_libdir32}/librpcsvc.a
 %endif
 %{_infodir}/libc.info*
 %doc %{_docdir}/glibc/*
@@ -983,19 +979,18 @@ fi
 %{_libdir}/libresolv.a
 %{_libdir}/librt.a
 %{_libdir}/libutil.a
-
-%if %{build_biarch}
-%{_prefix}/lib/libBrokenLocale.a
-%{_prefix}/lib/libanl.a
-%{_prefix}/lib/libc.a
-%{_prefix}/lib/libcrypt.a
-%{_prefix}/lib/libdl.a
-%{_prefix}/lib/libm.a
-%{_prefix}/lib/libnsl.a
-%{_prefix}/lib/libpthread.a
-%{_prefix}/lib/libresolv.a
-%{_prefix}/lib/librt.a
-%{_prefix}/lib/libutil.a
+%if %{build_multiarch}
+%{_libdir32}/libBrokenLocale.a
+%{_libdir32}/libanl.a
+%{_libdir32}/libc.a
+%{_libdir32}/libcrypt.a
+%{_libdir32}/libdl.a
+%{_libdir32}/libm.a
+%{_libdir32}/libnsl.a
+%{_libdir32}/libpthread.a
+%{_libdir32}/libresolv.a
+%{_libdir32}/librt.a
+%{_libdir32}/libutil.a
 %endif
 
 #
@@ -1003,7 +998,7 @@ fi
 #
 %if %{with utils}
 %files utils
-%if %{build_biarch}
+%if %{build_multiarch}
 %{_slibdir32}/libmemusage.so
 %{_slibdir32}/libpcprofile.so
 %endif
