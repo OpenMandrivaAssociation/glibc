@@ -792,7 +792,7 @@ gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgra
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
 while read arglist; do
-  %{SOURCE5} $arglist || exit 1
+    sh %{SOURCE5} $arglist || exit 1
 done < %{checklist}
 
 #-----------------------------------------------------------------------
