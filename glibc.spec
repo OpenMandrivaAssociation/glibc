@@ -74,7 +74,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.14.90
-Release:	13
+Release:	14
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -1000,4 +1000,4 @@ rm -f %{buildroot}%{_infodir}/dir
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
-export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so"
+export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
