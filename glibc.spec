@@ -74,7 +74,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.14.90
-Release:	14
+Release:	15
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -195,6 +195,9 @@ Patch56:	glibc-arenalock.patch
 Patch57:	glibc-rh757881.patch
 Patch58:	glibc-rh750858.patch
 Patch59:	glibc-rh757887.patch
+
+# backport http://sourceware.org/git/?p=glibc.git;a=patch;h=6ee65ed6ddbf04402fad0bec6aa9c73b9d982ae4;hp=43455e09166350b1237d2168d1b008c9f47ebaf0
+Patch60:	glibc-2.14.90-Sort-objects-before-relocations.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -594,6 +597,7 @@ mv %{glibcportsdir} ports
 %patch57 -p1 -b .rh757881~
 %patch58 -p1 -b .rh750858~
 %patch59 -p1 -b .rh757887~
+%patch60 -p1 -b .sort-reloc
 
 # copy freesec source
 cp %{_sourcedir}/crypt_freesec.[ch] crypt/
