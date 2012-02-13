@@ -4,8 +4,8 @@
 %define glibcsrcdir	glibc-%{version}
 %define glibcportsdir	glibc-%{version}
 %else
-%define glibcsrcdir	glibc-2.14-394-g8f3b1ff
-%define glibcportsdir	glibc-ports-2.14-25-gd3d9bde
+%define glibcsrcdir	glibc-2.15-a316c1f
+%define glibcportsdir	glibc-ports-2.15-ad8ae7d
 %endif
 
 %define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
@@ -73,27 +73,27 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
-Version:	2.14.90
-Release:	15
+Version:	2.15
+Release:	1
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
 # FSF source
-Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
+Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz
 %if %{RELEASE}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
+Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz.sig
 %endif
 
 # Fedora tarball
-Source2:	%{glibcsrcdir}-fedora.tar.xz
+Source2:	%{glibcsrcdir}-fedora.tar.gz
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 
-Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz
+Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.gz
 %if %{RELEASE}
-Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.xz.sig
+Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.gz.sig
 %endif
 
 # Blowfish support
@@ -145,59 +145,109 @@ BuildRequires:	rpm-mandriva-setup-build >= 1.133
 BuildRequires:	rpm >= 1:5.4.4-20
 BuildRequires:	spec-helper >= 0.31.2
 
+#-----------------------------------------------------------------------
+# from fedora glibc.spec
 Patch00:	glibc-fedora.patch
-Patch01:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-Patch02:	glibc-2.14.90-fix-dns-with-broken-routers.patch
+Patch01:	glibc-stap.patch
+
+#-----------------------------------------------------------------------
+# mandriva patches
+Patch02:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
+Patch03:	glibc-2.15-fix-dns-with-broken-routers.patch
 Patch04:	glibc-2.14.90-nss-upgrade.patch
-Patch06:	glibc-2.9-share-locale.patch
-Patch07:	glibc-2.3.6-nsswitch.conf.patch
-Patch09:	glibc-2.2.4-xterm-xvt.patch
-Patch13:	glibc-2.3.3-nscd-enable.patch
-Patch14:	glibc-2.9-nscd-no-host-cache.patch
-Patch17:	glibc-2.4.90-i386-hwcapinfo.patch
-Patch18:	glibc-2.7-provide_CFI_for_the_outermost_function.patch
-Patch19:	glibc-2.8-nscd-init-should-start.patch
-Patch23:	glibc-2.3.4-timezone.patch
-Patch24:	glibc-2.10.1-biarch-cpp-defines.patch
-Patch27:	glibc-2.8-ENOTTY-fr-translation.patch
-Patch29:	glibc-2.3.5-biarch-utils.patch
-Patch30:	glibc-2.14.90-multiarch.patch
-Patch31:	glibc-2.4.90-i586-hptiming.patch
-Patch32:	glibc-2.3.4-i586-if-no-cmov.patch
-Patch33:	glibc-2.3.6-pt_BR-i18nfixes.patch
-Patch34:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch38:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch39:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
-Patch40:	glibc-2.9-avx-relocate_fcrypt.patch
-Patch41:	glibc-2.3.6-avx-increase_BF_FRAME.patch
-Patch42:	glibc-2.10.1-mdv-avx-owl-crypt.patch
-Patch43:	glibc-2.7-mdv-wrapper_handle_sha.patch
-Patch47:	glibc-2.13-fix-compile-error.patch
+Patch05:	glibc-2.9-share-locale.patch
+Patch06:	glibc-2.3.6-nsswitch.conf.patch
+Patch07:	glibc-2.2.4-xterm-xvt.patch
+Patch08:	glibc-2.3.3-nscd-enable.patch
+Patch09:	glibc-2.9-nscd-no-host-cache.patch
+Patch10:	glibc-2.4.90-i386-hwcapinfo.patch
+Patch11:	glibc-2.8-nscd-init-should-start.patch
+Patch12:	glibc-2.3.4-timezone.patch
+Patch13:	glibc-2.10.1-biarch-cpp-defines.patch
+Patch14:	glibc-2.8-ENOTTY-fr-translation.patch
+Patch15:	glibc-2.3.5-biarch-utils.patch
+Patch16:	glibc-2.15-multiarch.patch
+Patch17:	glibc-2.4.90-i586-hptiming.patch
+Patch18:	glibc-2.3.4-i586-if-no-cmov.patch
+Patch19:	glibc-2.3.6-pt_BR-i18nfixes.patch
+Patch20:	glibc-2.4.90-testsuite-ldbl-bits.patch
+Patch21:	glibc-2.4.90-testsuite-rt-notparallel.patch
+Patch22:	glibc-2.13-fix-compile-error.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
-Patch49:	0001-x86_64-fix-for-new-memcpy-behavior.patch
+Patch23:	0001-x86_64-fix-for-new-memcpy-behavior.patch
 
 # odd, for some reason the fedora patch applied earlier removes install of
 # streams header.. just add them back for now :|
-Patch50:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
+Patch24:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
+
+Patch25:	glibc-no-leaf-attribute.patch
+Patch26:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
+
+#-----------------------------------------------------------------------
+# from fedora glibc.spec
+# Uli wants to see this undergo more analyis (what happens when thread B calls into malloc when
+# thread A has unlocked on the error path
+# There's an alternate approach using mmap after detecting an error that needs discussion
+Patch27:	glibc-rh757881.patch
+# From upstream.
+Patch28:	glibc-rh740506.patch
+# Not sure of upstream status
+Patch29:	glibc-rh730856.patch
+# Follow-on to 552960's original patch to avoid losing wakeups
+Patch30:	glibc-rh552960-2.patch
+Patch31: 	glibc-rh729661.patch
+Patch32: 	glibc-rh446078.patch
+Patch33: 	glibc-rh454629.patch
+Patch34: 	glibc-rh784402.patch
+Patch35: 	glibc-rh622499.patch
+# Depends on systemtap infrastructure, so can't go upstream
+Patch36: 	glibc-rh179072.patch
+Patch37: 	glibc-rh697421.patch
+Patch38: 	glibc-rh740682.patch
+Patch39: 	glibc-sw13618.patch
+# Fix bogus sorting code which was copied from dl-deps.
+Patch40: 	glibc-sw13618-2.patch
+Patch41: 	glibc-rh783979.patch
+# Needs to go upstream
+Patch42: 	glibc-rh657588.patch
+Patch43:	glibc-rh787201.patch
+# Sent upstream, awaiting feedback
+Patch44: 	glibc-rh741105.patch
+# Sent upstream, awaiting feedback
+Patch45: 	glibc-rh770869.patch
+# Sent upstream, awaiting feedback
+Patch46: 	glibc-rh691912.patch
+# Not necessary to send upstream
+Patch47: 	glibc-rh688948.patch
+# Rakesh & Pravin will send upstream
+Patch48: 	glibc-rh770439.patch
+# Sent upstream
+Patch49: 	glibc-rh789209.patch
+# Was acked in the upstream BZ, but patch never got installed
+Patch50: 	glibc-rh624296.patch
+# Needs to be sent upstream
+Patch51: 	glibc-rh564528.patch
+
+#-----------------------------------------------------------------------
+# mandriva patches
+Patch52:	glibc-2.10.1-mdv-avx-owl-crypt.patch
+Patch53:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
+
+Patch54:	glibc-2.9-avx-relocate_fcrypt.patch
+Patch55:	glibc-2.3.6-avx-increase_BF_FRAME.patch
+Patch56:	glibc-2.7-mdv-wrapper_handle_sha.patch
 
 # Requires to link thumb mode build
-Patch51:	glibc-2.14-arm-thumb.patch
+Patch57:	glibc-2.14-arm-thumb.patch
 
-# http://sourceware.org/ml/libc-ports/2011-08/msg00000.html
-Patch52:	glibc-2.14.90-arm-hardfp.patch
-Patch53:	glibc-no-leaf-attribute.patch
-Patch54:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
-Patch55:	glibc-localegrouping.patch
-Patch56:	glibc-arenalock.patch
-Patch57:	glibc-rh757881.patch
-Patch58:	glibc-rh750858.patch
-Patch59:	glibc-rh757887.patch
-
-# backport http://sourceware.org/git/?p=glibc.git;a=patch;h=6ee65ed6ddbf04402fad0bec6aa9c73b9d982ae4;hp=43455e09166350b1237d2168d1b008c9f47ebaf0
-Patch60:	glibc-2.14.90-Sort-objects-before-relocations.patch
+# FIXME this patch is hackish but corrects the problem for me
+# in upstream bugreport, what others apparently did was to
+# revert 3a2c02424d9824f5cdea4ebd32ff929b2b1f49c6
+# http://sourceware.org/bugzilla/show_bug.cgi?id=13594
+Patch58:	glibc-2.15-chromium-browser-crash.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -555,70 +605,87 @@ These are configuration files that describe possible time zones.
 
 ########################################################################
 %prep
-%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 50
-%if %{build_ports}
-tar -xf %{SOURCE8}
-mv %{glibcportsdir} ports
-%patch51 -p1
-%ifarch armv7hl
-%patch52 -p1
-%endif
-%endif
+%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 8 -a 50
 
-%patch00 -p1 -b .fedora~
-%patch01 -p1 -b .localedef-archive-follow-symlinks
-%patch02 -p1 -b .dns-broken-router
-%patch04 -p1 -b .nss-upgrade
-%patch06 -p1 -b .share-locale
-%patch07 -p1 -b .nsswitch.conf
-%patch09 -p1 -b .xterm-xvt
-%patch13 -p1 -b .nscd-enable
-%patch14 -p1 -b .nscd-no-host-cache
-%patch17 -p1 -b .i386-hwcapinfo
-%patch18 -p0 -R -b .provide_CFI_for_the_outermost_function
-%patch19 -p1 -b .nscd-init-should-start
-%patch23 -p1 -b .timezone
-%patch24 -p1 -b .biarch-cpp-defines
-%patch27 -p1 -b .ENOTTY-fr-translation
-%patch29 -p1 -b .biarch-utils
-%patch30 -p1 -b .multiarch-check
-%patch31 -p1 -b .i586-hptiming
-%patch32 -p1 -b .i586-if-no-cmov
-%patch33 -p1 -b .pt_BR-i18nfixes
-%patch34 -p1 -b .testsuite-ldbl-bits
-%patch38 -p1 -b .testsuite-rt-notparallel
-%patch47 -p0 -b .fix-compile-error
-%patch49 -p1 -b .memcpy
-%patch50 -p1 -b .fed_streams~
-%patch53 -p1 -b .leaf~
-%patch54 -p1 -b .str_fmt~
-%patch55 -p1 -b .localegrouping~
-%patch56 -p1 -b .arenalock~
-%patch57 -p1 -b .rh757881~
-%patch58 -p1 -b .rh750858~
-%patch59 -p1 -b .rh757887~
-%patch60 -p1 -b .sort-reloc
+%patch00 -p1
+%patch01 -p1
+%patch02 -p1
+%patch03 -p1
+%patch04 -p1
+%patch05 -p1
+%patch06 -p1
+%patch07 -p1
+%patch08 -p1
+%patch09 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
+%patch15 -p1
+%patch16 -p1
+%patch17 -p1
+%patch18 -p1
+%patch19 -p1
+%patch20 -p1
+%patch21 -p1
+%patch22 -p0
+%patch23 -p1
+%patch24 -p1
+%patch25 -p1
+%patch26 -p1
+%patch27 -p1
+%patch28 -p1
+%patch29 -p1
+%patch30 -p1
+%patch31 -p1
+%patch32 -p1
+%patch33 -p1
+%patch34 -p1
+%patch35 -p1
+%patch36 -p1
+%patch37 -p1
+%patch38 -p1
+%patch39 -p1
+%patch40 -p1
+%patch41 -p1
+%patch42 -p1
+%patch43 -p1
+%patch44 -p1
+%patch45 -p1
+%patch46 -p1
+%patch47 -p1
+%patch48 -p1
+%patch49 -p1
+%patch50 -p1
+%patch51 -p1
 
 # copy freesec source
-cp %{_sourcedir}/crypt_freesec.[ch] crypt/
+cp %{SOURCE52} %{SOURCE53} crypt/
 echo "Applying crypt_blowfish patch:"
-%patch42 -p1 -b .mdv-avx-owl-crypt
-#patch -p1 -s < crypt_blowfish-%{crypt_bf_ver}/glibc-2.3.2-crypt.diff
+%patch52 -p1
 mv crypt/crypt.h crypt/gnu-crypt.h
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
-%patch39 -p1 -b .mdv-owl-crypt_freesec
-%patch40 -p1 -b .avx-relocate_fcrypt
-%patch41 -p0 -b .avx-increase_BF_FRAME
+%patch53 -p1
+%patch54 -p1
+%patch55 -p0
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch43 -p1 -b .mdv-wrapper_handle_sha
+%patch56 -p1
 
 %if %{build_selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
     # so /usr/include/selinux is not found
     ln -s %{_includedir}/selinux selinux
 %endif
+
+%if %{build_ports}
+    mv %{glibcportsdir} ports
+%patch57 -p1
+%endif
+
+%patch58 -p1
 
 find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
 
