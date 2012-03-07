@@ -254,8 +254,7 @@ Patch58:	glibc-2.15-chromium-browser-crash.patch
 Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
-%define _provides_exceptions GLIBC_PRIVATE
-%define _requires_exceptions GLIBC_PRIVATE
+%define _filter_GLIBC_PRIVATE 1
 
 Obsoletes:	ld.so
 Provides:	ld.so
