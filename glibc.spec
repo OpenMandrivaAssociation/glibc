@@ -356,6 +356,9 @@ Linux system will not function.
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 
+%post		-n %{multilibc}
+    %{_sbindir}/iconvconfig %{libdir32}/gconv -o %{libdir32}/gconv/gconv-modules.cache
+
 %description	-n %{multilibc}
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
