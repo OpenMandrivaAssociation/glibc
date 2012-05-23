@@ -274,7 +274,7 @@ Linux system will not function.
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
-%files		-f libc.lang
+%files -f	libc.lang
 %if %{build_timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
@@ -352,15 +352,15 @@ Linux system will not function.
 ########################################################################
 %if %{build_multiarch}
 #-----------------------------------------------------------------------
-%package	-n %{multilibc}
+%package -n	%{multilibc}
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
 
-%post		-n %{multilibc}
+%post -n	%{multilibc}
     %{_sbindir}/iconvconfig %{libdir32}/gconv -o %{libdir32}/gconv/gconv-modules.cache
 
-%description	-n %{multilibc}
+%description -n	%{multilibc}
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
 memory, as well as to make upgrading easier, common system code is
@@ -369,7 +369,7 @@ contains the most important sets of shared libraries: the standard C
 library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
-%files		-n %{multilibc}
+%files -n	%{multilibc}
 %{_slibdir32}/ld-%{version}.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
@@ -496,7 +496,7 @@ library.
 ########################################################################
 %if %{build_nscd}
 #-----------------------------------------------------------------------
-%package	-n nscd
+%package -n	nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
@@ -505,7 +505,7 @@ Requires(preun):rpm-helper
 Requires(post):	rpm-helper
 Requires(postun):rpm-helper
 
-%description	-n nscd
+%description -n	nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
@@ -524,7 +524,7 @@ performance with NIS+, and may help with DNS as well.
 	/sbin/service nscd condrestart > /dev/null 2>&1 || :
     fi
 
-%files		-n nscd
+%files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %config(noreplace) %{_initrddir}/nscd
 %{_sbindir}/nscd
@@ -589,15 +589,15 @@ to use the internationalization features of the GNU libc.
 ########################################################################
 %if %{build_timezone}
 #-----------------------------------------------------------------------
-%package	-n timezone
+%package -n	timezone
 Summary:	Time zone descriptions
 Group:		System/Base
 Obsoletes:	zoneinfo
 
-%description	-n timezone
+%description -n	timezone
 These are configuration files that describe possible time zones.
 
-%files		-n timezone
+%files -n	timezone
 %{_sbindir}/zdump
 %{_sbindir}/zic
 %{_mandir}/man1/zdump.1*
