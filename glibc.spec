@@ -74,7 +74,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.15
-Release:	2
+Release:	3
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -358,7 +358,7 @@ Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
 
 %post -n	%{multilibc}
-    %{_sbindir}/iconvconfig %{libdir32}/gconv -o %{libdir32}/gconv/gconv-modules.cache
+    %{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
 
 %description -n	%{multilibc}
 The glibc package contains standard libraries which are used by
