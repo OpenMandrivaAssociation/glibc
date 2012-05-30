@@ -120,8 +120,6 @@ BuildRequires:	libselinux-devel >= 1.17.10
 %endif
 # need linker for -Wl,--hash-style=both (>= 2.16.91.0.7-%{mkrel 6})
 # need gnu indirect function for multiarch (>= 2.19.51.0.14-1mnb2)
-%define binutils_version 2.19.51.0.14-1mnb2
-BuildRequires:	binutils >= %{binutils_version}
 
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
@@ -140,10 +138,7 @@ BuildRequires:	systemtap
 BuildRequires:	nss-devel
 %endif
 BuildRequires:	autoconf2.5
-BuildRequires:	libcap-devel
-BuildRequires:	rpm-mandriva-setup-build >= 1.133
-BuildRequires:	rpm >= 1:5.4.4-20
-BuildRequires:	spec-helper >= 0.31.2
+BuildRequires:	cap-devel
 
 #-----------------------------------------------------------------------
 # from fedora glibc.spec
