@@ -387,10 +387,6 @@ Linux system will not function.
 %package	devel
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
-Requires(post):	info-install
-Requires(preun):info-install
-Requires(post):	coreutils
-Requires(postun):coreutils, awk
 Requires:	%{name} = %{EVRD}
 %if %{build_multiarch}
 Requires:	%{multilibc} = %{EVRD}
@@ -409,12 +405,6 @@ used by nearly all programs).  If you are developing programs which
 will use the standard C libraries, your system needs to have these
 standard header and object files available in order to create the
 executables.
-
-%post		devel
-    %_install_info libc.info
-
-%preun		devel
-    %_remove_install_info libc.info
 
 %files		devel
 %{_mandir}/man3/*
