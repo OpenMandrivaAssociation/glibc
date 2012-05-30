@@ -118,8 +118,6 @@ BuildRequires:	kernel-headers
 %if %{build_selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
-# need linker for -Wl,--hash-style=both (>= 2.16.91.0.7-%{mkrel 6})
-# need gnu indirect function for multiarch (>= 2.19.51.0.14-1mnb2)
 
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
