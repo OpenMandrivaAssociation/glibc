@@ -2,10 +2,8 @@
 %define RELEASE		0
 %if %{RELEASE}
 %define glibcsrcdir	glibc-%{version}
-%define glibcportsdir	glibc-%{version}
 %else
-%define glibcsrcdir	glibc-2.15-a316c1f
-%define glibcportsdir	glibc-ports-2.15-ad8ae7d
+%define glibcsrcdir	glibc-2.16.90-97bc38d7
 %endif
 
 %define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
@@ -25,13 +23,6 @@
 
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
-
-# for added ports support for arches like arm
-%define build_ports	0
-# add ports arches here
-%ifarch %{arm} %{mipsx}
-%define build_ports	1
-%endif
 
 %ifarch %{arm}
 %define _gnu		-gnueabi
@@ -73,8 +64,8 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
-Version:	2.15
-Release:	3
+Version:	2.16.90
+Release:	1
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -90,11 +81,6 @@ Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz.sig
 Source2:	%{glibcsrcdir}-fedora.tar.gz
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
-
-Source8:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.gz
-%if %{RELEASE}
-Source9:	http://ftp.gnu.org/gnu/glibc/%{glibcportsdir}.tar.gz.sig
-%endif
 
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
@@ -139,108 +125,188 @@ BuildRequires:	autoconf2.5
 BuildRequires:	cap-devel
 
 #-----------------------------------------------------------------------
-# from fedora glibc.spec
-Patch00:	glibc-fedora.patch
-Patch01:	glibc-stap.patch
+# fedora patches
+#
+# Patches that are highly unlikely to ever be accepated upstream.
+#
+# Is this still necessary, if so, it needs to go upstream
+Patch0:		%{name}-stap.patch
+
+# Reverting an upstream patch.  I don't think this has been discussed
+# upstream yet.
+Patch1:		%{name}-rh769421.patch
+
+# Not likely to be accepted upstream
+Patch2:		%{name}-rh787201.patch
+
+# Not necessary to send upstream, fedora specific
+Patch3:		%{name}-rh688948.patch
+
+# Build info files in the source tree, then move to the build
+# tree so that they're identical for multilib builds
+Patch4:		%{name}-rh825061.patch
+
+# Horrible hack, never to be upstreamed.  Can go away once the world
+# has been rebuilt to use the new ld.so path.
+Patch5:		%{name}-arm-hardfloat-3.patch
+
+
+# Needs to be sent upstream
+Patch6:		%{name}-rh697421.patch
+
+# Needs to be sent upstream
+Patch7:		%{name}-rh740682.patch
+
+# Needs to be sent upstream
+Patch8:		%{name}-rh657588.patch
+
+# stap, needs to be sent upstream
+Patch9:		%{name}-stap-libm.patch
+
+# Needs to be sent upstream
+Patch10:	%{name}-rh841318.patch
+
+# All these were from the glibc-fedora.patch mega-patch and need another
+# round of reviewing.  Ideally they'll either be submitted upstream or
+# dropped.
+
+Patch11:	%{name}-fedora-__libc_multiple_libcs.patch
+Patch12:	%{name}-fedora-cdefs-gnuc.patch
+Patch13:	%{name}-fedora-elf-ORIGIN.patch
+Patch14:	%{name}-fedora-elf-init-hidden_undef.patch
+Patch15:	%{name}-fedora-gai-canonical.patch
+Patch16:	%{name}-fedora-getconf.patch
+Patch17:	%{name}-fedora-getrlimit-PLT.patch
+Patch18:	%{name}-fedora-i386-tls-direct-seg-refs.patch
+Patch19:	%{name}-fedora-include-bits-ldbl.patch
+Patch20:	%{name}-fedora-ldd.patch
+Patch21:	%{name}-fedora-linux-tcsetattr.patch
+Patch22:	%{name}-fedora-locale-euro.patch
+Patch23:	%{name}-fedora-localedata-locales-fixes.patch
+Patch24:	%{name}-fedora-localedata-no_NO.patch
+Patch25:	%{name}-fedora-localedata-rh61908.patch
+Patch26:	%{name}-fedora-localedef.patch
+Patch27:	%{name}-fedora-locarchive.patch
+Patch28:	%{name}-fedora-manual-dircategory.patch
+Patch29:	%{name}-fedora-nis-rh188246.patch
+Patch30:	%{name}-fedora-nptl-linklibc.patch
+Patch31:	%{name}-fedora-nscd.patch
+Patch32:	%{name}-fedora-nss-files-overflow-fix.patch
+Patch33:	%{name}-fedora-ppc-unwind.patch
+Patch34:	%{name}-fedora-pt_chown.patch
+Patch35:	%{name}-fedora-regcomp-sw11561.patch
+Patch36:	%{name}-fedora-s390-rh711330.patch
+Patch37:	%{name}-fedora-streams-rh436349.patch
+Patch38:	%{name}-fedora-strict-aliasing.patch
+Patch39:	%{name}-fedora-test-debug-gnuc-compat.patch
+Patch40:	%{name}-fedora-test-debug-gnuc-hack.patch
+Patch41:	%{name}-fedora-tls-offset-rh731228.patch
+Patch42:	%{name}-fedora-uname-getrlimit.patch
+Patch43:	%{name}-fedora-vfprintf-sw6530.patch
+
+# Reverting an upstream patch.  Once upstream fixes the problem
+# Remove this patch and resync.
+Patch44:	%{name}-rh858274.patch
+
+#
+# Patches from upstream
+#
+
+
+#
+# Patches submitted, but not yet approved upstream.
+# Each should be associated with a BZ.
+# Obviously we're not there right now, but that's the goal
+#
+
+Patch45:	%{name}-rh757881.patch
+
+# Upstream BZ 13013
+Patch46:	%{name}-rh730856.patch
+
+Patch47:	%{name}-rh741105.patch
+Patch48:	%{name}-rh770869.patch
+Patch49:	%{name}-rh770439.patch
+Patch50:	%{name}-rh789209.patch
+Patch51:	%{name}-rh691912.patch
+
+# Upstream BZ 13604
+Patch52:	%{name}-rh790292.patch
+
+# Upstream BZ 13603
+Patch53:	%{name}-rh790298.patch
+
+# Upstream BZ 13698
+Patch54:	%{name}-rh791161.patch
+
+# Upstream BZ 9954
+Patch55:	%{name}-rh739743.patch
+
+# Upstream BZ 13818
+Patch56:	%{name}-rh800224.patch
+
+# Upstream BZ 14247
+Patch57:	%{name}-rh827510.patch
+
+Patch58:	%{name}-rh803286.patch
+
+# Upstream BZ 13761
+Patch59:	%{name}-rh788989-2.patch
+
+# Upstream BZ 13028
+Patch60:	%{name}-rh841787.patch
+
+# Upstream BZ 14185
+Patch61:	%{name}-rh819430.patch
+
+# See http://sourceware.org/ml/libc-alpha/2012-06/msg00074.html
+Patch62:	%{name}-rh767693-2.patch
+
+# Upstream BZ 11438 
+Patch63:	%{name}-fedora-gai-rfc1918.patch
+
 
 #-----------------------------------------------------------------------
 # mandriva patches
-Patch02:	glibc-2.11.1-localedef-archive-follow-symlinks.patch
-Patch03:	glibc-2.15-fix-dns-with-broken-routers.patch
-Patch04:	glibc-2.14.90-nss-upgrade.patch
-Patch05:	glibc-2.9-share-locale.patch
-Patch06:	glibc-2.3.6-nsswitch.conf.patch
-Patch07:	glibc-2.2.4-xterm-xvt.patch
-Patch08:	glibc-2.3.3-nscd-enable.patch
-Patch09:	glibc-2.9-nscd-no-host-cache.patch
-Patch10:	glibc-2.4.90-i386-hwcapinfo.patch
-Patch11:	glibc-2.8-nscd-init-should-start.patch
-Patch12:	glibc-2.3.4-timezone.patch
-Patch13:	glibc-2.10.1-biarch-cpp-defines.patch
-Patch14:	glibc-2.8-ENOTTY-fr-translation.patch
-Patch15:	glibc-2.3.5-biarch-utils.patch
-Patch16:	glibc-2.15-multiarch.patch
-Patch17:	glibc-2.4.90-i586-hptiming.patch
-Patch18:	glibc-2.3.4-i586-if-no-cmov.patch
-Patch19:	glibc-2.3.6-pt_BR-i18nfixes.patch
-Patch20:	glibc-2.4.90-testsuite-ldbl-bits.patch
-Patch21:	glibc-2.4.90-testsuite-rt-notparallel.patch
-Patch22:	glibc-2.13-fix-compile-error.patch
+Patch64:	%{name}-mandriva-localedef-archive-follow-symlinks.patch
+Patch65:	%{name}-mandriva-fix-dns-with-broken-routers.patch
+Patch66:	%{name}-mandriva-nss-upgrade.patch
+Patch67:	%{name}-mandriva-share-locale.patch
+Patch68:	%{name}-mandriva-nsswitch.conf.patch
+Patch69:	%{name}-mandriva-xterm-xvt.patch
+Patch70:	%{name}-mandriva-nscd-enable.patch
+Patch71:	%{name}-mandriva-nscd-no-host-cache.patch
+Patch72:	%{name}-mandriva-i386-hwcapinfo.patch
+Patch73:	%{name}-mandriva-nscd-init-should-start.patch
+Patch74:	%{name}-mandriva-timezone.patch
+Patch75:	%{name}-mandriva-biarch-cpp-defines.patch
+Patch76:	%{name}-mandriva-ENOTTY-fr-translation.patch
+Patch77:	%{name}-mandriva-biarch-utils.patch
+Patch78:	%{name}-mandriva-multiarch.patch
+Patch79:	%{name}-mandriva-i586-hptiming.patch
+Patch80:	%{name}-mandriva-i586-if-no-cmov.patch
+Patch81:	%{name}-mandriva-pt_BR-i18nfixes.patch
+Patch82:	%{name}-mandriva-testsuite-ldbl-bits.patch
+Patch83:	%{name}-mandriva-testsuite-rt-notparallel.patch
+Patch84:	%{name}-mandriva-fix-compile-error.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
-Patch23:	0001-x86_64-fix-for-new-memcpy-behavior.patch
+Patch85:	%{name}-mandriva-fix-for-new-memcpy-behavior.patch
 
 # odd, for some reason the fedora patch applied earlier removes install of
 # streams header.. just add them back for now :|
-Patch24:	glibc-2.14.90-revert-fedora-not-installing-stream-headers.patch
+Patch86:	%{name}-mandriva-revert-fedora-not-installing-stream-headers.patch
 
-Patch25:	glibc-no-leaf-attribute.patch
-Patch26:	glibc-2.14-394-g8f3b1ff-string-format-fixes.patch
+Patch87:	%{name}-mandriva-no-leaf-attribute.patch
+Patch88:	%{name}-mandriva-string-format-fixes.patch
 
-#-----------------------------------------------------------------------
-# from fedora glibc.spec
-# Uli wants to see this undergo more analyis (what happens when thread B calls into malloc when
-# thread A has unlocked on the error path
-# There's an alternate approach using mmap after detecting an error that needs discussion
-Patch27:	glibc-rh757881.patch
-# From upstream.
-Patch28:	glibc-rh740506.patch
-# Not sure of upstream status
-Patch29:	glibc-rh730856.patch
-# Follow-on to 552960's original patch to avoid losing wakeups
-Patch30:	glibc-rh552960-2.patch
-Patch31: 	glibc-rh729661.patch
-Patch32: 	glibc-rh446078.patch
-Patch33: 	glibc-rh454629.patch
-Patch34: 	glibc-rh784402.patch
-Patch35: 	glibc-rh622499.patch
-# Depends on systemtap infrastructure, so can't go upstream
-Patch36: 	glibc-rh179072.patch
-Patch37: 	glibc-rh697421.patch
-Patch38: 	glibc-rh740682.patch
-Patch39: 	glibc-sw13618.patch
-# Fix bogus sorting code which was copied from dl-deps.
-Patch40: 	glibc-sw13618-2.patch
-Patch41: 	glibc-rh783979.patch
-# Needs to go upstream
-Patch42: 	glibc-rh657588.patch
-Patch43:	glibc-rh787201.patch
-# Sent upstream, awaiting feedback
-Patch44: 	glibc-rh741105.patch
-# Sent upstream, awaiting feedback
-Patch45: 	glibc-rh770869.patch
-# Sent upstream, awaiting feedback
-Patch46: 	glibc-rh691912.patch
-# Not necessary to send upstream
-Patch47: 	glibc-rh688948.patch
-# Rakesh & Pravin will send upstream
-Patch48: 	glibc-rh770439.patch
-# Sent upstream
-Patch49: 	glibc-rh789209.patch
-# Was acked in the upstream BZ, but patch never got installed
-Patch50: 	glibc-rh624296.patch
-# Needs to be sent upstream
-Patch51: 	glibc-rh564528.patch
-
-#-----------------------------------------------------------------------
-# mandriva patches
-Patch52:	glibc-2.10.1-mdv-avx-owl-crypt.patch
-Patch53:	glibc-2.10.1-mdv-owl-crypt_freesec.patch
-
-Patch54:	glibc-2.9-avx-relocate_fcrypt.patch
-Patch55:	glibc-2.3.6-avx-increase_BF_FRAME.patch
-Patch56:	glibc-2.7-mdv-wrapper_handle_sha.patch
-
-# Requires to link thumb mode build
-Patch57:	glibc-2.14-arm-thumb.patch
-
-# FIXME this patch is hackish but corrects the problem for me
-# in upstream bugreport, what others apparently did was to
-# revert 3a2c02424d9824f5cdea4ebd32ff929b2b1f49c6
-# http://sourceware.org/bugzilla/show_bug.cgi?id=13594
-Patch58:	glibc-2.15-chromium-browser-crash.patch
+Patch89:	%{name}-mandriva-mdv-avx-owl-crypt.patch
+Patch90:	%{name}-mandriva-mdv-owl-crypt_freesec.patch
+Patch91:	%{name}-mandriva-avx-relocate_fcrypt.patch
+Patch92:	%{name}-mandriva-avx-increase_BF_FRAME.patch
+Patch93:	%{name}-mandriva-mdv-wrapper_handle_sha.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -591,9 +657,9 @@ These are configuration files that describe possible time zones.
 
 ########################################################################
 %prep
-%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 8 -a 50
+%setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 50
 
-%patch00 -p1
+%patch00 -E -p1
 %patch01 -p1
 %patch02 -p1
 %patch03 -p1
@@ -615,7 +681,7 @@ These are configuration files that describe possible time zones.
 %patch19 -p1
 %patch20 -p1
 %patch21 -p1
-%patch22 -p0
+%patch22 -p1
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
@@ -645,33 +711,63 @@ These are configuration files that describe possible time zones.
 %patch49 -p1
 %patch50 -p1
 %patch51 -p1
+%patch52 -p1
+%patch53 -p1
+%patch54 -p1
+%patch55 -p1
+%patch56 -p1
+%patch57 -p1
+%patch58 -p1
+%patch59 -p1
+%patch60 -p1
+%patch61 -p1
+%patch62 -p1
+%patch63 -p1
+%patch64 -p1
+%patch65 -p1
+%patch66 -p1
+%patch67 -p1
+%patch68 -p1
+%patch69 -p1
+%patch70 -p1
+%patch71 -p1
+%patch72 -p1
+%patch73 -p1
+%patch74 -p1
+%patch75 -p1
+%patch76 -p1
+%patch77 -p1
+%patch78 -p1
+%patch79 -p1
+%patch80 -p1
+%patch81 -p1
+%patch82 -p1
+%patch83 -p1
+%patch84 -p1
+%patch85 -p1
+%patch86 -p1
+%patch87 -p1
+%patch88 -p1
 
 # copy freesec source
 cp %{SOURCE52} %{SOURCE53} crypt/
 echo "Applying crypt_blowfish patch:"
-%patch52 -p1
+%patch89 -p1
 mv crypt/crypt.h crypt/gnu-crypt.h
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
-%patch53 -p1
-%patch54 -p1
-%patch55 -p0
+%patch90 -p1
+%patch91 -p1
+%patch92 -p0
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch56 -p1
+%patch93 -p1
 
 %if %{build_selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
     # so /usr/include/selinux is not found
     ln -s %{_includedir}/selinux selinux
 %endif
-
-%if %{build_ports}
-    mv %{glibcportsdir} ports
-%patch57 -p1
-%endif
-
-%patch58 -p1
 
 find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
 
@@ -763,11 +859,7 @@ function BuildGlibc() {
 %endif
 
   # NPTL+TLS are now the default
-%if %{build_ports}
-  Pthreads="ports,nptl"
-%else
   Pthreads="nptl"
-%endif
 
   # Add-ons
   AddOns="$Pthreads,libidn"
@@ -996,16 +1088,18 @@ rm -rf %{buildroot}%{_includedir}/netatalk/
 
 # Documentation
 install -m 755 -d %{buildroot}%{_docdir}/glibc
+    pushd build-%{_target_cpu}-linux html
 %if %{with doc}
-    make -C build-%{_target_cpu}-linux html
-    cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
+	make html
+	cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
 %endif
 %if %{with pdf}
-    make -C build-%{_target_cpu}-linux pdf
-    install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
+	make pdf
+	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
-install -m 644 COPYING COPYING.LIB README NEWS INSTALL FAQ BUGS		\
-    NOTES PROJECTS CONFORMANCE README.libm hesiod/README.hesiod		\
+    popd
+install -m 644 COPYING COPYING.LIB README NEWS INSTALL BUGS		\
+    PROJECTS CONFORMANCE hesiod/README.hesiod				\
     ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
 xz -0 --text %{buildroot}%{_docdir}/glibc/ChangeLog*
