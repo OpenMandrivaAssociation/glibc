@@ -3,7 +3,7 @@
 %if %{RELEASE}
 %define glibcsrcdir	glibc-%{version}
 %else
-%define glibcsrcdir	glibc-2.16.90-97bc38d7
+%define glibcsrcdir	glibc-2.16.90-54a41734
 %endif
 
 %define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
@@ -65,7 +65,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.16.90
-Release:	2
+Release:	3
 Epoch:		6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
@@ -129,12 +129,12 @@ BuildRequires:	cap-devel
 #
 # Patches that are highly unlikely to ever be accepated upstream.
 #
-# Is this still necessary, if so, it needs to go upstream
-Patch0:		%{name}-stap.patch
 
-# Reverting an upstream patch.  I don't think this has been discussed
-# upstream yet.
-Patch1:		%{name}-rh769421.patch
+# Configuration twiddle, not sure there's a good case to get upstream to
+# change this.
+Patch0: 	%{name}-fedora-nscd.patch
+
+Patch1:		%{name}-fedora-regcomp-sw11561.patch
 
 # Not likely to be accepted upstream
 Patch2:		%{name}-rh787201.patch
@@ -149,7 +149,6 @@ Patch4:		%{name}-rh825061.patch
 # Horrible hack, never to be upstreamed.  Can go away once the world
 # has been rebuilt to use the new ld.so path.
 Patch5:		%{name}-arm-hardfloat-3.patch
-
 
 # Needs to be sent upstream
 Patch6:		%{name}-rh697421.patch
@@ -170,43 +169,33 @@ Patch10:	%{name}-rh841318.patch
 # round of reviewing.  Ideally they'll either be submitted upstream or
 # dropped.
 
-Patch11:	%{name}-fedora-__libc_multiple_libcs.patch
-Patch12:	%{name}-fedora-cdefs-gnuc.patch
-Patch13:	%{name}-fedora-elf-ORIGIN.patch
-Patch14:	%{name}-fedora-elf-init-hidden_undef.patch
-Patch15:	%{name}-fedora-gai-canonical.patch
-Patch16:	%{name}-fedora-getconf.patch
-Patch17:	%{name}-fedora-getrlimit-PLT.patch
-Patch18:	%{name}-fedora-i386-tls-direct-seg-refs.patch
-Patch19:	%{name}-fedora-include-bits-ldbl.patch
-Patch20:	%{name}-fedora-ldd.patch
-Patch21:	%{name}-fedora-linux-tcsetattr.patch
-Patch22:	%{name}-fedora-locale-euro.patch
-Patch23:	%{name}-fedora-localedata-locales-fixes.patch
-Patch24:	%{name}-fedora-localedata-no_NO.patch
-Patch25:	%{name}-fedora-localedata-rh61908.patch
-Patch26:	%{name}-fedora-localedef.patch
-Patch27:	%{name}-fedora-locarchive.patch
-Patch28:	%{name}-fedora-manual-dircategory.patch
-Patch29:	%{name}-fedora-nis-rh188246.patch
-Patch30:	%{name}-fedora-nptl-linklibc.patch
-Patch31:	%{name}-fedora-nscd.patch
-Patch32:	%{name}-fedora-nss-files-overflow-fix.patch
-Patch33:	%{name}-fedora-ppc-unwind.patch
-Patch34:	%{name}-fedora-pt_chown.patch
-Patch35:	%{name}-fedora-regcomp-sw11561.patch
-Patch36:	%{name}-fedora-s390-rh711330.patch
-Patch37:	%{name}-fedora-streams-rh436349.patch
-Patch38:	%{name}-fedora-strict-aliasing.patch
-Patch39:	%{name}-fedora-test-debug-gnuc-compat.patch
-Patch40:	%{name}-fedora-test-debug-gnuc-hack.patch
-Patch41:	%{name}-fedora-tls-offset-rh731228.patch
-Patch42:	%{name}-fedora-uname-getrlimit.patch
-Patch43:	%{name}-fedora-vfprintf-sw6530.patch
-
-# Reverting an upstream patch.  Once upstream fixes the problem
-# Remove this patch and resync.
-Patch44:	%{name}-rh858274.patch
+Patch11:	%{name}-fedora-uname-getrlimit.patch
+Patch12:	%{name}-fedora-__libc_multiple_libcs.patch
+Patch13:	%{name}-fedora-tls-offset-rh731228.patch
+Patch14:	%{name}-fedora-elf-ORIGIN.patch
+Patch15:	%{name}-fedora-elf-init-hidden_undef.patch
+Patch16:	%{name}-fedora-elf-rh737223.patch
+Patch17:	%{name}-fedora-gai-canonical.patch
+Patch18:	%{name}-fedora-test-debug-gnuc-hack.patch
+Patch19:	%{name}-fedora-getconf.patch
+Patch20:	%{name}-fedora-getrlimit-PLT.patch
+Patch21:	%{name}-fedora-i386-tls-direct-seg-refs.patch
+Patch22:	%{name}-fedora-pt_chown.patch
+Patch23:	%{name}-fedora-include-bits-ldbl.patch
+Patch24:	%{name}-fedora-ldd.patch
+Patch25:	%{name}-fedora-linux-tcsetattr.patch
+Patch26:	%{name}-fedora-locale-euro.patch
+Patch27:	%{name}-fedora-localedata-locales-fixes.patch
+Patch28:	%{name}-fedora-streams-rh436349.patch
+Patch29:	%{name}-fedora-localedata-rh61908.patch
+Patch30:	%{name}-fedora-localedef.patch
+Patch31:	%{name}-fedora-locarchive.patch
+Patch32:	%{name}-fedora-manual-dircategory.patch
+Patch33:	%{name}-fedora-nis-rh188246.patch
+Patch34:	%{name}-fedora-nptl-linklibc.patch
+Patch35:	%{name}-fedora-ppc-unwind.patch
+Patch36:	%{name}-fedora-nss-files-overflow-fix.patch
+Patch37:	%{name}-fedora-strict-aliasing.patch
 
 #
 # Patches from upstream
@@ -219,94 +208,91 @@ Patch44:	%{name}-rh858274.patch
 # Obviously we're not there right now, but that's the goal
 #
 
-Patch45:	%{name}-rh757881.patch
+Patch38:	%{name}-rh757881.patch
 
 # Upstream BZ 13013
-Patch46:	%{name}-rh730856.patch
+Patch39:	%{name}-rh730856.patch
 
-Patch47:	%{name}-rh741105.patch
-Patch48:	%{name}-rh770869.patch
-Patch49:	%{name}-rh770439.patch
-Patch50:	%{name}-rh789209.patch
-Patch51:	%{name}-rh691912.patch
+Patch40:	%{name}-rh741105.patch
+Patch41:	%{name}-rh770869.patch
+Patch42:	%{name}-rh770439.patch
+Patch43:	%{name}-rh789209.patch
+Patch44:	%{name}-rh691912.patch
 
 # Upstream BZ 13604
-Patch52:	%{name}-rh790292.patch
+Patch45:	%{name}-rh790292.patch
 
 # Upstream BZ 13603
-Patch53:	%{name}-rh790298.patch
+Patch46:	%{name}-rh790298.patch
 
 # Upstream BZ 13698
-Patch54:	%{name}-rh791161.patch
+Patch47:	%{name}-rh791161.patch
 
 # Upstream BZ 9954
-Patch55:	%{name}-rh739743.patch
+Patch48:	%{name}-rh739743.patch
 
 # Upstream BZ 13818
-Patch56:	%{name}-rh800224.patch
+Patch49:	%{name}-rh800224.patch
 
 # Upstream BZ 14247
-Patch57:	%{name}-rh827510.patch
+Patch50:	%{name}-rh827510.patch
 
-Patch58:	%{name}-rh803286.patch
+Patch51:	%{name}-rh803286.patch
 
 # Upstream BZ 13761
-Patch59:	%{name}-rh788989-2.patch
+Patch52:	%{name}-rh788989-2.patch
 
 # Upstream BZ 13028
-Patch60:	%{name}-rh841787.patch
+Patch53:	%{name}-rh841787.patch
 
 # Upstream BZ 14185
-Patch61:	%{name}-rh819430.patch
+Patch54:	%{name}-rh819430.patch
 
 # See http://sourceware.org/ml/libc-alpha/2012-06/msg00074.html
-Patch62:	%{name}-rh767693-2.patch
-
-# Upstream BZ 11438 
-Patch63:	%{name}-fedora-gai-rfc1918.patch
+Patch55:	%{name}-rh767693-2.patch
 
 
 #-----------------------------------------------------------------------
 # mandriva patches
-Patch64:	%{name}-mandriva-localedef-archive-follow-symlinks.patch
-Patch65:	%{name}-mandriva-fix-dns-with-broken-routers.patch
-Patch66:	%{name}-mandriva-nss-upgrade.patch
-Patch67:	%{name}-mandriva-share-locale.patch
-Patch68:	%{name}-mandriva-nsswitch.conf.patch
-Patch69:	%{name}-mandriva-xterm-xvt.patch
-Patch70:	%{name}-mandriva-nscd-enable.patch
-Patch71:	%{name}-mandriva-nscd-no-host-cache.patch
-Patch72:	%{name}-mandriva-i386-hwcapinfo.patch
-Patch73:	%{name}-mandriva-nscd-init-should-start.patch
-Patch74:	%{name}-mandriva-timezone.patch
-Patch75:	%{name}-mandriva-biarch-cpp-defines.patch
-Patch76:	%{name}-mandriva-ENOTTY-fr-translation.patch
-Patch77:	%{name}-mandriva-biarch-utils.patch
-Patch78:	%{name}-mandriva-multiarch.patch
-Patch79:	%{name}-mandriva-i586-hptiming.patch
-Patch80:	%{name}-mandriva-i586-if-no-cmov.patch
-Patch81:	%{name}-mandriva-pt_BR-i18nfixes.patch
-Patch82:	%{name}-mandriva-testsuite-ldbl-bits.patch
-Patch83:	%{name}-mandriva-testsuite-rt-notparallel.patch
-Patch84:	%{name}-mandriva-fix-compile-error.patch
+Patch56:	%{name}-mandriva-localedef-archive-follow-symlinks.patch
+Patch57:	%{name}-mandriva-fix-dns-with-broken-routers.patch
+Patch58:	%{name}-mandriva-nss-upgrade.patch
+Patch59:	%{name}-mandriva-share-locale.patch
+Patch60:	%{name}-mandriva-nsswitch.conf.patch
+Patch61:	%{name}-mandriva-xterm-xvt.patch
+Patch62:	%{name}-mandriva-nscd-enable.patch
+Patch63:	%{name}-mandriva-nscd-no-host-cache.patch
+Patch64:	%{name}-mandriva-i386-hwcapinfo.patch
+Patch65:	%{name}-mandriva-nscd-init-should-start.patch
+Patch66:	%{name}-mandriva-timezone.patch
+Patch67:	%{name}-mandriva-biarch-cpp-defines.patch
+Patch68:	%{name}-mandriva-ENOTTY-fr-translation.patch
+Patch69:	%{name}-mandriva-biarch-utils.patch
+Patch70:	%{name}-mandriva-multiarch.patch
+Patch71:	%{name}-mandriva-i586-hptiming.patch
+Patch72:	%{name}-mandriva-i586-if-no-cmov.patch
+Patch73:	%{name}-mandriva-pt_BR-i18nfixes.patch
+Patch74:	%{name}-mandriva-testsuite-ldbl-bits.patch
+Patch75:	%{name}-mandriva-testsuite-rt-notparallel.patch
+Patch76:	%{name}-mandriva-fix-compile-error.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
-Patch85:	%{name}-mandriva-fix-for-new-memcpy-behavior.patch
+Patch77:	%{name}-mandriva-fix-for-new-memcpy-behavior.patch
 
 # odd, for some reason the fedora patch applied earlier removes install of
 # streams header.. just add them back for now :|
-Patch86:	%{name}-mandriva-revert-fedora-not-installing-stream-headers.patch
+Patch78:	%{name}-mandriva-revert-fedora-not-installing-stream-headers.patch
 
-Patch87:	%{name}-mandriva-no-leaf-attribute.patch
-Patch88:	%{name}-mandriva-string-format-fixes.patch
+Patch79:	%{name}-mandriva-no-leaf-attribute.patch
+Patch80:	%{name}-mandriva-string-format-fixes.patch
 
-Patch89:	%{name}-mandriva-mdv-avx-owl-crypt.patch
-Patch90:	%{name}-mandriva-mdv-owl-crypt_freesec.patch
-Patch91:	%{name}-mandriva-avx-relocate_fcrypt.patch
-Patch92:	%{name}-mandriva-avx-increase_BF_FRAME.patch
-Patch93:	%{name}-mandriva-mdv-wrapper_handle_sha.patch
+Patch81:	%{name}-mandriva-mdv-avx-owl-crypt.patch
+Patch82:	%{name}-mandriva-mdv-owl-crypt_freesec.patch
+Patch83:	%{name}-mandriva-avx-relocate_fcrypt.patch
+Patch84:	%{name}-mandriva-avx-increase_BF_FRAME.patch
+Patch85:	%{name}-mandriva-mdv-wrapper_handle_sha.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -659,7 +645,7 @@ These are configuration files that describe possible time zones.
 %prep
 %setup -q -n %{glibcsrcdir} -b 2 -a 3 -a 50
 
-%patch00 -E -p1
+%patch00 -p1
 %patch01 -p1
 %patch02 -p1
 %patch03 -p1
@@ -740,28 +726,20 @@ These are configuration files that describe possible time zones.
 %patch78 -p1
 %patch79 -p1
 %patch80 -p1
-%patch81 -p1
-%patch82 -p1
-%patch83 -p1
-%patch84 -p1
-%patch85 -p1
-%patch86 -p1
-%patch87 -p1
-%patch88 -p1
 
 # copy freesec source
 cp %{SOURCE52} %{SOURCE53} crypt/
 echo "Applying crypt_blowfish patch:"
-%patch89 -p1
+%patch81 -p1
 mv crypt/crypt.h crypt/gnu-crypt.h
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
-%patch90 -p1
-%patch91 -p1
-%patch92 -p0
+%patch82 -p1
+%patch83 -p1
+%patch84 -p0
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch93 -p1
+%patch85 -p1
 
 %if %{build_selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
@@ -778,6 +756,11 @@ rm -f localedata/locales/[a-z_]*.*
 
 #-----------------------------------------------------------------------
 %build
+# ...
+mkdir bin
+ln -sf %{_bindir}/ld.bfd bin/ld
+export PATH=$PWD/bin:$PATH
+
 # Prepare test matrix in the next function
 > %{checklist}
 
@@ -940,6 +923,9 @@ gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgra
 
 #-----------------------------------------------------------------------
 %check
+# ...
+export PATH=$PWD/bin:$PATH
+
 export TMPDIR=/tmp
 export TIMEOUTFACTOR=16
 while read arglist; do
@@ -948,6 +934,9 @@ done < %{checklist}
 
 #-----------------------------------------------------------------------
 %install
+# ...
+export PATH=$PWD/bin:$PATH
+
 %if %{build_multiarch}
     %ifarch x86_64
 	ALT_ARCH=i686
