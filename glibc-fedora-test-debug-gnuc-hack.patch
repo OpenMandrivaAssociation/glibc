@@ -1,0 +1,22 @@
+From e818d7d5034bd33373aebf570402abdb8e434f6e Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Sat, 19 Mar 2005 20:18:00 +0000
+Subject: [PATCH] Updated to fedora-glibc-20050319T1907
+
+---
+ debug/tst-chk1.c |  234 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 229 insertions(+), 5 deletions(-)
+
+diff --git a/debug/tst-chk1.c b/debug/tst-chk1.c
+--- a/debug/tst-chk1.c
++++ b/debug/tst-chk1.c
+@@ -16,6 +16,9 @@
+    License along with the GNU C Library; if not, see
+    <http://www.gnu.org/licenses/>.  */
+ 
++/* Hack: make sure GCC doesn't know __chk_fail () will not return.  */
++#define __noreturn__
++
+ #include <assert.h>
+ #include <fcntl.h>
+ #include <locale.h>

@@ -1,0 +1,17 @@
+2004-01-23  Gwenole Beauchesne  <gbeauchesne@mandrakesoft.com>
+
+	* Makeconfig (%.v.i): Make sure to define __$(base-machine)__ for
+	biarch asm headers.
+
+diff -p -up glibc-2.10.1/Makeconfig.orig glibc-2.10.1/Makeconfig
+--- glibc-2.10.1/Makeconfig.orig	2009-05-26 23:40:06.000000000 -0300
++++ glibc-2.10.1/Makeconfig	2009-05-26 23:41:42.000000000 -0300
+@@ -795,7 +795,7 @@ ifeq (yes, $(build-shared))
+ %.v.i: $(common-objpfx)config.h $(..)Makeconfig
+ 	sed '/^[ 	]*%/!s/#.*$$//;/^[ 	]*$$/d;s/^[ 	]*%/#/' \
+ 	    $(filter-out FORCE %.h $(..)Makeconfig,$^) \
+-	| $(CC) -E -undef $(CPPFLAGS) -x assembler-with-cpp - \
++	| $(CC) -E -undef $(CPPFLAGS) -D__$(base-machine)__ -x assembler-with-cpp - \
+ 		   > $@T
+ 	mv -f $@T $@
+ %.v: %.v.i

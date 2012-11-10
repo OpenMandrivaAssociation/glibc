@@ -1,0 +1,11 @@
+--- glibc-2.3.3/nscd/nscd.init.nscd-enable	2004-08-24 10:31:20.000000000 -0400
++++ glibc-2.3.3/nscd/nscd.init	2004-08-25 04:41:47.571810880 -0400
+@@ -2,7 +2,7 @@
+ #
+ # nscd:		Starts the Name Switch Cache Daemon
+ #
+-# chkconfig: - 30 74
++# chkconfig: 345 30 74
+ # description:  This is a daemon which handles passwd and group lookups \
+ #		for running programs and cache the results for the next \
+ #		query.  You should start this daemon if you use \

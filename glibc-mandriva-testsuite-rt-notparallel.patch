@@ -1,0 +1,16 @@
+--- glibc-2.16.90-97bc38d7/rt/Makefile.orig	2012-09-26 14:34:25.122088945 -0300
++++ glibc-2.16.90-97bc38d7/rt/Makefile	2012-09-26 14:34:35.001089362 -0300
+@@ -78,3 +78,13 @@ $(tests:%=$(objpfx)%-bp): $(objpfx)librt
+ endif
+ 
+ tst-mqueue7-ARGS = -- $(built-program-cmd)
++
++# XXX avoid timing issues on fine-grained SMT systems
++ifeq (powerpc, $(base-machine))
++no-parallel-testing = yes
++endif
++ifneq ($(filter %tests,$(MAKECMDGOALS)),)
++ifeq ($(no-parallel-testing),yes)
++.NOTPARALLEL:
++endif
++endif

@@ -1,0 +1,11 @@
+--- crypt/x86.S	2011-07-16 11:09:42.000000000 -0400
++++ crypt/x86.S.oden	2011-11-25 04:07:23.574489383 -0500
+@@ -42,7 +42,7 @@
+ #define DO_ALIGN(log)			.align (1 << (log))
+ #endif
+ 
+-#define BF_FRAME			0x200
++#define BF_FRAME			0x400
+ #define ctx				%esp
+ 
+ #define BF_ptr				(ctx)

@@ -1,0 +1,12 @@
+diff -p -up glibc-2.8/po/fr.po.orig glibc-2.8/po/fr.po
+--- glibc-2.8/po/fr.po.orig	2008-05-20 20:01:33.000000000 -0400
++++ glibc-2.8/po/fr.po	2008-05-20 20:02:10.000000000 -0400
+@@ -5351,7 +5351,7 @@ msgstr "Trop de fichiers ouverts dans le
+ #. TRANS modes on an ordinary file.
+ #: sysdeps/gnu/errlist.c:285
+ msgid "Inappropriate ioctl for device"
+-msgstr "Ioctl() inappropré pour un périphérique"
++msgstr "Ioctl() inapproprié pour un périphérique"
+ 
+ #. TRANS An attempt to execute a file that is currently open for writing, or
+ #. TRANS write to a file that is currently being executed.  Often using a

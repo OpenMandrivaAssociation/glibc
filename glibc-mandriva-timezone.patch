@@ -1,0 +1,21 @@
+--- glibc-2.3.4/timezone/backward.timezone	2005-03-07 18:47:33.000000000 -0500
++++ glibc-2.3.4/timezone/backward	2005-03-10 11:09:08.973233047 -0500
+@@ -98,3 +98,18 @@ Link	Etc/UTC			UTC
+ Link	Etc/UTC			Universal
+ Link	Europe/Moscow		W-SU
+ Link	Etc/UTC			Zulu
++
++# links requested by users (to access timezones by the name of main cities)
++# pablo@mandrakesoft.com
++# Canada/Saskatchewan 
++Link	America/Regina	America/Saskatoon
++# Canada/Mountain (Alberta)
++Link	America/Edmonton	America/Calgary
++# Canada/Atlantic (New Brunswick)
++Link	America/Halifax		America/Fredericton
++# America/Eastern (Ontario)
++Link	America/Montreal	America/Ontario
++# PRC
++Link	Asia/Shanghai		Asia/Beijing
++# South Africa
++Link	Africa/Johannesburg	Africa/Pretoria

@@ -1,0 +1,16 @@
+diff -p -up glibc-2.9/nscd/nscd.conf.orig glibc-2.9/nscd/nscd.conf
+--- glibc-2.9/nscd/nscd.conf.orig	2007-11-05 19:50:48.000000000 -0500
++++ glibc-2.9/nscd/nscd.conf	2009-01-15 09:56:22.000000000 -0500
+@@ -60,7 +60,11 @@
+ 	max-db-size		group		33554432
+ 	auto-propagate		group		yes
+ 
+-	enable-cache		hosts		yes
++# !!!!!WARNING!!!!! Host cache is insecure!!! The mechanism in nscd to
++# cache hosts will cause your local system to not be able to trust
++# forward/reverse lookup checks. DO NOT USE THIS if your system relies on
++# this sort of security mechanism. Use a caching DNS server instead.
++	enable-cache		hosts		no
+ 	positive-time-to-live	hosts		3600
+ 	negative-time-to-live	hosts		20
+ 	suggested-size		hosts		211

@@ -1,0 +1,13 @@
+--- glibc-2.2.4/debug/xtrace.sh.chmou	Mon Jul  9 20:56:57 2001
++++ glibc-2.2.4/debug/xtrace.sh	Mon Nov 12 14:16:51 2001
+@@ -78,8 +78,8 @@
+ # If the variable COLUMNS is not set do this now.
+ COLUMNS=${COLUMNS:-80}
+ 
+-# If `TERMINAL_PROG' is not set, set it to `xterm'.
+-TERMINAL_PROG=${TERMINAL_PROG:-xterm}
++# If `TERMINAL_PROG' is not set, set it to `xvt'.
++TERMINAL_PROG=${TERMINAL_PROG:-xvt}
+ 
+ # The data file to process, if any.
+ data=

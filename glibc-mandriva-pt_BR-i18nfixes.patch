@@ -1,0 +1,29 @@
+pt_BR i18n fixes from glibc-2.3.4-77143cl.src.rpm (Conectiva Linux)
+
+--- glibc-2.3.6/po/pt_BR.po.orig	2006-04-17 04:47:44.000000000 -0300
++++ glibc-2.3.6/po/pt_BR.po	2006-04-17 04:48:03.000000000 -0300
+@@ -84,6 +84,7 @@
+ msgstr "\t[%u] - [%u bytes] "
+ 
+ #: nscd/nscd_stat.c:153
++#, c-format
+ msgid ""
+ "\n"
+ "%s cache:\n"
+@@ -103,11 +104,14 @@
+ "cache %s:\n"
+ "\n"
+ "%15s  cache está habilitado\n"
+-"%15Zd  tamanho sugerido%15ld  segundos de vida para entradas positivas\n"
++"%15Zd  tamanho sugerido\n"
++"%15ld  segundos de vida para entradas positivas\n"
+ "%15ld  segundos de vida para entradas negativas\n"
+ "%15ld  hits do cache para entradas positivas\n"
+ "%15ld  hits do cache para entradas negativas\n"
+-"%15ld%% quantidade de hits no cache\n"
++"%15ld  ausências no cache para entradas positivas\n"
++"%15ld  ausências no cache para entradas negativas\n"
++"%15ld%% taxa de hits no cache\n"
+ "%15s  verifique o arquivo /etc/%s para mudanças\n"
+ 
+ #: nis/nis_print.c:251
