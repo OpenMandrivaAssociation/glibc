@@ -1,0 +1,28 @@
+diff -Nrup a/elf/dl-open.c b/elf/dl-open.c
+--- a/elf/dl-open.c	2012-01-29 21:57:36.251660367 -0700
++++ b/elf/dl-open.c	2012-01-29 21:58:55.762694069 -0700
+@@ -328,7 +328,7 @@ dl_open_worker (void *a)
+   while (l != NULL);
+   if (nmaps > 1)
+     {
+-      char seen[nmaps];
++      uint16_t seen[nmaps];
+       memset (seen, '\0', nmaps);
+       size_t i = 0;
+       while (1)
+@@ -354,13 +354,13 @@ dl_open_worker (void *a)
+ 			       (k - i) * sizeof (maps[0]));
+ 		      maps[k] = thisp;
+ 
+-		      if (seen[i + 1] > 1)
++		      if (seen[i + 1] > nmaps - i)
+ 			{
+ 			  ++i;
+ 			  goto next_clear;
+ 			}
+ 
+-		      char this_seen = seen[i];
++		      uint16_t this_seen = seen[i];
+ 		      memmove (&seen[i], &seen[i + 1],
+ 			       (k - i) * sizeof (seen[0]));
+ 		      seen[k] = this_seen;

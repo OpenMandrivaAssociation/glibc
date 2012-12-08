@@ -1,0 +1,49 @@
+diff -Naurp glibc-2.14-121-g5551a7b/crypt/crypt-entry.c glibc-2.14-121-g5551a7b.oden/crypt/crypt-entry.c
+--- glibc-2.14-121-g5551a7b/crypt/crypt-entry.c	2011-11-25 05:00:43.214487962 -0500
++++ glibc-2.14-121-g5551a7b.oden/crypt/crypt-entry.c	2011-11-25 05:04:42.044487854 -0500
+@@ -164,18 +164,3 @@ crypt (key, salt)
+ #endif
+ 
+ 
+-/*
+- * To make fcrypt users happy.
+- * They don't need to call init_des.
+- */
+-#ifdef _LIBC
+-weak_alias (crypt, fcrypt)
+-#else
+-char *
+-__fcrypt (key, salt)
+-     const char *key;
+-     const char *salt;
+-{
+-  return crypt (key, salt);
+-}
+-#endif
+diff -Naurp glibc-2.14-121-g5551a7b/crypt/wrapper.c glibc-2.14-121-g5551a7b.oden/crypt/wrapper.c
+--- glibc-2.14-121-g5551a7b/crypt/wrapper.c	2011-11-25 05:00:43.224487962 -0500
++++ glibc-2.14-121-g5551a7b.oden/crypt/wrapper.c	2011-11-25 05:05:14.264487791 -0500
+@@ -324,7 +324,22 @@ weak_alias(__crypt, crypt)
+ weak_alias(__crypt_gensalt_rn, crypt_gensalt_rn)
+ weak_alias(__crypt_gensalt_ra, crypt_gensalt_ra)
+ weak_alias(__crypt_gensalt, crypt_gensalt)
+-weak_alias(crypt, fcrypt)
++#endif
++
++/*
++ * To make fcrypt users happy.
++ * They don't need to call init_des.
++ */
++#ifdef _LIBC
++weak_alias (crypt, fcrypt)
++#else
++char *
++__fcrypt (key, salt)
++     const char *key;
++     const char *salt;
++{
++  return crypt (key, salt);
++}
+ #endif
+ 
+ #ifdef TEST

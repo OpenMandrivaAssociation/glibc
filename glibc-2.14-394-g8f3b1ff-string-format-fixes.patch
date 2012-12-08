@@ -1,0 +1,88 @@
+--- glibc-2.14-394-g8f3b1ff/misc/tst-error1.c.str_fmt~	2011-12-10 21:54:40.788761731 +0100
++++ glibc-2.14-394-g8f3b1ff/misc/tst-error1.c	2011-12-10 21:54:42.945752731 +0100
+@@ -16,8 +16,8 @@ do_test (int argc, char *argv[])
+   for (int i = 0; i < 1000; ++i)
+     memcpy (&buf[i * (sizeof (str) - 1)], str, sizeof (str));
+   error (0, 0, str);
+-  error (0, 0, buf);
+-  error (0, 0, buf);
++  error (0, 0, "%s", buf);
++  error (0, 0, "%s", buf);
+   error (0, 0, str);
+   return 0;
+ }
+--- glibc-2.14-394-g8f3b1ff/posix/regexbug1.c.str_fmt~	2011-12-10 21:53:53.809968992 +0100
++++ glibc-2.14-394-g8f3b1ff/posix/regexbug1.c	2011-12-10 21:53:56.247957690 +0100
+@@ -18,7 +18,7 @@ main (void)
+     {
+       char buf[100];
+       regerror (reerr, &re, buf, sizeof buf);
+-      error (EXIT_FAILURE, 0, buf);
++      error (EXIT_FAILURE, 0, "%s", buf);
+     }
+ 
+   if (regexec (&re, "002", 2, ma, 0) != 0)
+@@ -35,7 +35,7 @@ main (void)
+     {
+       char buf[100];
+       regerror (reerr, &re, buf, sizeof buf);
+-      error (EXIT_FAILURE, 0, buf);
++      error (EXIT_FAILURE, 0, "%s", buf);
+     }
+ 
+   if (regexec (&re, "002", 2, ma, 0) != 0)
+--- glibc-2.14-394-g8f3b1ff/stdio-common/test-vfprintf.c.str_fmt~	2011-12-10 21:54:12.799882569 +0100
++++ glibc-2.14-394-g8f3b1ff/stdio-common/test-vfprintf.c	2011-12-10 21:55:02.557672892 +0100
+@@ -93,7 +93,7 @@ main (void)
+       fprintf (fp, "%s", large);
+       fprintf (fp, "%.*s", 30000, large);
+       large[20000] = '\0';
+-      fprintf (fp, large);
++      fprintf (fp, "%s", large);
+       fprintf (fp, "%-1.300000000s", "hello");
+ 
+       if (fflush (fp) != 0 || ferror (fp) != 0 || fclose (fp) != 0)
+--- glibc-2.14-394-g8f3b1ff/sunrpc/rpc_hout.c.str_fmt~	2011-10-19 13:03:31.000000000 +0200
++++ glibc-2.14-394-g8f3b1ff/sunrpc/rpc_hout.c	2011-12-10 20:44:52.677364034 +0100
+@@ -579,7 +579,7 @@ pdeclaration (const char *name, declarat
+ 	  break;
+ 	}
+     }
+-  f_print (fout, separator);
++  f_print (fout, "%s", separator);
+ }
+ 
+ static int
+--- glibc-2.14-394-g8f3b1ff/sunrpc/rpc_main.c.str_fmt~	2011-10-19 13:03:31.000000000 +0200
++++ glibc-2.14-394-g8f3b1ff/sunrpc/rpc_main.c	2011-12-10 20:44:52.683364028 +0100
+@@ -651,7 +651,7 @@ h_output (const char *infile, const char
+     }
+   else if (tblflag)
+     {
+-      fprintf (fout, rpcgen_table_dcl);
++      fprintf (fout, "%s", rpcgen_table_dcl);
+     }
+ 
+   if (Cflag)
+--- glibc-2.14-394-g8f3b1ff/sunrpc/rpc_svcout.c.str_fmt~	2011-10-19 13:03:31.000000000 +0200
++++ glibc-2.14-394-g8f3b1ff/sunrpc/rpc_svcout.c	2011-12-10 20:44:52.707364008 +0100
+@@ -361,7 +361,7 @@ write_real_program (const definition * d
+ 	      f_print (fout, " (");
+ 	      /* arg name */
+ 	      if (proc->arg_num > 1)
+-		f_print (fout, proc->args.argname);
++		f_print (fout, "%s", proc->args.argname);
+ 	      else
+ 		ptype (proc->args.decls->decl.prefix,
+ 		       proc->args.decls->decl.type, 0);
+--- glibc-2.14-394-g8f3b1ff/sysdeps/unix/sysv/linux/dl-osinfo.h.str_fmt~	2011-10-19 13:03:31.000000000 +0200
++++ glibc-2.14-394-g8f3b1ff/sysdeps/unix/sysv/linux/dl-osinfo.h	2011-12-10 20:44:52.713364002 +0100
+@@ -35,7 +35,7 @@ static void
+ __attribute__ ((__noreturn__))
+ dl_fatal (const char *str)
+ {
+-  _dl_dprintf (2, str);
++  _dl_dprintf (2, "%s", str);
+   _exit (1);
+ }
+ #endif

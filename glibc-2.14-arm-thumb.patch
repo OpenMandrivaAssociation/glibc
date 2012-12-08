@@ -1,0 +1,13 @@
+--- glibc-2.14-121-g5551a7b/ports/sysdeps/unix/sysv/linux/arm/eabi/Makefile.orig	2011-07-30 19:11:27.590451172 -0300
++++ glibc-2.14-121-g5551a7b/ports/sysdeps/unix/sysv/linux/arm/eabi/Makefile	2011-07-30 19:11:57.813615252 -0300
+@@ -33,6 +33,10 @@ ifeq ($(subdir),nscd)
+ nscd-modules += libc-do-syscall
+ endif
+ 
++ifeq ($(subdir),nss)
++libnss_db-sysdep_routines += libc-do-syscall
++endif
++
+ ifeq ($(subdir),posix)
+ LDFLAGS-tst-rfc3484 += $(common-objpfx)csu/libc-do-syscall.o
+ LDFLAGS-tst-rfc3484-2 += $(common-objpfx)csu/libc-do-syscall.o

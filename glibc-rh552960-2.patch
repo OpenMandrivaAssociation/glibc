@@ -1,0 +1,27 @@
+diff -rup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S	2012-02-10 12:49:42.609737373 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S	2012-02-10 12:52:00.962150379 -0700
+@@ -438,6 +438,10 @@ __pthread_cond_wait:
+ 	addl	$1, cond_futex(%ebx)
+ 	movl	cond_futex(%ebx), %ebp
+ 
++	/* Increment total_seq to ensure we do not lose wakeups.  */
++	addl	$1, total_seq(%ebx)
++	adcl	$0, total_seq+4(%ebx)
++
+ 	/* Unlock.  */
+ 	LOCK
+ #if cond_lock == 0
+diff -rup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S	2012-02-10 12:49:42.612737361 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S	2012-02-10 12:52:36.179000963 -0700
+@@ -366,6 +366,9 @@ __pthread_cond_wait:
+ 	incl	cond_futex(%rdi)
+ 	movl	cond_futex(%rdi), %edx
+ 
++	/* Increment total_seq to ensure we do not lose wakeups.  */
++	incq	total_seq(%rdi)
++
+ 	/* Release internal lock.  */
+ 	LOCK
+ #if cond_lock == 0

@@ -1,9 +1,7 @@
+---
 sources:
-  "crypt_blowfish-1.2.tar.gz:"	306ff83af206fac786900ce5e4800516cae909d9
-  "crypt_blowfish-1.2.tar.gz.sign:"	982d2d5585d60fc01d18005c2b5e57a1a44b45d7
-  "crypt_freesec.c:"	3325fa740221638c9cc38e7c49a22edc477de670
-  "crypt_freesec.h:"	66fc613f2faf7a573d1db99a3bd505f84af909f6
-  "glibc-2.16.90-54a41734-fedora.tar.gz:"	6b153afeeabd3023aef757632f78aef3b33685ef
-  "glibc-2.16.90-54a41734.tar.gz:"	eb3ba81a18641ca30385244b1260d54b4d4f7f81
-  "glibc-check.sh:"	b71daa77a7343f7218cdf0c79f2d97bb31ab6086
-  "glibc-manpages.tar.bz2:"	ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
+  crypt_blowfish-1.2.tar.gz: 306ff83af206fac786900ce5e4800516cae909d9
+  glibc-2.15-a316c1f-fedora.tar.gz: fc08eb2483a8401fd324ffd36290d54a5b55bde3
+  glibc-2.15-a316c1f.tar.gz: aa07170ac6e14a2b3eecd45af19825fa36844dd6
+  glibc-manpages.tar.bz2: ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
+  glibc-ports-2.15-ad8ae7d.tar.gz: 8626c7eb72f0cad6acf0b94d72b124b8d2dac825

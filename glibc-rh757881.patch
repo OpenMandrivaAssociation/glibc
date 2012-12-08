@@ -1,7 +1,8 @@
-diff -Nrup a/malloc/arena.c b/malloc/arena.c
---- a/malloc/arena.c	2012-05-29 16:45:53.000000000 -0600
-+++ b/malloc/arena.c	2012-05-30 00:13:40.683514016 -0600
-@@ -673,7 +673,7 @@ heap_trim(heap_info *heap, size_t pad)
+Index: glibc-2.12-2-gc4ccff1/malloc/arena.c
+===================================================================
+--- glibc-2.12-2-gc4ccff1.orig/malloc/arena.c
++++ glibc-2.12-2-gc4ccff1/malloc/arena.c
+@@ -870,7 +870,7 @@ heap_trim(heap, pad) heap_info *heap; si
      heap = prev_heap;
      if(!prev_inuse(p)) { /* consolidate backward */
        p = prev_chunk(p);
@@ -10,10 +11,11 @@ diff -Nrup a/malloc/arena.c b/malloc/arena.c
      }
      assert(((unsigned long)((char*)p + new_size) & (pagesz-1)) == 0);
      assert( ((char*)p + new_size) == ((char*)heap + heap->size) );
-diff -Nrup a/malloc/hooks.c b/malloc/hooks.c
---- a/malloc/hooks.c	2012-05-29 16:45:53.000000000 -0600
-+++ b/malloc/hooks.c	2012-05-30 00:13:40.684514011 -0600
-@@ -191,7 +191,9 @@ top_check(void)
+Index: glibc-2.12-2-gc4ccff1/malloc/hooks.c
+===================================================================
+--- glibc-2.12-2-gc4ccff1.orig/malloc/hooks.c
++++ glibc-2.12-2-gc4ccff1/malloc/hooks.c
+@@ -219,7 +219,9 @@ top_check()
  	(char*)t + chunksize(t) == mp_.sbrk_base + main_arena.system_mem)))
      return 0;
  
@@ -23,10 +25,11 @@ diff -Nrup a/malloc/hooks.c b/malloc/hooks.c
  
    /* Try to set up a new top chunk. */
    brk = MORECORE(0);
-diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
---- a/malloc/malloc.c	2012-05-29 16:45:53.000000000 -0600
-+++ b/malloc/malloc.c	2012-05-30 00:13:40.686514001 -0600
-@@ -1424,12 +1424,14 @@ typedef struct malloc_chunk* mbinptr;
+Index: glibc-2.12-2-gc4ccff1/malloc/malloc.c
+===================================================================
+--- glibc-2.12-2-gc4ccff1.orig/malloc/malloc.c
++++ glibc-2.12-2-gc4ccff1/malloc/malloc.c
+@@ -1541,12 +1541,14 @@
  #define last(b)      ((b)->bk)
  
  /* Take a chunk off a bin list */
@@ -44,7 +47,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
      FD->bk = BK;                                                       \
      BK->fd = FD;                                                       \
      if (!in_smallbin_range (P->size)				       \
-@@ -2511,7 +2513,9 @@ static void* sysmalloc(INTERNAL_SIZE_T n
+@@ -2593,7 +2595,9 @@
  
      else if (contiguous(av) && old_size && brk < old_end) {
        /* Oops!  Someone else killed our space..  Can't touch anything.  */
@@ -54,7 +57,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
      }
  
      /*
-@@ -3345,7 +3349,9 @@ _int_malloc(mstate av, size_t bytes)
+@@ -3467,7 +3471,9 @@
  	{
  	  errstr = "malloc(): memory corruption (fast)";
  	errout:
@@ -64,7 +67,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  	  return NULL;
  	}
        check_remalloced_chunk(av, victim, nb);
-@@ -3430,8 +3436,12 @@ _int_malloc(mstate av, size_t bytes)
+@@ -3552,8 +3558,12 @@
        bck = victim->bk;
        if (__builtin_expect (victim->size <= 2 * SIZE_SZ, 0)
  	  || __builtin_expect (victim->size > av->system_mem, 0))
@@ -79,7 +82,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
        size = chunksize(victim);
  
        /*
-@@ -3572,7 +3582,7 @@ _int_malloc(mstate av, size_t bytes)
+@@ -3694,7 +3704,7 @@
  	  victim = victim->fd;
  
  	remainder_size = size - nb;
@@ -88,7 +91,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  
  	/* Exhaust */
  	if (remainder_size < MINSIZE)  {
-@@ -3670,7 +3680,7 @@ _int_malloc(mstate av, size_t bytes)
+@@ -3792,7 +3802,7 @@
  	remainder_size = size - nb;
  
  	/* unlink */
@@ -97,7 +100,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  
  	/* Exhaust */
  	if (remainder_size < MINSIZE) {
-@@ -3805,9 +3815,11 @@ _int_free(mstate av, mchunkptr p, int ha
+@@ -3927,9 +3937,11 @@
      {
        errstr = "free(): invalid pointer";
      errout:
@@ -109,8 +112,8 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
 +	mutex_lock(&av->mutex);
        return;
      }
-   /* We know that each chunk is at least MINSIZE bytes in size or a
-@@ -3952,7 +3964,7 @@ _int_free(mstate av, mchunkptr p, int ha
+   /* We know that each chunk is at least MINSIZE bytes in size.  */
+@@ -4073,7 +4085,7 @@
        prevsize = p->prev_size;
        size += prevsize;
        p = chunk_at_offset(p, -((long) prevsize));
@@ -119,7 +122,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
      }
  
      if (nextchunk != av->top) {
-@@ -3961,7 +3973,7 @@ _int_free(mstate av, mchunkptr p, int ha
+@@ -4082,7 +4094,7 @@
  
        /* consolidate forward */
        if (!nextinuse) {
@@ -128,7 +131,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  	size += nextsize;
        } else
  	clear_inuse_bit_at_offset(nextchunk, 0);
-@@ -4122,7 +4134,7 @@ static void malloc_consolidate(mstate av
+@@ -4243,7 +4255,7 @@
  	    prevsize = p->prev_size;
  	    size += prevsize;
  	    p = chunk_at_offset(p, -((long) prevsize));
@@ -137,7 +140,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  	  }
  
  	  if (nextchunk != av->top) {
-@@ -4130,7 +4142,7 @@ static void malloc_consolidate(mstate av
+@@ -4251,7 +4263,7 @@
  
  	    if (!nextinuse) {
  	      size += nextsize;
@@ -146,7 +149,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
  	    } else
  	      clear_inuse_bit_at_offset(nextchunk, 0);
  
-@@ -4199,7 +4211,9 @@ _int_realloc(mstate av, mchunkptr oldp,
+@@ -4320,7 +4332,9 @@
      {
        errstr = "realloc(): invalid old size";
      errout:
@@ -156,7 +159,7 @@ diff -Nrup a/malloc/malloc.c b/malloc/malloc.c
        return NULL;
      }
  
-@@ -4241,7 +4255,7 @@ _int_realloc(mstate av, mchunkptr oldp,
+@@ -4362,7 +4376,7 @@
  	     (unsigned long)(newsize = oldsize + nextsize) >=
  	     (unsigned long)(nb)) {
        newp = oldp;

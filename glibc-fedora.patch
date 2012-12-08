@@ -1,0 +1,4065 @@
+diff -Nrup a/ChangeLog b/ChangeLog
+--- a/ChangeLog	2012-01-01 05:16:32.000000000 -0700
++++ b/ChangeLog	2012-01-01 20:41:26.621439845 -0700
+@@ -2542,6 +2542,11 @@
+ 
+ 	* sysdeps/mach/hurd/sys/param.h (DEV_BSIZE): New macro.
+ 
++2011-09-02  Andreas Schwab  <schwab@redhat.com>
++
++	* nscd/selinux.c (avc_create_thread): Set PR_SET_KEEPCAPS before
++	spawning AVC thread.
++
+ 2011-09-08  Andreas Schwab  <schwab@redhat.com>
+ 
+ 	* elf/dl-load.c (lose): Check for non-null L.
+@@ -2804,6 +2809,11 @@
+ 	* sysdeps/i386/dl-trampoline.S (_dl_runtime_profile): Fix cfi
+ 	directive.
+ 
++2011-08-31  Andreas Schwab  <schwab@redhat.com>
++
++	* include/link.h (FORCED_DYNAMIC_TLS_OFFSET) [NO_TLS_OFFSET == 0]:
++	Change to -1.
++
+ 2011-08-24  David S. Miller  <davem@davemloft.net>
+ 
+ 	* sysdeps/sparc/sparc64/strcmp.S: Rewrite.
+@@ -3609,6 +3619,14 @@
+ 	* config.make.in: Likewise.
+ 	* malloc/Makefile: Likewise.
+ 
++2011-06-28  Andreas Schwab  <schwab@redhat.com>
++
++	* iconvdata/gb18030.c: Update tables.
++	(BODY for FROM_LOOP): Handle non-BMP characters specially.
++
++	* sysdeps/posix/getaddrinfo.c (gaih_inet): Don't use gethostbyaddr
++	to determine canonical name.
++
+ 2011-06-27  Andreas Schwab  <schwab@redhat.com>
+ 
+ 	* iconvdata/gb18030.c (BODY for TO_LOOP): Fix encoding of non-BMP
+@@ -3740,6 +3758,10 @@
+ 
+ 	* inet/getnetgrent_r.c: Use DL_CALL_FCT in several places.
+ 
++2011-06-21  Andreas Schwab  <schwab@redhat.com>
++
++	* iconvdata/gb18030.c: Regenerate tables.
++
+ 2011-06-20  David S. Miller  <davem@davemloft.net>
+ 
+ 	* sysdeps/sparc/sparc32/dl-plt.h: Protect against multiple
+@@ -4362,6 +4384,13 @@
+ 	* libio/Makefile (tests): Add bug-fclose1.
+ 	* libio/bug-fclose1.c: New file.
+ 
++2011-05-13  Andreas Schwab  <schwab@redhat.com>
++
++	* elf/dl-load.c (is_dst): Remove parameter secure, all callers
++	changed.  Move check for valid use of $ORIGIN ...
++	(_dl_dst_substitute): ... here.  Reset check_for_trusted when a
++	path element is skipped.
++
+ 2011-05-12  Ulrich Drepper  <drepper@gmail.com>
+ 
+ 	[BZ #12511]
+@@ -4639,13 +4668,6 @@
+ 	* stdlib/bug-getcontext.c: New file.
+ 	* stdlib/Makefile: Add rules to build and run bug-getcontext.
+ 
+-2011-04-13  Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
+-
+-	* sysdeps/s390/s390-64/utf16-utf32-z9.c: Wrap the z9-109
+-	instructions into .machine "z9-109".
+-	* sysdeps/s390/s390-64/utf8-utf16-z9.c: Likewise.
+-	* sysdeps/s390/s390-64/utf8-utf32-z9.c: Likewise.
+-
+ 2011-04-11  Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
+ 
+ 	* sysdeps/s390/s390-32/elf/start.S (_start): Skip extra zeroes
+@@ -4943,6 +4990,16 @@
+ 	$LDFLAGS and -nostdlib -nostartfiles to linking step.  Change main
+ 	to _start.
+ 
++2011-03-18  Andreas Schwab  <schwab@redhat.com>
++
++	* elf/ldd.bash.in: Never run file directly.
++
++2011-03-07  Andreas Schwab  <schwab@redhat.com>
++
++	* include/link.h (struct link_map): Remove l_orig_initfini.
++	* elf/dl-close.c (_dl_close_worker): Revert its use.
++	* elf/dl-deps.c (_dl_map_object_deps): Likewise.
++
+ 2011-03-06  Ulrich Drepper  <drepper@gmail.com>
+ 
+ 	* elf/dl-load.c (_dl_map_object): If we are looking for the first
+@@ -5159,6 +5216,12 @@
+ 	* shadow/sgetspent.c: Check return value of __sgetspent_r instead
+ 	of errno.
+ 
++2011-02-03  Andreas Schwab  <schwab@redhat.com>
++
++	* login/programs/pt_chown.c (main): Check for valid file
++	descriptor instead of privileges.  Be careful to drop all
++	capabilities when not needed.
++
+ 2011-01-19  Ulrich Drepper  <drepper@gmail.com>
+ 
+ 	[BZ #11724]
+@@ -5846,6 +5909,26 @@
+ 	* sysdeps/unix/sysv/linux/internal_statvfs.c (INTERNAL_STATVFS):
+ 	Mask out sign-bit copies when constructing f_fsid.
+ 
++2010-09-27  Andreas Schwab  <schwab@redhat.com>
++
++	* include/link.h (struct link_map): Add l_free_initfini.
++	* elf/dl-deps.c (_dl_map_object_deps): Set it when assigning
++	l_initfini.
++	* elf/rtld.c (dl_main): Clear it on all objects loaded on startup.
++	* elf/dl-libc.c (free_mem): Free l_initfini if l_free_initfini is
++	set.
++
++	[BZ #11561]
++	* posix/regcomp.c (parse_bracket_exp): When looking up collating
++	elements compare against the byte sequence of it, not its name.
++
++	[BZ #6530]
++	* stdio-common/vfprintf.c (process_string_arg): Revert 2000-07-22
++	change.
++
++	* nss/nss_files/files-XXX.c (internal_getent): Declare linebuflen
++	as size_t.
++
+ 2010-09-24  Petr Baudis <pasky@suse.cz>
+ 
+ 	* debug/stack_chk_fail_local.c: Add missing licence exception.
+@@ -6638,6 +6721,17 @@
+ 	call returning > 0 value.
+ 	* sysdeps/unix/sysv/linux/getlogin.c (getlogin): Likewise.
+ 
++2010-07-01  Andreas Schwab  <schwab@redhat.com>
++
++	* include/sys/resource.h (__getrlimit): Add hidden proto.
++	* sysdeps/unix/sysv/linux/i386/getrlimit.c: Add libc_hidden_weak.
++	* sysdeps/mach/hurd/getrlimit.c: Add libc_hidden_def.
++	* resource/getrlimit.c: Likewise.
++
++2010-06-21  Andreas Schwab  <schwab@redhat.com>
++
++	* sysdeps/i386/i686/Makefile: Don't pass -mtune to assembler.
++
+ 2010-06-07  Andreas Schwab  <schwab@redhat.com>
+ 
+ 	* dlfcn/Makefile: Remove explicit dependencies on libc.so and
+@@ -6690,6 +6784,21 @@
+ 	* hurd/hurd/fd.h (__file_name_lookup_at): Update comment.
+ 	* sysdeps/mach/hurd/linkat.c (linkat): Pass O_NOLINK in FLAGS.
+ 
++2010-06-11  Andreas Schwab  <schwab@redhat.com>
++
++	* elf/rtld.c (_dl_starting_up): Always define.
++	(dl_main): Always set _dl_starting_up.
++	* elf/dl-support.c (_dl_starting_up): Always define.
++	* elf/dl-init.c (_dl_init): Always clear _dl_starting_up.
++
++2010-06-10  Andreas Schwab  <schwab@redhat.com>
++
++	* sysdeps/unix/sysv/linux/i386/Versions: Export __uname under
++	GLIBC_PRIVATE.
++	* nptl/Versions: Export __getrlimit under GLIBC_PRIVATE.
++	* sysdeps/unix/sysv/linux/i386/smp.h: Call __uname instead of uname.
++	* nptl/nptl-init.c: Call __getrlimit instead of getrlimit.
++
+ 2010-05-28  Luis Machado  <luisgpm@br.ibm.com>
+ 
+ 	* sysdeps/powerpc/powerpc32/power7/memcpy.S: Exchange srdi for srwi.
+diff -Nrup a/ChangeLog.15 b/ChangeLog.15
+--- a/ChangeLog.15	2012-01-01 05:16:32.000000000 -0700
++++ b/ChangeLog.15	2012-01-01 20:41:26.623439845 -0700
+@@ -477,6 +477,14 @@
+ 
+ 2004-11-26  Jakub Jelinek  <jakub@redhat.com>
+ 
++	* posix/Makefile (generated: Add getconf.speclist.
++	($(inst_libexecdir)/getconf): Use getconf.speclist instead of
++	getconf output.
++	($(objpfx)getconf.speclist): New rule.
++	* posix/getconf.speclist.h: New file.
++
++2004-11-26  Jakub Jelinek  <jakub@redhat.com>
++
+ 	* sysdeps/generic/unsecvars.h (UNSECURE_ENVVARS): Add GETCONF_DIR.
+ 
+ 2004-11-26  Kaz Kojima  <kkojima@rr.iij4u.or.jp>
+@@ -1103,6 +1111,13 @@
+ 	* sysdeps/generic/tempname.c (__path_search): Add missing argument
+ 	TRY_TMPDIR.
+ 
++2004-11-02  Jakub Jelinek  <jakub@redhat.com>
++
++	* include/features.h (__USE_FORTIFY_LEVEL): Also set for Red Hat
++	GCC 3.4.x-RH >= 3.4.2-8.
++	* debug/tst-chk1.c (do_test): Deal with GCC 3.4.x-RH not
++	being able to recognize subobjects.
++
+ 2004-10-31  Mariusz Mazur <mmazur@kernel.pl>
+ 
+ 	* sysdeps/unix/sysv/linux/alpha/setregid.c: New file.
+@@ -1443,6 +1458,11 @@
+ 	* sysdeps/generic/readonly-area.c (__readonly_str): Renamed to ...
+ 	(__readonly_area): ... this.
+ 
++2004-10-19  Jakub Jelinek  <jakub@redhat.com>
++
++	* include/features.h (__USE_FORTIFY_LEVEL): Enable even with
++	Red Hat gcc4 4.0.0 and above.
++
+ 2004-10-18  Jakub Jelinek  <jakub@redhat.com>
+ 
+ 	* sysdeps/generic/strcpy_chk.c (__strcpy_chk): Speed up by checking
+@@ -3182,6 +3202,23 @@
+ 	before return type.
+ 	* locale/localename.c (__current_locale_name): Likewise.
+ 
++2004-08-31  Jakub Jelinek  <jakub@redhat.com>
++
++	* elf/ldconfig.c (parse_conf): Add prefix argument, prepend it
++	before arguments to add_dir and pass to parse_conf_include.
++	(parse_conf_include): Add prefix argument, pass it down to
++	parse_conf.
++	(main): Call arch_startup.  Adjust parse_conf caller.
++	Call add_arch_dirs.
++	* sysdeps/generic/dl-cache.h (arch_startup, add_arch_dirs): Define.
++	* sysdeps/unix/sysv/linux/i386/dl-cache.h: New file.
++	* sysdeps/unix/sysv/linux/ia64/dl-cache.h (EMUL_HACK, arch_startup,
++	add_arch_dirs): Define.
++	* sysdeps/unix/sysv/linux/ia64/ldd-rewrite.sed: Prepend
++	/emul/ia32-linux before the 32-bit ld.so pathname.
++	* sysdeps/unix/sysv/linux/ia64/dl-procinfo.c: New file.
++	* sysdeps/unix/sysv/linux/ia64/dl-procinfo.h: New file.
++
+ 2004-08-30  Roland McGrath  <roland@frob.com>
+ 
+ 	* scripts/extract-abilist.awk: If `lastversion' variable defined, omit
+diff -Nrup a/ChangeLog.16 b/ChangeLog.16
+--- a/ChangeLog.16	2012-01-01 05:16:32.000000000 -0700
++++ b/ChangeLog.16	2012-01-01 20:41:26.626439845 -0700
+@@ -2042,6 +2042,9 @@
+ 	(__MATHDECL_2): Use __REDIRECT_NTH instead of __REDIRECT
+ 	followed by __THROW.
+ 
++	* sysdeps/unix/sysv/linux/futimesat.c (futimesat): If
++	file == NULL, use __futimes unconditionally.
++
+ 2006-02-02  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	* sysdeps/unix/sysv/linux/futimesat.c [__NR_futimesat]
+@@ -2101,6 +2104,11 @@
+ 	* sysdeps/ieee754/ldbl-128/s_llrintl.c (__llrintl): Fix a typo.
+ 	* sysdeps/s390/fpu/libm-test-ulps: Remove llrint ulps.
+ 
++2006-01-30  Jakub Jelinek  <jakub@redhat.com>
++
++	* include/bits/stdlib-ldbl.h: New file.
++	* include/bits/wchar-ldbl.h: New file.
++
+ 2006-01-19  Thomas Schwinge  <tschwinge@gnu.org>
+ 
+ 	* libio/genops.c: Include <stdbool.h>.
+diff -Nrup a/ChangeLog.17 b/ChangeLog.17
+--- a/ChangeLog.17	2012-01-01 05:16:32.000000000 -0700
++++ b/ChangeLog.17	2012-01-01 20:41:26.629439844 -0700
+@@ -256,6 +256,12 @@
+ 
+ 	* Makerules (libc-abis): Fix search for libc-abis in add-ons.
+ 
++2010-04-06  Ulrich Drepper  <drepper@redhat.com>
++
++	* sysdeps/posix/getaddrinfo.c (default_scopes): Assign global
++	scope to RFC 1918 addresses.
++	* posix/gai.conf: Document difference from RFC 3484.
++
+ 2010-04-05  Thomas Schwinge  <thomas@schwinge.name>
+ 
+ 	* sysdeps/gnu/unwind-resume.c: New, moved from nptl/sysdeps/pthread/.
+@@ -2953,6 +2959,11 @@ d2009-10-30  Ulrich Drepper  <drepper@re
+ 	* sysdeps/generic/ldsodefs.h (struct rtld_global): The map element in
+ 	the unique symbol hash table should not be const.
+ 
++2009-07-22  Jakub Jelinek  <jakub@redhat.com>
++
++	* Makeconfig (ASFLAGS): Append $(sysdep-ASFLAGS).
++	* sysdeps/i386/Makefile (sysdep-ASFLAGS): Add -U__i686.
++
+ 2009-07-21  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	* sysdeps/x86_64/multiarch/strstr.c: Minor cleanups.  Remove
+@@ -3218,6 +3229,11 @@ d2009-10-30  Ulrich Drepper  <drepper@re
+ 	out common code into new function get_common_indeces. Determine
+ 	extended family and model for Intel processors.
+ 
++2009-06-26  Andreas Schwab  <aschwab@redhat.com>
++
++	* timezone/zic.c (stringzone): Don't try to generate a POSIX TZ
++	string when the timezone ends in DST.
++
+ 2009-06-26  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	* resolv/resolv.h: Define RES_SNGLKUPREOP.
+@@ -11818,6 +11834,10 @@ d2009-10-30  Ulrich Drepper  <drepper@re
+ 	[BZ #4368]
+ 	* stdlib/stdlib.h: Remove obsolete part of comment for realpath.
+ 
++2007-04-16  Jakub Jelinek  <jakub@redhat.com>
++
++	* locale/programs/locarchive.c (add_alias, insert_name): Remove static.
++
+ 2007-04-16  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	[BZ #4364]
+@@ -13075,6 +13095,15 @@ d2009-10-30  Ulrich Drepper  <drepper@re
+ 	separators also if no non-zero digits found.
+ 	* stdlib/Makefile (tests): Add tst-strtod3.
+ 
++2006-12-10  Jakub Jelinek  <jakub@redhat.com>
++
++	* sysdeps/unix/sysv/linux/netlinkaccess.h: Include linux/if_addr.h
++	if IFA_MAX is not defined.
++	(IFA_RTA, IFA_PAYLOAD, IFLA_RTA, IFLA_PAYLOAD): Define if not
++	defined.
++	* sysdeps/unix/sysv/linux/check_pf.c: Include netlinkaccess.h
++	instead of asm/types.h, linux/netlink.h and linux/rtnetlink.h.
++
+ 2006-12-09  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	[BZ #3632]
+diff -Nrup a/Makeconfig b/Makeconfig
+--- a/Makeconfig	2012-01-01 05:16:32.000000000 -0700
++++ b/Makeconfig	2012-01-01 20:41:26.630439843 -0700
+@@ -803,12 +803,12 @@ endif
+ # The assembler can generate debug information too.
+ ifndef ASFLAGS
+ ifeq ($(have-cpp-asm-debuginfo),yes)
+-ASFLAGS := $(filter -g% -fdebug-prefix-map=%,$(CFLAGS))
++ASFLAGS = $(filter -g% -fdebug-prefix-map=%,$(CFLAGS))
+ else
+-ASFLAGS :=
++ASFLAGS =
+ endif
+ endif
+-ASFLAGS += $(ASFLAGS-config) $(asflags-cpu)
++ASFLAGS += $(ASFLAGS-config) $(asflags-cpu) $(sysdep-ASFLAGS)
+ 
+ ifndef BUILD_CC
+ BUILD_CC = $(CC)
+diff -Nrup a/NEWS b/NEWS
+--- a/NEWS	2012-01-01 05:16:32.000000000 -0700
++++ b/NEWS	2012-01-01 20:41:26.631439843 -0700
+@@ -84,16 +84,6 @@ Version 2.14
+   12724, 12734, 12738, 12746, 12766, 12775, 12777, 12782, 12788, 12792,
+   12795, 12811, 12813, 12814, 12841
+ 
+-* The RPC implementation in libc is obsoleted.  Old programs keep working
+-  but new programs cannot be linked with the routines in libc anymore.
+-  Programs in need of RPC functionality must be linked against TI-RPC.
+-  The TI-RPC implementation is IPv6 enabled and there are other benefits.
+-
+-  Visible changes of this change include (obviously) the inability to link
+-  programs using RPC functions without referencing the TI-RPC library and the
+-  removal of the RPC headers from the glibc headers.
+-  Implemented by Ulrich Drepper.
+-
+ * New Linux interfaces: clock_adjtime, name_to_handle_at, open_by_handle_at,
+   syncfs, setns, sendmmsg
+ 
+diff -Nrup a/csu/Makefile b/csu/Makefile
+--- a/csu/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/csu/Makefile	2012-01-01 20:41:26.635439843 -0700
+@@ -93,7 +93,8 @@ omit-deps += $(crtstuff)
+ $(crtstuff:%=$(objpfx)%.o): %.o: %.S $(objpfx)defs.h
+ 	$(compile.S) -g0 $(ASFLAGS-.os) -o $@
+ 
+-CFLAGS-initfini.s = -g0 -fPIC -fno-inline-functions $(fno-unit-at-a-time)
++CFLAGS-initfini.s = -g0 -fPIC -fno-inline-functions $(fno-unit-at-a-time) \
++		    -fno-asynchronous-unwind-tables
+ 
+ vpath initfini.c $(sysdirs)
+ 
+diff -Nrup a/csu/elf-init.c b/csu/elf-init.c
+--- a/csu/elf-init.c	2012-01-01 05:16:32.000000000 -0700
++++ b/csu/elf-init.c	2012-01-01 20:41:26.636439843 -0700
+@@ -64,6 +64,23 @@ extern void (*__init_array_end []) (int,
+ extern void (*__fini_array_start []) (void) attribute_hidden;
+ extern void (*__fini_array_end []) (void) attribute_hidden;
+ 
++#if defined HAVE_VISIBILITY_ATTRIBUTE \
++    && (defined SHARED || defined LIBC_NONSHARED)
++# define hidden_undef_2(x) #x
++# define hidden_undef_1(x) hidden_undef_2 (x)
++# define hidden_undef(x) \
++  __asm (hidden_undef_1 (ASM_GLOBAL_DIRECTIVE) " " #x); \
++  __asm (".hidden " #x);
++#else
++# define hidden_undef(x)
++#endif
++
++hidden_undef (__preinit_array_start)
++hidden_undef (__preinit_array_end)
++hidden_undef (__init_array_start)
++hidden_undef (__init_array_end)
++hidden_undef (__fini_array_start)
++hidden_undef (__fini_array_end)
+ 
+ /* These function symbols are provided for the .init/.fini section entry
+    points automagically by the linker.  */
+diff -Nrup a/debug/tst-chk1.c b/debug/tst-chk1.c
+--- a/debug/tst-chk1.c	2012-01-01 05:16:32.000000000 -0700
++++ b/debug/tst-chk1.c	2012-01-01 20:41:26.636439843 -0700
+@@ -17,6 +17,9 @@
+    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+    02111-1307 USA.  */
+ 
++/* Hack: make sure GCC doesn't know __chk_fail () will not return.  */
++#define __noreturn__
++
+ #include <assert.h>
+ #include <fcntl.h>
+ #include <locale.h>
+@@ -243,7 +246,7 @@ do_test (void)
+   if (memcmp (a.buf1, "aabcdabcjj", 10))
+     FAIL ();
+ 
+-#if __USE_FORTIFY_LEVEL < 2
++#if __USE_FORTIFY_LEVEL < 2 || !__GNUC_PREREQ (4, 0)
+   /* The following tests are supposed to crash with -D_FORTIFY_SOURCE=2
+      and sufficient GCC support, as the string operations overflow
+      from a.buf1 into a.buf2.  */
+@@ -358,7 +361,7 @@ do_test (void)
+   memset (a.buf1 + 9, 'j', l0 + 2);
+   CHK_FAIL_END
+ 
+-# if __USE_FORTIFY_LEVEL >= 2
++# if __USE_FORTIFY_LEVEL >= 2 && __GNUC_PREREQ (4, 0)
+ #  define O 0
+ # else
+ #  define O 1
+diff -Nrup a/elf/Makefile b/elf/Makefile
+--- a/elf/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/Makefile	2012-01-01 20:41:26.637439843 -0700
+@@ -135,6 +135,7 @@ include ../Makeconfig
+ ifeq ($(unwind-find-fde),yes)
+ routines += unwind-dw2-fde-glibc
+ shared-only-routines += unwind-dw2-fde-glibc
++CFLAGS-unwind-dw2-fde-glibc.c += -fno-strict-aliasing
+ endif
+ 
+ before-compile  = $(objpfx)trusted-dirs.h
+diff -Nrup a/elf/dl-close.c b/elf/dl-close.c
+--- a/elf/dl-close.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-close.c	2012-01-01 20:41:26.638439843 -0700
+@@ -119,17 +119,8 @@ _dl_close_worker (struct link_map *map)
+   if (map->l_direct_opencount > 0 || map->l_type != lt_loaded
+       || dl_close_state != not_pending)
+     {
+-      if (map->l_direct_opencount == 0)
+-	{
+-	  if (map->l_type == lt_loaded)
+-	    dl_close_state = rerun;
+-	  else if (map->l_type == lt_library)
+-	    {
+-	      struct link_map **oldp = map->l_initfini;
+-	      map->l_initfini = map->l_orig_initfini;
+-	      _dl_scope_free (oldp);
+-	    }
+-	}
++      if (map->l_direct_opencount == 0 && map->l_type == lt_loaded)
++	dl_close_state = rerun;
+ 
+       /* There are still references to this object.  Do nothing more.  */
+       if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_FILES, 0))
+diff -Nrup a/elf/dl-deps.c b/elf/dl-deps.c
+--- a/elf/dl-deps.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-deps.c	2012-01-01 20:41:26.638439843 -0700
+@@ -489,6 +489,7 @@ _dl_map_object_deps (struct link_map *ma
+ 		  nneeded * sizeof needed[0]);
+ 	  atomic_write_barrier ();
+ 	  l->l_initfini = l_initfini;
++	  l->l_free_initfini = 1;
+ 	}
+ 
+       /* If we have no auxiliary objects just go on to the next map.  */
+@@ -689,6 +690,7 @@ Filters not supported with LD_TRACE_PREL
+   l_initfini[nlist] = NULL;
+   atomic_write_barrier ();
+   map->l_initfini = l_initfini;
++  map->l_free_initfini = 1;
+   if (l_reldeps != NULL)
+     {
+       atomic_write_barrier ();
+@@ -697,7 +699,7 @@ Filters not supported with LD_TRACE_PREL
+       _dl_scope_free (old_l_reldeps);
+     }
+   if (old_l_initfini != NULL)
+-      map->l_orig_initfini = old_l_initfini;
++    _dl_scope_free (old_l_initfini);
+ 
+   if (errno_reason)
+     _dl_signal_error (errno_reason == -1 ? 0 : errno_reason, objname,
+diff -Nrup a/elf/dl-init.c b/elf/dl-init.c
+--- a/elf/dl-init.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-init.c	2012-01-01 20:41:26.639439843 -0700
+@@ -24,11 +24,9 @@
+ /* Type of the initializer.  */
+ typedef void (*init_t) (int, char **, char **);
+ 
+-#ifndef HAVE_INLINED_SYSCALLS
+ /* Flag, nonzero during startup phase.  */
+ extern int _dl_starting_up;
+ extern int _dl_starting_up_internal attribute_hidden;
+-#endif
+ 
+ 
+ static void
+@@ -133,9 +131,7 @@ _dl_init (struct link_map *main_map, int
+   while (i-- > 0)
+     call_init (main_map->l_initfini[i], argc, argv, env);
+ 
+-#ifndef HAVE_INLINED_SYSCALLS
+   /* Finished starting up.  */
+   INTUSE(_dl_starting_up) = 0;
+-#endif
+ }
+ INTDEF (_dl_init)
+diff -Nrup a/elf/dl-libc.c b/elf/dl-libc.c
+--- a/elf/dl-libc.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-libc.c	2012-01-01 20:41:26.639439843 -0700
+@@ -270,13 +270,13 @@ libc_freeres_fn (free_mem)
+ 
+   for (Lmid_t ns = 0; ns < GL(dl_nns); ++ns)
+     {
+-      /* Remove all additional names added to the objects.  */
+       for (l = GL(dl_ns)[ns]._ns_loaded; l != NULL; l = l->l_next)
+ 	{
+ 	  struct libname_list *lnp = l->l_libname->next;
+ 
+ 	  l->l_libname->next = NULL;
+ 
++	  /* Remove all additional names added to the objects.  */
+ 	  while (lnp != NULL)
+ 	    {
+ 	      struct libname_list *old = lnp;
+@@ -284,6 +284,10 @@ libc_freeres_fn (free_mem)
+ 	      if (! old->dont_free)
+ 		free (old);
+ 	    }
++
++	  /* Free the initfini dependency list.  */
++	  if (l->l_free_initfini)
++	    free (l->l_initfini);
+ 	}
+ 
+       if (__builtin_expect (GL(dl_ns)[ns]._ns_global_scope_alloc, 0) != 0
+diff -Nrup a/elf/dl-load.c b/elf/dl-load.c
+--- a/elf/dl-load.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-load.c	2012-01-01 20:41:26.640439842 -0700
+@@ -250,8 +250,7 @@ is_trusted_path_normalize (const char *p
+ 
+ 
+ static size_t
+-is_dst (const char *start, const char *name, const char *str,
+-	int is_path, int secure)
++is_dst (const char *start, const char *name, const char *str, int is_path)
+ {
+   size_t len;
+   bool is_curly = false;
+@@ -280,12 +279,6 @@ is_dst (const char *start, const char *n
+ 	   && (!is_path || name[len] != ':'))
+     return 0;
+ 
+-  if (__builtin_expect (secure, 0)
+-      && ((name[len] != '\0' && name[len] != '/'
+-	   && (!is_path || name[len] != ':'))
+-	  || (name != start + 1 && (!is_path || name[-2] != ':'))))
+-    return 0;
+-
+   return len;
+ }
+ 
+@@ -300,13 +293,10 @@ _dl_dst_count (const char *name, int is_
+     {
+       size_t len;
+ 
+-      /* $ORIGIN is not expanded for SUID/GUID programs (except if it
+-	 is $ORIGIN alone) and it must always appear first in path.  */
+       ++name;
+-      if ((len = is_dst (start, name, "ORIGIN", is_path,
+-			 INTUSE(__libc_enable_secure))) != 0
+-	  || (len = is_dst (start, name, "PLATFORM", is_path, 0)) != 0
+-	  || (len = is_dst (start, name, "LIB", is_path, 0)) != 0)
++      if ((len = is_dst (start, name, "ORIGIN", is_path)) != 0
++	  || (len = is_dst (start, name, "PLATFORM", is_path)) != 0
++	  || (len = is_dst (start, name, "LIB", is_path)) != 0)
+ 	++cnt;
+ 
+       name = strchr (name + len, '$');
+@@ -339,9 +329,16 @@ _dl_dst_substitute (struct link_map *l,
+ 	  size_t len;
+ 
+ 	  ++name;
+-	  if ((len = is_dst (start, name, "ORIGIN", is_path,
+-			     INTUSE(__libc_enable_secure))) != 0)
++	  if ((len = is_dst (start, name, "ORIGIN", is_path)) != 0)
+ 	    {
++	      /* For SUID/GUID programs $ORIGIN must always appear
++		 first in a path element.  */
++	      if (__builtin_expect (INTUSE(__libc_enable_secure), 0)
++		  && ((name[len] != '\0' && name[len] != '/'
++		       && (!is_path || name[len] != ':'))
++		      || (name != start + 1 && (!is_path || name[-2] != ':'))))
++		repl = (const char *) -1;
++	      else
+ #ifndef SHARED
+ 	      if (l == NULL)
+ 		repl = _dl_get_origin ();
+@@ -352,9 +349,9 @@ _dl_dst_substitute (struct link_map *l,
+ 	      check_for_trusted = (INTUSE(__libc_enable_secure)
+ 				   && l->l_type == lt_executable);
+ 	    }
+-	  else if ((len = is_dst (start, name, "PLATFORM", is_path, 0)) != 0)
++	  else if ((len = is_dst (start, name, "PLATFORM", is_path)) != 0)
+ 	    repl = GLRO(dl_platform);
+-	  else if ((len = is_dst (start, name, "LIB", is_path, 0)) != 0)
++	  else if ((len = is_dst (start, name, "LIB", is_path)) != 0)
+ 	    repl = DL_DST_LIB;
+ 
+ 	  if (repl != NULL && repl != (const char *) -1)
+@@ -374,6 +371,7 @@ _dl_dst_substitute (struct link_map *l,
+ 		 element, but keep an empty element at the end.  */
+ 	      if (wp == result && is_path && *name == ':' && name[1] != '\0')
+ 		++name;
++	      check_for_trusted = false;
+ 	    }
+ 	  else
+ 	    /* No DST we recognize.  */
+diff -Nrup a/elf/dl-support.c b/elf/dl-support.c
+--- a/elf/dl-support.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-support.c	2012-01-01 20:41:26.641439841 -0700
+@@ -82,10 +82,8 @@ unsigned long long _dl_load_adds;
+    create a fake scope containing nothing.  */
+ struct r_scope_elem _dl_initial_searchlist;
+ 
+-#ifndef HAVE_INLINED_SYSCALLS
+ /* Nonzero during startup.  */
+ int _dl_starting_up = 1;
+-#endif
+ 
+ /* Random data provided by the kernel.  */
+ void *_dl_random;
+diff -Nrup a/elf/ldconfig.c b/elf/ldconfig.c
+--- a/elf/ldconfig.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/ldconfig.c	2012-01-01 20:41:26.641439841 -0700
+@@ -1034,17 +1034,19 @@ search_dirs (void)
+ 
+ 
+ static void parse_conf_include (const char *config_file, unsigned int lineno,
+-				bool do_chroot, const char *pattern);
++				const char *prefix, bool do_chroot,
++				const char *pattern);
+ 
+ /* Parse configuration file.  */
+ static void
+-parse_conf (const char *filename, bool do_chroot)
++parse_conf (const char *filename, const char *prefix, bool do_chroot)
+ {
+   FILE *file = NULL;
+   char *line = NULL;
+   const char *canon;
+   size_t len = 0;
+   unsigned int lineno;
++  size_t prefix_len = prefix ? strlen (prefix) : 0;
+ 
+   if (do_chroot && opt_chroot)
+     {
+@@ -1105,7 +1107,14 @@ parse_conf (const char *filename, bool d
+ 	  cp += 8;
+ 	  while ((dir = strsep (&cp, " \t")) != NULL)
+ 	    if (dir[0] != '\0')
+-	      parse_conf_include (filename, lineno, do_chroot, dir);
++	      parse_conf_include (filename, lineno, prefix, do_chroot, dir);
++	}
++      else if (prefix != NULL)
++	{
++	  size_t cp_len = strlen (cp);
++	  char new_cp [prefix_len + cp_len + 1];
++	  memcpy (mempcpy (new_cp, prefix, prefix_len), cp, cp_len + 1);
++	  add_dir (new_cp);
+ 	}
+       else if (!strncasecmp (cp, "hwcap", 5) && isblank (cp[5]))
+ 	{
+@@ -1168,7 +1177,7 @@ parse_conf (const char *filename, bool d
+    config files to read.  */
+ static void
+ parse_conf_include (const char *config_file, unsigned int lineno,
+-		    bool do_chroot, const char *pattern)
++		    const char *prefix, bool do_chroot, const char *pattern)
+ {
+   if (opt_chroot && pattern[0] != '/')
+     error (EXIT_FAILURE, 0,
+@@ -1200,7 +1209,7 @@ parse_conf_include (const char *config_f
+     {
+     case 0:
+       for (size_t i = 0; i < gl.gl_pathc; ++i)
+-	parse_conf (gl.gl_pathv[i], false);
++	parse_conf (gl.gl_pathv[i], prefix, false);
+       globfree64 (&gl);
+       break;
+ 
+@@ -1243,6 +1252,8 @@ main (int argc, char **argv)
+   /* Set the text message domain.  */
+   textdomain (_libc_intl_domainname);
+ 
++  arch_startup (argc, argv);
++
+   /* Parse and process arguments.  */
+   int remaining;
+   argp_parse (&argp, argc, argv, 0, &remaining, NULL);
+@@ -1352,12 +1363,14 @@ main (int argc, char **argv)
+ 
+   if (!opt_only_cline)
+     {
+-      parse_conf (config_file, true);
++      parse_conf (config_file, NULL, true);
+ 
+       /* Always add the standard search paths.  */
+       add_system_dir (SLIBDIR);
+       if (strcmp (SLIBDIR, LIBDIR))
+ 	add_system_dir (LIBDIR);
++
++      add_arch_dirs (config_file);
+     }
+ 
+   const char *aux_cache_file = _PATH_LDCONFIG_AUX_CACHE;
+diff -Nrup a/elf/ldd.bash.in b/elf/ldd.bash.in
+--- a/elf/ldd.bash.in	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/ldd.bash.in	2012-01-01 20:41:26.642439841 -0700
+@@ -167,18 +167,6 @@ warning: you do not have execution permi
+       fi
+     done
+     case $ret in
+-    0)
+-      # If the program exits with exit code 5, it means the process has been
+-      # invoked with __libc_enable_secure.  Fall back to running it through
+-      # the dynamic linker.
+-      try_trace "$file"
+-      rc=$?
+-      if [ $rc = 5 ]; then
+-	try_trace "$RTLD" "$file"
+-	rc=$?
+-      fi
+-      [ $rc = 0 ] || result=1
+-      ;;
+     1)
+       # This can be a non-ELF binary or no binary at all.
+       nonelf "$file" || {
+@@ -186,7 +174,7 @@ warning: you do not have execution permi
+ 	result=1
+       }
+       ;;
+-    2)
++    0|2)
+       try_trace "$RTLD" "$file" || result=1
+       ;;
+     *)
+diff -Nrup a/elf/rtld.c b/elf/rtld.c
+--- a/elf/rtld.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/rtld.c	2012-01-01 20:41:26.643439841 -0700
+@@ -107,7 +107,6 @@ static struct audit_list
+   struct audit_list *next;
+ } *audit_list;
+ 
+-#ifndef HAVE_INLINED_SYSCALLS
+ /* Set nonzero during loading and initialization of executable and
+    libraries, cleared before the executable's entry point runs.  This
+    must not be initialized to nonzero, because the unused dynamic
+@@ -117,7 +116,6 @@ static struct audit_list
+    never be called.  */
+ int _dl_starting_up = 0;
+ INTVARDEF(_dl_starting_up)
+-#endif
+ 
+ /* This is the structure which defines all variables global to ld.so
+    (except those which cannot be added for some reason).  */
+@@ -929,10 +927,8 @@ dl_main (const ElfW(Phdr) *phdr,
+   /* Process the environment variable which control the behaviour.  */
+   process_envvars (&mode);
+ 
+-#ifndef HAVE_INLINED_SYSCALLS
+   /* Set up a flag which tells we are just starting.  */
+   INTUSE(_dl_starting_up) = 1;
+-#endif
+ 
+   if (*user_entry == (ElfW(Addr)) ENTRY_POINT)
+     {
+@@ -1397,7 +1393,9 @@ of this helper program; chances are you
+ 	      char *copy = malloc (len);
+ 	      if (copy == NULL)
+ 		_dl_fatal_printf ("out of memory\n");
+-	      l->l_libname->name = l->l_name = memcpy (copy, dsoname, len);
++	      l->l_libname->name = memcpy (copy, dsoname, len);
++	      if (GLRO(dl_debug_mask))
++		l->l_name = copy;
+ 	    }
+ 
+ 	  /* Add the vDSO to the object list.  */
+@@ -2276,6 +2274,7 @@ ERROR: ld.so: object '%s' cannot be load
+ 	      lnp->dont_free = 1;
+ 	      lnp = lnp->next;
+ 	    }
++	  l->l_free_initfini = 0;
+ 
+ 	  if (l != &GL(dl_rtld_map))
+ 	    _dl_relocate_object (l, l->l_scope, GLRO(dl_lazy) ? RTLD_LAZY : 0,
+@@ -2327,7 +2326,6 @@ ERROR: ld.so: object '%s' cannot be load
+ 
+   /* Make sure no new search directories have been added.  */
+   assert (GLRO(dl_init_all_dirs) == GL(dl_all_dirs));
+-
+   if (! prelinked && rtld_multiple_ref)
+     {
+       /* There was an explicit ref to the dynamic linker as a shared lib.
+diff -Nrup a/include/bits/stdlib-ldbl.h b/include/bits/stdlib-ldbl.h
+--- a/include/bits/stdlib-ldbl.h	1969-12-31 17:00:00.000000000 -0700
++++ b/include/bits/stdlib-ldbl.h	2012-01-01 20:41:26.644439841 -0700
+@@ -0,0 +1 @@
++#include <stdlib/bits/stdlib-ldbl.h>
+diff -Nrup a/include/bits/wchar-ldbl.h b/include/bits/wchar-ldbl.h
+--- a/include/bits/wchar-ldbl.h	1969-12-31 17:00:00.000000000 -0700
++++ b/include/bits/wchar-ldbl.h	2012-01-01 20:41:26.644439841 -0700
+@@ -0,0 +1 @@
++#include <wcsmbs/bits/wchar-ldbl.h>
+diff -Nrup a/include/features.h b/include/features.h
+--- a/include/features.h	2012-01-01 05:16:32.000000000 -0700
++++ b/include/features.h	2012-01-01 20:41:26.644439841 -0700
+@@ -310,8 +310,13 @@
+ #endif
+ 
+ #if defined _FORTIFY_SOURCE && _FORTIFY_SOURCE > 0 \
+-    && __GNUC_PREREQ (4, 1) && defined __OPTIMIZE__ && __OPTIMIZE__ > 0
+-# if _FORTIFY_SOURCE > 1
++    && defined __OPTIMIZE__ && __OPTIMIZE__ > 0
++# if !__GNUC_PREREQ (4, 1)
++#  ifdef __GNUC_RH_RELEASE__
++#   warning _FORTIFY_SOURCE supported only with GCC 4.1 and later
++#  endif
++#  define __USE_FORTIFY_LEVEL 0
++# elif _FORTIFY_SOURCE > 1
+ #  define __USE_FORTIFY_LEVEL 2
+ # else
+ #  define __USE_FORTIFY_LEVEL 1
+diff -Nrup a/include/libc-symbols.h b/include/libc-symbols.h
+--- a/include/libc-symbols.h	2012-01-01 05:16:32.000000000 -0700
++++ b/include/libc-symbols.h	2012-01-01 20:41:26.645439841 -0700
+@@ -626,7 +626,7 @@ for linking")
+ # define libc_hidden_proto(name, attrs...) hidden_proto (name, ##attrs)
+ # define libc_hidden_def(name) hidden_def (name)
+ # define libc_hidden_weak(name) hidden_weak (name)
+-# define libc_hidden_nolink(name, version) hidden_nolink (name, libc, version)
++# define libc_hidden_nolink(name, version) hidden_def (name)
+ # define libc_hidden_ver(local, name) hidden_ver (local, name)
+ # define libc_hidden_data_def(name) hidden_data_def (name)
+ # define libc_hidden_data_weak(name) hidden_data_weak (name)
+diff -Nrup a/include/link.h b/include/link.h
+--- a/include/link.h	2012-01-01 05:16:32.000000000 -0700
++++ b/include/link.h	2012-01-01 20:41:26.646439841 -0700
+@@ -1,6 +1,6 @@
+ /* Data structure for communication from the run-time dynamic linker for
+    loaded ELF shared objects.
+-   Copyright (C) 1995-2006, 2007, 2009, 2010, 2011 Free Software Foundation, Inc.
++   Copyright (C) 1995-2006, 2007, 2009, 2010 Free Software Foundation, Inc.
+    This file is part of the GNU C Library.
+ 
+    The GNU C Library is free software; you can redistribute it and/or
+@@ -192,6 +192,9 @@ struct link_map
+ 						 during LD_TRACE_PRELINKING=1
+ 						 contains any DT_SYMBOLIC
+ 						 libraries.  */
++    unsigned int l_free_initfini:1; /* Nonzero if l_initfini can be
++				       freed, ie. not allocated with
++				       the dummy malloc in ld.so.  */
+ 
+     /* Collected information about own RPATH directories.  */
+     struct r_search_path_struct l_rpath_dirs;
+@@ -240,9 +243,6 @@ struct link_map
+ 
+     /* List of object in order of the init and fini calls.  */
+     struct link_map **l_initfini;
+-    /* The init and fini list generated at startup, saved when the
+-       object is also loaded dynamically.  */
+-    struct link_map **l_orig_initfini;
+ 
+     /* List of the dependencies introduced through symbol binding.  */
+     struct link_map_reldeps
+@@ -290,7 +290,7 @@ struct link_map
+ #endif
+ #ifndef FORCED_DYNAMIC_TLS_OFFSET
+ # if NO_TLS_OFFSET == 0
+-#  define FORCED_DYNAMIC_TLS_OFFSET 1
++#  define FORCED_DYNAMIC_TLS_OFFSET -1
+ # elif NO_TLS_OFFSET == -1
+ #  define FORCED_DYNAMIC_TLS_OFFSET -2
+ # else
+diff -Nrup a/include/sys/resource.h b/include/sys/resource.h
+--- a/include/sys/resource.h	2012-01-01 05:16:32.000000000 -0700
++++ b/include/sys/resource.h	2012-01-01 20:41:26.647439841 -0700
+@@ -13,4 +13,5 @@ extern int __getrusage (enum __rusage_wh
+ 
+ extern int __setrlimit (enum __rlimit_resource __resource,
+ 			const struct rlimit *__rlimits);
++libc_hidden_proto (__getrlimit)
+ #endif
+diff -Nrup a/inet/Makefile b/inet/Makefile
+--- a/inet/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/inet/Makefile	2012-01-01 20:41:26.647439841 -0700
+@@ -57,6 +57,8 @@ tests := htontest test_ifindex tst-ntoa
+ 
+ include ../Rules
+ 
++CFLAGS-tst-inet6_rth.c += -fno-strict-aliasing
++
+ ifeq ($(have-thread-library),yes)
+ 
+ CFLAGS-gethstbyad_r.c = -DUSE_NSCD=1 -fexceptions
+diff -Nrup a/intl/locale.alias b/intl/locale.alias
+--- a/intl/locale.alias	2012-01-01 05:16:32.000000000 -0700
++++ b/intl/locale.alias	2012-01-01 20:41:26.647439841 -0700
+@@ -57,8 +57,6 @@ korean		ko_KR.eucKR
+ korean.euc 	ko_KR.eucKR
+ ko_KR		ko_KR.eucKR
+ lithuanian      lt_LT.ISO-8859-13
+-no_NO		nb_NO.ISO-8859-1
+-no_NO.ISO-8859-1 nb_NO.ISO-8859-1
+ norwegian       nb_NO.ISO-8859-1
+ nynorsk		nn_NO.ISO-8859-1
+ polish          pl_PL.ISO-8859-2
+diff -Nrup a/libio/stdio.h b/libio/stdio.h
+--- a/libio/stdio.h	2012-01-01 05:16:32.000000000 -0700
++++ b/libio/stdio.h	2012-01-01 20:41:26.648439841 -0700
+@@ -169,10 +169,12 @@ typedef _G_fpos64_t fpos64_t;
+ extern struct _IO_FILE *stdin;		/* Standard input stream.  */
+ extern struct _IO_FILE *stdout;		/* Standard output stream.  */
+ extern struct _IO_FILE *stderr;		/* Standard error output stream.  */
++#ifdef __STDC__
+ /* C89/C99 say they're macros.  Make them happy.  */
+ #define stdin stdin
+ #define stdout stdout
+ #define stderr stderr
++#endif
+ 
+ __BEGIN_NAMESPACE_STD
+ /* Remove file FILENAME.  */
+diff -Nrup a/locale/iso-4217.def b/locale/iso-4217.def
+--- a/locale/iso-4217.def	2012-01-01 05:16:32.000000000 -0700
++++ b/locale/iso-4217.def	2012-01-01 20:41:26.649439841 -0700
+@@ -8,6 +8,7 @@
+  *
+  * !!! The list has to be sorted !!!
+  */
++DEFINE_INT_CURR("ADP")		/* Andorran Peseta -> EUR  */
+ DEFINE_INT_CURR("AED")		/* United Arab Emirates Dirham  */
+ DEFINE_INT_CURR("AFN")		/* Afghanistan Afgani  */
+ DEFINE_INT_CURR("ALL")		/* Albanian Lek  */
+@@ -15,12 +16,14 @@ DEFINE_INT_CURR("AMD")		/* Armenia Dram
+ DEFINE_INT_CURR("ANG")		/* Netherlands Antilles  */
+ DEFINE_INT_CURR("AOA")		/* Angolan Kwanza  */
+ DEFINE_INT_CURR("ARS")		/* Argentine Peso  */
++DEFINE_INT_CURR("ATS")		/* Austrian Schilling -> EUR  */
+ DEFINE_INT_CURR("AUD")		/* Australian Dollar  */
+ DEFINE_INT_CURR("AWG")		/* Aruba Guilder  */
+ DEFINE_INT_CURR("AZM")		/* Azerbaijan Manat  */
+ DEFINE_INT_CURR("BAM")		/* Bosnian and Herzegovina Convertible Mark  */
+ DEFINE_INT_CURR("BBD")		/* Barbados Dollar  */
+ DEFINE_INT_CURR("BDT")		/* Bangladesh Taka  */
++DEFINE_INT_CURR("BEF")		/* Belgian Franc -> EUR  */
+ DEFINE_INT_CURR("BGN")		/* Bulgarian Lev  */
+ DEFINE_INT_CURR("BHD")		/* Bahraini Dinar  */
+ DEFINE_INT_CURR("BIF")		/* Burundi Franc  */
+@@ -44,6 +47,7 @@ DEFINE_INT_CURR("CUP")		/* Cuban Peso  *
+ DEFINE_INT_CURR("CVE")		/* Cape Verde Escudo  */
+ DEFINE_INT_CURR("CYP")		/* Cypriot Pound  */
+ DEFINE_INT_CURR("CZK")		/* Czech Koruna  */
++DEFINE_INT_CURR("DEM")		/* German Mark -> EUR  */
+ DEFINE_INT_CURR("DJF")		/* Djibouti Franc  */
+ DEFINE_INT_CURR("DKK")		/* Danish Krone (Faroe Islands, Greenland)  */
+ DEFINE_INT_CURR("DOP")		/* Dominican Republic  */
+@@ -51,16 +55,20 @@ DEFINE_INT_CURR("DZD")		/* Algerian Dina
+ DEFINE_INT_CURR("EEK")		/* Estonian Kroon  */
+ DEFINE_INT_CURR("EGP")		/* Egyptian Pound  */
+ DEFINE_INT_CURR("ERN")		/* Eritrean Nakfa  */
++DEFINE_INT_CURR("ESP")		/* Spanish Peseta -> EUR  */
+ DEFINE_INT_CURR("ETB")		/* Ethiopian Birr  */
+ DEFINE_INT_CURR("EUR")		/* European Union Euro  */
++DEFINE_INT_CURR("FIM")		/* Finnish Markka -> EUR  */
+ DEFINE_INT_CURR("FJD")		/* Fiji Dollar  */
+ DEFINE_INT_CURR("FKP")		/* Falkland Islands Pound (Malvinas)  */
++DEFINE_INT_CURR("FRF")		/* French Franc -> EUR  */
+ DEFINE_INT_CURR("GBP")		/* British Pound  */
+ DEFINE_INT_CURR("GEL")		/* Georgia Lari  */
+ DEFINE_INT_CURR("GHC")		/* Ghana Cedi  */
+ DEFINE_INT_CURR("GIP")		/* Gibraltar Pound  */
+ DEFINE_INT_CURR("GMD")		/* Gambian Dalasi  */
+ DEFINE_INT_CURR("GNF")		/* Guinea Franc  */
++DEFINE_INT_CURR("GRD")		/* Greek Drachma -> EUR  */
+ DEFINE_INT_CURR("GTQ")		/* Guatemala Quetzal  */
+ DEFINE_INT_CURR("GYD")		/* Guyana Dollar  */
+ DEFINE_INT_CURR("HKD")		/* Hong Kong Dollar  */
+@@ -69,12 +77,14 @@ DEFINE_INT_CURR("HRK")		/* Croatia Kuna
+ DEFINE_INT_CURR("HTG")		/* Haiti Gourde  */
+ DEFINE_INT_CURR("HUF")		/* Hungarian Forint  */
+ DEFINE_INT_CURR("IDR")		/* Indonesia Rupiah  */
++DEFINE_INT_CURR("IEP")		/* Irish Pound -> EUR  */
+ DEFINE_INT_CURR("ILS")		/* Israeli Shekel  */
+ DEFINE_INT_CURR("IMP")		/* Isle of Man Pounds  */
+ DEFINE_INT_CURR("INR")		/* Indian Rupee (Bhutan)  */
+ DEFINE_INT_CURR("IQD")		/* Iraqi Dinar  */
+ DEFINE_INT_CURR("IRR")		/* Iranian Rial  */
+ DEFINE_INT_CURR("ISK")		/* Iceland Krona  */
++DEFINE_INT_CURR("ITL")		/* Italian Lira -> EUR  */
+ DEFINE_INT_CURR("JEP")		/* Jersey Pound  */
+ DEFINE_INT_CURR("JMD")		/* Jamaican Dollar  */
+ DEFINE_INT_CURR("JOD")		/* Jordanian Dinar  */
+@@ -94,6 +104,7 @@ DEFINE_INT_CURR("LKR")		/* Sri Lankan Ru
+ DEFINE_INT_CURR("LRD")		/* Liberian Dollar  */
+ DEFINE_INT_CURR("LSL")		/* Lesotho Maloti  */
+ DEFINE_INT_CURR("LTL")		/* Lithuanian Litas  */
++DEFINE_INT_CURR("LUF")		/* Luxembourg Franc -> EUR  */
+ DEFINE_INT_CURR("LVL")		/* Latvia Lat  */
+ DEFINE_INT_CURR("LYD")		/* Libyan Arab Jamahiriya Dinar  */
+ DEFINE_INT_CURR("MAD")		/* Moroccan Dirham  */
+@@ -114,6 +125,7 @@ DEFINE_INT_CURR("MZM")		/* Mozambique Me
+ DEFINE_INT_CURR("NAD")		/* Namibia Dollar  */
+ DEFINE_INT_CURR("NGN")		/* Nigeria Naira  */
+ DEFINE_INT_CURR("NIO")		/* Nicaragua Cordoba Oro  */
++DEFINE_INT_CURR("NLG")		/* Netherlands Guilder -> EUR  */
+ DEFINE_INT_CURR("NOK")		/* Norwegian Krone  */
+ DEFINE_INT_CURR("NPR")		/* Nepalese Rupee  */
+ DEFINE_INT_CURR("NZD")		/* New Zealand Dollar  */
+@@ -124,6 +136,7 @@ DEFINE_INT_CURR("PGK")		/* Papau New Gui
+ DEFINE_INT_CURR("PHP")		/* Philippines Peso  */
+ DEFINE_INT_CURR("PKR")		/* Pakistan Rupee  */
+ DEFINE_INT_CURR("PLN")		/* Polish Zloty  */
++DEFINE_INT_CURR("PTE")		/* Portugese Escudo -> EUR  */
+ DEFINE_INT_CURR("PYG")		/* Paraguay Guarani  */
+ DEFINE_INT_CURR("QAR")		/* Qatar Rial  */
+ DEFINE_INT_CURR("ROL")		/* Romanian Leu  */
+diff -Nrup a/locale/programs/locarchive.c b/locale/programs/locarchive.c
+--- a/locale/programs/locarchive.c	2012-01-01 05:16:32.000000000 -0700
++++ b/locale/programs/locarchive.c	2012-01-01 20:41:26.649439841 -0700
+@@ -253,9 +253,9 @@ oldlocrecentcmp (const void *a, const vo
+ /* forward decls for below */
+ static uint32_t add_locale (struct locarhandle *ah, const char *name,
+ 			    locale_data_t data, bool replace);
+-static void add_alias (struct locarhandle *ah, const char *alias,
+-		       bool replace, const char *oldname,
+-		       uint32_t *locrec_offset_p);
++void add_alias (struct locarhandle *ah, const char *alias,
++		bool replace, const char *oldname,
++		uint32_t *locrec_offset_p);
+ 
+ 
+ static bool
+@@ -636,7 +636,7 @@ close_archive (struct locarhandle *ah)
+ #include "../../intl/explodename.c"
+ #include "../../intl/l10nflist.c"
+ 
+-static struct namehashent *
++struct namehashent *
+ insert_name (struct locarhandle *ah,
+ 	     const char *name, size_t name_len, bool replace)
+ {
+@@ -694,7 +694,7 @@ insert_name (struct locarhandle *ah,
+   return &namehashtab[idx];
+ }
+ 
+-static void
++void
+ add_alias (struct locarhandle *ah, const char *alias, bool replace,
+ 	   const char *oldname, uint32_t *locrec_offset_p)
+ {
+diff -Nrup a/localedata/ChangeLog b/localedata/ChangeLog
+--- a/localedata/ChangeLog	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/ChangeLog	2012-01-01 20:41:26.651439841 -0700
+@@ -90,6 +90,14 @@
+ 	* tests-mbwc/tst_funcs.h (TST_DECL_VARS, TST_HEAD_LOCALE):
+ 	Remove unused variable.
+ 
++2011-06-28  Andreas Schwab  <schwab@redhat.com>
++
++	* charmaps/GB18030: Correct some entries.
++
++2011-06-21  Andreas Schwab  <schwab@redhat.com>
++
++	* charmaps/GB18030: Readd lost characters.
++
+ 2011-05-21  Ulrich Drepper  <drepper@gmail.com>
+ 
+ 	[BZ #12788]
+diff -Nrup a/localedata/Makefile b/localedata/Makefile
+--- a/localedata/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/Makefile	2012-01-01 20:41:26.652439840 -0700
+@@ -224,6 +224,7 @@ $(INSTALL-SUPPORTED-LOCALES): install-lo
+ 	echo -n '...'; \
+ 	input=`echo $$locale | sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/'`; \
+ 	$(LOCALEDEF) --alias-file=../intl/locale.alias \
++		     --no-archive \
+ 		     -i locales/$$input -c -f charmaps/$$charset \
+ 		     $(addprefix --prefix=,$(install_root)) $$locale; \
+ 	echo ' done'; \
+diff -Nrup a/localedata/SUPPORTED b/localedata/SUPPORTED
+--- a/localedata/SUPPORTED	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/SUPPORTED	2012-01-01 20:41:26.652439840 -0700
+@@ -88,6 +88,7 @@ cy_GB.UTF-8/UTF-8 \
+ cy_GB/ISO-8859-14 \
+ da_DK.UTF-8/UTF-8 \
+ da_DK/ISO-8859-1 \
++da_DK.ISO-8859-15/ISO-8859-15 \
+ de_AT.UTF-8/UTF-8 \
+ de_AT/ISO-8859-1 \
+ de_AT@euro/ISO-8859-15 \
+@@ -119,6 +120,7 @@ en_DK.UTF-8/UTF-8 \
+ en_DK/ISO-8859-1 \
+ en_GB.UTF-8/UTF-8 \
+ en_GB/ISO-8859-1 \
++en_GB.ISO-8859-15/ISO-8859-15 \
+ en_HK.UTF-8/UTF-8 \
+ en_HK/ISO-8859-1 \
+ en_IE.UTF-8/UTF-8 \
+@@ -134,6 +136,7 @@ en_SG.UTF-8/UTF-8 \
+ en_SG/ISO-8859-1 \
+ en_US.UTF-8/UTF-8 \
+ en_US/ISO-8859-1 \
++en_US.ISO-8859-15/ISO-8859-15 \
+ en_ZA.UTF-8/UTF-8 \
+ en_ZA/ISO-8859-1 \
+ en_ZM/UTF-8 \
+@@ -316,6 +319,8 @@ nl_NL/ISO-8859-1 \
+ nl_NL@euro/ISO-8859-15 \
+ nn_NO.UTF-8/UTF-8 \
+ nn_NO/ISO-8859-1 \
++no_NO.UTF-8/UTF-8 \
++no_NO/ISO-8859-1 \
+ nr_ZA/UTF-8 \
+ nso_ZA/UTF-8 \
+ oc_FR.UTF-8/UTF-8 \
+@@ -377,6 +382,7 @@ sv_FI/ISO-8859-1 \
+ sv_FI@euro/ISO-8859-15 \
+ sv_SE.UTF-8/UTF-8 \
+ sv_SE/ISO-8859-1 \
++sv_SE.ISO-8859-15/ISO-8859-15 \
+ sw_KE/UTF-8 \
+ sw_TZ/UTF-8 \
+ ta_IN/UTF-8 \
+diff -Nrup a/localedata/locales/cy_GB b/localedata/locales/cy_GB
+--- a/localedata/locales/cy_GB	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/locales/cy_GB	2012-01-01 20:41:26.653439839 -0700
+@@ -248,8 +248,11 @@ mon         "<U0049><U006F><U006E><U0061
+ d_t_fmt     "<U0044><U0079><U0064><U0064><U0020><U0025><U0041><U0020><U0025><U0064><U0020><U006d><U0069><U0073><U0020><U0025><U0042><U0020><U0025><U0059><U0020><U0025><U0054><U0020><U0025><U005A>"
+ d_fmt       "<U0025><U0064><U002E><U0025><U006D><U002E><U0025><U0079>"
+ t_fmt       "<U0025><U0054>"
+-am_pm       "";""
+-t_fmt_ampm  ""
++am_pm       "<U0041><U004D>";"<U0050><U004D>"
++t_fmt_ampm  "<U0025><U006C><U003A><U0025><U004D><U003A><U0025><U0053><U0020><U0025><U0050><U0020><U0025><U005A>"
++date_fmt    "<U0025><U0061><U0020><U0025><U0062><U0020><U0025><U0065>/
++<U0020><U0025><U0048><U003A><U0025><U004D><U003A><U0025><U0053><U0020>/
++<U0025><U005A><U0020><U0025><U0059>"
+ END LC_TIME
+ 
+ LC_MESSAGES
+diff -Nrup a/localedata/locales/en_GB b/localedata/locales/en_GB
+--- a/localedata/locales/en_GB	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/locales/en_GB	2012-01-01 20:41:26.653439839 -0700
+@@ -116,8 +116,8 @@ mon         "<U004A><U0061><U006E><U0075
+ d_t_fmt     "<U0025><U0061><U0020><U0025><U0064><U0020><U0025><U0062><U0020><U0025><U0059><U0020><U0025><U0054><U0020><U0025><U005A>"
+ d_fmt       "<U0025><U0064><U002F><U0025><U006D><U002F><U0025><U0079>"
+ t_fmt       "<U0025><U0054>"
+-am_pm       "";""
+-t_fmt_ampm  ""
++am_pm       "<U0041><U004D>";"<U0050><U004D>"
++t_fmt_ampm  "<U0025><U006C><U003A><U0025><U004D><U003A><U0025><U0053><U0020><U0025><U0050><U0020><U0025><U005A>"
+ date_fmt	"<U0025><U0061><U0020><U0025><U0062><U0020><U0025><U0065>/
+ <U0020><U0025><U0048><U003A><U0025><U004D><U003A><U0025><U0053><U0020>/
+ <U0025><U005A><U0020><U0025><U0059>"
+diff -Nrup a/localedata/locales/no_NO b/localedata/locales/no_NO
+--- a/localedata/locales/no_NO	1969-12-31 17:00:00.000000000 -0700
++++ b/localedata/locales/no_NO	2012-01-01 20:41:26.653439839 -0700
+@@ -0,0 +1,69 @@
++escape_char	/
++comment_char    %
++
++% Norwegian language locale for Norway
++% Source: Norsk Standardiseringsforbund
++% Address: University Library,
++%   Drammensveien 41, N-9242 Oslo, Norge
++% Contact: Kolbjoern Aamboe
++% Tel: +47 - 22859109
++% Fax: +47 - 22434497
++% Email: kolbjorn.aambo@usit.uio.no
++% Language: no
++% Territory: NO
++% Revision: 4.3
++% Date: 1996-10-15
++% Application: general
++% Users: general
++% Repertoiremap: mnemonic.ds
++% Charset: ISO-8859-1
++% Distribution and use is free, also
++% for commercial purposes.
++
++LC_IDENTIFICATION
++copy "nb_NO"
++END LC_IDENTIFICATION
++
++LC_COLLATE
++copy "nb_NO"
++END LC_COLLATE
++
++LC_CTYPE
++copy "nb_NO"
++END LC_CTYPE
++
++LC_MONETARY
++copy "nb_NO"
++END LC_MONETARY
++
++LC_NUMERIC
++copy "nb_NO"
++END LC_NUMERIC
++
++LC_TIME
++copy "nb_NO"
++END LC_TIME
++
++LC_MESSAGES
++copy "nb_NO"
++END LC_MESSAGES
++
++LC_PAPER
++copy "nb_NO"
++END LC_PAPER
++
++LC_TELEPHONE
++copy "nb_NO"
++END LC_TELEPHONE
++
++LC_MEASUREMENT
++copy "nb_NO"
++END LC_MEASUREMENT
++
++LC_NAME
++copy "nb_NO"
++END LC_NAME
++
++LC_ADDRESS
++copy "nb_NO"
++END LC_ADDRESS
+diff -Nrup a/localedata/locales/zh_TW b/localedata/locales/zh_TW
+--- a/localedata/locales/zh_TW	2012-01-01 05:16:32.000000000 -0700
++++ b/localedata/locales/zh_TW	2012-01-01 20:41:26.653439839 -0700
+@@ -1,7 +1,7 @@
+ comment_char %
+ escape_char /
+ %
+-% Chinese language locale for Taiwan R.O.C.
++% Chinese language locale for Taiwan
+ % charmap: BIG5-CP950
+ %
+ % Original Author:
+@@ -17,7 +17,7 @@ escape_char /
+ % Reference:	http://wwwold.dkuug.dk/JTC1/SC22/WG20/docs/n690.pdf
+ 
+ LC_IDENTIFICATION
+-title      "Chinese locale for Taiwan R.O.C."
++title      "Chinese locale for Taiwan"
+ source     ""
+ address    ""
+ contact    ""
+@@ -25,7 +25,7 @@ email      "bug-glibc-locales@gnu.org"
+ tel        ""
+ fax        ""
+ language   "Chinese"
+-territory  "Taiwan R.O.C."
++territory  "Taiwan"
+ revision   "0.2"
+ date       "2000-08-02"
+ %
+diff -Nrup a/login/programs/pt_chown.c b/login/programs/pt_chown.c
+--- a/login/programs/pt_chown.c	2012-01-01 05:16:32.000000000 -0700
++++ b/login/programs/pt_chown.c	2012-01-01 20:41:26.654439839 -0700
+@@ -29,6 +29,7 @@
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <fcntl.h>
+ #ifdef HAVE_LIBCAP
+ # include <sys/capability.h>
+ # include <sys/prctl.h>
+@@ -143,7 +144,7 @@ main (int argc, char *argv[])
+   uid_t uid = getuid ();
+   int remaining;
+ 
+-  if (argc == 1 && euid == 0)
++  if (argc == 1 && fcntl (PTY_FILENO, F_GETFD) == 0)
+     {
+ #ifdef HAVE_LIBCAP
+   /* Drop privileges.  */
+@@ -176,6 +177,13 @@ main (int argc, char *argv[])
+ 
+   /* We aren't going to be using privileges, so drop them right now. */
+   setuid (uid);
++#ifdef HAVE_LIBCAP
++  cap_t caps = cap_init ();
++  if (caps == NULL)
++    error (1, errno, "cap_init");
++  cap_set_proc (caps);
++  cap_free (caps);
++#endif
+ 
+   /* Set locale via LC_ALL.  */
+   setlocale (LC_ALL, "");
+@@ -195,9 +203,5 @@ main (int argc, char *argv[])
+       return EXIT_FAILURE;
+     }
+ 
+-  /* Check if we are properly installed.  */
+-  if (euid != 0)
+-    error (FAIL_EXEC, 0, gettext ("needs to be installed setuid `root'"));
+-
+   return EXIT_SUCCESS;
+ }
+diff -Nrup a/malloc/mcheck.c b/malloc/mcheck.c
+--- a/malloc/mcheck.c	2012-01-01 05:16:32.000000000 -0700
++++ b/malloc/mcheck.c	2012-01-01 20:41:26.654439839 -0700
+@@ -25,10 +25,26 @@
+ # include <mcheck.h>
+ # include <stdint.h>
+ # include <stdio.h>
++# include <stdlib.h>
+ # include <libintl.h>
+ # include <errno.h>
+ #endif
+ 
++#ifdef _LIBC
++extern __typeof (malloc) __libc_malloc;
++extern __typeof (free) __libc_free;
++extern __typeof (realloc) __libc_realloc;
++libc_hidden_proto (__libc_malloc)
++libc_hidden_proto (__libc_realloc)
++libc_hidden_proto (__libc_free)
++libc_hidden_proto (__libc_memalign)
++#else
++# define __libc_malloc(sz) malloc (sz)
++# define __libc_free(ptr) free (ptr)
++# define __libc_realloc(ptr, sz) realloc (ptr, sz)
++# define __libc_memalign(al, sz) memalign (al, sz)
++#endif
++
+ /* Old hook values.  */
+ static void (*old_free_hook) (__ptr_t ptr, __const __ptr_t);
+ static __ptr_t (*old_malloc_hook) (__malloc_size_t size, const __ptr_t);
+@@ -199,7 +215,7 @@ freehook (__ptr_t ptr, const __ptr_t cal
+   if (old_free_hook != NULL)
+     (*old_free_hook) (ptr, caller);
+   else
+-    free (ptr);
++    __libc_free (ptr);
+   __free_hook = freehook;
+ }
+ 
+@@ -222,7 +238,7 @@ mallochook (__malloc_size_t size, const
+     hdr = (struct hdr *) (*old_malloc_hook) (sizeof (struct hdr) + size + 1,
+ 					     caller);
+   else
+-    hdr = (struct hdr *) malloc (sizeof (struct hdr) + size + 1);
++    hdr = (struct hdr *) __libc_malloc (sizeof (struct hdr) + size + 1);
+   __malloc_hook = mallochook;
+   if (hdr == NULL)
+     return NULL;
+@@ -259,7 +275,7 @@ memalignhook (__malloc_size_t alignment,
+   if (old_memalign_hook != NULL)
+     block = (*old_memalign_hook) (alignment, slop + size + 1, caller);
+   else
+-    block = memalign (alignment, slop + size + 1);
++    block = __libc_memalign (alignment, slop + size + 1);
+   __memalign_hook = memalignhook;
+   if (block == NULL)
+     return NULL;
+@@ -320,8 +336,8 @@ reallochook (__ptr_t ptr, __malloc_size_
+ 					      sizeof (struct hdr) + size + 1,
+ 					      caller);
+   else
+-    hdr = (struct hdr *) realloc ((__ptr_t) hdr,
+-				  sizeof (struct hdr) + size + 1);
++    hdr = (struct hdr *) __libc_realloc ((__ptr_t) hdr,
++					 sizeof (struct hdr) + size + 1);
+   __free_hook = freehook;
+   __malloc_hook = mallochook;
+   __memalign_hook = memalignhook;
+@@ -381,8 +397,8 @@ mcheck (func)
+   if (__malloc_initialized <= 0 && !mcheck_used)
+     {
+       /* We call malloc() once here to ensure it is initialized.  */
+-      void *p = malloc (0);
+-      free (p);
++      void *p = __libc_malloc (0);
++      __libc_free (p);
+ 
+       old_free_hook = __free_hook;
+       __free_hook = freehook;
+diff -Nrup a/manual/libc.texinfo b/manual/libc.texinfo
+--- a/manual/libc.texinfo	2012-01-01 05:16:32.000000000 -0700
++++ b/manual/libc.texinfo	2012-01-01 20:41:26.655439839 -0700
+@@ -5,7 +5,7 @@
+ @c setchapternewpage odd
+ 
+ @comment Tell install-info what to do.
+-@dircategory Software libraries
++@dircategory Libraries
+ @direntry
+ * Libc: (libc).                 C library.
+ @end direntry
+diff -Nrup a/misc/sys/cdefs.h b/misc/sys/cdefs.h
+--- a/misc/sys/cdefs.h	2012-01-01 05:16:32.000000000 -0700
++++ b/misc/sys/cdefs.h	2012-01-01 20:41:26.655439839 -0700
+@@ -146,7 +146,10 @@
+ #define __bos(ptr) __builtin_object_size (ptr, __USE_FORTIFY_LEVEL > 1)
+ #define __bos0(ptr) __builtin_object_size (ptr, 0)
+ 
+-#if __GNUC_PREREQ (4,3)
++#if __GNUC_PREREQ (4,3) \
++    || (defined __GNUC_RH_RELEASE__ && __GNUC__ == 4 \
++	&& __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ == 2 \
++	&& __GNUC_RH_RELEASE__ >= 31)
+ # define __warndecl(name, msg) \
+   extern void name (void) __attribute__((__warning__ (msg)))
+ # define __warnattr(msg) __attribute__((__warning__ (msg)))
+@@ -316,10 +319,16 @@
+ 
+ /* GCC 4.3 and above with -std=c99 or -std=gnu99 implements ISO C99
+    inline semantics, unless -fgnu89-inline is used.  */
+-#if !defined __cplusplus || __GNUC_PREREQ (4,3)
++#if !defined __cplusplus || __GNUC_PREREQ (4,3) \
++    || (defined __GNUC_RH_RELEASE__ && __GNUC__ == 4 \
++	&& __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ == 2 \
++	&& __GNUC_RH_RELEASE__ >= 31)
+ # if defined __GNUC_STDC_INLINE__ || defined __cplusplus
+ #  define __extern_inline extern __inline __attribute__ ((__gnu_inline__))
+-#  if __GNUC_PREREQ (4,3)
++#  if __GNUC_PREREQ (4,3) \
++	|| (defined __GNUC_RH_RELEASE__ && __GNUC__ == 4 \
++	    && __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ == 2 \
++	    && __GNUC_RH_RELEASE__ >= 31)
+ #   define __extern_always_inline \
+   extern __always_inline __attribute__ ((__gnu_inline__, __artificial__))
+ #  else
+@@ -339,7 +348,10 @@
+ 
+ /* GCC 4.3 and above allow passing all anonymous arguments of an
+    __extern_always_inline function to some other vararg function.  */
+-#if __GNUC_PREREQ (4,3)
++#if __GNUC_PREREQ (4,3) \
++    || (defined __GNUC_RH_RELEASE__ && __GNUC__ == 4 \
++	&& __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ == 2 \
++	&& __GNUC_RH_RELEASE__ >= 31)
+ # define __va_arg_pack() __builtin_va_arg_pack ()
+ # define __va_arg_pack_len() __builtin_va_arg_pack_len ()
+ #endif
+diff -Nrup a/nis/Makefile b/nis/Makefile
+--- a/nis/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/nis/Makefile	2012-01-01 20:41:26.656439839 -0700
+@@ -23,9 +23,9 @@ subdir	:= nis
+ 
+ aux			:= nis_hash
+ 
++headers			:= $(wildcard rpcsvc/*.[hx])
+ distribute		:= nss-nis.h nss-nisplus.h nis_intern.h Banner \
+-			   nisplus-parser.h nis_xdr.h nss \
+-			   $(wildcard rpcsvc/*.[hx])
++			   nisplus-parser.h nis_xdr.h nss
+ 
+ # These are the databases available for the nis (and perhaps later nisplus)
+ # service.  This must be a superset of the services in nss.
+@@ -69,6 +69,8 @@ libnss_nisplus-inhibit-o = $(filter-out
+ 
+ include ../Rules
+ 
++CFLAGS-nis_findserv.c += -fno-strict-aliasing
++CFLAGS-ypclnt.c += -fno-strict-aliasing
+ 
+ $(objpfx)libnss_compat.so: $(objpfx)libnsl.so$(libnsl.so-version)
+ $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
+diff -Nrup a/nis/nss b/nis/nss
+--- a/nis/nss	2012-01-01 05:16:32.000000000 -0700
++++ b/nis/nss	2012-01-01 20:41:26.656439839 -0700
+@@ -25,7 +25,7 @@
+ #  memory with every getXXent() call.  Otherwise each getXXent() call
+ #  might result into a network communication with the server to get
+ #  the next entry.
+-#SETENT_BATCH_READ=TRUE
++SETENT_BATCH_READ=TRUE
+ #
+ # ADJUNCT_AS_SHADOW
+ #  If set to TRUE, the passwd routines in the NIS NSS module will not
+diff -Nrup a/nptl/ChangeLog b/nptl/ChangeLog
+--- a/nptl/ChangeLog	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/ChangeLog	2012-01-01 20:41:26.659439839 -0700
+@@ -210,6 +210,51 @@
+ 	clearing memory.
+ 	Patch partly by Robert Rex <robert.rex@exasol.com>.
+ 
++2011-02-22  Rayson Ho  <rho@redhat.com>
++
++	* sysdeps/unix/sysv/linux/i386/lowlevellock.h: Low-level SystemTap
++	probes for i386.
++	* sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_rdlock.S: Likewise.
++	* sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_wrlock.S: Likewise.
++
++2011-02-09  Rayson Ho  <rho@redhat.com>
++
++	* DESIGN-systemtap-probes.txt: New file.
++	* pthread_cond_broadcast.c: SystemTap probes.
++	* pthread_cond_init.c: Likewise.
++	* pthread_cond_signal.c: Likewise.
++	* pthread_cond_wait.c: Likewise.
++	* pthread_cond_destroy.c: Likewise.
++	* pthread_create.c: Likewise.
++	* pthread_join.c: Likewise.
++	* pthread_mutex_destroy.c: Likewise.
++	* pthread_mutex_init.c: Likewise.
++	* pthread_mutex_lock.c: Likewise.
++	* pthread_mutex_timedlock.c: Likewise.
++	* pthread_mutex_unlock.c: Likewise.
++	* pthread_rwlock_destroy.c: Likewise.
++	* pthread_rwlock_rdlock.c: Likewise.
++	* pthread_rwlock_unlock.c: Likewise.
++	* pthread_rwlock_wrlock.c: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/lowlevellock.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/lowlevellock.h: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_rdlock.S: Likewise.
++	* sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_wrlock.S: Likewise.
++
++2010-07-23  Roland McGrath  <roland@redhat.com>
++
++	* pthread_create.c (start_thread): Define pthread_start LIBC_PROBE.
++
+ 2011-01-19  Roland McGrath  <roland@redhat.com>
+ 
+ 	* pthread_cond_wait.c (__pthread_cond_wait): Fix comment typo.
+@@ -4939,6 +4984,11 @@
+ 	Move definition inside libpthread, libc, librt check.  Provide
+ 	definition for rtld.
+ 
++2004-09-02  Jakub Jelinek  <jakub@redhat.com>
++
++	* pthread_cond_destroy.c (__pthread_cond_destroy): If there are
++	waiters, awake all waiters on the associated mutex.
++
+ 2004-09-02  Ulrich Drepper  <drepper@redhat.com>
+ 
+ 	* sysdeps/alpha/jmpbuf-unwind.h: Define __libc_unwind_longjmp.
+@@ -7013,6 +7063,11 @@
+ 
+ 	* Makefile [$(build-shared) = yes] (tests): Depend on $(test-modules).
+ 
++2003-07-22  Jakub Jelinek  <jakub@redhat.com>
++
++	* descr.h: Don't include lowlevellock.h, pthreaddef.h and dl-sysdep.h
++	if __need_struct_pthread_size, instead define lll_lock_t.
++
+ 2003-07-25  Jakub Jelinek  <jakub@redhat.com>
+ 
+ 	* tst-cancel17.c (do_test): Check if aio_cancel failed.
+diff -Nrup a/nptl/DESIGN-systemtap-probes.txt b/nptl/DESIGN-systemtap-probes.txt
+--- a/nptl/DESIGN-systemtap-probes.txt	1969-12-31 17:00:00.000000000 -0700
++++ b/nptl/DESIGN-systemtap-probes.txt	2012-01-01 20:41:26.660439839 -0700
+@@ -0,0 +1,89 @@
++Systemtap is a dynamic tracing/instrumenting tool available on Linux. Probes
++that are not fired at run time have close to zero overhead.
++
++The following probes are available for NPTL:
++
++Thread creation & Join Probes
++=============================
++pthread_create - probe for pthread_create
++               arg1 = pointer (pthread_t*) to thread
++               arg2 = pointer (pthread_attr_t*) to attr
++               arg3 = pointer (void *) to start_routine
++               arg4 = arguments to start_routine
++pthread_start - probe for actual thread creation
++              arg1 = struct pthread (members include thread ID, process ID)
++              arg2 = address of start_routine
++              arg3 = pointer to the list of arguments
++pthread_join - probe for pthread_join
++             arg1 = thread ID
++pthread_join_ret - probe for pthread_join return
++                 arg1 = thread ID
++                 arg2 = return value
++
++Lock-related Probes
++===================
++mutex_init    - probe for pthread_mutex_init
++              arg1 = address of mutex lock
++mutex_acquired - probe for succ. return of pthread_mutex_lock
++               arg1 = address of mutex lock
++mutex_timedlock_acquired - probe for succ. return of pthread_mutex_timedlock
++                         arg1 = address of mutex lock
++mutex_entry   - probe for entry to the pthread_mutex_lock function
++              arg1 = address of mutex lock
++mutex_timedlock_entry - probe for entry to the pthread_mutex_timedlock function
++                      arg1 = address of mutex lock, arg2 = address of timespec
++mutex_release - probe for pthread_mutex_unlock after the successful release of a
++                mutex lock
++              arg1 = address of mutex lock
++mutex_destroy - probe for pthread_mutex_destroy
++              arg1 = address of mutex lock
++
++wrlock_entry - probe for entry to the pthread_rwlock_wrlock function
++             arg1 = address of rw lock
++rdlock_entry - probe for entry to the pthread_rwlock_rdlock function
++             arg1 = address of rw lock
++
++rwlock_destroy - probe for pthread_rwlock_destroy
++               arg1 = address of rw lock
++wrlock_acquire_write - probe for pthread_rwlock_wrlock (after getting the lock)
++                     arg1 = address of rw lock
++rdlock_acquire_read - probe for pthread_rwlock_rdlock after successfully getting
++                      the lock
++                    arg1 = address of rw lock
++rwlock_unlock - probe for pthread_rwlock_unlock
++              arg1 = address of rw lock
++
++lll_lock_wait - probe in low-level (assembly language) locking code, only fired
++                when futex/FUTEX_WAIT is called (i.e. when trying to acquire a
++                contented lock)
++              arg1 = pointer to futex
++              arg2 = flags passed to the futex system call
++lll_lock_wait_private - probe in low-level (assembly language) locking code,
++                        only fired when futex/FUTEX_WAIT is called (i.e. when
++                        trying to acquire a contented lock)
++                      arg1 = pointer to futex
++
++lll_futex_wake - probe in low-level (assembly language) locking code, only fired
++                 when futex (FUTEX_WAKE) is called
++               arg1 = pointer to futex
++               arg2 = number of processes to wake
++               arg3 = additional flags
++
++Condition variable Probes
++=========================
++cond_init - probe for pthread_cond_init
++          arg1 = condition
++          arg2 = attr
++cond_destroy - probe for pthread_cond_destroy
++             arg1 = cond
++cond_wait - probe for pthread_cond_wait
++          arg1 = condition
++          arg2 = mutex lock
++cond_timedwait - probe for pthread_cond_timedwait
++               arg1 = condition
++               arg2 = mutex lock
++               arg3 = timespec
++cond_signal - probe for pthread_cond_signal
++            arg1 = condition
++cond_broadcast - probe for pthread_cond_broadcast
++               arg1 = condition
+diff -Nrup a/nptl/Makefile b/nptl/Makefile
+--- a/nptl/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/Makefile	2012-01-01 20:41:26.660439839 -0700
+@@ -342,7 +342,8 @@ endif
+ extra-objs += $(crti-objs) $(crtn-objs)
+ omit-deps += crti crtn
+ 
+-CFLAGS-pt-initfini.s = -g0 -fPIC -fno-inline-functions $(fno-unit-at-a-time)
++CFLAGS-pt-initfini.s = -g0 -fPIC -fno-inline-functions $(fno-unit-at-a-time) \
++		       -fno-asynchronous-unwind-tables
+ endif
+ 
+ CFLAGS-flockfile.c = -D_IO_MTSAFE_IO
+@@ -529,15 +530,19 @@ $(addprefix $(objpfx), \
+     $(tests) $(xtests) $(test-srcs))): $(objpfx)libpthread.so \
+ 				       $(objpfx)libpthread_nonshared.a
+ $(objpfx)tst-unload: $(common-objpfx)dlfcn/libdl.so
+-# $(objpfx)../libc.so is used instead of $(common-objpfx)libc.so,
++# $(objpfx)linklibc.so is used instead of $(common-objpfx)libc.so,
+ # since otherwise libpthread.so comes before libc.so when linking.
+ $(addprefix $(objpfx), $(tests-reverse)): \
+-  $(objpfx)../libc.so $(objpfx)libpthread.so \
++  $(objpfx)linklibc.so $(objpfx)libpthread.so \
+   $(objpfx)libpthread_nonshared.a
+ $(objpfx)../libc.so: $(common-objpfx)libc.so ;
+ $(addprefix $(objpfx),$(tests-static) $(xtests-static)): $(objpfx)libpthread.a
+ 
+ $(objpfx)tst-atfork2.out: $(objpfx)tst-atfork2mod.so
++
++$(objpfx)linklibc.so: $(common-objpfx)libc.so
++	ln -s ../libc.so $@
++generated += libclink.so
+ else
+ $(addprefix $(objpfx),$(tests) $(test-srcs)): $(objpfx)libpthread.a
+ endif
+diff -Nrup a/nptl/Versions b/nptl/Versions
+--- a/nptl/Versions	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/Versions	2012-01-01 20:41:26.661439839 -0700
+@@ -30,6 +30,7 @@ libc {
+     __libc_alloca_cutoff;
+     # Internal libc interface to libpthread
+     __libc_dl_error_tsd;
++    __getrlimit;
+   }
+ }
+ 
+diff -Nrup a/nptl/nptl-init.c b/nptl/nptl-init.c
+--- a/nptl/nptl-init.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/nptl-init.c	2012-01-01 20:41:26.661439839 -0700
+@@ -415,7 +415,7 @@ __pthread_initialize_minimal_internal (v
+   /* Determine the default allowed stack size.  This is the size used
+      in case the user does not specify one.  */
+   struct rlimit limit;
+-  if (getrlimit (RLIMIT_STACK, &limit) != 0
++  if (__getrlimit (RLIMIT_STACK, &limit) != 0
+       || limit.rlim_cur == RLIM_INFINITY)
+     /* The system limit is not usable.  Use an architecture-specific
+        default.  */
+diff -Nrup a/nptl/pthread_cond_broadcast.c b/nptl/pthread_cond_broadcast.c
+--- a/nptl/pthread_cond_broadcast.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_cond_broadcast.c	2012-01-01 20:41:26.662439839 -0700
+@@ -23,6 +23,7 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
++#include <stap-probe.h>
+ 
+ #include <shlib-compat.h>
+ #include <kernel-features.h>
+@@ -32,6 +33,8 @@ int
+ __pthread_cond_broadcast (cond)
+      pthread_cond_t *cond;
+ {
++  LIBC_PROBE (cond_broadcast, 1, cond);
++
+   int pshared = (cond->__data.__mutex == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+   /* Make sure we are alone.  */
+diff -Nrup a/nptl/pthread_cond_destroy.c b/nptl/pthread_cond_destroy.c
+--- a/nptl/pthread_cond_destroy.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_cond_destroy.c	2012-01-01 20:41:26.662439839 -0700
+@@ -20,6 +20,7 @@
+ #include <errno.h>
+ #include <shlib-compat.h>
+ #include "pthreadP.h"
++#include <stap-probe.h>
+ 
+ 
+ int
+@@ -29,6 +30,8 @@ __pthread_cond_destroy (cond)
+   int pshared = (cond->__data.__mutex == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+ 
++  LIBC_PROBE (cond_destroy, 1, cond);
++
+   /* Make sure we are alone.  */
+   lll_lock (cond->__data.__lock, pshared);
+ 
+diff -Nrup a/nptl/pthread_cond_init.c b/nptl/pthread_cond_init.c
+--- a/nptl/pthread_cond_init.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_cond_init.c	2012-01-01 20:41:26.662439839 -0700
+@@ -20,6 +20,7 @@
+ 
+ #include <shlib-compat.h>
+ #include "pthreadP.h"
++#include <stap-probe.h>
+ 
+ 
+ int
+@@ -42,6 +43,8 @@ __pthread_cond_init (cond, cond_attr)
+ 			  ? NULL : (void *) ~0l);
+   cond->__data.__broadcast_seq = 0;
+ 
++  LIBC_PROBE (cond_init, 2, cond, cond_attr);
++
+   return 0;
+ }
+ versioned_symbol (libpthread, __pthread_cond_init,
+diff -Nrup a/nptl/pthread_cond_signal.c b/nptl/pthread_cond_signal.c
+--- a/nptl/pthread_cond_signal.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_cond_signal.c	2012-01-01 20:41:26.663439839 -0700
+@@ -26,6 +26,7 @@
+ 
+ #include <shlib-compat.h>
+ #include <kernel-features.h>
++#include <stap-probe.h>
+ 
+ 
+ int
+@@ -35,6 +36,8 @@ __pthread_cond_signal (cond)
+   int pshared = (cond->__data.__mutex == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+ 
++  LIBC_PROBE (cond_signal, 1, cond);
++
+   /* Make sure we are alone.  */
+   lll_lock (cond->__data.__lock, pshared);
+ 
+diff -Nrup a/nptl/pthread_cond_wait.c b/nptl/pthread_cond_wait.c
+--- a/nptl/pthread_cond_wait.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_cond_wait.c	2012-01-01 20:41:26.663439839 -0700
+@@ -25,6 +25,7 @@
+ #include <pthreadP.h>
+ 
+ #include <shlib-compat.h>
++#include <stap-probe.h>
+ 
+ 
+ struct _condvar_cleanup_buffer
+@@ -101,6 +102,8 @@ __pthread_cond_wait (cond, mutex)
+   int pshared = (cond->__data.__mutex == (void *) ~0l)
+   		? LLL_SHARED : LLL_PRIVATE;
+ 
++  LIBC_PROBE (cond_wait, 2, cond, mutex);
++
+   /* Make sure we are alone.  */
+   lll_lock (cond->__data.__lock, pshared);
+ 
+diff -Nrup a/nptl/pthread_create.c b/nptl/pthread_create.c
+--- a/nptl/pthread_create.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_create.c	2012-01-01 20:41:26.664439838 -0700
+@@ -32,6 +32,8 @@
+ 
+ #include <shlib-compat.h>
+ 
++#include <stap-probe.h>
++
+ 
+ /* Local function to start thread and handle cleanup.  */
+ static int start_thread (void *arg);
+@@ -300,6 +302,8 @@ start_thread (void *arg)
+ 	  CANCEL_RESET (oldtype);
+ 	}
+ 
++      LIBC_PROBE (pthread_start, 3, (pthread_t) pd, pd->start_routine, pd->arg);
++
+       /* Run the code the user provided.  */
+ #ifdef CALL_THREAD_FCT
+       THREAD_SETMEM (pd, result, CALL_THREAD_FCT (pd));
+@@ -557,6 +561,8 @@ __pthread_create_2_1 (newthread, attr, s
+   /* Pass the descriptor to the caller.  */
+   *newthread = (pthread_t) pd;
+ 
++  LIBC_PROBE (pthread_create, 4, newthread, attr, start_routine, arg);
++
+   /* Start the thread.  */
+   return create_thread (pd, iattr, STACK_VARIABLES_ARGS);
+ }
+diff -Nrup a/nptl/pthread_join.c b/nptl/pthread_join.c
+--- a/nptl/pthread_join.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_join.c	2012-01-01 20:41:26.664439838 -0700
+@@ -23,6 +23,8 @@
+ #include <atomic.h>
+ #include "pthreadP.h"
+ 
++#include <stap-probe.h>
++
+ 
+ static void
+ cleanup (void *arg)
+@@ -55,6 +57,8 @@ pthread_join (threadid, thread_return)
+   struct pthread *self = THREAD_SELF;
+   int result = 0;
+ 
++  LIBC_PROBE (pthread_join, 1, threadid);
++
+   /* During the wait we change to asynchronous cancellation.  If we
+      are canceled the thread we are waiting for must be marked as
+      un-wait-ed for again.  */
+@@ -110,5 +114,7 @@ pthread_join (threadid, thread_return)
+       __free_tcb (pd);
+     }
+ 
++  LIBC_PROBE (pthread_join_ret, 3, threadid, result, pd->result);
++
+   return result;
+ }
+diff -Nrup a/nptl/pthread_mutex_destroy.c b/nptl/pthread_mutex_destroy.c
+--- a/nptl/pthread_mutex_destroy.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_mutex_destroy.c	2012-01-01 20:41:26.665439837 -0700
+@@ -20,11 +20,15 @@
+ #include <errno.h>
+ #include "pthreadP.h"
+ 
++#include <stap-probe.h>
++
+ 
+ int
+ __pthread_mutex_destroy (mutex)
+      pthread_mutex_t *mutex;
+ {
++  LIBC_PROBE (mutex_destroy, 1, mutex);
++
+   if ((mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) == 0
+       && mutex->__data.__nusers != 0)
+     return EBUSY;
+diff -Nrup a/nptl/pthread_mutex_init.c b/nptl/pthread_mutex_init.c
+--- a/nptl/pthread_mutex_init.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_mutex_init.c	2012-01-01 20:41:26.665439837 -0700
+@@ -24,6 +24,8 @@
+ #include <kernel-features.h>
+ #include "pthreadP.h"
+ 
++#include <stap-probe.h>
++
+ static const struct pthread_mutexattr default_attr =
+   {
+     /* Default is a normal mutex, not shared between processes.  */
+@@ -135,6 +137,8 @@ __pthread_mutex_init (mutex, mutexattr)
+   // mutex->__spins = 0;	already done by memset
+   // mutex->__next = NULL;	already done by memset
+ 
++  LIBC_PROBE (mutex_init, 1, mutex);
++
+   return 0;
+ }
+ strong_alias (__pthread_mutex_init, pthread_mutex_init)
+diff -Nrup a/nptl/pthread_mutex_lock.c b/nptl/pthread_mutex_lock.c
+--- a/nptl/pthread_mutex_lock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_mutex_lock.c	2012-01-01 20:41:26.665439837 -0700
+@@ -24,6 +24,7 @@
+ #include <not-cancel.h>
+ #include "pthreadP.h"
+ #include <lowlevellock.h>
++#include <stap-probe.h>
+ 
+ 
+ #ifndef LLL_MUTEX_LOCK
+@@ -48,6 +49,9 @@ __pthread_mutex_lock (mutex)
+   assert (sizeof (mutex->__size) >= sizeof (mutex->__data));
+ 
+   unsigned int type = PTHREAD_MUTEX_TYPE (mutex);
++
++  LIBC_PROBE (mutex_entry, 1, mutex);
++
+   if (__builtin_expect (type & ~PTHREAD_MUTEX_KIND_MASK_NP, 0))
+     return __pthread_mutex_lock_full (mutex);
+ 
+@@ -127,6 +131,8 @@ __pthread_mutex_lock (mutex)
+   ++mutex->__data.__nusers;
+ #endif
+ 
++  LIBC_PROBE (mutex_acquired, 1, mutex);
++
+   return 0;
+ }
+ 
+@@ -467,6 +473,8 @@ __pthread_mutex_lock_full (pthread_mutex
+   ++mutex->__data.__nusers;
+ #endif
+ 
++  LIBC_PROBE (mutex_acquired, 1, mutex);
++
+   return 0;
+ }
+ #ifndef __pthread_mutex_lock
+diff -Nrup a/nptl/pthread_mutex_timedlock.c b/nptl/pthread_mutex_timedlock.c
+--- a/nptl/pthread_mutex_timedlock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_mutex_timedlock.c	2012-01-01 20:41:26.666439837 -0700
+@@ -24,6 +24,8 @@
+ #include <lowlevellock.h>
+ #include <not-cancel.h>
+ 
++#include <stap-probe.h>
++
+ 
+ int
+ pthread_mutex_timedlock (mutex, abstime)
+@@ -34,6 +36,8 @@ pthread_mutex_timedlock (mutex, abstime)
+   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
+   int result = 0;
+ 
++  LIBC_PROBE (mutex_timedlock_entry, 2, mutex, abstime);
++
+   /* We must not check ABSTIME here.  If the thread does not block
+      abstime must not be checked for a valid value.  */
+ 
+@@ -172,6 +176,8 @@ pthread_mutex_timedlock (mutex, abstime)
+ 
+ 		  ++mutex->__data.__count;
+ 
++                  LIBC_PROBE (mutex_timedlock_acquired, 1, mutex);
++
+ 		  return 0;
+ 		}
+ 	    }
+@@ -242,6 +248,8 @@ pthread_mutex_timedlock (mutex, abstime)
+ 
+ 		++mutex->__data.__count;
+ 
++                LIBC_PROBE (mutex_timedlock_acquired, 1, mutex);
++
+ 		return 0;
+ 	      }
+ 	  }
+@@ -377,6 +385,8 @@ pthread_mutex_timedlock (mutex, abstime)
+ 
+ 		++mutex->__data.__count;
+ 
++                LIBC_PROBE (mutex_timedlock_acquired, 1, mutex);
++
+ 		return 0;
+ 	      }
+ 	  }
+@@ -477,6 +487,8 @@ pthread_mutex_timedlock (mutex, abstime)
+       /* Record the ownership.  */
+       mutex->__data.__owner = id;
+       ++mutex->__data.__nusers;
++
++      LIBC_PROBE (mutex_timedlock_acquired, 1, mutex);
+     }
+ 
+  out:
+diff -Nrup a/nptl/pthread_mutex_unlock.c b/nptl/pthread_mutex_unlock.c
+--- a/nptl/pthread_mutex_unlock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_mutex_unlock.c	2012-01-01 20:41:26.666439837 -0700
+@@ -22,6 +22,7 @@
+ #include <stdlib.h>
+ #include "pthreadP.h"
+ #include <lowlevellock.h>
++#include <stap-probe.h>
+ 
+ static int
+ internal_function
+@@ -50,6 +51,9 @@ __pthread_mutex_unlock_usercnt (mutex, d
+ 
+       /* Unlock.  */
+       lll_unlock (mutex->__data.__lock, PTHREAD_MUTEX_PSHARED (mutex));
++
++      LIBC_PROBE (mutex_release, 1, mutex);
++
+       return 0;
+     }
+   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
+@@ -272,6 +276,9 @@ __pthread_mutex_unlock_full (pthread_mut
+ 			PTHREAD_MUTEX_PSHARED (mutex));
+ 
+       int oldprio = newval >> PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
++
++      LIBC_PROBE (mutex_release, 1, mutex);
++
+       return __pthread_tpp_change_priority (oldprio, -1);
+ 
+     default:
+@@ -279,6 +286,7 @@ __pthread_mutex_unlock_full (pthread_mut
+       return EINVAL;
+     }
+ 
++  LIBC_PROBE (mutex_release, 1, mutex);
+   return 0;
+ }
+ 
+diff -Nrup a/nptl/pthread_rwlock_destroy.c b/nptl/pthread_rwlock_destroy.c
+--- a/nptl/pthread_rwlock_destroy.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_rwlock_destroy.c	2012-01-01 20:41:26.667439837 -0700
+@@ -18,12 +18,15 @@
+    02111-1307 USA.  */
+ 
+ #include "pthreadP.h"
++#include <stap-probe.h>
+ 
+ 
+ int
+ __pthread_rwlock_destroy (rwlock)
+      pthread_rwlock_t *rwlock;
+ {
++  LIBC_PROBE (rwlock_destroy, 1, rwlock);
++
+   /* Nothing to be done.  For now.  */
+   return 0;
+ }
+diff -Nrup a/nptl/pthread_rwlock_rdlock.c b/nptl/pthread_rwlock_rdlock.c
+--- a/nptl/pthread_rwlock_rdlock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_rwlock_rdlock.c	2012-01-01 20:41:26.667439837 -0700
+@@ -22,6 +22,7 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
++#include <stap-probe.h>
+ 
+ 
+ /* Acquire read lock for RWLOCK.  */
+@@ -31,6 +32,8 @@ __pthread_rwlock_rdlock (rwlock)
+ {
+   int result = 0;
+ 
++  LIBC_PROBE (rdlock_entry, 1, rwlock);
++
+   /* Make sure we are alone.  */
+   lll_lock (rwlock->__data.__lock, rwlock->__data.__shared);
+ 
+@@ -49,6 +52,8 @@ __pthread_rwlock_rdlock (rwlock)
+ 	      --rwlock->__data.__nr_readers;
+ 	      result = EAGAIN;
+ 	    }
++          else
++            LIBC_PROBE (rdlock_acquire_read, 1, rwlock);
+ 
+ 	  break;
+ 	}
+diff -Nrup a/nptl/pthread_rwlock_unlock.c b/nptl/pthread_rwlock_unlock.c
+--- a/nptl/pthread_rwlock_unlock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_rwlock_unlock.c	2012-01-01 20:41:26.668439837 -0700
+@@ -22,11 +22,14 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
++#include <stap-probe.h>
+ 
+ /* Unlock RWLOCK.  */
+ int
+ __pthread_rwlock_unlock (pthread_rwlock_t *rwlock)
+ {
++  LIBC_PROBE (rwlock_unlock, 1, rwlock);
++
+   lll_lock (rwlock->__data.__lock, rwlock->__data.__shared);
+   if (rwlock->__data.__writer)
+     rwlock->__data.__writer = 0;
+diff -Nrup a/nptl/pthread_rwlock_wrlock.c b/nptl/pthread_rwlock_wrlock.c
+--- a/nptl/pthread_rwlock_wrlock.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/pthread_rwlock_wrlock.c	2012-01-01 20:41:26.668439837 -0700
+@@ -22,6 +22,7 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
++#include <stap-probe.h>
+ 
+ 
+ /* Acquire write lock for RWLOCK.  */
+@@ -31,6 +32,8 @@ __pthread_rwlock_wrlock (rwlock)
+ {
+   int result = 0;
+ 
++  LIBC_PROBE (wrlock_entry, 1, rwlock);
++
+   /* Make sure we are alone.  */
+   lll_lock (rwlock->__data.__lock, rwlock->__data.__shared);
+ 
+@@ -41,6 +44,8 @@ __pthread_rwlock_wrlock (rwlock)
+ 	{
+ 	  /* Mark self as writer.  */
+ 	  rwlock->__data.__writer = THREAD_GETMEM (THREAD_SELF, tid);
++
++          LIBC_PROBE (wrlock_acquire_write, 1, rwlock);
+ 	  break;
+ 	}
+ 
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h b/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h
+--- a/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-01-01 20:41:26.668439837 -0700
+@@ -189,4 +189,7 @@
+ /* Typed memory objects are not available.  */
+ #define _POSIX_TYPED_MEMORY_OBJECTS	-1
+ 
++/* Streams are not available.  */
++#define _XOPEN_STREAMS	-1
++
+ #endif /* bits/posix_opt.h */
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/Versions b/nptl/sysdeps/unix/sysv/linux/i386/Versions
+--- a/nptl/sysdeps/unix/sysv/linux/i386/Versions	1969-12-31 17:00:00.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/Versions	2012-01-01 20:41:26.669439837 -0700
+@@ -0,0 +1,6 @@
++libc {
++  GLIBC_PRIVATE {
++    # Internal libc interface to libpthread
++    __uname;
++  }
++}
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/lowlevellock.S	2012-01-01 20:41:26.669439837 -0700
+@@ -22,6 +22,8 @@
+ #include <kernel-features.h>
+ #include <lowlevellock.h>
+ 
++#include <stap-probe.h>
++
+ 	.text
+ 
+ #ifdef __ASSUME_PRIVATE_FUTEX
+@@ -91,7 +93,8 @@ __lll_lock_wait_private:
+ 	cmpl	%edx, %eax	/* NB:	 %edx == 2 */
+ 	jne 2f
+ 
+-1:	movl	$SYS_futex, %eax
++1:	LIBC_PROBE (lll_lock_wait_private, 1, %ebx)
++	movl	$SYS_futex, %eax
+ 	ENTER_KERNEL
+ 
+ 2:	movl	%edx, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S	2012-01-01 20:41:26.670439837 -0700
+@@ -24,6 +24,7 @@
+ #include <kernel-features.h>
+ #include <pthread-pi-defines.h>
+ #include <pthread-errnos.h>
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -49,6 +50,8 @@ __pthread_cond_broadcast:
+ 
+ 	movl	20(%esp), %ebx
+ 
++	LIBC_PROBE (cond_broadcast, 1, %edx)
++
+ 	/* Get internal lock.  */
+ 	movl	$1, %edx
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S	2012-01-01 20:41:26.670439837 -0700
+@@ -24,7 +24,7 @@
+ #include <kernel-features.h>
+ #include <pthread-pi-defines.h>
+ #include <pthread-errnos.h>
+-
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -45,6 +45,8 @@ __pthread_cond_signal:
+ 
+ 	movl	12(%esp), %edi
+ 
++	LIBC_PROBE (cond_signal, 1, %edi)
++
+ 	/* Get internal lock.  */
+ 	movl	$1, %edx
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S	2012-01-01 20:41:26.670439837 -0700
+@@ -24,7 +24,7 @@
+ #include <pthread-errnos.h>
+ #include <pthread-pi-defines.h>
+ #include <kernel-features.h>
+-
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -61,6 +61,8 @@ __pthread_cond_timedwait:
+ 	movl	20(%esp), %ebx
+ 	movl	28(%esp), %ebp
+ 
++	LIBC_PROBE (cond_timedwait, 3, %ebx, 24(%esp), %ebp)
++
+ 	cmpl	$1000000000, 4(%ebp)
+ 	movl	$EINVAL, %eax
+ 	jae	18f
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S	2012-01-01 20:41:26.671439837 -0700
+@@ -25,6 +25,7 @@
+ #include <pthread-errnos.h>
+ #include <pthread-pi-defines.h>
+ #include <kernel-features.h>
++#include <stap-probe.h>
+ 
+ 
+ 	.text
+@@ -61,6 +62,8 @@ __pthread_cond_wait:
+ 	xorl	%esi, %esi
+ 	movl	20(%esp), %ebx
+ 
++	LIBC_PROBE (cond_wait, 2, 24(%esp), %ebx)
++
+ 	/* Get internal lock.  */
+ 	movl	$1, %edx
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_rdlock.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_rdlock.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_rdlock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_rdlock.S	2012-01-01 20:41:26.671439837 -0700
+@@ -23,6 +23,7 @@
+ #include <pthread-errnos.h>
+ #include <kernel-features.h>
+ 
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -41,6 +42,8 @@ __pthread_rwlock_rdlock:
+ 	xorl	%esi, %esi
+ 	movl	12(%esp), %ebx
+ 
++	LIBC_PROBE (rdlock_entry, 1, %ebx)
++
+ 	/* Get the lock.  */
+ 	movl	$1, %edx
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_wrlock.S b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_wrlock.S
+--- a/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_wrlock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/i486/pthread_rwlock_wrlock.S	2012-01-01 20:41:26.672439837 -0700
+@@ -23,6 +23,7 @@
+ #include <pthread-errnos.h>
+ #include <kernel-features.h>
+ 
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -41,6 +42,8 @@ __pthread_rwlock_wrlock:
+ 	xorl	%esi, %esi
+ 	movl	12(%esp), %ebx
+ 
++	LIBC_PROBE (wrlock_entry, 1, %ebx)
++
+ 	/* Get the lock.  */
+ 	movl	$1, %edx
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/lowlevellock.h b/nptl/sysdeps/unix/sysv/linux/i386/lowlevellock.h
+--- a/nptl/sysdeps/unix/sysv/linux/i386/lowlevellock.h	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/lowlevellock.h	2012-01-01 20:41:26.672439837 -0700
+@@ -20,6 +20,8 @@
+ #ifndef _LOWLEVELLOCK_H
+ #define _LOWLEVELLOCK_H	1
+ 
++#include <stap-probe.h>
++
+ #ifndef __ASSEMBLER__
+ # include <time.h>
+ # include <sys/param.h>
+@@ -226,6 +228,7 @@ LLL_STUB_UNWIND_INFO_END
+   do {									      \
+     int __ignore;							      \
+     register __typeof (nr) _nr asm ("edx") = (nr);			      \
++    LIBC_PROBE (lll_futex_wake, 3, futex, nr, private);                       \
+     __asm __volatile (LLL_EBX_LOAD					      \
+ 		      LLL_ENTER_KERNEL					      \
+ 		      LLL_EBX_LOAD					      \
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/i386/smp.h b/nptl/sysdeps/unix/sysv/linux/i386/smp.h
+--- a/nptl/sysdeps/unix/sysv/linux/i386/smp.h	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/i386/smp.h	2012-01-01 20:41:26.673439836 -0700
+@@ -37,7 +37,7 @@ is_smp_system (void)
+   char *cp;
+ 
+   /* Try reading the number using `sysctl' first.  */
+-  if (uname (&u.uts) == 0)
++  if (__uname (&u.uts) == 0)
+     cp = u.uts.version;
+   else
+     {
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/kernel-features.h b/nptl/sysdeps/unix/sysv/linux/kernel-features.h
+--- a/nptl/sysdeps/unix/sysv/linux/kernel-features.h	1969-12-31 17:00:00.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/kernel-features.h	2012-01-01 20:41:26.673439836 -0700
+@@ -0,0 +1,6 @@
++#include_next <kernel-features.h>
++
++/* NPTL can always assume all clone thread flags work.  */
++#ifndef __ASSUME_CLONE_THREAD_FLAGS
++# define __ASSUME_CLONE_THREAD_FLAGS	1
++#endif
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.S b/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.S	2012-01-01 20:41:26.673439836 -0700
+@@ -22,6 +22,8 @@
+ #include <kernel-features.h>
+ #include <lowlevellock.h>
+ 
++#include <stap-probe.h>
++
+ 	.text
+ 
+ #ifdef __ASSUME_PRIVATE_FUTEX
+@@ -87,7 +89,8 @@ __lll_lock_wait_private:
+ 	cmpl	%edx, %eax	/* NB:	 %edx == 2 */
+ 	jne	2f
+ 
+-1:	movl	$SYS_futex, %eax
++1:	LIBC_PROBE (lll_lock_wait_private, 1, %rdi)
++	movl	$SYS_futex, %eax
+ 	syscall
+ 
+ 2:	movl	%edx, %eax
+@@ -126,7 +129,8 @@ __lll_lock_wait:
+ 	cmpl	%edx, %eax	/* NB:	 %edx == 2 */
+ 	jne	2f
+ 
+-1:	movl	$SYS_futex, %eax
++1:	LIBC_PROBE (lll_lock_wait, 2, %rdi, %rsi)
++	movl	$SYS_futex, %eax
+ 	syscall
+ 
+ 2:	movl	%edx, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.h b/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.h
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.h	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/lowlevellock.h	2012-01-01 20:41:26.674439835 -0700
+@@ -20,6 +20,8 @@
+ #ifndef _LOWLEVELLOCK_H
+ #define _LOWLEVELLOCK_H	1
+ 
++#include <stap-probe.h>
++
+ #ifndef __ASSEMBLER__
+ # include <time.h>
+ # include <sys/param.h>
+@@ -227,6 +229,7 @@ LLL_STUB_UNWIND_INFO_END
+   do {									      \
+     int __ignore;							      \
+     register __typeof (nr) _nr __asm ("edx") = (nr);			      \
++    LIBC_PROBE (lll_futex_wake, 3, futex, nr, private);                       \
+     __asm __volatile ("syscall"						      \
+ 		      : "=a" (__ignore)					      \
+ 		      : "0" (SYS_futex), "D" (futex),			      \
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S	2012-01-01 20:41:26.674439835 -0700
+@@ -25,7 +25,7 @@
+ #include <kernel-features.h>
+ #include <pthread-pi-defines.h>
+ #include <pthread-errnos.h>
+-
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -35,6 +35,8 @@
+ 	.align	16
+ __pthread_cond_broadcast:
+ 
++        LIBC_PROBE (cond_broadcast, 1, %rdi)
++
+ 	/* Get internal lock.  */
+ 	movl	$1, %esi
+ 	xorl	%eax, %eax
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S	2012-01-01 20:41:26.675439835 -0700
+@@ -24,6 +24,7 @@
+ #include <pthread-pi-defines.h>
+ #include <kernel-features.h>
+ #include <pthread-errnos.h>
++#include <stap-probe.h>
+ 
+ 
+ 	.text
+@@ -34,6 +35,8 @@
+ 	.align	16
+ __pthread_cond_signal:
+ 
++        LIBC_PROBE (cond_signal, 1, %rdi)
++
+ 	/* Get internal lock.  */
+ 	movq	%rdi, %r8
+ 	movl	$1, %esi
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S	2012-01-01 20:41:26.675439835 -0700
+@@ -23,6 +23,7 @@
+ #include <lowlevelcond.h>
+ #include <pthread-pi-defines.h>
+ #include <pthread-errnos.h>
++#include <stap-probe.h>
+ 
+ #include <kernel-features.h>
+ 
+@@ -68,6 +69,8 @@ __pthread_cond_timedwait:
+ 	cfi_adjust_cfa_offset(FRAME_SIZE)
+ 	cfi_remember_state
+ 
++	LIBC_PROBE (cond_timedwait, 3, %rdi, %rsi, %rdx)
++
+ 	cmpq	$1000000000, 8(%rdx)
+ 	movl	$EINVAL, %eax
+ 	jae	48f
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S	2012-01-01 20:41:26.676439836 -0700
+@@ -24,6 +24,7 @@
+ #include <tcb-offsets.h>
+ #include <pthread-pi-defines.h>
+ #include <pthread-errnos.h>
++#include <stap-probe.h>
+ 
+ #include <kernel-features.h>
+ 
+@@ -66,6 +67,8 @@ __pthread_cond_wait:
+ 	            +--------------------------+
+ 	*/
+ 
++	LIBC_PROBE (cond_wait, 2, %rdi, %rsi)
++
+ 	cmpq	$-1, dep_mutex(%rdi)
+ 
+ 		/* Prepare structure passed to cancellation handler.  */
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_rdlock.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_rdlock.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_rdlock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_rdlock.S	2012-01-01 20:41:26.677439836 -0700
+@@ -22,7 +22,7 @@
+ #include <lowlevelrwlock.h>
+ #include <pthread-errnos.h>
+ #include <kernel-features.h>
+-
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -31,6 +31,9 @@
+ 	.align	16
+ __pthread_rwlock_rdlock:
+ 	cfi_startproc
++
++        LIBC_PROBE (rdlock_entry, 1, %rdi)
++
+ 	xorq	%r10, %r10
+ 
+ 	/* Get the lock.  */
+diff -Nrup a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_wrlock.S b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_wrlock.S
+--- a/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_wrlock.S	2012-01-01 05:16:32.000000000 -0700
++++ b/nptl/sysdeps/unix/sysv/linux/x86_64/pthread_rwlock_wrlock.S	2012-01-01 20:41:26.677439836 -0700
+@@ -22,7 +22,7 @@
+ #include <lowlevelrwlock.h>
+ #include <pthread-errnos.h>
+ #include <kernel-features.h>
+-
++#include <stap-probe.h>
+ 
+ 	.text
+ 
+@@ -31,6 +31,9 @@
+ 	.align	16
+ __pthread_rwlock_wrlock:
+ 	cfi_startproc
++
++        LIBC_PROBE (wrlock_entry, 1, %rdi)
++
+ 	xorq	%r10, %r10
+ 
+ 	/* Get the lock.  */
+diff -Nrup a/nscd/nscd.conf b/nscd/nscd.conf
+--- a/nscd/nscd.conf	2012-01-01 05:16:32.000000000 -0700
++++ b/nscd/nscd.conf	2012-01-01 20:41:26.677439836 -0700
+@@ -33,7 +33,7 @@
+ #	logfile			/var/log/nscd.log
+ #	threads			4
+ #	max-threads		32
+-#	server-user		nobody
++	server-user		nscd
+ #	stat-user		somebody
+ 	debug-level		0
+ #	reload-count		5
+diff -Nrup a/nscd/nscd.init b/nscd/nscd.init
+--- a/nscd/nscd.init	2012-01-01 05:16:32.000000000 -0700
++++ b/nscd/nscd.init	2012-01-01 20:41:26.678439836 -0700
+@@ -9,6 +9,7 @@
+ #		slow naming services like NIS, NIS+, LDAP, or hesiod.
+ # processname: /usr/sbin/nscd
+ # config: /etc/nscd.conf
++# config: /etc/sysconfig/nscd
+ #
+ ### BEGIN INIT INFO
+ # Provides: nscd
+@@ -28,20 +29,8 @@
+ # Source function library.
+ . /etc/init.d/functions
+ 
+-# nscd does not run on any kernel lower than 2.2.0 because of threading
+-# problems, so we require that in first place.
+-case $(uname -r) in
+-    2.[2-9].*)
+-	# this is okay
+-	;;
+-    [3-9]*)
+-	# these are of course also okay
+-	;;
+-    *)
+-	#this is not
+-	exit 1
+-	;;
+-esac
++# Source an auxiliary options file if we have one, and pick up NSCD_OPTIONS.
++[ -r /etc/sysconfig/nscd ] && . /etc/sysconfig/nscd
+ 
+ RETVAL=0
+ prog=nscd
+@@ -50,7 +39,7 @@ start () {
+     [ -d /var/run/nscd ] || mkdir /var/run/nscd
+     [ -d /var/db/nscd ] || mkdir /var/db/nscd
+     echo -n $"Starting $prog: "
+-    daemon /usr/sbin/nscd
++    daemon /usr/sbin/nscd $NSCD_OPTIONS
+     RETVAL=$?
+     echo
+     [ $RETVAL -eq 0 ] && touch /var/lock/subsys/nscd
+@@ -83,11 +72,11 @@ restart() {
+ # See how we were called.
+ case "$1" in
+     start)
+-	start
++	[ -e /var/lock/subsys/nscd ] || start
+ 	RETVAL=$?
+ 	;;
+     stop)
+-	stop
++	[ ! -e /var/lock/subsys/nscd ] || stop
+ 	RETVAL=$?
+ 	;;
+     status)
+@@ -99,14 +88,17 @@ case "$1" in
+ 	RETVAL=$?
+ 	;;
+     try-restart | condrestart)
+-	[ -e /var/lock/subsys/nscd ] && restart
++	[ ! -e /var/lock/subsys/nscd ] || restart
+ 	RETVAL=$?
+ 	;;
+     force-reload | reload)
+     	echo -n $"Reloading $prog: "
+-	killproc /usr/sbin/nscd -HUP
+-	RETVAL=$?
+-	echo
++    	RETVAL=0
++    	/usr/sbin/nscd -i passwd || RETVAL=$?
++    	/usr/sbin/nscd -i group || RETVAL=$?
++    	/usr/sbin/nscd -i hosts || RETVAL=$?
++    	/usr/sbin/nscd -i services || RETVAL=$?
++    	echo
+ 	;;
+     *)
+ 	echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+diff -Nrup a/nscd/selinux.c b/nscd/selinux.c
+--- a/nscd/selinux.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nscd/selinux.c	2012-01-01 20:41:26.678439836 -0700
+@@ -270,6 +270,18 @@ avc_create_thread (void (*run) (void))
+ {
+   int rc;
+ 
++#if defined HAVE_LIBAUDIT && defined HAVE_LIBCAP
++  if (server_user != NULL && getuid () == 0)
++    {
++      /* We need to preserve the capabilities in the AVC thread.  */
++      if (prctl (PR_SET_KEEPCAPS, 1) == -1)
++	{
++	  dbg_log (_("Failed to set keep-capabilities"));
++	  error (EXIT_FAILURE, errno, _("prctl(KEEPCAPS) failed"));
++	}
++    }
++#endif
++
+   rc =
+     pthread_create (&avc_notify_thread, NULL, (void *(*) (void *)) run, NULL);
+   if (rc != 0)
+diff -Nrup a/nss/Makefile b/nss/Makefile
+--- a/nss/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/nss/Makefile	2012-01-01 20:41:26.679439836 -0700
+@@ -88,6 +88,7 @@ endif
+ 
+ include ../Rules
+ 
++CFLAGS-files-hosts.c += -fno-strict-aliasing
+ 
+ ifeq (yes,$(build-static-nss))
+ $(objpfx)getent: $(objpfx)libnss_files.a
+diff -Nrup a/nss/nss_files/files-XXX.c b/nss/nss_files/files-XXX.c
+--- a/nss/nss_files/files-XXX.c	2012-01-01 05:16:32.000000000 -0700
++++ b/nss/nss_files/files-XXX.c	2012-01-01 20:41:26.679439836 -0700
+@@ -190,7 +190,7 @@ internal_getent (struct STRUCTURE *resul
+ {
+   char *p;
+   struct parser_data *data = (void *) buffer;
+-  int linebuflen = buffer + buflen - data->linebuffer;
++  size_t linebuflen = buffer + buflen - data->linebuffer;
+   int parse_result;
+ 
+   if (buflen < sizeof *data + 2)
+diff -Nrup a/posix/Makefile b/posix/Makefile
+--- a/posix/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/posix/Makefile	2012-01-01 20:41:26.680439836 -0700
+@@ -320,15 +320,8 @@ $(inst_libexecdir)/getconf: $(inst_bindi
+ 	  mv -f $@/$$spec.new $@/$$spec; \
+ 	done < $(objpfx)getconf.speclist
+ 
+-$(objpfx)getconf.speclist: $(objpfx)getconf
+-ifeq (no,$(cross-compiling))
+-	LC_ALL=C GETCONF_DIR=/dev/null \
+-	$(run-program-prefix) $< _POSIX_V7_WIDTH_RESTRICTED_ENVS > $@.new
+-	LC_ALL=C GETCONF_DIR=/dev/null \
+-	$(run-program-prefix) $< _POSIX_V6_WIDTH_RESTRICTED_ENVS >> $@.new
+-	LC_ALL=C GETCONF_DIR=/dev/null \
+-	$(run-program-prefix) $< _XBS5_WIDTH_RESTRICTED_ENVS >> $@.new
+-else
+-	> $@.new
+-endif
++$(objpfx)getconf.speclist: getconf.speclist.h
++	$(CC) -E $(CFLAGS) $(CPPFLAGS) $< \
++	  | sed -n -e '/START_OF_STRINGS/,$${/\(POSIX_V[67]\|XBS5\)_/{s/^[^"]*"//;s/".*$$//;p}}' \
++	  > $@.new
+ 	mv -f $@.new $@
+diff -Nrup a/posix/gai.conf b/posix/gai.conf
+--- a/posix/gai.conf	2012-01-01 05:16:32.000000000 -0700
++++ b/posix/gai.conf	2012-01-01 20:41:26.680439836 -0700
+@@ -41,7 +41,7 @@
+ #
+ # precedence  <mask>   <value>
+ #    Add another rule to the RFC 3484 precedence table.  See section 2.1
+-#    and 10.3 in RFC 3484.  The default is:
++#    and 10.3 in RFC 3484.  The RFC requires:
+ #
+ #precedence  ::1/128       50
+ #precedence  ::/0          40
+@@ -58,7 +58,7 @@
+ #    Add another rule to the RFC 3484 scope table for IPv4 addresses.
+ #    By default the scope IDs described in section 3.2 in RFC 3484 are
+ #    used.  Changing these defaults should hardly ever be necessary.
+-#    The defaults are equivalent to:
++#    The definitions in RFC 1918 are equivalent to:
+ #
+ #scopev4 ::ffff:169.254.0.0/112  2
+ #scopev4 ::ffff:127.0.0.0/104    2
+@@ -75,3 +75,5 @@
+ #scopev4 ::ffff:169.254.0.0/112  2
+ #scopev4 ::ffff:127.0.0.0/104    2
+ #scopev4 ::ffff:0.0.0.0/96       14
++#
++#    This is what the Red Hat setting currently uses.
+diff -Nrup a/posix/getconf.speclist.h b/posix/getconf.speclist.h
+--- a/posix/getconf.speclist.h	1969-12-31 17:00:00.000000000 -0700
++++ b/posix/getconf.speclist.h	2012-01-01 20:41:26.680439836 -0700
+@@ -0,0 +1,39 @@
++#include <unistd.h>
++const char *START_OF_STRINGS =
++#if _POSIX_V7_ILP32_OFF32 == 1
++"POSIX_V7_ILP32_OFF32"
++#endif
++#if _POSIX_V7_ILP32_OFFBIG == 1
++"POSIX_V7_ILP32_OFFBIG"
++#endif
++#if _POSIX_V7_LP64_OFF64 == 1
++"POSIX_V7_LP64_OFF64"
++#endif
++#if _POSIX_V7_LPBIG_OFFBIG == 1
++"POSIX_V7_LPBIG_OFFBIG"
++#endif
++#if _POSIX_V6_ILP32_OFF32 == 1
++"POSIX_V6_ILP32_OFF32"
++#endif
++#if _POSIX_V6_ILP32_OFFBIG == 1
++"POSIX_V6_ILP32_OFFBIG"
++#endif
++#if _POSIX_V6_LP64_OFF64 == 1
++"POSIX_V6_LP64_OFF64"
++#endif
++#if _POSIX_V6_LPBIG_OFFBIG == 1
++"POSIX_V6_LPBIG_OFFBIG"
++#endif
++#if _XBS5_ILP32_OFF32 == 1
++"XBS5_ILP32_OFF32"
++#endif
++#if _XBS5_ILP32_OFFBIG == 1
++"XBS5_ILP32_OFFBIG"
++#endif
++#if _XBS5_LP64_OFF64 == 1
++"XBS5_LP64_OFF64"
++#endif
++#if _XBS5_LPBIG_OFFBIG == 1
++"XBS5_LPBIG_OFFBIG"
++#endif
++"";
+diff -Nrup a/posix/regcomp.c b/posix/regcomp.c
+--- a/posix/regcomp.c	2012-01-01 05:16:32.000000000 -0700
++++ b/posix/regcomp.c	2012-01-01 20:41:26.681439836 -0700
+@@ -2745,40 +2745,29 @@ parse_bracket_exp (re_string_t *regexp,
+ 
+   /* Local function for parse_bracket_exp used in _LIBC environement.
+      Seek the collating symbol entry correspondings to NAME.
+-     Return the index of the symbol in the SYMB_TABLE.  */
++     Return the index of the symbol in the SYMB_TABLE,
++     or -1 if not found.  */
+ 
+   auto inline int32_t
+   __attribute ((always_inline))
+-  seek_collating_symbol_entry (name, name_len)
+-	 const unsigned char *name;
+-	 size_t name_len;
++  seek_collating_symbol_entry (const unsigned char *name, size_t name_len)
+     {
+-      int32_t hash = elem_hash ((const char *) name, name_len);
+-      int32_t elem = hash % table_size;
+-      if (symb_table[2 * elem] != 0)
+-	{
+-	  int32_t second = hash % (table_size - 2) + 1;
++      int32_t elem;
+ 
+-	  do
+-	    {
+-	      /* First compare the hashing value.  */
+-	      if (symb_table[2 * elem] == hash
+-		  /* Compare the length of the name.  */
+-		  && name_len == extra[symb_table[2 * elem + 1]]
+-		  /* Compare the name.  */
+-		  && memcmp (name, &extra[symb_table[2 * elem + 1] + 1],
+-			     name_len) == 0)
+-		{
+-		  /* Yep, this is the entry.  */
+-		  break;
+-		}
+-
+-	      /* Next entry.  */
+-	      elem += second;
+-	    }
+-	  while (symb_table[2 * elem] != 0);
+-	}
+-      return elem;
++      for (elem = 0; elem < table_size; elem++)
++	if (symb_table[2 * elem] != 0)
++	  {
++	    int32_t idx = symb_table[2 * elem + 1];
++	    /* Skip the name of collating element name.  */
++	    idx += 1 + extra[idx];
++	    if (/* Compare the length of the name.  */
++		name_len == extra[idx]
++		/* Compare the name.  */
++		&& memcmp (name, &extra[idx + 1], name_len) == 0)
++	      /* Yep, this is the entry.  */
++	      return elem;
++	  }
++      return -1;
+     }
+ 
+   /* Local function for parse_bracket_exp used in _LIBC environment.
+@@ -2787,8 +2776,7 @@ parse_bracket_exp (re_string_t *regexp,
+ 
+   auto inline unsigned int
+   __attribute ((always_inline))
+-  lookup_collation_sequence_value (br_elem)
+-	 bracket_elem_t *br_elem;
++  lookup_collation_sequence_value (bracket_elem_t *br_elem)
+     {
+       if (br_elem->type == SB_CHAR)
+ 	{
+@@ -2816,7 +2804,7 @@ parse_bracket_exp (re_string_t *regexp,
+ 	      int32_t elem, idx;
+ 	      elem = seek_collating_symbol_entry (br_elem->opr.name,
+ 						  sym_name_len);
+-	      if (symb_table[2 * elem] != 0)
++	      if (elem != -1)
+ 		{
+ 		  /* We found the entry.  */
+ 		  idx = symb_table[2 * elem + 1];
+@@ -2834,7 +2822,7 @@ parse_bracket_exp (re_string_t *regexp,
+ 		  /* Return the collation sequence value.  */
+ 		  return *(unsigned int *) (extra + idx);
+ 		}
+-	      else if (symb_table[2 * elem] == 0 && sym_name_len == 1)
++	      else if (sym_name_len == 1)
+ 		{
+ 		  /* No valid character.  Match it as a single byte
+ 		     character.  */
+@@ -2856,11 +2844,8 @@ parse_bracket_exp (re_string_t *regexp,
+ 
+   auto inline reg_errcode_t
+   __attribute ((always_inline))
+-  build_range_exp (sbcset, mbcset, range_alloc, start_elem, end_elem)
+-	 re_charset_t *mbcset;
+-	 int *range_alloc;
+-	 bitset_t sbcset;
+-	 bracket_elem_t *start_elem, *end_elem;
++  build_range_exp (bitset_t sbcset, re_charset_t *mbcset, int *range_alloc,
++		   bracket_elem_t *start_elem, bracket_elem_t *end_elem)
+     {
+       unsigned int ch;
+       uint32_t start_collseq;
+@@ -2939,25 +2924,22 @@ parse_bracket_exp (re_string_t *regexp,
+ 
+   auto inline reg_errcode_t
+   __attribute ((always_inline))
+-  build_collating_symbol (sbcset, mbcset, coll_sym_alloc, name)
+-	 re_charset_t *mbcset;
+-	 int *coll_sym_alloc;
+-	 bitset_t sbcset;
+-	 const unsigned char *name;
++  build_collating_symbol (bitset_t sbcset, re_charset_t *mbcset,
++			  int *coll_sym_alloc, const unsigned char *name)
+     {
+       int32_t elem, idx;
+       size_t name_len = strlen ((const char *) name);
+       if (nrules != 0)
+ 	{
+ 	  elem = seek_collating_symbol_entry (name, name_len);
+-	  if (symb_table[2 * elem] != 0)
++	  if (elem != -1)
+ 	    {
+ 	      /* We found the entry.  */
+ 	      idx = symb_table[2 * elem + 1];
+ 	      /* Skip the name of collating element name.  */
+ 	      idx += 1 + extra[idx];
+ 	    }
+-	  else if (symb_table[2 * elem] == 0 && name_len == 1)
++	  else if (name_len == 1)
+ 	    {
+ 	      /* No valid character, treat it as a normal
+ 		 character.  */
+diff -Nrup a/resolv/Makefile b/resolv/Makefile
+--- a/resolv/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/resolv/Makefile	2012-01-01 20:41:26.682439836 -0700
+@@ -81,6 +81,7 @@ ifeq (yes,$(have-ssp))
+ CFLAGS-libresolv += -fstack-protector
+ endif
+ CFLAGS-res_hconf.c = -fexceptions
++CFLAGS-res_send.c += -fno-strict-aliasing
+ 
+ # The BIND code elicits some harmless warnings.
+ +cflags += -Wno-strict-prototypes -Wno-write-strings
+diff -Nrup a/resource/getrlimit.c b/resource/getrlimit.c
+--- a/resource/getrlimit.c	2012-01-01 05:16:32.000000000 -0700
++++ b/resource/getrlimit.c	2012-01-01 20:41:26.682439836 -0700
+@@ -28,6 +28,7 @@ __getrlimit (enum __rlimit_resource reso
+   __set_errno (ENOSYS);
+   return -1;
+ }
++libc_hidden_def (__getrlimit)
+ weak_alias (__getrlimit, getrlimit)
+ 
+ stub_warning (getrlimit)
+diff -Nrup a/stdio-common/vfprintf.c b/stdio-common/vfprintf.c
+--- a/stdio-common/vfprintf.c	2012-01-01 05:16:32.000000000 -0700
++++ b/stdio-common/vfprintf.c	2012-01-01 20:41:26.683439836 -0700
+@@ -1161,41 +1161,9 @@ vfprintf (FILE *s, const CHAR_T *format,
+ 	else if (!is_long && spec != L_('S'))				      \
+ 	  {								      \
+ 	    if (prec != -1)						      \
+-	      {								      \
+-		/* Search for the end of the string, but don't search past    \
+-		   the length (in bytes) specified by the precision.  Also    \
+-		   don't use incomplete characters.  */			      \
+-		if (_NL_CURRENT_WORD (LC_CTYPE, _NL_CTYPE_MB_CUR_MAX) == 1)   \
+-		  len = __strnlen (string, prec);			      \
+-		else							      \
+-		  {							      \
+-		    /* In case we have a multibyte character set the	      \
+-		       situation is more complicated.  We must not copy	      \
+-		       bytes at the end which form an incomplete character. */\
+-		    size_t ignore_size = (unsigned) prec > 1024 ? 1024 : prec;\
+-		    wchar_t ignore[ignore_size];			      \
+-		    const char *str2 = string;				      \
+-		    const char *strend = string + prec;			      \
+-		    if (strend < string)				      \
+-		      strend = (const char *) UINTPTR_MAX;		      \
+-									      \
+-		    mbstate_t ps;					      \
+-		    memset (&ps, '\0', sizeof (ps));			      \
+-									      \
+-		    while (str2 != NULL && str2 < strend)		      \
+-		      if (__mbsnrtowcs (ignore, &str2, strend - str2,	      \
+-					ignore_size, &ps) == (size_t) -1)     \
+-			{						      \
+-			  done = -1;					      \
+-			  goto all_done;				      \
+-			}						      \
+-									      \
+-		    if (str2 == NULL)					      \
+-		      len = strlen (string);				      \
+-		    else						      \
+-		      len = str2 - string - (ps.__count & 7);		      \
+-		  }							      \
+-	      }								      \
++	      /* Search for the end of the string, but don't search past      \
++		 the length (in bytes) specified by the precision.  */	      \
++	      len = __strnlen (string, prec);				      \
+ 	    else							      \
+ 	      len = strlen (string);					      \
+ 	  }								      \
+diff -Nrup a/streams/Makefile b/streams/Makefile
+--- a/streams/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/streams/Makefile	2012-01-01 20:41:26.684439835 -0700
+@@ -21,7 +21,7 @@
+ #
+ subdir	:= streams
+ 
+-headers		= stropts.h sys/stropts.h bits/stropts.h bits/xtitypes.h
++#headers		= stropts.h sys/stropts.h bits/stropts.h bits/xtitypes.h
+ routines	= isastream getmsg getpmsg putmsg putpmsg fattach fdetach
+ 
+ include ../Rules
+diff -Nrup a/sunrpc/Makefile b/sunrpc/Makefile
+--- a/sunrpc/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sunrpc/Makefile	2012-01-01 20:41:26.684439835 -0700
+@@ -53,7 +53,7 @@ headers-in-tirpc = $(addprefix rpc/,auth
+ 				    des_crypt.h)
+ headers-not-in-tirpc = $(addprefix rpc/,key_prot.h rpc_des.h) \
+ 		       $(rpcsvc:%=rpcsvc/%) rpcsvc/bootparam.h
+-headers = rpc/netdb.h
++headers = rpc/netdb.h $(headers-in-tirpc) $(headers-not-in-tirpc)
+ install-others = $(inst_sysconfdir)/rpc
+ generated = $(rpcsvc:%.x=rpcsvc/%.h) $(rpcsvc:%.x=x%.c) $(rpcsvc:%.x=x%.stmp) \
+ 	    $(rpcsvc:%.x=rpcsvc/%.stmp) rpcgen
+@@ -152,6 +152,10 @@ CFLAGS-openchild.c = -fexceptions
+ 
+ CPPFLAGS += -D_RPC_THREAD_SAFE_
+ 
++CFLAGS-clnt_tcp.c += -fno-strict-aliasing
++CFLAGS-clnt_udp.c += -fno-strict-aliasing
++CFLAGS-clnt_unix.c += -fno-strict-aliasing
++
+ $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
+diff -Nrup a/sysdeps/generic/dl-cache.h b/sysdeps/generic/dl-cache.h
+--- a/sysdeps/generic/dl-cache.h	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/generic/dl-cache.h	2012-01-01 20:41:26.685439835 -0700
+@@ -36,6 +36,14 @@
+ # define add_system_dir(dir) add_dir (dir)
+ #endif
+ 
++#ifndef arch_startup
++# define arch_startup(argc, argv) do { } while (0)
++#endif
++
++#ifndef add_arch_dirs
++# define add_arch_dirs(config_file) do { } while (0)
++#endif
++
+ #define CACHEMAGIC "ld.so-1.7.0"
+ 
+ /* libc5 and glibc 2.0/2.1 use the same format.  For glibc 2.2 another
+diff -Nrup a/sysdeps/i386/Makefile b/sysdeps/i386/Makefile
+--- a/sysdeps/i386/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/i386/Makefile	2012-01-01 20:41:26.685439835 -0700
+@@ -2,6 +2,8 @@
+ # Every i386 port in use uses gas syntax (I think).
+ asm-CPPFLAGS += -DGAS_SYNTAX
+ 
++sysdep-ASFLAGS += -U__i686
++
+ # The i386 `long double' is a distinct type we support.
+ long-double-fcts = yes
+ 
+@@ -68,6 +70,14 @@ endif
+ 
+ ifneq (,$(filter -mno-tls-direct-seg-refs,$(CFLAGS)))
+ defines += -DNO_TLS_DIRECT_SEG_REFS
++else
++# .a libraries are not performance critical and so we
++# build them without direct TLS segment references
++# always.
++CPPFLAGS-.o += -DNO_TLS_DIRECT_SEG_REFS
++CFLAGS-.o += -mno-tls-direct-seg-refs
++CPPFLAGS-.oS += -DNO_TLS_DIRECT_SEG_REFS
++CFLAGS-.oS += -mno-tls-direct-seg-refs
+ endif
+ 
+ ifeq ($(subdir),elf)
+diff -Nrup a/sysdeps/i386/i686/Makefile b/sysdeps/i386/i686/Makefile
+--- a/sysdeps/i386/i686/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/i386/i686/Makefile	2012-01-01 20:41:26.687439834 -0700
+@@ -9,19 +9,3 @@ stack-align-test-flags += -msse
+ ifeq ($(subdir),string)
+ sysdep_routines += cacheinfo
+ endif
+-
+-ifeq (yes,$(config-asflags-i686))
+-CFLAGS-.o += -Wa,-mtune=i686
+-CFLAGS-.os += -Wa,-mtune=i686
+-CFLAGS-.op += -Wa,-mtune=i686
+-CFLAGS-.og += -Wa,-mtune=i686
+-CFLAGS-.ob += -Wa,-mtune=i686
+-CFLAGS-.oS += -Wa,-mtune=i686
+-
+-ASFLAGS-.o += -Wa,-mtune=i686
+-ASFLAGS-.os += -Wa,-mtune=i686
+-ASFLAGS-.op += -Wa,-mtune=i686
+-ASFLAGS-.og += -Wa,-mtune=i686
+-ASFLAGS-.ob += -Wa,-mtune=i686
+-ASFLAGS-.oS += -Wa,-mtune=i686
+-endif
+diff -Nrup a/sysdeps/ia64/Makefile b/sysdeps/ia64/Makefile
+--- a/sysdeps/ia64/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/ia64/Makefile	2012-01-01 20:41:26.688439833 -0700
+@@ -12,8 +12,8 @@ elide-routines.os += hp-timing
+ 
+ ifeq (yes,$(build-shared))
+ # Compatibility
+-sysdep_routines += ia64libgcc
+-shared-only-routines += ia64libgcc
++sysdep_routines += libgcc-compat
++shared-only-routines += libgcc-compat
+ endif
+ endif
+ 
+diff -Nrup a/sysdeps/ia64/ia64libgcc.S b/sysdeps/ia64/ia64libgcc.S
+--- a/sysdeps/ia64/ia64libgcc.S	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/ia64/ia64libgcc.S	1969-12-31 17:00:00.000000000 -0700
+@@ -1,350 +0,0 @@
+-/* From the Intel IA-64 Optimization Guide, choose the minimum latency
+-   alternative.  */
+-
+-#include <sysdep.h>
+-#undef ret
+-
+-#include <shlib-compat.h>
+-
+-#if SHLIB_COMPAT(libc, GLIBC_2_2, GLIBC_2_2_6)
+-
+-/* __divtf3
+-   Compute a 80-bit IEEE double-extended quotient.
+-   farg0 holds the dividend.  farg1 holds the divisor.  */
+-
+-ENTRY(___divtf3)
+-	cmp.eq p7, p0 = r0, r0
+-	frcpa.s0 f10, p6 = farg0, farg1
+-	;;
+-(p6)	cmp.ne p7, p0 = r0, r0
+-	.pred.rel.mutex p6, p7
+-(p6)	fnma.s1 f11 = farg1, f10, f1
+-(p6)	fma.s1 f12 = farg0, f10, f0
+-	;;
+-(p6)	fma.s1 f13 = f11, f11, f0
+-(p6)	fma.s1 f14 = f11, f11, f11
+-	;;
+-(p6)	fma.s1 f11 = f13, f13, f11
+-(p6)	fma.s1 f13 = f14, f10, f10
+-	;;
+-(p6)	fma.s1 f10 = f13, f11, f10
+-(p6)	fnma.s1 f11 = farg1, f12, farg0
+-	;;
+-(p6)	fma.s1 f11 = f11, f10, f12
+-(p6)	fnma.s1 f12 = farg1, f10, f1
+-	;;
+-(p6)	fma.s1 f10 = f12, f10, f10
+-(p6)	fnma.s1 f12 = farg1, f11, farg0
+-	;;
+-(p6)	fma.s0 fret0 = f12, f10, f11
+-(p7)	mov fret0 = f10
+-	br.ret.sptk rp
+-END(___divtf3)
+-	.symver ___divtf3, __divtf3@GLIBC_2.2
+-
+-/* __divdf3
+-   Compute a 64-bit IEEE double quotient.
+-   farg0 holds the dividend.  farg1 holds the divisor.  */
+-
+-ENTRY(___divdf3)
+-	cmp.eq p7, p0 = r0, r0
+-	frcpa.s0 f10, p6 = farg0, farg1
+-	;;
+-(p6)	cmp.ne p7, p0 = r0, r0
+-	.pred.rel.mutex p6, p7
+-(p6)	fmpy.s1 f11 = farg0, f10
+-(p6)	fnma.s1 f12 = farg1, f10, f1
+-	;;
+-(p6)	fma.s1 f11 = f12, f11, f11
+-(p6)	fmpy.s1 f13 = f12, f12
+-	;;
+-(p6)	fma.s1 f10 = f12, f10, f10
+-(p6)	fma.s1 f11 = f13, f11, f11
+-	;;
+-(p6)	fmpy.s1 f12 = f13, f13
+-(p6)	fma.s1 f10 = f13, f10, f10
+-	;;
+-(p6)	fma.d.s1 f11 = f12, f11, f11
+-(p6)	fma.s1 f10 = f12, f10, f10
+-	;;
+-(p6)	fnma.d.s1 f8 = farg1, f11, farg0
+-	;;
+-(p6)	fma.d fret0 = f8, f10, f11
+-(p7)	mov fret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___divdf3)
+-	.symver	___divdf3, __divdf3@GLIBC_2.2
+-
+-/* __divsf3
+-   Compute a 32-bit IEEE float quotient.
+-   farg0 holds the dividend.  farg1 holds the divisor.  */
+-
+-ENTRY(___divsf3)
+-	cmp.eq p7, p0 = r0, r0
+-	frcpa.s0 f10, p6 = farg0, farg1
+-	;;
+-(p6)	cmp.ne p7, p0 = r0, r0
+-	.pred.rel.mutex p6, p7
+-(p6)	fmpy.s1 f8 = farg0, f10
+-(p6)	fnma.s1 f9 = farg1, f10, f1
+-	;;
+-(p6)	fma.s1 f8 = f9, f8, f8
+-(p6)	fmpy.s1 f9 = f9, f9
+-	;;
+-(p6)	fma.s1 f8 = f9, f8, f8
+-(p6)	fmpy.s1 f9 = f9, f9
+-	;;
+-(p6)	fma.d.s1 f10 = f9, f8, f8
+-	;;
+-(p6)	fnorm.s.s0 fret0 = f10
+-(p7)	mov fret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___divsf3)
+-	.symver	___divsf3, __divsf3@GLIBC_2.2
+-
+-/* __divdi3
+-   Compute a 64-bit integer quotient.
+-   in0 holds the dividend.  in1 holds the divisor.  */
+-
+-ENTRY(___divdi3)
+-	.regstk 2,0,0,0
+-	/* Transfer inputs to FP registers.  */
+-	setf.sig f8 = in0
+-	setf.sig f9 = in1
+-	;;
+-	/* Convert the inputs to FP, so that they won't be treated as
+-	   unsigned.  */
+-	fcvt.xf f8 = f8
+-	fcvt.xf f9 = f9
+-	;;
+-	/* Compute the reciprocal approximation.  */
+-	frcpa.s1 f10, p6 = f8, f9
+-	;;
+-	/* 3 Newton-Raphson iterations.  */
+-(p6)	fnma.s1 f11 = f9, f10, f1
+-(p6)	fmpy.s1 f12 = f8, f10
+-	;;
+-(p6)	fmpy.s1 f13 = f11, f11
+-(p6)	fma.s1 f12 = f11, f12, f12
+-	;;
+-(p6)	fma.s1 f10 = f11, f10, f10
+-(p6)	fma.s1 f11 = f13, f12, f12
+-	;;
+-(p6)	fma.s1 f10 = f13, f10, f10
+-(p6)	fnma.s1 f12 = f9, f11, f8
+-	;;
+-(p6)	fma.s1 f10 = f12, f10, f11
+-	;;
+-	/* Round quotient to an integer.  */
+-	fcvt.fx.trunc.s1 f10 = f10
+-	;;
+-	/* Transfer result to GP registers.  */
+-	getf.sig ret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___divdi3)
+-	.symver	___divdi3, __divdi3@GLIBC_2.2
+-
+-/* __moddi3
+-   Compute a 64-bit integer modulus.
+-   in0 holds the dividend (a).  in1 holds the divisor (b).  */
+-
+-ENTRY(___moddi3)
+-	.regstk 2,0,0,0
+-	/* Transfer inputs to FP registers.  */
+-	setf.sig f14 = in0
+-	setf.sig f9 = in1
+-	;;
+-	/* Convert the inputs to FP, so that they won't be treated as
+-	   unsigned.  */
+-	fcvt.xf f8 = f14
+-	fcvt.xf f9 = f9
+-	;;
+-	/* Compute the reciprocal approximation.  */
+-	frcpa.s1 f10, p6 = f8, f9
+-	;;
+-	/* 3 Newton-Raphson iterations.  */
+-(p6)	fmpy.s1 f12 = f8, f10
+-(p6)	fnma.s1 f11 = f9, f10, f1
+-	;;
+-(p6)	fma.s1 f12 = f11, f12, f12
+-(p6)	fmpy.s1 f13 = f11, f11
+-	;;
+-(p6)	fma.s1 f10 = f11, f10, f10
+-(p6)	fma.s1 f11 = f13, f12, f12
+-	;;
+-	sub in1 = r0, in1
+-(p6)	fma.s1 f10 = f13, f10, f10
+-(p6)	fnma.s1 f12 = f9, f11, f8
+-	;;
+-	setf.sig f9 = in1
+-(p6)	fma.s1 f10 = f12, f10, f11
+-	;;
+-	fcvt.fx.trunc.s1 f10 = f10
+-	;;
+-	/* r = q * (-b) + a  */
+-	xma.l f10 = f10, f9, f14
+-	;;
+-	/* Transfer result to GP registers.  */
+-	getf.sig ret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___moddi3)
+-	.symver ___moddi3, __moddi3@GLIBC_2.2
+-
+-/* __udivdi3
+-   Compute a 64-bit unsigned integer quotient.
+-   in0 holds the dividend.  in1 holds the divisor.  */
+-
+-ENTRY(___udivdi3)
+-	.regstk 2,0,0,0
+-	/* Transfer inputs to FP registers.  */
+-	setf.sig f8 = in0
+-	setf.sig f9 = in1
+-	;;
+-	/* Convert the inputs to FP, to avoid FP software-assist faults.  */
+-	fcvt.xuf.s1 f8 = f8
+-	fcvt.xuf.s1 f9 = f9
+-	;;
+-	/* Compute the reciprocal approximation.  */
+-	frcpa.s1 f10, p6 = f8, f9
+-	;;
+-	/* 3 Newton-Raphson iterations.  */
+-(p6)	fnma.s1 f11 = f9, f10, f1
+-(p6)	fmpy.s1 f12 = f8, f10
+-	;;
+-(p6)	fmpy.s1 f13 = f11, f11
+-(p6)	fma.s1 f12 = f11, f12, f12
+-	;;
+-(p6)	fma.s1 f10 = f11, f10, f10
+-(p6)	fma.s1 f11 = f13, f12, f12
+-	;;
+-(p6)	fma.s1 f10 = f13, f10, f10
+-(p6)	fnma.s1 f12 = f9, f11, f8
+-	;;
+-(p6)	fma.s1 f10 = f12, f10, f11
+-	;;
+-	/* Round quotient to an unsigned integer.  */
+-	fcvt.fxu.trunc.s1 f10 = f10
+-	;;
+-	/* Transfer result to GP registers.  */
+-	getf.sig ret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___udivdi3)
+-	.symver	___udivdi3, __udivdi3@GLIBC_2.2
+-
+-/* __umoddi3
+-   Compute a 64-bit unsigned integer modulus.
+-   in0 holds the dividend (a).  in1 holds the divisor (b).  */
+-
+-ENTRY(___umoddi3)
+-	.regstk 2,0,0,0
+-	/* Transfer inputs to FP registers.  */
+-	setf.sig f14 = in0
+-	setf.sig f9 = in1
+-	;;
+-	/* Convert the inputs to FP, to avoid FP software assist faults.  */
+-	fcvt.xuf.s1 f8 = f14
+-	fcvt.xuf.s1 f9 = f9
+-	;;
+-	/* Compute the reciprocal approximation.  */
+-	frcpa.s1 f10, p6 = f8, f9
+-	;;
+-	/* 3 Newton-Raphson iterations.  */
+-(p6)	fmpy.s1 f12 = f8, f10
+-(p6)	fnma.s1 f11 = f9, f10, f1
+-	;;
+-(p6)	fma.s1 f12 = f11, f12, f12
+-(p6)	fmpy.s1 f13 = f11, f11
+-	;;
+-(p6)	fma.s1 f10 = f11, f10, f10
+-(p6)	fma.s1 f11 = f13, f12, f12
+-	;;
+-	sub in1 = r0, in1
+-(p6)	fma.s1 f10 = f13, f10, f10
+-(p6)	fnma.s1 f12 = f9, f11, f8
+-	;;
+-	setf.sig f9 = in1
+-(p6)	fma.s1 f10 = f12, f10, f11
+-	;;
+-	/* Round quotient to an unsigned integer.  */
+-	fcvt.fxu.trunc.s1 f10 = f10
+-	;;
+-	/* r = q * (-b) + a  */
+-	xma.l f10 = f10, f9, f14
+-	;;
+-	/* Transfer result to GP registers.  */
+-	getf.sig ret0 = f10
+-	br.ret.sptk rp
+-	;;
+-END(___umoddi3)
+-	.symver	___umoddi3, __umoddi3@GLIBC_2.2
+-
+-/* __multi3
+-   Compute a 128-bit multiply of 128-bit multiplicands.
+-   in0/in1 holds one multiplicand (a), in2/in3 holds the other one (b).  */
+-
+-ENTRY(___multi3)
+-	.regstk 4,0,0,0
+-	setf.sig f6 = in1
+-	movl r19 = 0xffffffff
+-	setf.sig f7 = in2
+-	;;
+-	and r14 = r19, in0
+-	;;
+-	setf.sig f10 = r14
+-	and r14 = r19, in2
+-	xmpy.l f9 = f6, f7
+-	;;
+-	setf.sig f6 = r14
+-	shr.u r14 = in0, 32
+-	;;
+-	setf.sig f7 = r14
+-	shr.u r14 = in2, 32
+-	;;
+-	setf.sig f8 = r14
+-	xmpy.l f11 = f10, f6
+-	xmpy.l f6 = f7, f6
+-	;;
+-	getf.sig r16 = f11
+-	xmpy.l f7 = f7, f8
+-	;;
+-	shr.u r14 = r16, 32
+-	and r16 = r19, r16
+-	getf.sig r17 = f6
+-	setf.sig f6 = in0
+-	;;
+-	setf.sig f11 = r14
+-	getf.sig r21 = f7
+-	setf.sig f7 = in3
+-	;;
+-	xma.l f11 = f10, f8, f11
+-	xma.l f6 = f6, f7, f9
+-	;;
+-	getf.sig r18 = f11
+-	;;
+-	add r18 = r18, r17
+-	;;
+-	and r15 = r19, r18
+-	cmp.ltu p7, p6 = r18, r17
+-	;;
+-	getf.sig r22 = f6
+-(p7)	adds r14 = 1, r19
+-	;;
+-(p7)	add r21 = r21, r14
+-	shr.u r14 = r18, 32
+-	shl r15 = r15, 32
+-	;;
+-	add r20 = r21, r14
+-	;;
+-	add ret0 = r15, r16
+-	add ret1 = r22, r20
+-	br.ret.sptk rp
+-	;;
+-END(___multi3)
+-	.symver	___multi3, __multi3@GLIBC_2.2
+-
+-#endif
+diff -Nrup a/sysdeps/ia64/libgcc-compat.c b/sysdeps/ia64/libgcc-compat.c
+--- a/sysdeps/ia64/libgcc-compat.c	1969-12-31 17:00:00.000000000 -0700
++++ b/sysdeps/ia64/libgcc-compat.c	2012-01-01 20:41:26.694439833 -0700
+@@ -0,0 +1,84 @@
++/* pre-.hidden libgcc compatibility
++   Copyright (C) 2002 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++
++#include <stdint.h>
++#include <shlib-compat.h>
++
++#if SHLIB_COMPAT(libc, GLIBC_2_2, GLIBC_2_2_6)
++
++typedef int int128_t __attribute__((__mode__(TI)));
++
++extern long double __divtf3 (long double, long double) attribute_hidden;
++long double INTUSE (__divtf3) (long double x, long double y)
++{
++  return __divtf3 (x, y);
++}
++symbol_version (INTUSE (__divtf3), __divtf3, GLIBC_2.2);
++
++extern double __divdf3 (double, double) attribute_hidden;
++double INTUSE (__divdf3) (double x, double y)
++{
++  return __divdf3 (x, y);
++}
++symbol_version (INTUSE (__divdf3), __divdf3, GLIBC_2.2);
++
++extern float __divsf3 (float, float) attribute_hidden;
++float INTUSE (__divsf3) (float x, float y)
++{
++  return __divsf3 (x, y);
++}
++symbol_version (INTUSE (__divsf3), __divsf3, GLIBC_2.2);
++
++extern int64_t __divdi3 (int64_t, int64_t) attribute_hidden;
++int64_t INTUSE (__divdi3) (int64_t x, int64_t y)
++{
++  return __divdi3 (x, y);
++}
++symbol_version (INTUSE (__divdi3), __divdi3, GLIBC_2.2);
++
++extern int64_t __moddi3 (int64_t, int64_t) attribute_hidden;
++int64_t INTUSE (__moddi3) (int64_t x, int64_t y)
++{
++  return __moddi3 (x, y);
++}
++symbol_version (INTUSE (__moddi3), __moddi3, GLIBC_2.2);
++
++extern uint64_t __udivdi3 (uint64_t, uint64_t) attribute_hidden;
++uint64_t INTUSE (__udivdi3) (uint64_t x, uint64_t y)
++{
++  return __udivdi3 (x, y);
++}
++symbol_version (INTUSE (__udivdi3), __udivdi3, GLIBC_2.2);
++
++extern uint64_t __umoddi3 (uint64_t, uint64_t) attribute_hidden;
++uint64_t INTUSE (__umoddi3) (uint64_t x, uint64_t y)
++{
++  return __umoddi3 (x, y);
++}
++symbol_version (INTUSE (__umoddi3), __umoddi3, GLIBC_2.2);
++
++extern int128_t __multi3 (int128_t, int128_t) attribute_hidden;
++int128_t INTUSE (__multi3) (int128_t x, int128_t y)
++{
++  return __multi3 (x, y);
++}
++symbol_version (INTUSE (__multi3), __multi3, GLIBC_2.2);
++
++#endif
+diff -Nrup a/sysdeps/mach/hurd/getrlimit.c b/sysdeps/mach/hurd/getrlimit.c
+--- a/sysdeps/mach/hurd/getrlimit.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/mach/hurd/getrlimit.c	2012-01-01 20:41:26.694439833 -0700
+@@ -44,4 +44,5 @@ __getrlimit (enum __rlimit_resource reso
+ 
+   return 0;
+ }
++libc_hidden_def (__getrlimit)
+ weak_alias (__getrlimit, getrlimit)
+diff -Nrup a/sysdeps/posix/getaddrinfo.c b/sysdeps/posix/getaddrinfo.c
+--- a/sysdeps/posix/getaddrinfo.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/posix/getaddrinfo.c	2012-01-01 20:41:26.695439833 -0700
+@@ -565,8 +565,8 @@ gaih_inet (const char *name, const struc
+ 
+ 	  /* If we do not have to look for IPv6 addresses, use
+ 	     the simple, old functions, which do not support
+-	     IPv6 scope ids. */
+-	  if (req->ai_family == AF_INET)
++	     IPv6 scope ids, nor retrieving the canonical name.  */
++	  if (req->ai_family == AF_INET && (req->ai_flags & AI_CANONNAME) == 0)
+ 	    {
+ 	      size_t tmpbuflen = 512;
+ 	      assert (tmpbuf == NULL);
+@@ -1105,68 +1105,10 @@ gaih_inet (const char *name, const struc
+ 	/* Only the first entry gets the canonical name.  */
+ 	if (at2 == at && (req->ai_flags & AI_CANONNAME) != 0)
+ 	  {
+-	    char *tmpbuf2 = NULL;
+-	    bool malloc_tmpbuf2 = false;
+-
+ 	    if (canon == NULL)
+-	      {
+-		struct hostent *h = NULL;
+-		int herrno;
+-		struct hostent th;
+-		size_t tmpbuf2len = 512;
+-
+-		do
+-		  {
+-		    if (__libc_use_alloca (alloca_used + 2 * tmpbuf2len))
+-		      tmpbuf2 = extend_alloca_account (tmpbuf2, tmpbuf2len,
+-						       tmpbuf2len * 2,
+-						       alloca_used);
+-		    else
+-		      {
+-			char *newp = realloc (malloc_tmpbuf2 ? tmpbuf2 : NULL,
+-					      2 * tmpbuf2len);
+-			if (newp == NULL)
+-			  {
+-			    if (malloc_tmpbuf2)
+-			      free (tmpbuf2);
+-			    result = -EAI_MEMORY;
+-			    goto free_and_return;
+-			  }
+-
+-			tmpbuf2 = newp;
+-			tmpbuf2len = 2 * tmpbuf2len;
+-			malloc_tmpbuf2 = true;
+-		      }
+-
+-		    rc = __gethostbyaddr_r (at2->addr,
+-					    ((at2->family == AF_INET6)
+-					     ? sizeof (struct in6_addr)
+-					     : sizeof (struct in_addr)),
+-					    at2->family, &th, tmpbuf2,
+-					    tmpbuf2len, &h, &herrno);
+-		  }
+-		while (rc == ERANGE && herrno == NETDB_INTERNAL);
+-
+-		if (rc != 0 && herrno == NETDB_INTERNAL)
+-		  {
+-		    if (malloc_tmpbuf2)
+-		      free (tmpbuf2);
+-
+-		    __set_h_errno (herrno);
+-		    result = -EAI_SYSTEM;
+-		    goto free_and_return;
+-		  }
+-
+-		if (h != NULL)
+-		  canon = h->h_name;
+-		else
+-		  {
+-		    assert (orig_name != NULL);
+-		    /* If the canonical name cannot be determined, use
+-		       the passed in string.  */
+-		    canon = orig_name;
+-		  }
+-	      }
++	      /* If the canonical name cannot be determined, use
++		 the passed in string.  */
++	      canon = orig_name;
+ 
+ #ifdef HAVE_LIBIDN
+ 	    if (req->ai_flags & AI_CANONIDN)
+@@ -1181,9 +1123,6 @@ gaih_inet (const char *name, const struc
+ 		int rc = __idna_to_unicode_lzlz (canon, &out, idn_flags);
+ 		if (rc != IDNA_SUCCESS)
+ 		  {
+-		    if (malloc_tmpbuf2)
+-		      free (tmpbuf2);
+-
+ 		    if (rc == IDNA_MALLOC_ERROR)
+ 		      result = -EAI_MEMORY;
+ 		    else if (rc == IDNA_DLOPEN_ERROR)
+@@ -1213,17 +1152,11 @@ gaih_inet (const char *name, const struc
+ 		    canon = strdup (canon);
+ 		    if (canon == NULL)
+ 		      {
+-			if (malloc_tmpbuf2)
+-			  free (tmpbuf2);
+-
+ 			result = -EAI_MEMORY;
+ 			goto free_and_return;
+ 		      }
+ 		  }
+ 	      }
+-
+-	    if (malloc_tmpbuf2)
+-	      free (tmpbuf2);
+ 	  }
+ 
+ 	family = at2->family;
+@@ -1360,10 +1293,12 @@ static const struct scopeentry
+     /* Link-local addresses: scope 2.  */
+     { { { 169, 254, 0, 0 } }, htonl_c (0xffff0000), 2 },
+     { { { 127, 0, 0, 0 } }, htonl_c (0xff000000), 2 },
++#if 0
+     /* Site-local addresses: scope 5.  */
+     { { { 10, 0, 0, 0 } }, htonl_c (0xff000000), 5 },
+     { { { 172, 16, 0, 0 } }, htonl_c (0xfff00000), 5 },
+     { { { 192, 168, 0, 0 } }, htonl_c (0xffff0000), 5 },
++#endif
+     /* Default: scope 14.  */
+     { { { 0, 0, 0, 0 } }, htonl_c (0x00000000), 14 }
+   };
+diff -Nrup a/sysdeps/powerpc/powerpc64/Makefile b/sysdeps/powerpc/powerpc64/Makefile
+--- a/sysdeps/powerpc/powerpc64/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/powerpc/powerpc64/Makefile	2012-01-01 20:41:26.695439833 -0700
+@@ -33,6 +33,7 @@ ifneq ($(elf),no)
+ # we use -fpic instead which is much better.
+ CFLAGS-initfini.s += -fpic -O1
+ endif
++CFLAGS-libc-start.c += -fno-asynchronous-unwind-tables
+ endif
+ 
+ ifeq ($(subdir),elf)
+diff -Nrup a/sysdeps/powerpc/powerpc64/elf/Makefile b/sysdeps/powerpc/powerpc64/elf/Makefile
+--- a/sysdeps/powerpc/powerpc64/elf/Makefile	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/powerpc/powerpc64/elf/Makefile	2012-01-01 20:41:26.696439833 -0700
+@@ -9,3 +9,5 @@ CFLAGS-rtld-mempcpy.os = $(no-special-re
+ CFLAGS-rtld-memmove.os = $(no-special-regs)
+ CFLAGS-rtld-memchr.os = $(no-special-regs)
+ CFLAGS-rtld-strnlen.os = $(no-special-regs)
++
++CFLAGS-gmon-start.c = -fno-strict-aliasing
+diff -Nrup a/sysdeps/s390/s390-64/utf16-utf32-z9.c b/sysdeps/s390/s390-64/utf16-utf32-z9.c
+--- a/sysdeps/s390/s390-64/utf16-utf32-z9.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/s390/s390-64/utf16-utf32-z9.c	2012-01-01 20:41:26.696439833 -0700
+@@ -169,10 +169,7 @@ gconv_end (struct __gconv_step *data)
+     register unsigned long long outlen asm("11") = outend - outptr;	\
+     uint64_t cc = 0;							\
+ 									\
+-    asm volatile (".machine push       \n\t"				\
+-                  ".machine \"z9-109\" \n\t"				\
+-		  "0: " INSTRUCTION "  \n\t"				\
+-                  ".machine pop        \n\t"				\
++    asm volatile ("0: " INSTRUCTION "  \n\t"				\
+                   "   jo     0b        \n\t"				\
+ 		  "   ipm    %2        \n"			        \
+ 		  : "+a" (pOutput), "+a" (pInput), "+d" (cc),		\
+diff -Nrup a/sysdeps/s390/s390-64/utf8-utf16-z9.c b/sysdeps/s390/s390-64/utf8-utf16-z9.c
+--- a/sysdeps/s390/s390-64/utf8-utf16-z9.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/s390/s390-64/utf8-utf16-z9.c	2012-01-01 20:41:26.697439833 -0700
+@@ -151,10 +151,7 @@ gconv_end (struct __gconv_step *data)
+     register unsigned long long outlen asm("11") = outend - outptr;	\
+     uint64_t cc = 0;							\
+ 									\
+-    asm volatile (".machine push       \n\t"				\
+-                  ".machine \"z9-109\" \n\t"				\
+-		  "0: " INSTRUCTION "  \n\t"				\
+-                  ".machine pop        \n\t"				\
++    asm volatile ("0: " INSTRUCTION "  \n\t"				\
+                   "   jo     0b        \n\t"				\
+ 		  "   ipm    %2        \n"			        \
+ 		  : "+a" (pOutput), "+a" (pInput), "+d" (cc),		\
+diff -Nrup a/sysdeps/s390/s390-64/utf8-utf32-z9.c b/sysdeps/s390/s390-64/utf8-utf32-z9.c
+--- a/sysdeps/s390/s390-64/utf8-utf32-z9.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/s390/s390-64/utf8-utf32-z9.c	2012-01-01 20:41:26.697439833 -0700
+@@ -155,10 +155,7 @@ gconv_end (struct __gconv_step *data)
+     register unsigned long long outlen asm("11") = outend - outptr;	\
+     uint64_t cc = 0;							\
+ 									\
+-    asm volatile (".machine push       \n\t"				\
+-                  ".machine \"z9-109\" \n\t"				\
+-		  "0: " INSTRUCTION "  \n\t"				\
+-                  ".machine pop        \n\t"				\
++    asm volatile ("0: " INSTRUCTION "  \n\t"				\
+                   "   jo     0b        \n\t"				\
+ 		  "   ipm    %2        \n"				\
+ 		  : "+a" (pOutput), "+a" (pInput), "+d" (cc),		\
+diff -Nrup a/sysdeps/unix/nice.c b/sysdeps/unix/nice.c
+--- a/sysdeps/unix/nice.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/nice.c	2012-01-01 20:41:26.698439833 -0700
+@@ -42,7 +42,12 @@ nice (int incr)
+ 	__set_errno (save);
+     }
+ 
+-  result = setpriority (PRIO_PROCESS, 0, prio + incr);
++  prio += incr;
++  if (prio < PRIO_MIN)
++    prio = PRIO_MIN;
++  else if (prio >= PRIO_MAX)
++    prio = PRIO_MAX - 1;
++  result = setpriority (PRIO_PROCESS, 0, prio);
+   if (result == -1)
+     {
+       if (errno == EACCES)
+diff -Nrup a/sysdeps/unix/sysv/linux/check_pf.c b/sysdeps/unix/sysv/linux/check_pf.c
+--- a/sysdeps/unix/sysv/linux/check_pf.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/check_pf.c	2012-01-01 20:41:26.698439833 -0700
+@@ -27,16 +27,14 @@
+ #include <unistd.h>
+ #include <sys/socket.h>
+ 
+-#include <asm/types.h>
+-#include <linux/netlink.h>
+-#include <linux/rtnetlink.h>
+-
+ #include <not-cancel.h>
+ #include <kernel-features.h>
+ #include <bits/libc-lock.h>
+ #include <atomic.h>
+ #include <nscd/nscd-client.h>
+ 
++#include "netlinkaccess.h"
++
+ 
+ #ifndef IFA_F_HOMEADDRESS
+ # define IFA_F_HOMEADDRESS 0
+diff -Nrup a/sysdeps/unix/sysv/linux/futimesat.c b/sysdeps/unix/sysv/linux/futimesat.c
+--- a/sysdeps/unix/sysv/linux/futimesat.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/futimesat.c	2012-01-01 20:41:26.699439832 -0700
+@@ -37,14 +37,14 @@ futimesat (fd, file, tvp)
+ {
+   int result;
+ 
++  if (file == NULL)
++    return __futimes (fd, tvp);
++
+ #ifdef __NR_futimesat
+ # ifndef __ASSUME_ATFCTS
+   if (__have_atfcts >= 0)
+ # endif
+     {
+-      if (file == NULL)
+-	return __futimes (fd, tvp);
+-
+       result = INLINE_SYSCALL (futimesat, 3, fd, file, tvp);
+ # ifndef __ASSUME_ATFCTS
+       if (result == -1 && errno == ENOSYS)
+@@ -58,22 +58,7 @@ futimesat (fd, file, tvp)
+ #ifndef __ASSUME_ATFCTS
+   char *buf = NULL;
+ 
+-  if (file == NULL)
+-    {
+-      static const char procfd[] = "/proc/self/fd/%d";
+-      /* Buffer for the path name we are going to use.  It consists of
+-	 - the string /proc/self/fd/
+-	 - the file descriptor number.
+-	 The final NUL is included in the sizeof.   A bit of overhead
+-	 due to the format elements compensates for possible negative
+-	 numbers.  */
+-      size_t buflen = sizeof (procfd) + sizeof (int) * 3;
+-      buf = alloca (buflen);
+-
+-      __snprintf (buf, buflen, procfd, fd);
+-      file = buf;
+-    }
+-  else if (fd != AT_FDCWD && file[0] != '/')
++  if (fd != AT_FDCWD && file[0] != '/')
+     {
+       size_t filelen = strlen (file);
+       if (__builtin_expect (filelen == 0, 0))
+diff -Nrup a/sysdeps/unix/sysv/linux/i386/dl-cache.h b/sysdeps/unix/sysv/linux/i386/dl-cache.h
+--- a/sysdeps/unix/sysv/linux/i386/dl-cache.h	1969-12-31 17:00:00.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/i386/dl-cache.h	2012-01-01 20:41:26.700439831 -0700
+@@ -0,0 +1,59 @@
++/* Support for reading /etc/ld.so.cache files written by Linux ldconfig.
++   Copyright (C) 2004 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++static inline int
++is_ia64 (void)
++{
++  unsigned int fl1, fl2;
++
++  /* See if we can use cpuid.  */
++  __asm__ ("pushfl; pushfl; popl %0; movl %0,%1; xorl %2,%0;"
++           "pushl %0; popfl; pushfl; popl %0; popfl"
++           : "=&r" (fl1), "=&r" (fl2)
++           : "i" (0x00200000));
++  if (((fl1 ^ fl2) & 0x00200000) == 0)
++    return 0;
++
++  /* Host supports cpuid.  See if cpuid gives capabilities, try
++     CPUID(0).  Preserve %ebx and %ecx; cpuid insn clobbers these, we
++     don't need their CPUID values here, and %ebx may be the PIC
++     register.  */
++  __asm__ ("pushl %%ecx; pushl %%ebx; cpuid; popl %%ebx; popl %%ecx"
++           : "=a" (fl1) : "0" (0) : "edx", "cc");
++  if (fl1 == 0)
++    return 0;
++
++  /* Invoke CPUID(1), return %edx; caller can examine bits to
++     determine what's supported.  */
++  __asm__ ("pushl %%ecx; pushl %%ebx; cpuid; popl %%ebx; popl %%ecx"
++           : "=d" (fl2), "=a" (fl1) : "1" (1) : "cc");
++  return (fl2 & (1 << 30)) != 0;
++}
++
++#define arch_startup(argc, argv) \
++  do {									\
++    /* On IA-64, try to execute 64-bit ldconfig if possible.		\
++       This is because the badly designed /emul/ia32-linux hack		\
++       will cause 32-bit ldconfig to do all sorts of weird things.  */	\
++    if (is_ia64 ())							\
++      execv ("/emul/ia32-linux/../../sbin/ldconfig",			\
++	     (char *const *) argv);					\
++  } while (0)
++
++#include_next <dl-cache.h>
+diff -Nrup a/sysdeps/unix/sysv/linux/i386/getrlimit.c b/sysdeps/unix/sysv/linux/i386/getrlimit.c
+--- a/sysdeps/unix/sysv/linux/i386/getrlimit.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/i386/getrlimit.c	2012-01-01 20:41:26.700439831 -0700
+@@ -79,4 +79,5 @@ __new_getrlimit (enum __rlimit_resource
+ }
+ 
+ weak_alias (__new_getrlimit, __getrlimit);
++libc_hidden_weak (__getrlimit)
+ versioned_symbol (libc, __new_getrlimit, getrlimit, GLIBC_2_2);
+diff -Nrup a/sysdeps/unix/sysv/linux/ia64/dl-cache.h b/sysdeps/unix/sysv/linux/ia64/dl-cache.h
+--- a/sysdeps/unix/sysv/linux/ia64/dl-cache.h	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/ia64/dl-cache.h	2012-01-01 20:41:26.701439831 -0700
+@@ -22,4 +22,31 @@
+ #define _dl_cache_check_flags(flags) \
+   ((flags) == _DL_CACHE_DEFAULT_ID)
+ 
++#define EMUL_HACK "/emul/ia32-linux"
++
++#define arch_startup(argc, argv) unlink (EMUL_HACK LD_SO_CACHE)
++
++#define add_arch_dirs(config_file) \
++  do {							\
++    int save_verbose = opt_verbose;			\
++    opt_verbose = 0;					\
++							\
++    parse_conf (config_file, EMUL_HACK, true);		\
++							\
++    /* Always add the standard search paths.  */	\
++    add_system_dir (EMUL_HACK SLIBDIR);			\
++    if (strcmp (SLIBDIR, LIBDIR))			\
++      add_system_dir (EMUL_HACK LIBDIR);		\
++							\
++    char emul_config_file[strlen (config_file)		\
++			  + sizeof EMUL_HACK];		\
++    strcpy (mempcpy (emul_config_file, EMUL_HACK,	\
++		     strlen (EMUL_HACK)), config_file);	\
++							\
++    if (! access (emul_config_file, R_OK))		\
++      parse_conf (emul_config_file, EMUL_HACK, true);	\
++							\
++    opt_verbose = save_verbose;				\
++  } while (0)
++
+ #include_next <dl-cache.h>
+diff -Nrup a/sysdeps/unix/sysv/linux/ia64/dl-procinfo.c b/sysdeps/unix/sysv/linux/ia64/dl-procinfo.c
+--- a/sysdeps/unix/sysv/linux/ia64/dl-procinfo.c	1969-12-31 17:00:00.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/ia64/dl-procinfo.c	2012-01-01 20:41:26.701439831 -0700
+@@ -0,0 +1,5 @@
++#ifdef IS_IN_ldconfig
++#include <sysdeps/i386/dl-procinfo.c>
++#else
++#include <sysdeps/generic/dl-procinfo.c>
++#endif
+diff -Nrup a/sysdeps/unix/sysv/linux/ia64/dl-procinfo.h b/sysdeps/unix/sysv/linux/ia64/dl-procinfo.h
+--- a/sysdeps/unix/sysv/linux/ia64/dl-procinfo.h	1969-12-31 17:00:00.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/ia64/dl-procinfo.h	2012-01-01 20:41:26.701439831 -0700
+@@ -0,0 +1,5 @@
++#ifdef IS_IN_ldconfig
++#include <sysdeps/unix/sysv/linux/i386/dl-procinfo.h>
++#else
++#include <sysdeps/generic/dl-procinfo.h>
++#endif
+diff -Nrup a/sysdeps/unix/sysv/linux/ia64/ldd-rewrite.sed b/sysdeps/unix/sysv/linux/ia64/ldd-rewrite.sed
+--- a/sysdeps/unix/sysv/linux/ia64/ldd-rewrite.sed	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/ia64/ldd-rewrite.sed	2012-01-01 20:41:26.701439831 -0700
+@@ -1 +1 @@
+-s_^\(RTLDLIST=\)\([^ 	]*\)-ia64\(\.so\.[0-9.]*\)[ 	]*$_\1"\2-ia64\3 \2\3"_
++s_^\(RTLDLIST=\)\([^ 	]*\)-ia64\(\.so\.[0-9.]*\)[ 	]*$_\1"\2-ia64\3 /emul/ia32-linux\2\3"_
+diff -Nrup a/sysdeps/unix/sysv/linux/netlinkaccess.h b/sysdeps/unix/sysv/linux/netlinkaccess.h
+--- a/sysdeps/unix/sysv/linux/netlinkaccess.h	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/netlinkaccess.h	2012-01-01 20:41:26.702439831 -0700
+@@ -25,6 +25,24 @@
+ 
+ #include <kernel-features.h>
+ 
++#ifndef IFA_MAX
++/* 2.6.19 kernel headers helpfully removed some macros and
++   moved lots of stuff into new headers, some of which aren't
++   included by linux/rtnetlink.h.  */
++#include <linux/if_addr.h>
++#endif
++
++#ifndef IFA_RTA
++# define IFA_RTA(r) \
++  ((struct rtattr*) ((char*)(r) + NLMSG_ALIGN (sizeof (struct ifaddrmsg))))
++# define IFA_PAYLOAD(n) NLMSG_PAYLOAD (n, sizeof (struct ifaddrmsg))
++#endif
++
++#ifndef IFLA_RTA
++# define IFLA_RTA(r) \
++  ((struct rtattr*) ((char*)(r) + NLMSG_ALIGN (sizeof (struct ifinfomsg))))
++# define IFLA_PAYLOAD(n) NLMSG_PAYLOAD (n, sizeof (struct ifinfomsg))
++#endif
+ 
+ struct netlink_res
+ {
+diff -Nrup a/sysdeps/unix/sysv/linux/paths.h b/sysdeps/unix/sysv/linux/paths.h
+--- a/sysdeps/unix/sysv/linux/paths.h	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/paths.h	2012-01-01 20:41:26.702439831 -0700
+@@ -62,7 +62,7 @@
+ #define	_PATH_TTY	"/dev/tty"
+ #define	_PATH_UNIX	"/boot/vmlinux"
+ #define _PATH_UTMP	"/var/run/utmp"
+-#define	_PATH_VI	"/usr/bin/vi"
++#define	_PATH_VI	"/bin/vi"
+ #define _PATH_WTMP	"/var/log/wtmp"
+ 
+ /* Provide trailing slash, since mostly used for building pathnames. */
+diff -Nrup a/sysdeps/unix/sysv/linux/tcsetattr.c b/sysdeps/unix/sysv/linux/tcsetattr.c
+--- a/sysdeps/unix/sysv/linux/tcsetattr.c	2012-01-01 05:16:32.000000000 -0700
++++ b/sysdeps/unix/sysv/linux/tcsetattr.c	2012-01-01 20:41:26.703439831 -0700
+@@ -49,6 +49,7 @@ tcsetattr (fd, optional_actions, termios
+ {
+   struct __kernel_termios k_termios;
+   unsigned long int cmd;
++  int retval;
+ 
+   switch (optional_actions)
+     {
+@@ -80,6 +81,35 @@ tcsetattr (fd, optional_actions, termios
+   memcpy (&k_termios.c_cc[0], &termios_p->c_cc[0],
+ 	  __KERNEL_NCCS * sizeof (cc_t));
+ 
+-  return INLINE_SYSCALL (ioctl, 3, fd, cmd, &k_termios);
++  retval = INLINE_SYSCALL (ioctl, 3, fd, cmd, &k_termios);
++
++  if (retval == 0 && cmd == TCSETS)
++    {
++      /* The Linux kernel has a bug which silently ignore the invalid
++        c_cflag on pty. We have to check it here. */
++      int save = errno;
++      retval = INLINE_SYSCALL (ioctl, 3, fd, TCGETS, &k_termios);
++      if (retval)
++       {
++         /* We cannot verify if the setting is ok. We don't return
++            an error (?). */
++         __set_errno (save);
++         retval = 0;
++       }
++      else if ((termios_p->c_cflag & (PARENB | CREAD))
++              != (k_termios.c_cflag & (PARENB | CREAD))
++              || ((termios_p->c_cflag & CSIZE)
++                  && ((termios_p->c_cflag & CSIZE)
++                      != (k_termios.c_cflag & CSIZE))))
++       {
++         /* It looks like the Linux kernel silently changed the
++            PARENB/CREAD/CSIZE bits in c_cflag. Report it as an
++            error. */
++         __set_errno (EINVAL);
++         retval = -1;
++       }
++    }
++
++  return retval;
+ }
+ libc_hidden_def (tcsetattr)
+diff -Nrup a/timezone/zic.c b/timezone/zic.c
+--- a/timezone/zic.c	2012-01-01 05:16:32.000000000 -0700
++++ b/timezone/zic.c	2012-01-01 20:41:26.705439831 -0700
+@@ -1921,7 +1921,7 @@ const int			zonecount;
+ 		if (stdrp != NULL && stdrp->r_hiyear == 2037)
+ 			return;
+ 	}
+-	if (stdrp == NULL && zp->z_nrules != 0)
++	if (stdrp == NULL && (zp->z_nrules != 0 || zp->z_stdoff != 0))
+ 		return;
+ 	abbrvar = (stdrp == NULL) ? "" : stdrp->r_abbrvar;
+ 	doabbr(result, zp->z_format, abbrvar, FALSE, TRUE);

@@ -1,0 +1,4 @@
+addFilter("E: non-versioned-file-in-library-package")
+addFilter("E: executable-in-library-package")
+addFilter("E: unstripped-binary-or-object")
+addFilter("E: non-standard-executable-perm")
