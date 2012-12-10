@@ -1,7 +1,6 @@
----
 sources:
   crypt_blowfish-1.2.tar.gz: 306ff83af206fac786900ce5e4800516cae909d9
-  glibc-2.15-a316c1f-fedora.tar.gz: fc08eb2483a8401fd324ffd36290d54a5b55bde3
-  glibc-2.15-a316c1f.tar.gz: aa07170ac6e14a2b3eecd45af19825fa36844dd6
+  crypt_blowfish-1.2.tar.gz.sign: 982d2d5585d60fc01d18005c2b5e57a1a44b45d7
+  eglibc-2.16-21913.tar.xz: 45f4d1295f72a860b36138a3535872641d703f11
+  glibc-2.16.90-54a41734-fedora.tar.gz: 6b153afeeabd3023aef757632f78aef3b33685ef
   glibc-manpages.tar.bz2: ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
-  glibc-ports-2.15-ad8ae7d.tar.gz: 8626c7eb72f0cad6acf0b94d72b124b8d2dac825
