@@ -1,0 +1,55 @@
+--- libc/crypt/crypt-entry.c.owlCrypt~	2012-02-18 03:24:59.000000000 +0100
++++ libc/crypt/crypt-entry.c	2012-12-01 22:47:14.820506432 +0100
+@@ -81,7 +81,7 @@ extern struct crypt_data _ufc_foobar;
+  */
+ 
+ char *
+-__crypt_r (key, salt, data)
++__des_crypt_r (key, salt, data)
+      const char *key;
+      const char *salt;
+      struct crypt_data * __restrict data;
+@@ -143,6 +143,7 @@ __crypt_r (key, salt, data)
+   return NULL;
+ #endif /* __OPTION_EGLIBC_CRYPT_UFC */
+ }
++#if 0
+ weak_alias (__crypt_r, crypt_r)
+ 
+ char *
+@@ -171,7 +172,7 @@ crypt (key, salt)
+   return NULL;
+ #endif /* __OPTION_EGLIBC_CRYPT_UFC */
+ }
+-
++#endif
+ 
+ /*
+  * To make fcrypt users happy.
+--- libc/crypt/Makefile.owlCrypt~	2012-03-07 20:31:25.000000000 +0100
++++ libc/crypt/Makefile	2012-12-01 22:48:00.507999366 +0100
+@@ -22,13 +22,13 @@ include ../option-groups.mak
+ 
+ subdir	:= crypt
+ 
+-headers := crypt.h
++headers := crypt.h gnu-crypt.h ow-crypt.h
+ 
+ extra-libs-$(OPTION_EGLIBC_CRYPT) := libcrypt
+ extra-libs-others-y := $(extra-libs-y)
+ 
+ libcrypt-routines := crypt-entry md5-crypt sha256-crypt sha512-crypt
+-libcrypt-routines-$(OPTION_EGLIBC_CRYPT_UFC) := crypt_util crypt
++libcrypt-routines-$(OPTION_EGLIBC_CRYPT_UFC) := crypt_util crypt crypt_blowfish x86 crypt_gensalt wrapper
+ libcrypt-routines += $(libcrypt-routines-y)
+ 
+ tests-$(OPTION_EGLIBC_CRYPT) := md5c-test sha256c-test sha512c-test
+--- libc/crypt/Versions.owlCrypt~	2006-08-17 03:18:26.000000000 +0200
++++ libc/crypt/Versions	2012-12-01 22:46:08.279788057 +0100
+@@ -1,5 +1,6 @@
+ libcrypt {
+   GLIBC_2.0 {
+     crypt; crypt_r; encrypt; encrypt_r; fcrypt; setkey; setkey_r;
++    crypt_rn; crypt_ra; crypt_gensalt; crypt_gensalt_rn; crypt_gensalt_ra;
+   }
+ }

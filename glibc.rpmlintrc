@@ -1,4 +1,8 @@
-addFilter("E: non-versioned-file-in-library-package")
+# for gconv bits
+addFilter("E: binary-or-shlib-defines-rpath")
+# for eglibc package
 addFilter("E: executable-in-library-package")
+# libmemusage.so and friends
+addFilter("E: invalid-soname")
+# libc6 is unstripped by default
 addFilter("E: unstripped-binary-or-object")
-addFilter("E: non-standard-executable-perm")

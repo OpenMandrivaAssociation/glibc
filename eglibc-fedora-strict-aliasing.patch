@@ -1,0 +1,76 @@
+--- libc/elf/Makefile.aliasing~	2012-05-26 19:46:57.000000000 +0200
++++ libc/elf/Makefile	2012-12-01 22:34:29.534214943 +0100
+@@ -50,6 +50,7 @@ include ../Makeconfig
+ ifeq ($(unwind-find-fde),yes)
+ routines += unwind-dw2-fde-glibc
+ shared-only-routines += unwind-dw2-fde-glibc
++CFLAGS-unwind-dw2-fde-glibc.c += -fno-strict-aliasing
+ endif
+ 
+ before-compile  = $(objpfx)trusted-dirs.h
+--- libc/inet/Makefile.aliasing~	2012-03-29 00:24:59.000000000 +0200
++++ libc/inet/Makefile	2012-12-01 22:34:57.528519454 +0100
+@@ -62,6 +62,8 @@ tests-$(OPTION_EGLIBC_ADVANCED_INET6) +=
+ 
+ include ../Rules
+ 
++CFLAGS-tst-inet6_rth.c += -fno-strict-aliasing
++
+ ifeq ($(have-thread-library),yes)
+ 
+ CFLAGS-gethstbyad_r.c = -DUSE_NSCD=1 -fexceptions
+--- libc/nis/Makefile.aliasing~	2012-05-12 17:44:41.000000000 +0200
++++ libc/nis/Makefile	2012-12-01 22:34:29.534214943 +0100
+@@ -80,6 +80,8 @@ libnss_nisplus-inhibit-o = $(filter-out
+ 
+ include ../Rules
+ 
++CFLAGS-nis_findserv.c += -fno-strict-aliasing
++CFLAGS-ypclnt.c += -fno-strict-aliasing
+ 
+ $(objpfx)libnss_compat.so: $(objpfx)libnsl.so$(libnsl.so-version)
+ $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
+--- libc/nss/Makefile.aliasing~	2012-04-21 19:19:39.000000000 +0200
++++ libc/nss/Makefile	2012-12-01 22:34:29.534214943 +0100
+@@ -147,6 +147,7 @@ $(libnss_db-dbs:%=$(objpfx)%.c): $(objpf
+ 	 echo '#include "$<"') > $@.new
+ 	mv -f $@.new $@
+ 
++CFLAGS-files-hosts.c += -fno-strict-aliasing
+ 
+ $(objpfx)makedb: $(makedb-modules:%=$(objpfx)%.o)
+ 
+--- libc/resolv/Makefile.aliasing~	2012-03-29 00:24:59.000000000 +0200
++++ libc/resolv/Makefile	2012-12-01 22:34:29.535214954 +0100
+@@ -83,6 +83,7 @@ ifeq (yes,$(have-ssp))
+ CFLAGS-libresolv += -fstack-protector
+ endif
+ CFLAGS-res_hconf.c = -fexceptions
++CFLAGS-res_send.c += -fno-strict-aliasing
+ 
+ # The BIND code elicits some harmless warnings.
+ +cflags += -Wno-strict-prototypes -Wno-write-strings
+--- libc/sunrpc/Makefile.aliasing~	2012-05-26 19:46:57.000000000 +0200
++++ libc/sunrpc/Makefile	2012-12-01 22:34:29.535214954 +0100
+@@ -164,6 +164,10 @@ sunrpc-CPPFLAGS = -D_RPC_THREAD_SAFE_
+ CPPFLAGS += $(sunrpc-CPPFLAGS)
+ BUILD_CPPFLAGS += $(sunrpc-CPPFLAGS)
+ 
++CFLAGS-clnt_tcp.c += -fno-strict-aliasing
++CFLAGS-clnt_udp.c += -fno-strict-aliasing
++CFLAGS-clnt_unix.c += -fno-strict-aliasing
++
+ $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
+--- libc/sysdeps/powerpc/powerpc64/Makefile.aliasing~	2012-12-01 22:34:29.531214910 +0100
++++ libc/sysdeps/powerpc/powerpc64/Makefile	2012-12-01 22:34:29.535214954 +0100
+@@ -37,6 +37,8 @@ CFLAGS-rtld-strnlen.os = $(no-special-re
+ 
+ CFLAGS-libc-start.c += -fno-asynchronous-unwind-tables
+ 
++CFLAGS-gmon-start.c += -fno-strict-aliasing
++
+ ifeq ($(subdir),csu)
+ sysdep_routines += hp-timing
+ elide-routines.os += hp-timing

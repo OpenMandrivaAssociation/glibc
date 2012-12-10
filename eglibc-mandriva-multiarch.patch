@@ -1,0 +1,11 @@
+--- libc/scripts/check-local-headers.sh.multiarch~	2012-04-21 19:19:39.000000000 +0200
++++ libc/scripts/check-local-headers.sh	2012-12-01 22:40:21.759039115 +0100
+@@ -28,7 +28,7 @@ exec ${AWK} -v includedir="$includedir"
+ BEGIN {
+   status = 0
+   exclude = "^" includedir \
+-    "/(.*-.*-.*/|)(asm[-/]|linux/|selinux/|gd|nss3/|sys/capability\\.h|libaudit\\.h)"
++    "/(.*-.*-.*/|)(asm[-/]|linux/|selinux/|multiarch-|gd|nss3/|sys/capability\\.h|libaudit\\.h)"
+ }
+ /^[^ ]/ && $1 ~ /.*:/ { obj = $1 }
+ {

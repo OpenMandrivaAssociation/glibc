@@ -1,0 +1,57 @@
+diff -Nrup a/localedata/locales/cy_GB b/localedata/locales/cy_GB
+--- a/localedata/locales/cy_GB	2012-06-05 07:42:49.000000000 -0600
++++ b/localedata/locales/cy_GB	2012-06-07 12:15:21.805318719 -0600
+@@ -248,9 +248,9 @@ mon         "<U0049><U006F><U006E><U0061
+ d_t_fmt     "<U0044><U0079><U0064><U0064><U0020><U0025><U0041><U0020><U0025><U0064><U0020><U006d><U0069><U0073><U0020><U0025><U0042><U0020><U0025><U0059><U0020><U0025><U0054><U0020><U0025><U005A>"
+ d_fmt       "<U0025><U0064><U002E><U0025><U006D><U002E><U0025><U0079>"
+ t_fmt       "<U0025><U0054>"
+-am_pm       "<U0061><U006D>";"<U0070><U006D>"
++am_pm       "<U0041><U004D>";"<U0050><U004D>"
+ t_fmt_ampm  "<U0025><U006C><U003A><U0025><U004D><U003A><U0025><U0053><U0020><U0025><U0050><U0020><U0025><U005A>"
+-date_fmt    "<U0025><U0061><U0020><U0025><U0065><U0020><U0025><U0062>/
++date_fmt    "<U0025><U0061><U0020><U0025><U0062><U0020><U0025><U0065>/
+ <U0020><U0025><U0048><U003A><U0025><U004D><U003A><U0025><U0053><U0020>/
+ <U0025><U005A><U0020><U0025><U0059>"
+ first_workday 2
+diff -Nrup a/localedata/locales/en_GB b/localedata/locales/en_GB
+--- a/localedata/locales/en_GB	2012-06-05 07:42:49.000000000 -0600
++++ b/localedata/locales/en_GB	2012-06-07 12:15:21.806318715 -0600
+@@ -116,7 +116,7 @@ mon         "<U004A><U0061><U006E><U0075
+ d_t_fmt     "<U0025><U0061><U0020><U0025><U0064><U0020><U0025><U0062><U0020><U0025><U0059><U0020><U0025><U0054><U0020><U0025><U005A>"
+ d_fmt       "<U0025><U0064><U002F><U0025><U006D><U002F><U0025><U0079>"
+ t_fmt       "<U0025><U0054>"
+-am_pm       "<U0061><U006D>";"<U0070><U006D>"
++am_pm       "<U0041><U004D>";"<U0050><U004D>"
+ t_fmt_ampm  "<U0025><U006C><U003A><U0025><U004D><U003A><U0025><U0053><U0020><U0025><U0050><U0020><U0025><U005A>"
+ date_fmt    "<U0025><U0061><U0020><U0025><U0065><U0020><U0025><U0062>/
+ <U0020><U0025><U0048><U003A><U0025><U004D><U003A><U0025><U0053><U0020>/
+diff -Nrup a/localedata/locales/zh_TW b/localedata/locales/zh_TW
+--- a/localedata/locales/zh_TW	2012-06-05 07:42:49.000000000 -0600
++++ b/localedata/locales/zh_TW	2012-06-07 12:15:21.807318711 -0600
+@@ -1,7 +1,7 @@
+ comment_char %
+ escape_char /
+ %
+-% Chinese language locale for Taiwan R.O.C.
++% Chinese language locale for Taiwan
+ % charmap: BIG5-CP950
+ %
+ % Original Author:
+@@ -17,7 +17,7 @@ escape_char /
+ % Reference:	http://wwwold.dkuug.dk/JTC1/SC22/WG20/docs/n690.pdf
+ 
+ LC_IDENTIFICATION
+-title      "Chinese locale for Taiwan R.O.C."
++title      "Chinese locale for Taiwan"
+ source     ""
+ address    ""
+ contact    ""
+@@ -25,7 +25,7 @@ email      "bug-glibc-locales@gnu.org"
+ tel        ""
+ fax        ""
+ language   "Chinese"
+-territory  "Taiwan R.O.C."
++territory  "Taiwan"
+ revision   "0.2"
+ date       "2000-08-02"
+ %

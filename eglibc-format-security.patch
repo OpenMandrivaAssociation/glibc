@@ -1,0 +1,33 @@
+--- libc/sunrpc/rpc_hout.c.fmtstr~	2012-12-01 23:19:02.108409554 +0100
++++ libc/sunrpc/rpc_hout.c	2012-12-01 23:19:18.563624080 +0100
+@@ -579,7 +579,7 @@ pdeclaration (const char *name, declarat
+ 	  break;
+ 	}
+     }
+-  f_print (fout, separator);
++  f_print (fout, "%s", separator);
+ }
+ 
+ static int
+--- libc/sunrpc/rpc_main.c.fmtstr~	2012-12-01 23:19:10.172514762 +0100
++++ libc/sunrpc/rpc_main.c	2012-12-01 23:19:38.435883424 +0100
+@@ -643,7 +643,7 @@ h_output (const char *infile, const char
+     }
+   else if (tblflag)
+     {
+-      fprintf (fout, rpcgen_table_dcl);
++      fprintf (fout, "%s", rpcgen_table_dcl);
+     }
+ 
+   if (Cflag)
+--- libc/sunrpc/rpc_svcout.c.fmtstr~	2012-12-01 23:19:05.868458409 +0100
++++ libc/sunrpc/rpc_svcout.c	2012-12-01 23:19:26.731730771 +0100
+@@ -353,7 +353,7 @@ write_real_program (const definition * d
+ 	      f_print (fout, " (");
+ 	      /* arg name */
+ 	      if (proc->arg_num > 1)
+-		f_print (fout, proc->args.argname);
++		f_print (fout, "%s", proc->args.argname);
+ 	      else
+ 		ptype (proc->args.decls->decl.prefix,
+ 		       proc->args.decls->decl.type, 0);
