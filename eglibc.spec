@@ -65,7 +65,7 @@ Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.16
 %if 0%svn
-Release:	1.%svn
+Release:	1.%svn.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%name-%version-%svn.tar.xz
 %else
@@ -261,7 +261,6 @@ Patch54:	eglibc-rh819430.patch
 # See http://sourceware.org/ml/libc-alpha/2012-06/msg00074.html
 Patch55:	eglibc-rh767693-2.patch
 
-
 #-----------------------------------------------------------------------
 # mandriva patches
 Patch56:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
@@ -303,6 +302,9 @@ Patch86:	nptl-getrlimit-compile.patch
 
 # Fix build with -Werror=format-security
 Patch87:	eglibc-format-security.patch
+
+# Crypt-blowfish patches
+Patch100:	crypt_blowfish-arm.patch
 
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
@@ -789,6 +791,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch86 -p1 -b .compile~
 %patch87 -p1 -b .fmtSec~
+
+%patch100 -p1 -b .blowfish_nonx86~
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc

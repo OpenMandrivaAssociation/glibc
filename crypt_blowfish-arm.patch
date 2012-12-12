@@ -1,0 +1,29 @@
+Don't use '@progbits' on arm
+
+Proper declaration should be %progbits as '@' is used for comments.
+Most of other arches allow % or @ so use %
+
+Signed-off-by: Arnaud Patard <rtp@mageia.org>
+
+Index: glibc-2.14.1/crypt/x86.S
+===================================================================
+--- glibc-2.14.1.orig/crypt/x86.S
++++ glibc-2.14.1/crypt/x86.S
+@@ -199,5 +199,5 @@ BF_die:
+ #endif
+ 
+ #if defined(__ELF__) && defined(__linux__)
+-.section .note.GNU-stack,"",@progbits
++.section .note.GNU-stack,"",%progbits
+ #endif
+Index: glibc-2.14.1/crypt_blowfish-1.2/x86.S
+===================================================================
+--- glibc-2.14.1.orig/crypt_blowfish-1.2/x86.S
++++ glibc-2.14.1/crypt_blowfish-1.2/x86.S
+@@ -199,5 +199,5 @@ BF_die:
+ #endif
+ 
+ #if defined(__ELF__) && defined(__linux__)
+-.section .note.GNU-stack,"",@progbits
++.section .note.GNU-stack,"",%progbits
+ #endif
