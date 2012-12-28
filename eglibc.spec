@@ -867,6 +867,7 @@ function BuildGlibc() {
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
+    --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
     --disable-profile \
 %if %{with selinux}
