@@ -1,0 +1,23 @@
+--- libc/localedata/locales/bo_CN.bero	2012-12-27 21:59:42.264405770 +0100
++++ libc/localedata/locales/bo_CN	2012-12-27 21:59:49.516318268 +0100
+@@ -144,8 +144,7 @@ END LC_MEASUREMENT
+ 
+ LC_NAME
+ % FIXME
+-
+-name_fmt  ""
++name_fmt	"FIXME"
+ % name_gen	"FIXME"
+ % name_miss	"FIXME"
+ % name_mr	"FIXME"
+--- libc/localedata/locales/bo_IN.bero	2012-12-27 21:59:52.912277247 +0100
++++ libc/localedata/locales/bo_IN	2012-12-27 22:00:49.732591846 +0100
+@@ -70,7 +70,7 @@ END LC_MEASUREMENT
+ 
+ LC_NAME
+ % FIXME
+-name_fmt	""
++name_fmt	"FIXME"
+ % name_gen	"FIXME"
+ % name_miss	"FIXME"
+ % name_mr	"FIXME"

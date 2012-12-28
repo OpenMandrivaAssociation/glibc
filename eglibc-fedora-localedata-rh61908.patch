@@ -1,10 +1,6 @@
-* Tue Mar 26 2002 Jakub Jelinek <jakub@redhat.com> 2.2.5-28
-- add a couple of .ISO-8859-15 locales (#61908)
-
-diff -Nrup a/localedata/SUPPORTED b/localedata/SUPPORTED
---- a/localedata/SUPPORTED	2012-06-05 07:42:49.000000000 -0600
-+++ b/localedata/SUPPORTED	2012-06-07 12:15:21.805318719 -0600
-@@ -88,6 +88,7 @@ cy_GB.UTF-8/UTF-8 \
+--- libc/localedata/SUPPORTED.locales~	2012-12-02 22:11:45.000000000 +0100
++++ libc/localedata/SUPPORTED	2012-12-27 19:45:50.996926670 +0100
+@@ -89,6 +89,7 @@ cy_GB.UTF-8/UTF-8 \
  cy_GB/ISO-8859-14 \
  da_DK.UTF-8/UTF-8 \
  da_DK/ISO-8859-1 \
@@ -12,7 +8,7 @@ diff -Nrup a/localedata/SUPPORTED b/localedata/SUPPORTED
  de_AT.UTF-8/UTF-8 \
  de_AT/ISO-8859-1 \
  de_AT@euro/ISO-8859-15 \
-@@ -119,6 +120,7 @@ en_DK.UTF-8/UTF-8 \
+@@ -121,6 +122,7 @@ en_DK.UTF-8/UTF-8 \
  en_DK/ISO-8859-1 \
  en_GB.UTF-8/UTF-8 \
  en_GB/ISO-8859-1 \
@@ -20,7 +16,7 @@ diff -Nrup a/localedata/SUPPORTED b/localedata/SUPPORTED
  en_HK.UTF-8/UTF-8 \
  en_HK/ISO-8859-1 \
  en_IE.UTF-8/UTF-8 \
-@@ -134,6 +136,7 @@ en_SG.UTF-8/UTF-8 \
+@@ -136,6 +138,7 @@ en_SG.UTF-8/UTF-8 \
  en_SG/ISO-8859-1 \
  en_US.UTF-8/UTF-8 \
  en_US/ISO-8859-1 \
@@ -28,11 +24,11 @@ diff -Nrup a/localedata/SUPPORTED b/localedata/SUPPORTED
  en_ZA.UTF-8/UTF-8 \
  en_ZA/ISO-8859-1 \
  en_ZM/UTF-8 \
-@@ -378,6 +381,7 @@ sv_FI/ISO-8859-1 \
+@@ -386,6 +389,7 @@ sv_FI/ISO-8859-1 \
  sv_FI@euro/ISO-8859-15 \
  sv_SE.UTF-8/UTF-8 \
  sv_SE/ISO-8859-1 \
 +sv_SE.ISO-8859-15/ISO-8859-15 \
  sw_KE/UTF-8 \
  sw_TZ/UTF-8 \
- ta_IN/UTF-8 \
+ szl_PL/UTF-8 \

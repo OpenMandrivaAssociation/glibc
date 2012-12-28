@@ -1,14 +1,13 @@
---- libc/elf/rtld.c.rh737223~	2012-12-01 22:18:52.000000000 +0100
-+++ libc/elf/rtld.c	2012-12-01 22:20:18.919961292 +0100
-@@ -1405,7 +1405,10 @@ of this helper program; chances are you
- 	      char *copy = malloc (len);
- 	      if (copy == NULL)
- 		_dl_fatal_printf ("out of memory\n");
--	      l->l_libname->name = l->l_name = memcpy (copy, dsoname, len);
-+	      l->l_libname->name = memcpy (copy, dsoname, len);
-+	      if (GLRO(dl_debug_mask))
-+	        l->l_name = copy;
-+
- 	    }
+--- libc/elf/setup-vdso.h.bero	2012-12-27 19:36:02.133987793 +0100
++++ libc/elf/setup-vdso.h	2012-12-27 19:36:36.764572111 +0100
+@@ -93,7 +93,9 @@ setup_vdso (struct link_map *main_map __
+ 	  char *copy = malloc (len);
+ 	  if (copy == NULL)
+ 	    _dl_fatal_printf ("out of memory\n");
+-	  l->l_libname->name = l->l_name = memcpy (copy, dsoname, len);
++	  l->l_libname->name = memcpy (copy, dsoname, len);
++          if (GLRO(dl_debug_mask))
++            l->l_name = copy;
+ 	}
  
- 	  /* Add the vDSO to the object list.  */
+       /* Add the vDSO to the object list.  */

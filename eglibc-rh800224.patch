@@ -1,5 +1,5 @@
---- libc/elf/dl-reloc.c.rh800224~	2012-06-01 15:59:14.000000000 +0200
-+++ libc/elf/dl-reloc.c	2012-12-01 22:37:13.623998266 +0100
+--- libc/elf/dl-reloc.c.rh800224~	2012-11-17 18:30:42.000000000 +0100
++++ libc/elf/dl-reloc.c	2012-12-27 19:52:01.205489385 +0100
 @@ -238,32 +238,9 @@ _dl_relocate_object (struct link_map *l,
      /* String table object symbols.  */
      const char *strtab = (const void *) D_PTR (l, l_info[DT_STRTAB]);
@@ -36,8 +36,8 @@
  #ifndef PROF
      if (__builtin_expect (consider_profiling, 0))
        {
-@@ -302,6 +279,32 @@ _dl_relocate_object (struct link_map *l,
- #endif
+@@ -290,6 +267,32 @@ _dl_relocate_object (struct link_map *l,
+ 	  }
        }
  #endif
 +

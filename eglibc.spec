@@ -1,4 +1,4 @@
-%define svn 21913
+%define svn 22064
 %if 0%svn
 %define glibcsrcdir	e%name-%version-%svn
 %else
@@ -63,7 +63,7 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
-Version:	2.16
+Version:	2.17
 %if 0%svn
 Release:	1.%svn.1
 # Packaged from svn repository at svn://svn.eglibc.org/
@@ -161,12 +161,6 @@ Patch5:		eglibc-arm-hardfloat-3.patch
 # Needs to be sent upstream
 Patch6:		eglibc-rh697421.patch
 
-# Needs to be sent upstream
-Patch7:		eglibc-rh740682.patch
-
-# Needs to be sent upstream
-Patch8:		eglibc-rh657588.patch
-
 # stap, needs to be sent upstream
 Patch9:		eglibc-stap-libm.patch
 
@@ -179,13 +173,11 @@ Patch10:	eglibc-rh841318.patch
 
 Patch11:	eglibc-fedora-uname-getrlimit.patch
 Patch12:	eglibc-fedora-__libc_multiple_libcs.patch
-Patch13:	eglibc-fedora-tls-offset-rh731228.patch
 Patch14:	eglibc-fedora-elf-ORIGIN.patch
 Patch15:	eglibc-fedora-elf-init-hidden_undef.patch
 Patch16:	eglibc-fedora-elf-rh737223.patch
 Patch17:	eglibc-fedora-gai-canonical.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
-Patch19:	eglibc-fedora-getconf.patch
 Patch20:	eglibc-fedora-getrlimit-PLT.patch
 Patch21:	eglibc-fedora-i386-tls-direct-seg-refs.patch
 Patch22:	eglibc-fedora-pt_chown.patch
@@ -220,23 +212,8 @@ Patch37:	eglibc-fedora-strict-aliasing.patch
 
 Patch38:	eglibc-rh757881.patch
 
-# Upstream BZ 13013
-Patch39:	eglibc-rh730856.patch
-
 Patch40:	eglibc-rh741105.patch
 Patch41:	eglibc-rh770869.patch
-Patch42:	eglibc-rh770439.patch
-Patch43:	eglibc-rh789209.patch
-Patch44:	eglibc-rh691912.patch
-
-# Upstream BZ 13604
-Patch45:	eglibc-rh790292.patch
-
-# Upstream BZ 13603
-Patch46:	eglibc-rh790298.patch
-
-# Upstream BZ 13698
-Patch47:	eglibc-rh791161.patch
 
 # Upstream BZ 9954
 Patch48:	eglibc-rh739743.patch
@@ -247,19 +224,11 @@ Patch49:	eglibc-rh800224.patch
 # Upstream BZ 14247
 Patch50:	eglibc-rh827510.patch
 
-Patch51:	eglibc-rh803286.patch
-
-# Upstream BZ 13761
-Patch52:	eglibc-rh788989-2.patch
-
 # Upstream BZ 13028
 Patch53:	eglibc-rh841787.patch
 
 # Upstream BZ 14185
 Patch54:	eglibc-rh819430.patch
-
-# See http://sourceware.org/ml/libc-alpha/2012-06/msg00074.html
-Patch55:	eglibc-rh767693-2.patch
 
 #-----------------------------------------------------------------------
 # mandriva patches
@@ -299,9 +268,7 @@ Patch84:	eglibc-mandriva-avx-increase_BF_FRAME.patch
 Patch85:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # Reverts a part of eglibc-fedora-uname-getrlimit.patch that breaks the build
 Patch86:	nptl-getrlimit-compile.patch
-
-# Fix build with -Werror=format-security
-Patch87:	eglibc-format-security.patch
+Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
@@ -702,19 +669,15 @@ tar x --strip-components=1 -f %SOURCE2
 %patch04 -p1
 %patch05 -p1
 %patch06 -p1
-%patch07 -p1
-%patch08 -p1
 %patch09 -p1
 %patch10 -p1 -b .rh841318~
 %patch11 -p1
 %patch12 -p1
-%patch13 -p1
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1 -b .rh737223~
 %patch17 -p1 -b .gai~
 %patch18 -p1
-%patch19 -p1 -b .getconf~
 %patch20 -p1
 %patch21 -p1
 %patch22 -p1
@@ -723,7 +686,7 @@ tar x --strip-components=1 -f %SOURCE2
 %patch25 -p1
 %patch26 -p1
 %patch27 -p1
-%patch29 -p1
+%patch29 -p1 -b .locales~
 %patch30 -p1
 %patch31 -p1
 %patch32 -p1
@@ -733,23 +696,13 @@ tar x --strip-components=1 -f %SOURCE2
 %patch36 -p1
 %patch37 -p1 -b .aliasing~
 %patch38 -p1
-%patch39 -p1
 %patch40 -p1
 %patch41 -p1
-%patch42 -p1
-%patch43 -p1
-%patch44 -p1
-%patch45 -p1
-%patch46 -p1
-%patch47 -p1
 %patch48 -p1
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
-%patch51 -p1
-%patch52 -p1
 %patch53 -p1
 %patch54 -p1
-%patch55 -p1
 %patch56 -p1
 %patch57 -p1
 %patch58 -p1 -b .nssUpgrade~
@@ -790,7 +743,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch85 -p1
 
 %patch86 -p1 -b .compile~
-%patch87 -p1 -b .fmtSec~
+
+%patch87 -p1 -b .boLocale~
 
 %patch100 -p1 -b .blowfish_nonx86~
 
@@ -811,7 +765,7 @@ rm -f localedata/locales/[a-z_]*.*
 %build
 # ...
 cd libc
-ln -s ../ports .
+[ -d ports ] || ln -s ../ports .
 mkdir bin
 ln -sf %{_bindir}/ld.bfd bin/ld
 export PATH=$PWD/bin:$PATH
