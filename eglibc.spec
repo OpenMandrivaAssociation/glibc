@@ -65,7 +65,7 @@ Summary:	The GNU libc libraries
 Name:		glibc
 Version:	2.17
 %if 0%svn
-Release:	1.%svn.1
+Release:	1.%svn.2
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%name-%version-%svn.tar.xz
 %else
@@ -100,6 +100,7 @@ Provides:	should-restart = system
 # we'll be the only package requiring this, avoiding any other package
 # dependencies on '/bin/sh' or 'bash'
 Requires:	bash
+Requires:	filesystem
 %ifarch %{xenarches}
 %rename		%{name}-xen
 %endif
