@@ -271,6 +271,11 @@ Patch85:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 Patch86:	nptl-getrlimit-compile.patch
 Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 
+# http://sourceware.org/bugzilla/show_bug.cgi?id=14995
+# http://sourceware.org/bugzilla/attachment.cgi?id=6795
+Patch88:	glibc-2.17-gold.patch
+
+
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
@@ -747,6 +752,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch87 -p1 -b .boLocale~
 
+%patch88 -p1 -b .gold~
+
 %patch100 -p1 -b .blowfish_nonx86~
 
 %if %{with selinux}
@@ -761,6 +768,12 @@ find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
 rm -f ChangeLog.[^0-9]*
 rm -f localedata/locales/{???_??,??_??}.*
 rm -f localedata/locales/[a-z_]*.*
+
+# Regenerate autoconf files, some of our patches touch them
+# Remove the autoconf 2.68 hardcode...
+sed -i -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," aclocal.m4
+aclocal
+autoconf
 
 #-----------------------------------------------------------------------
 %build
