@@ -1,8 +1,8 @@
 %define svn 22064
-%if 0%svn
-%define glibcsrcdir	e%name-%version-%svn
+%if 0%{svn}
+%define glibcsrcdir	e%{name}-%{version}-%{svn}
 %else
-%define glibcsrcdir	e%name-%version
+%define glibcsrcdir	e%{name}-%{version}
 %endif
 
 %define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
@@ -14,11 +14,11 @@
 %define _slibdir32	/lib
 %define _libdir32	%{_prefix}/lib
 
-%define		libc_major		6
-%define		libc			%mklibname c %{libc_major}
-%define		libc_devel		%mklibname -d c
-%define		libc_static_devel	%mklibname -d -s c
-%define		multilibc		libc%{libc_major}
+%define	major		6
+%define	libc		%mklibname c %{major}
+%define	devname		%mklibname -d c
+%define	statname	%mklibname -d -s c
+%define	multilibc	libc%{major}
 
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
@@ -63,11 +63,12 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
+Epoch:		6
 Version:	2.17
-%if 0%svn
-Release:	1.%svn.2
+%if 0%{svn}
+Release:	1.%{svn}.2
 # Packaged from svn repository at svn://svn.eglibc.org/
-Source0:	e%name-%version-%svn.tar.xz
+Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
 Release:	1
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz
@@ -76,7 +77,7 @@ License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
 
-%if ! 0%svn
+%if ! 0%{svn}
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz.sig
 %endif
 
@@ -91,47 +92,7 @@ Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.si
 Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
-Source100:	%name.rpmlintrc
-
-Obsoletes:	glibc-profile
-Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
-Provides:	eglibc-crypt_blowfish = %{crypt_bf_ver}
-Provides:	should-restart = system
-# we'll be the only package requiring this, avoiding any other package
-# dependencies on '/bin/sh' or 'bash'
-Requires:	bash
-Requires:	filesystem
-%ifarch %{xenarches}
-%rename		%{name}-xen
-%endif
-# The dynamic linker supports DT_GNU_HASH
-Provides:	rtld(GNU_HASH)
-BuildRequires:	patch, gettext, perl
-BuildRequires:	kernel-headers
-%if %{with selinux}
-BuildRequires:	libselinux-devel >= 1.17.10
-%endif
-
-Epoch:		6
-
-# Old prelink versions breaks the system with glibc 2.11
-Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
-
-BuildRequires:	texinfo
-%if %{with pdf}
-BuildRequires:	texlive
-%endif
-%if %{with utils}
-BuildRequires:	gd-devel
-%endif
-%if %{with systap}
-BuildRequires:	systemtap
-%endif
-%if %{with nsscrypt}
-BuildRequires:	nss-devel
-%endif
-BuildRequires:	autoconf2.5
-BuildRequires:	cap-devel
+Source100:	%{name}.rpmlintrc
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -204,7 +165,6 @@ Patch37:	eglibc-fedora-strict-aliasing.patch
 # Patches from upstream
 #
 
-
 #
 # Patches submitted, but not yet approved upstream.
 # Each should be associated with a BZ.
@@ -212,22 +172,16 @@ Patch37:	eglibc-fedora-strict-aliasing.patch
 #
 
 Patch38:	eglibc-rh757881.patch
-
 Patch40:	eglibc-rh741105.patch
 Patch41:	eglibc-rh770869.patch
-
 # Upstream BZ 9954
 Patch48:	eglibc-rh739743.patch
-
 # Upstream BZ 13818
 Patch49:	eglibc-rh800224.patch
-
 # Upstream BZ 14247
 Patch50:	eglibc-rh827510.patch
-
 # Upstream BZ 13028
 Patch53:	eglibc-rh841787.patch
-
 # Upstream BZ 14185
 Patch54:	eglibc-rh819430.patch
 
@@ -258,10 +212,8 @@ Patch75:	eglibc-mandriva-testsuite-rt-notparallel.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
 Patch77:	eglibc-mandriva-fix-for-new-memcpy-behavior.patch
-
 Patch79:	eglibc-mandriva-no-leaf-attribute.patch
 Patch80:	eglibc-mandriva-string-format-fixes.patch
-
 Patch81:	eglibc-mandriva-mdv-avx-owl-crypt.patch
 Patch82:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
 Patch83:	eglibc-mandriva-avx-relocate_fcrypt.patch
@@ -270,15 +222,49 @@ Patch85:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # Reverts a part of eglibc-fedora-uname-getrlimit.patch that breaks the build
 Patch86:	nptl-getrlimit-compile.patch
 Patch87:	eglibc-2.17-bo-locale-buildfix.patch
-
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch88:	glibc-2.17-gold.patch
-
-
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
+BuildRequires:	autoconf2.5
+BuildRequires:	gettext
+BuildRequires:	kernel-headers
+BuildRequires:	patch
+BuildRequires:	perl
+BuildRequires:	cap-devel
+%if %{with selinux}
+BuildRequires:	libselinux-devel >= 1.17.10
+%endif
+BuildRequires:	texinfo
+%if %{with pdf}
+BuildRequires:	texlive
+%endif
+%if %{with utils}
+BuildRequires:	gd-devel
+%endif
+%if %{with systap}
+BuildRequires:	systemtap
+%endif
+%if %{with nsscrypt}
+BuildRequires:	nss-devel
+%endif
+# we'll be the only package requiring this, avoiding any other package
+# dependencies on '/bin/sh' or 'bash'
+Requires:	bash
+Requires:	filesystem
+%ifarch %{xenarches}
+%rename		%{name}-xen
+%endif
+# The dynamic linker supports DT_GNU_HASH
+Provides:	rtld(GNU_HASH)
+Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
+Provides:	eglibc-crypt_blowfish = %{crypt_bf_ver}
+Provides:	should-restart = system
+Obsoletes:	glibc-profile
+# Old prelink versions breaks the system with glibc 2.11
+Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
@@ -657,8 +643,8 @@ These are configuration files that describe possible time zones.
 
 ########################################################################
 %prep
-%if 0%svn
-%setup -q -n e%name-%version-%svn
+%if 0%{svn}
+%setup -q -n e%{name}-%{version}-%{svn}
 %else
 %setup -q
 %endif
