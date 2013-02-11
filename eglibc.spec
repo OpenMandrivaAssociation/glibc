@@ -66,7 +66,7 @@ Name:		glibc
 Epoch:		6
 Version:	2.17
 %if 0%{svn}
-Release:	1.%{svn}.2
+Release:	1.%{svn}.3
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
@@ -351,7 +351,6 @@ Linux system will not function.
 %{_bindir}/localedef
 %{_bindir}/makedb
 %{_bindir}/pldd
-%{_bindir}/rpcgen
 %{_bindir}/sotruss
 %{_bindir}/sprof
 %{_bindir}/tzselect
@@ -1116,6 +1115,9 @@ install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
 rm -f  %{buildroot}%{_infodir}/dir.old*
 rm -rf %{buildroot}%{_includedir}/asm-*/mach-*/
 rm -f  %{buildroot}%{_localedir}/locale-archive*
+
+rm %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
+
 # XXX: verify
 find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
