@@ -325,8 +325,11 @@ Linux system will not function.
 %ifarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
-%ifarch %{arm}
+%ifarch armv7l
 %{_slibdir}/ld-linux.so.3
+%endif
+%ifarch armv7hl
+%{_slibdir}/ld-linuxhf.so.3
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
