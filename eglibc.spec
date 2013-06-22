@@ -329,7 +329,7 @@ Linux system will not function.
 %{_slibdir}/ld-linux.so.3
 %endif
 %ifarch armv7hl
-%{_slibdir}/ld-linuxhf.so.3
+%{_slibdir}/ld-linux-armhf.so.3
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
