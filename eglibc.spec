@@ -537,6 +537,7 @@ library.
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
+Requires(post):	systemd
 Requires(pre):	rpm-helper
 Requires(preun):rpm-helper
 Requires(post):	rpm-helper
