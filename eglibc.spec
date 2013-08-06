@@ -66,7 +66,7 @@ Name:		glibc
 Epoch:		6
 Version:	2.17
 %if 0%{svn}
-Release:	1.%{svn}.3
+Release:	1.%{svn}.4
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
