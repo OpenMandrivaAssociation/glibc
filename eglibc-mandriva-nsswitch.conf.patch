@@ -34,7 +34,7 @@
 +shadow:		files nis
 +group:		compat
 +
-+hosts:  	files nis dns wins
++hosts:  	files nis dns wins myhostname
 +networks:	files
 +
 +services:	files
