@@ -761,6 +761,9 @@ rm -f localedata/locales/[a-z_]*.*
 # Regenerate autoconf files, some of our patches touch them
 # Remove the autoconf 2.68 hardcode...
 sed -i -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," aclocal.m4
+# fix nss headers location
+sed -i -e 's@#include <hasht.h>@#include <nss/hasht.h>@g' -e 's@#include <nss/nsslowhash.h>@#include <nss/nsslowhash.h>@g' configure.in
+
 aclocal
 autoconf
 
