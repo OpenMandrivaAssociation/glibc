@@ -763,7 +763,8 @@ rm -f localedata/locales/[a-z_]*.*
 sed -i -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," aclocal.m4
 # fix nss headers location
 sed -i -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nss/nsslowhash.h>@<nss/nsslowhash.h>@g' configure*
-
+cat configure
+exit 1
 aclocal
 autoconf
 
