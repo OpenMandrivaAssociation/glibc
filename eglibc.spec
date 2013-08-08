@@ -56,7 +56,7 @@
 
 # build documentation by default
 %bcond_without		doc
-%bcond_without		pdf
+%bcond_with		pdf
 # enable utils by default
 %bcond_without		utils
 
