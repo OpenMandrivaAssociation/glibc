@@ -245,7 +245,7 @@ BuildRequires:	texlive
 BuildRequires:	gd-devel
 %endif
 %if %{with systap}
-BuildRequires:	systemtap
+BuildRequires:	systemtap-devel
 %endif
 %if %{with nsscrypt}
 BuildRequires:	nss-devel >= 3.15.1-2
