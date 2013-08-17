@@ -1,8 +1,8 @@
-%define svn 22064
+%define svn 0
 %if 0%{svn}
-%define glibcsrcdir	e%{name}-%{version}-%{svn}
+%define glibcsrcdir	%{name}-%{version}-%{svn}
 %else
-%define glibcsrcdir	e%{name}-%{version}
+%define glibcsrcdir	%{name}-%{version}
 %endif
 
 %define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
@@ -64,25 +64,25 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
-Version:	2.17
+Version:	2.18
 %if 0%{svn}
-Release:	1.%{svn}.4
+Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
 Release:	1
-Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz
+Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
 
 %if ! 0%{svn}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.gz.sig
+Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 
 # Fedora tarball
-Source2:	glibc-2.16.90-54a41734-fedora.tar.gz
+Source2:	glibc-2.17-931-g30bbc0c-releng.tar.gz
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 
@@ -102,64 +102,57 @@ Source100:	%{name}.rpmlintrc
 
 # Configuration twiddle, not sure there's a good case to get upstream to
 # change this.
-Patch0: 	eglibc-fedora-nscd.patch
-
-Patch1:		eglibc-fedora-regcomp-sw11561.patch
-
-# Not likely to be accepted upstream
-Patch2:		eglibc-rh787201.patch
-
-# Not necessary to send upstream, fedora specific
-Patch3:		eglibc-rh688948.patch
+Patch0: 	glibc-fedora-nscd.patch
 
 # Build info files in the source tree, then move to the build
 # tree so that they're identical for multilib builds
-Patch4:		eglibc-rh825061.patch
+Patch4:		glibc-rh825061.patch
 
 # Horrible hack, never to be upstreamed.  Can go away once the world
 # has been rebuilt to use the new ld.so path.
-Patch5:		eglibc-arm-hardfloat-3.patch
+Patch5:		glibc-arm-hardfloat-3.patch
 
 # Needs to be sent upstream
-Patch6:		eglibc-rh697421.patch
+Patch6:		glibc-rh697421.patch
 
 # stap, needs to be sent upstream
-Patch9:		eglibc-stap-libm.patch
+Patch9:		glibc-stap-libm.patch
 
 # Needs to be sent upstream
-Patch10:	eglibc-rh841318.patch
+Patch10:	glibc-rh841318.patch
 
 # All these were from the glibc-fedora.patch mega-patch and need another
 # round of reviewing.  Ideally they'll either be submitted upstream or
 # dropped.
 
-Patch11:	eglibc-fedora-uname-getrlimit.patch
-Patch12:	eglibc-fedora-__libc_multiple_libcs.patch
-Patch14:	eglibc-fedora-elf-ORIGIN.patch
-Patch15:	eglibc-fedora-elf-init-hidden_undef.patch
-Patch16:	eglibc-fedora-elf-rh737223.patch
-Patch17:	eglibc-fedora-gai-canonical.patch
+Patch11:	glibc-fedora-uname-getrlimit.patch
+Patch12:	glibc-fedora-__libc_multiple_libcs.patch
+Patch14:	glibc-fedora-elf-ORIGIN.patch
+Patch15:	glibc-fedora-elf-init-hidden_undef.patch
+Patch16:	glibc-fedora-elf-rh737223.patch
+Patch17:	glibc-fedora-gai-canonical.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
-Patch20:	eglibc-fedora-getrlimit-PLT.patch
-Patch21:	eglibc-fedora-i386-tls-direct-seg-refs.patch
+Patch20:	glibc-fedora-getrlimit-PLT.patch
+Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
 Patch22:	eglibc-fedora-pt_chown.patch
-Patch23:	eglibc-fedora-include-bits-ldbl.patch
-Patch24:	eglibc-fedora-ldd.patch
-Patch25:	eglibc-fedora-linux-tcsetattr.patch
+Patch23:	glibc-fedora-include-bits-ldbl.patch
+Patch24:	glibc-fedora-ldd.patch
+Patch25:	glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
 Patch27:	eglibc-fedora-localedata-locales-fixes.patch
 # We disagree with
-#		eglibc-fedora-streams-rh436349.patch
+#		glibc-fedora-streams-rh436349.patch
 # Therefore we don't package/apply it.
-Patch29:	eglibc-fedora-localedata-rh61908.patch
-Patch30:	eglibc-fedora-localedef.patch
-Patch31:	eglibc-fedora-locarchive.patch
-Patch32:	eglibc-fedora-manual-dircategory.patch
-Patch33:	eglibc-fedora-nis-rh188246.patch
-Patch34:	eglibc-fedora-nptl-linklibc.patch
-Patch35:	eglibc-fedora-ppc-unwind.patch
+Patch29:	glibc-fedora-localedata-rh61908.patch
+Patch30:	glibc-fedora-localedef.patch
+Patch31:	glibc-fedora-locarchive.patch
+Patch32:	glibc-fedora-manual-dircategory.patch
+Patch33:	glibc-fedora-nis-rh188246.patch
+Patch34:	glibc-fedora-nptl-linklibc.patch
+Patch35:	glibc-fedora-ppc-unwind.patch
 Patch36:	eglibc-fedora-nss-files-overflow-fix.patch
 Patch37:	eglibc-fedora-strict-aliasing.patch
+Patch28:	glibc-strcoll-cve.patch
 
 #
 # Patches from upstream
@@ -171,19 +164,20 @@ Patch37:	eglibc-fedora-strict-aliasing.patch
 # Obviously we're not there right now, but that's the goal
 #
 
-Patch38:	eglibc-rh757881.patch
-Patch40:	eglibc-rh741105.patch
-Patch41:	eglibc-rh770869.patch
+Patch38:	glibc-rh757881.patch
+Patch40:	glibc-rh741105.patch
 # Upstream BZ 9954
-Patch48:	eglibc-rh739743.patch
+Patch48:	glibc-rh739743.patch
 # Upstream BZ 13818
-Patch49:	eglibc-rh800224.patch
+Patch49:	glibc-rh800224.patch
 # Upstream BZ 14247
-Patch50:	eglibc-rh827510.patch
+Patch50:	glibc-rh827510.patch
 # Upstream BZ 13028
-Patch53:	eglibc-rh841787.patch
+Patch53:	glibc-rh841787.patch
 # Upstream BZ 14185
-Patch54:	eglibc-rh819430.patch
+Patch54:	glibc-rh819430.patch
+Patch55:	glibc-rh911307.patch
+Patch51:	glibc-rh952799.patch
 
 #-----------------------------------------------------------------------
 # mandriva patches
@@ -290,7 +284,7 @@ Linux system will not function.
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
-%files -f	libc/libc.lang
+%files -f libc.lang
 %if %{with timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
@@ -340,7 +334,7 @@ Linux system will not function.
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-%attr(4755,root,root) %{_prefix}/libexec/pt_chown
+# %attr(4755,root,root) %{_prefix}/libexec/pt_chown
 %{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
@@ -488,20 +482,6 @@ library.
 %{_libdir}/libresolv.a
 %{_libdir}/librt.a
 %{_libdir}/libutil.a
-%{_libdir}/libBrokenLocale_pic.*
-%{_libdir}/libanl_pic.*
-%{_libdir}/libc_pic.*
-%{_libdir}/libc_pic
-%{_libdir}/libcidn_pic.*
-%{_libdir}/libcrypt_pic.*
-%{_libdir}/libdl_pic.*
-%{_libdir}/libm_pic.*
-%{_libdir}/libnsl_pic.*
-%{_libdir}/libnss_*_pic.*
-%{_libdir}/libresolv_pic.*
-%{_libdir}/librt_pic.*
-%{_libdir}/libthread_db_pic.*
-%{_libdir}/libutil_pic.*
 %if %{build_multiarch}
 %{_libdir32}/libBrokenLocale.a
 %{_libdir32}/libanl.a
@@ -514,20 +494,6 @@ library.
 %{_libdir32}/libresolv.a
 %{_libdir32}/librt.a
 %{_libdir32}/libutil.a
-%{_libdir32}/libBrokenLocale_pic.*
-%{_libdir32}/libanl_pic.*
-%{_libdir32}/libc_pic.*
-%{_libdir32}/libc_pic
-%{_libdir32}/libcidn_pic.*
-%{_libdir32}/libcrypt_pic.*
-%{_libdir32}/libdl_pic.*
-%{_libdir32}/libm_pic.*
-%{_libdir32}/libnsl_pic.*
-%{_libdir32}/libnss_*_pic.*
-%{_libdir32}/libresolv_pic.*
-%{_libdir32}/librt_pic.*
-%{_libdir32}/libthread_db_pic.*
-%{_libdir32}/libutil_pic.*
 %endif
 
 ########################################################################
@@ -651,24 +617,20 @@ These are configuration files that describe possible time zones.
 %else
 %setup -q
 %endif
-cd libc
 
 tar xf %SOURCE3
 tar xf %SOURCE50
 tar x --strip-components=1 -f %SOURCE2
 
 %patch00 -p1
-%patch01 -p1
-%patch02 -p1
-%patch03 -p1
 %patch04 -p1
 %patch05 -p1
 %patch06 -p1
-%patch09 -p1
+%patch09 -p1 -b .stap~
 %patch10 -p1 -b .rh841318~
 %patch11 -p1
-%patch12 -p1
-%patch14 -p1
+%patch12 -p1 -b .multiple~
+%patch14 -p1 -b .elfORIGIN~
 %patch15 -p1
 %patch16 -p1 -b .rh737223~
 %patch17 -p1 -b .gai~
@@ -690,14 +652,15 @@ tar x --strip-components=1 -f %SOURCE2
 %patch35 -p1
 %patch36 -p1
 %patch37 -p1 -b .aliasing~
-%patch38 -p1
+%patch28 -p1
 %patch40 -p1
-%patch41 -p1
 %patch48 -p1
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
 %patch53 -p1
 %patch54 -p1
+%patch55 -p1
+%patch51 -p1
 %patch56 -p1
 %patch57 -p1
 %patch58 -p1 -b .nssUpgrade~
@@ -706,7 +669,7 @@ tar x --strip-components=1 -f %SOURCE2
 %patch61 -p1
 %patch62 -p1
 %patch63 -p1
-%patch64 -p1
+%patch64 -p1 -b .hwcap~
 %patch65 -p1
 %patch66 -p1
 %patch67 -p1
@@ -732,7 +695,7 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 ## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
 %patch82 -p1 -b .freesec~
-%patch83 -p1
+%patch83 -p1 -b .relocateFcrypt~
 %patch84 -p0
 # add sha256-crypt and sha512-crypt support to the Openwall wrapper
 %patch85 -p1
@@ -770,7 +733,6 @@ autoconf
 #-----------------------------------------------------------------------
 %build
 # ...
-cd libc
 [ -d ports ] || ln -s ../ports .
 mkdir bin
 ln -sf %{_bindir}/ld.bfd bin/ld
@@ -931,7 +893,7 @@ BuildGlibc %{_target_cpu}
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
 # post install wrapper
-gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgrade.c -o build-%{_target_cpu}-linux/glibc_post_upgrade \
+gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os releng/glibc_post_upgrade.c -o build-%{_target_cpu}-linux/glibc_post_upgrade \
   '-DLIBTLS="/%{_lib}/tls/"' \
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
@@ -940,7 +902,6 @@ gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os fedora/glibc_post_upgra
 #-----------------------------------------------------------------------
 %check
 # ...
-cd libc
 export PATH=$PWD/bin:$PATH
 
 export TMPDIR=/tmp
@@ -952,7 +913,6 @@ done < %{checklist}
 #-----------------------------------------------------------------------
 %install
 # ...
-cd libc
 export PATH=$PWD/bin:$PATH
 
 %if %{build_multiarch}
@@ -1005,7 +965,7 @@ esac
 # the generic one (RH#162634)
 install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
-install -m644 fedora/libc-lock.h -D %{buildroot}%{_includedir}/bits/libc-lock.h
+install -m644 releng/libc-lock.h -D %{buildroot}%{_includedir}/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre

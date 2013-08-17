@@ -1,7 +1,7 @@
---- libc/stdlib/Makefile.ldbl~	2012-11-06 18:31:45.000000000 +0100
-+++ libc/stdlib/Makefile	2012-12-27 20:03:07.397489350 +0100
-@@ -141,9 +141,15 @@ tests: $(objpfx)tst-fmtmsg.out
- endif
+--- glibc-2.18/stdlib/Makefile.ldbl~	2013-08-17 14:29:53.818524404 +0200
++++ glibc-2.18/stdlib/Makefile	2013-08-17 14:36:20.568689362 +0200
+@@ -130,9 +130,15 @@ ifeq ($(run-built-tests),yes)
+ tests: $(objpfx)tst-fmtmsg.out
  endif
  
 +isomac-includes = -I../include $(+sysdep-includes) $(sysincludes) -I..

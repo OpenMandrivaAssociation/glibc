@@ -1,9 +1,9 @@
---- libc/rt/Makefile.tsp~	2012-10-25 19:18:12.000000000 +0200
-+++ libc/rt/Makefile	2012-12-27 20:05:26.757814339 +0100
-@@ -81,3 +81,13 @@ $(tests:%=$(objpfx)%-bp): $(objpfx)librt
+--- glibc-2.18/rt/Makefile.tsp~	2013-08-17 14:36:45.795373985 +0200
++++ glibc-2.18/rt/Makefile	2013-08-17 14:37:45.341629554 +0200
+@@ -73,3 +73,13 @@ $(addprefix $(objpfx),$(tests)): $(objpf
  endif
  
- tst-mqueue7-ARGS = -- $(host-built-program-cmd)
+ tst-mqueue7-ARGS = -- $(host-test-program-cmd)
 +
 +# XXX avoid timing issues on fine-grained SMT systems
 +ifeq (powerpc, $(base-machine))

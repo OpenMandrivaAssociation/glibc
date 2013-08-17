@@ -42,8 +42,8 @@ Subject: [PATCH] Properly set __libc_multiple_libcs
 --- a/elf/dl-support.c
 +++ b/elf/dl-support.c
 @@ -81,10 +81,8 @@ unsigned long long _dl_load_adds;
-    create a fake scope containing nothing.  */
- struct r_scope_elem _dl_initial_searchlist;
+     .r_nlist = 1,
+   };
  
 -#ifndef HAVE_INLINED_SYSCALLS
  /* Nonzero during startup.  */

@@ -1,5 +1,12 @@
---- libc/elf/dl-reloc.c.rh800224~	2012-11-17 18:30:42.000000000 +0100
-+++ libc/elf/dl-reloc.c	2012-12-27 19:52:01.205489385 +0100
+
+2012-03-07  Jeff Law  <law@redhat.com>
+
+	* elf/dl-reloc.c (_dl_relocate_object): Move code to allocate
+	l_reloc_result prior to calling ELF_DYNAMIC_RELOCATE.
+
+diff -rup a/elf/dl-reloc.c b/elf/dl-reloc.c
+--- a/elf/dl-reloc.c	2012-01-01 05:16:32.000000000 -0700
++++ b/elf/dl-reloc.c	2012-03-06 15:41:56.486242640 -0700
 @@ -238,32 +238,9 @@ _dl_relocate_object (struct link_map *l,
      /* String table object symbols.  */
      const char *strtab = (const void *) D_PTR (l, l_info[DT_STRTAB]);

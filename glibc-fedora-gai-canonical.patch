@@ -1,15 +1,30 @@
---- libc/sysdeps/posix/getaddrinfo.c.gai~	2012-12-02 22:11:45.000000000 +0100
-+++ libc/sysdeps/posix/getaddrinfo.c	2012-12-27 19:41:11.925276143 +0100
-@@ -565,7 +565,7 @@ gaih_inet (const char *name, const struc
+From bf18f175afdb59cdcd1016995b351e2bbb1d6ba7 Mon Sep 17 00:00:00 2001
+From: Andreas Schwab <schwab@redhat.com>
+Date: Tue, 21 Jun 2011 17:28:57 +0200
+Subject: [PATCH] Don't use gethostbyaddr to determine canonical name
+
+* sysdeps/posix/getaddrinfo.c (gaih_inet): Don't use gethostbyaddr
+to determine canonical name.
+
+---
+ ChangeLog                   |    5 +++
+ sysdeps/posix/getaddrinfo.c |   77 +++----------------------------------------
+ 2 files changed, 10 insertions(+), 72 deletions(-)
+
+--- a/sysdeps/posix/getaddrinfo.c
++++ b/sysdeps/posix/getaddrinfo.c
+@@ -565,8 +565,8 @@ gaih_inet (const char *name, const struct gaih_service *service,
  
  	  /* If we do not have to look for IPv6 addresses, use
  	     the simple, old functions, which do not support
 -	     IPv6 scope ids. */
-+	     IPv6 scope ids, nor retrieving the canonical name. */
- 	  if (req->ai_family == AF_INET)
+-	  if (req->ai_family == AF_INET)
++	     IPv6 scope ids, nor retrieving the canonical name.  */
++	  if (req->ai_family == AF_INET && (req->ai_flags & AI_CANONNAME) == 0)
  	    {
  	      /* Allocate additional room for struct host_data.  */
-@@ -1118,70 +1118,10 @@ gaih_inet (const char *name, const struc
+ 	      size_t tmpbuflen = (512 + MAX_NR_ALIASES * sizeof(char*)
+@@ -1107,70 +1107,10 @@ gaih_inet (const char *name, const struct gaih_service *service,
  	/* Only the first entry gets the canonical name.  */
  	if (at2 == at && (req->ai_flags & AI_CANONNAME) != 0)
  	  {
@@ -78,12 +93,12 @@
 -		  }
 -	      }
 +	      /* If the canonical name cannot be determined, use
-+	         the passed in string.  */
++		 the passed in string.  */
 +	      canon = orig_name;
  
  #ifdef HAVE_LIBIDN
  	    if (req->ai_flags & AI_CANONIDN)
-@@ -1196,9 +1136,6 @@ gaih_inet (const char *name, const struc
+@@ -1185,9 +1125,6 @@ gaih_inet (const char *name, const struct gaih_service *service,
  		int rc = __idna_to_unicode_lzlz (canon, &out, idn_flags);
  		if (rc != IDNA_SUCCESS)
  		  {
@@ -93,7 +108,7 @@
  		    if (rc == IDNA_MALLOC_ERROR)
  		      result = -EAI_MEMORY;
  		    else if (rc == IDNA_DLOPEN_ERROR)
-@@ -1228,17 +1165,11 @@ gaih_inet (const char *name, const struc
+@@ -1217,17 +1154,11 @@ gaih_inet (const char *name, const struct gaih_service *service,
  		    canon = strdup (canon);
  		    if (canon == NULL)
  		      {

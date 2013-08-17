@@ -1,16 +1,16 @@
---- libc/crypt/Makefile.freesec~	2012-12-27 20:08:12.000000000 +0100
-+++ libc/crypt/Makefile	2012-12-27 20:08:42.046471265 +0100
-@@ -28,7 +28,7 @@ extra-libs-$(OPTION_EGLIBC_CRYPT) := lib
- extra-libs-others-y := $(extra-libs-y)
+--- glibc-2.18/crypt/Makefile.freesec~	2013-08-17 14:40:57.281229979 +0200
++++ glibc-2.18/crypt/Makefile	2013-08-17 14:41:29.929821815 +0200
+@@ -26,7 +26,7 @@ extra-libs := libcrypt
+ extra-libs-others := $(extra-libs)
  
- libcrypt-routines := crypt-entry md5-crypt sha256-crypt sha512-crypt
--libcrypt-routines-$(OPTION_EGLIBC_CRYPT_UFC) := crypt_util crypt crypt_blowfish x86 crypt_gensalt wrapper
-+libcrypt-routines-$(OPTION_EGLIBC_CRYPT_UFC) := crypt_util crypt crypt_blowfish x86 crypt_gensalt crypt_freesec wrapper
- libcrypt-routines += $(libcrypt-routines-y)
+ libcrypt-routines := crypt-entry md5-crypt sha256-crypt sha512-crypt crypt \
+-		     crypt_util crypt_blowfish x86 crypt_gensalt wrapper
++		     crypt_util crypt_blowfish x86 crypt_gensalt crypt_freesec wrapper
  
- tests-$(OPTION_EGLIBC_CRYPT) := md5c-test sha256c-test sha512c-test badsalttest
---- libc/crypt/wrapper.c.freesec~	2011-07-16 17:07:22.000000000 +0200
-+++ libc/crypt/wrapper.c	2012-12-27 20:08:12.179830307 +0100
+ tests := cert md5c-test sha256c-test sha512c-test badsalttest
+ 
+--- glibc-2.18/crypt/wrapper.c.freesec~	2011-07-16 17:07:22.000000000 +0200
++++ glibc-2.18/crypt/wrapper.c	2013-08-17 14:40:57.282229966 +0200
 @@ -103,32 +103,72 @@ static char *_crypt_retval_magic(char *r
   * its initialization code.  Thus, it is important that our multiple hashing
   * algorithms either don't conflict with each other in their use of the

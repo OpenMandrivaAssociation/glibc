@@ -1,16 +1,16 @@
---- libc/elf/rtld.c.hpt~	2012-12-01 22:41:05.289510763 +0100
-+++ libc/elf/rtld.c	2012-12-01 22:41:34.631828566 +0100
+--- glibc-2.18/elf/rtld.c.hpt~	2013-08-17 14:27:41.038184387 +0200
++++ glibc-2.18/elf/rtld.c	2013-08-17 14:29:31.166807590 +0200
 @@ -16,6 +16,9 @@
     License along with the GNU C Library; if not, see
     <http://www.gnu.org/licenses/>.  */
  
-+/* Early statistics require high-precision timing.  */
++/* Early statistics require high-precision timing */
 +#define NEED_HP_TIMING_HWCAP_AVAIL 1
 +
- #include <gnu/option-groups.h>
  #include <errno.h>
  #include <dlfcn.h>
-@@ -191,6 +194,12 @@ static void dl_main (const ElfW(Phdr) *p
+ #include <fcntl.h>
+@@ -193,6 +196,12 @@ static void dl_main (const ElfW(Phdr) *p
  static struct libname_list _dl_rtld_libname;
  static struct libname_list _dl_rtld_libname2;
  
@@ -23,7 +23,7 @@
  /* We expect less than a second for relocation.  */
  #ifdef HP_SMALL_TIMING_AVAIL
  # undef HP_TIMING_AVAIL
-@@ -322,9 +331,8 @@ _dl_start_final (void *arg, struct dl_st
+@@ -315,9 +324,8 @@ _dl_start_final (void *arg, struct dl_st
  
  #endif
  
@@ -35,9 +35,9 @@
  
    /* Initialize the stack end variable.  */
    __libc_stack_end = __builtin_frame_address (0);
---- libc/sysdeps/generic/ldsodefs.h.hpt~	2012-05-26 19:46:57.000000000 +0200
-+++ libc/sysdeps/generic/ldsodefs.h	2012-12-01 22:41:05.382511769 +0100
-@@ -417,7 +417,7 @@ struct rtld_global
+--- glibc-2.18/sysdeps/generic/ldsodefs.h.hpt~	2013-08-11 00:52:55.000000000 +0200
++++ glibc-2.18/sysdeps/generic/ldsodefs.h	2013-08-17 14:27:41.153182949 +0200
+@@ -321,7 +321,7 @@ struct rtld_global
    /* The object to be initialized first.  */
    EXTERN struct link_map *_dl_initfirst;
  
@@ -46,7 +46,7 @@
    /* Start time on CPU clock.  */
    EXTERN hp_timing_t _dl_cpuclock_offset;
  #endif
-@@ -638,7 +638,7 @@ struct rtld_global_ro
+@@ -534,7 +534,7 @@ struct rtld_global_ro
    /* All search directories defined at startup.  */
    EXTERN struct r_search_path_elem *_dl_init_all_dirs;
  
@@ -55,13 +55,13 @@
    /* Overhead of a high-precision timing measurement.  */
    EXTERN hp_timing_t _dl_hp_timing_overhead;
  #endif
---- libc/sysdeps/i386/i586/hp-timing.c.hpt~	2012-12-01 22:41:05.382511769 +0100
-+++ libc/sysdeps/i386/i586/hp-timing.c	2012-12-01 22:41:05.382511769 +0100
+--- glibc-2.18/sysdeps/i386/i586/hp-timing.c.hpt~	2013-08-17 14:27:41.153182949 +0200
++++ glibc-2.18/sysdeps/i386/i586/hp-timing.c	2013-08-17 14:27:41.153182949 +0200
 @@ -0,0 +1,2 @@
 +/* We can use the i686 implementation without changes.  */
 +#include <sysdeps/i386/i686/hp-timing.c>
---- libc/sysdeps/i386/i586/hp-timing.h.hpt~	2012-12-01 22:41:05.382511769 +0100
-+++ libc/sysdeps/i386/i586/hp-timing.h	2012-12-01 22:41:05.382511769 +0100
+--- glibc-2.18/sysdeps/i386/i586/hp-timing.h.hpt~	2013-08-17 14:27:41.153182949 +0200
++++ glibc-2.18/sysdeps/i386/i586/hp-timing.h	2013-08-17 14:27:41.153182949 +0200
 @@ -0,0 +1,43 @@
 +#ifndef _HP_HWCAP_TIMING_H
 +#define _HP_HWCAP_TIMING_H 1
@@ -106,8 +106,8 @@
 +#endif
 +
 +#endif /* hp-timing.h */
---- libc/sysdeps/i386/i586/Makefile.hpt~	2012-12-01 22:41:05.382511769 +0100
-+++ libc/sysdeps/i386/i586/Makefile	2012-12-01 22:41:05.382511769 +0100
+--- glibc-2.18/sysdeps/i386/i586/Makefile.hpt~	2013-08-17 14:27:41.153182949 +0200
++++ glibc-2.18/sysdeps/i386/i586/Makefile	2013-08-17 14:27:41.153182949 +0200
 @@ -0,0 +1,4 @@
 +ifeq ($(subdir),csu)
 +sysdep_routines += hp-timing
