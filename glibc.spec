@@ -63,7 +63,7 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
-Epoch:		6
+Epoch:		6.1
 Version:	2.18
 %if 0%{svn}
 Release:	0.%{svn}.1
@@ -85,6 +85,8 @@ Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 Source2:	glibc-2.17-931-g30bbc0c-releng.tar.gz
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
+Source6:	nscd.service
+Source7:	nscd.socket
 
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
@@ -985,9 +987,9 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 
 # This is for ncsd - in glibc 2.2
 %if %{with nscd}
-    install -m 644 nscd/nscd.conf %{buildroot}%{_sysconfdir}
-    mkdir -p %{buildroot}%{_initrddir}
-    install -m 755 nscd/nscd.init %{buildroot}%{_initrddir}/nscd
+    install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
+    install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
+    install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
 %endif
 
 # These man pages require special attention
