@@ -527,12 +527,13 @@ performance with NIS+, and may help with DNS as well.
 %postun -n nscd
     %_postun_userdel nscd
     if [ "$1" -ge "1" ]; then
-	/sbin/service nscd condrestart > /dev/null 2>&1 || :
+	systemctl condrestart nscd > /dev/null 2>&1 || :
     fi
 
 %files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
-%config(noreplace) %{_initrddir}/nscd
+%{_unitdir}/nscd.service
+%{_unitdir}/nscd.socket
 %{_sbindir}/nscd
 #-----------------------------------------------------------------------
 # with nscd
