@@ -63,14 +63,14 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		glibc
-Epoch:		6.1
+Epoch:		6
 Version:	2.18
 %if 0%{svn}
 Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	1
+Release:	1.1
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
