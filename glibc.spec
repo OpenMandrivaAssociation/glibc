@@ -847,7 +847,8 @@ function BuildGlibc() {
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \
     --with-headers=%{_includedir} ${1+"$@"}
-  %make -r
+    # (tpg) now only errors got logged
+  %make -r -s
   popd
 
   check_flags="-k"
