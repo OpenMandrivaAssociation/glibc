@@ -70,7 +70,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	2
+Release:	3
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
