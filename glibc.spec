@@ -325,6 +325,9 @@ Linux system will not function.
 %ifarch armv7hl
 %{_slibdir}/ld-linux-armhf.so.3
 %endif
+%ifarch aarch64
+%{_slibdir}/ld-linux-aarch64.so.1
+%endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
