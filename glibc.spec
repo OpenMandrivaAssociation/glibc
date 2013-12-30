@@ -70,7 +70,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	5
+Release:	6
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -327,6 +327,7 @@ Linux system will not function.
 %endif
 %ifarch aarch64
 %{_slibdir}/ld-linux-aarch64.so.1
+%{_slibdir32}/ld-linux-aarch64.so.1
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
@@ -979,6 +980,12 @@ mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 # Remove the files we don't want to distribute
 rm -f %{buildroot}%{_libdir}/libNoVersion*
 rm -f %{buildroot}%{_slibdir}/libNoVersion*
+
+
+# (tpg) workaround for aarch64 ?
+%ifarch aarch64
+ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
+%endif
 
 ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
 %if %{build_multiarch}
