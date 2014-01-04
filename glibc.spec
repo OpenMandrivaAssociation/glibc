@@ -219,6 +219,8 @@ Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch88:	glibc-2.17-gold.patch
+Patch89:	glibc-2.18-aarch64-dl-trampoline.patch
+Patch90:	glibc-2.19-aarch64-upstreamed.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
@@ -709,6 +711,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch87 -p1 -b .boLocale~
 
 %patch88 -p1 -b .gold~
+%patch89 -p1 -b .tramp
+%patch90 -p1 -b .upstream
 
 %patch100 -p1 -b .blowfish_nonx86~
 
