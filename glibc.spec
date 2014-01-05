@@ -64,13 +64,13 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
-Version:	2.18
+Version:	2.18.90
 %if 0%{svn}
 Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	6
+Release:	1
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -115,9 +115,6 @@ Patch5:		glibc-arm-hardfloat-3.patch
 # Needs to be sent upstream
 Patch6:		glibc-rh697421.patch
 
-# stap, needs to be sent upstream
-Patch9:		glibc-stap-libm.patch
-
 # Needs to be sent upstream
 Patch10:	glibc-rh841318.patch
 
@@ -130,7 +127,6 @@ Patch12:	glibc-fedora-__libc_multiple_libcs.patch
 Patch14:	glibc-fedora-elf-ORIGIN.patch
 Patch15:	glibc-fedora-elf-init-hidden_undef.patch
 Patch16:	glibc-fedora-elf-rh737223.patch
-Patch17:	glibc-fedora-gai-canonical.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
 Patch20:	glibc-fedora-getrlimit-PLT.patch
 Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
@@ -150,9 +146,7 @@ Patch32:	glibc-fedora-manual-dircategory.patch
 Patch33:	glibc-fedora-nis-rh188246.patch
 Patch34:	glibc-fedora-nptl-linklibc.patch
 Patch35:	glibc-fedora-ppc-unwind.patch
-Patch36:	eglibc-fedora-nss-files-overflow-fix.patch
 Patch37:	eglibc-fedora-strict-aliasing.patch
-Patch28:	glibc-strcoll-cve.patch
 
 #
 # Patches from upstream
@@ -166,14 +160,10 @@ Patch28:	glibc-strcoll-cve.patch
 
 Patch38:	glibc-rh757881.patch
 Patch40:	glibc-rh741105.patch
-# Upstream BZ 9954
-Patch48:	glibc-rh739743.patch
 # Upstream BZ 13818
 Patch49:	glibc-rh800224.patch
 # Upstream BZ 14247
 Patch50:	glibc-rh827510.patch
-# Upstream BZ 13028
-Patch53:	glibc-rh841787.patch
 # Upstream BZ 14185
 Patch54:	glibc-rh819430.patch
 Patch55:	glibc-rh911307.patch
@@ -219,8 +209,6 @@ Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch88:	glibc-2.17-gold.patch
-Patch89:	glibc-2.18-aarch64-dl-trampoline.patch
-Patch90:	glibc-2.19-aarch64-upstreamed.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
@@ -443,8 +431,6 @@ executables.
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
-%{_libdir}/libbsd-compat.a
-%{_libdir}/libbsd.a
 %{_libdir}/libc_nonshared.a
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
@@ -454,8 +440,6 @@ executables.
 %if %{build_multiarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
-%{_libdir32}/libbsd-compat.a
-%{_libdir32}/libbsd.a
 %{_libdir32}/libc_nonshared.a
 %{_libdir32}/libg.a
 %{_libdir32}/libieee.a
@@ -632,14 +616,12 @@ tar x --strip-components=1 -f %SOURCE2
 %patch04 -p1
 %patch05 -p1
 %patch06 -p1
-%patch09 -p1 -b .stap~
 %patch10 -p1 -b .rh841318~
 %patch11 -p1
 %patch12 -p1 -b .multiple~
 %patch14 -p1 -b .elfORIGIN~
 %patch15 -p1
 %patch16 -p1 -b .rh737223~
-%patch17 -p1 -b .gai~
 %patch18 -p1
 %patch20 -p1
 %patch21 -p1
@@ -647,7 +629,7 @@ tar x --strip-components=1 -f %SOURCE2
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
-%patch26 -p1
+%patch26 -p1 -b .curr~
 %patch27 -p1
 %patch29 -p1 -b .locales~
 %patch30 -p1
@@ -656,14 +638,10 @@ tar x --strip-components=1 -f %SOURCE2
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
-%patch36 -p1
 %patch37 -p1 -b .aliasing~
-%patch28 -p1
 %patch40 -p1
-%patch48 -p1
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
-%patch53 -p1
 %patch54 -p1
 %patch55 -p1
 %patch51 -p1
@@ -687,7 +665,6 @@ tar x --strip-components=1 -f %SOURCE2
 %patch73 -p1
 %patch74 -p1 -b .ldbl~
 %patch75 -p1 -b .tsp~
-%patch77 -p1
 %patch79 -p1
 %patch80 -p1
 
@@ -711,8 +688,6 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch87 -p1 -b .boLocale~
 
 %patch88 -p1 -b .gold~
-%patch89 -p1 -b .tramp
-%patch90 -p1 -b .upstream
 
 %patch100 -p1 -b .blowfish_nonx86~
 
@@ -845,6 +820,7 @@ function BuildGlibc() {
     --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
     --disable-profile \
+    --enable-static \
 %if %{with selinux}
     --with-selinux \
 %else
@@ -989,11 +965,6 @@ rm -f %{buildroot}%{_slibdir}/libNoVersion*
 # (tpg) workaround for aarch64 ?
 %ifarch aarch64
 ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
-%endif
-
-ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
-%if %{build_multiarch}
-    ln -sf libbsd-compat.a %{buildroot}%{_libdir32}/libbsd.a
 %endif
 
 install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf

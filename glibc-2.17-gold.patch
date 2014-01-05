@@ -1,7 +1,7 @@
-diff --git a/configure.in b/configure.in
+diff --git a/configure.ac b/configure.ac
 index d369382..ffc6151 100644
---- a/configure.in
-+++ b/configure.in
+--- a/configure.ac
++++ b/configure.ac
 @@ -924,6 +924,16 @@ AC_SUBST(MIG)dnl Needed by sysdeps/mach/configure.in
  AC_CHECK_PROG_VER(AS, $AS, --version,
  		  [GNU assembler.* \([0-9]*\.[0-9.]*\)],

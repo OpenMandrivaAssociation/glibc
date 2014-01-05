@@ -2,6 +2,5 @@ sources:
   crypt_blowfish-1.2.tar.gz: 306ff83af206fac786900ce5e4800516cae909d9
   crypt_blowfish-1.2.tar.gz.sign: 982d2d5585d60fc01d18005c2b5e57a1a44b45d7
   glibc-2.17-931-g30bbc0c-releng.tar.gz: e37b6435117e57fc66bf201ef29f338a3209ee2c
-  glibc-2.18.tar.xz: 1f0e4e7ba5fe1f45ffd0548b6c36caef0bc7e51f
-  glibc-2.18.tar.xz.sig: 0244437af96d377de20d7bf0dd51e56efe2213b4
+  glibc-2.18.90.tar.xz: 30914ad1b109b40ca9f27993952c02fcb5939742
   glibc-manpages.tar.bz2: ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
