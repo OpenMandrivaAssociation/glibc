@@ -64,7 +64,7 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
-Version:	2.18.90
+Version:	2.19
 %if 0%{svn}
 Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
@@ -81,10 +81,11 @@ Url:		http://www.eglibc.org/
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 
-# Fedora tarball
-Source2:	glibc-2.17-931-g30bbc0c-releng.tar.gz
+# From Fedora
+Source2:	glibc_post_upgrade.c
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
+Source10:	libc-lock.h
 
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
@@ -610,7 +611,6 @@ These are configuration files that describe possible time zones.
 
 tar xf %SOURCE3
 tar xf %SOURCE50
-tar x --strip-components=1 -f %SOURCE2
 
 %patch00 -p1
 %patch04 -p1
@@ -878,7 +878,7 @@ BuildGlibc %{_target_cpu}
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
 # post install wrapper
-gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os releng/glibc_post_upgrade.c -o build-%{_target_cpu}-linux/glibc_post_upgrade \
+gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{_target_cpu}-linux/glibc_post_upgrade \
   '-DLIBTLS="/%{_lib}/tls/"' \
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
@@ -950,7 +950,7 @@ esac
 # the generic one (RH#162634)
 install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
-install -m644 releng/libc-lock.h -D %{buildroot}%{_includedir}/bits/libc-lock.h
+install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
