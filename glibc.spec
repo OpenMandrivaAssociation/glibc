@@ -47,6 +47,7 @@
 %bcond_without i18ndata
 %bcond_with timezone
 %bcond_without nsscrypt
+%bcond_without locales
 
 %ifarch %{ix86} x86_64
 %bcond_without systap
@@ -87,6 +88,9 @@ Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 Source10:	libc-lock.h
 
+# Locales
+Source20:	Makefile.locales
+
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
 Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.sign
@@ -94,6 +98,13 @@ Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glib
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
 Source100:	%{name}.rpmlintrc
+
+Source1000:	locale-pkg
+Source1001:	locale_install.sh
+Source1002:	locale_uninstall.sh
+Source1003:	locales.sysconfig
+Source1004:	locales-hardlink.pl
+Source1005:	locales-softlink.pl
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -274,6 +285,179 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %post -p %{_sbindir}/glibc_post_upgrade
+
+%package -n locales
+Summary:	Base files for localization
+Group:		System/Internationalization
+
+%description -n locales
+These are the base files for language localization.
+You also need to install the specific locales-?? for the
+language(s) you want. Then the user need to set the
+LANG variable to their preferred language in their
+~/.profile configuration file.
+
+# Locale specifc packages
+%{expand:%(%{SOURCE1000} Afar aa aa_DJ aa_ER aa_ET)}
+%{expand:%(%{SOURCE1000} Afrikaans af af_ZA)}
+%{expand:%(%{SOURCE1000} Amharic am am_ET byn_ER gez_ER gez_ET om_ET om_KE sid_ET ti_ER ti_ET tig_ER wal_ET)}
+%{expand:%(%{SOURCE1000} Akan ak ak_GH)}
+%{expand:%(%{SOURCE1000} Angika anp anp_IN)}
+%{expand:%(%{SOURCE1000} Arabic ar ar_AE ar_BH ar_DZ ar_EG ar_IN ar_IQ ar_JO ar_KW ar_LB ar_LY ar_MA ar_OM ar_QA ar_SA ar_SD ar_SS ar_SY ar_TN ar_YE)}
+%{expand:%(%{SOURCE1000} Assamese as as_IN)}
+%{expand:%(%{SOURCE1000} Asturian ast ast_ES)}
+%{expand:%(%{SOURCE1000} Aymara ayc ayc_PE)}
+%{expand:%(%{SOURCE1000} Azeri az az_AZ)}
+%{expand:%(%{SOURCE1000} Belarusian be be_BY)}
+%{expand:%(%{SOURCE1000} Bemba bem bem_ZM)}
+%{expand:%(%{SOURCE1000} Berber ber ber_DZ ber_MA)}
+%{expand:%(%{SOURCE1000} Bulgarian bg bg_BG)}
+%{expand:%(%{SOURCE1000} Bengali bn bn_BD bn_IN)}
+%{expand:%(%{SOURCE1000} Tibetan bo bo_CN bo_IN)}
+%{expand:%(%{SOURCE1000} Breton br br_FR)}
+%{expand:%(%{SOURCE1000} Bosnian bs bs_BA)}
+%{expand:%(%{SOURCE1000} Catalan ca ca_AD ca_ES ca_FR ca_IT)}
+%{expand:%(%{SOURCE1000} "Crimean Tatar" crh crh_UA)}
+%{expand:%(%{SOURCE1000} Czech cs cs_CZ)}
+%{expand:%(%{SOURCE1000} Chuvash cv cv_RU)}
+%{expand:%(%{SOURCE1000} Welsh cy cy_GB)}
+%{expand:%(%{SOURCE1000} Danish da da_DK)}
+%{expand:%(%{SOURCE1000} German de de_AT de_BE de_CH de_DE de_LU)}
+%{expand:%(%{SOURCE1000} Dogri doi doi_IN)}
+%{expand:%(%{SOURCE1000} Dhivehi dv dv_MV)}
+%{expand:%(%{SOURCE1000} Dzongkha dz dz_BT)}
+%{expand:%(%{SOURCE1000} Greek el r:gr el_CY el_GR)}
+%{expand:%(%{SOURCE1000} English en en_AG en_AU en_BW en_CA en_DK en_GB en_HK en_IE en_IN en_NG en_NZ en_PH en_SG en_US en_ZA en_ZM en_ZW)}
+%{expand:%(%{SOURCE1000} Esperanto eo eo_XX)}
+# Potentially unhandled: es@tradicional?, an = Aragonese
+%{expand:%(%{SOURCE1000} Spanish es an_ES es_AR es_BO es_CL es_CO es_CR es_CU es_DO es_EC es_ES es_GT es_HN es_MX es_NI es_PA es_PE es_PR es_PY es_SV es_US es_UY es_VE)}
+%{expand:%(%{SOURCE1000} Estonian et et_EE)}
+%{expand:%(%{SOURCE1000} Basque eu eu_ES)}
+%{expand:%(%{SOURCE1000} Farsi fa fa_IR)}
+%{expand:%(%{SOURCE1000} Finnish fi fi_FI)}
+%{expand:%(%{SOURCE1000} Fulah ff ff_SN)}
+%{expand:%(%{SOURCE1000} Faroese fo fo_FO)}
+%{expand:%(%{SOURCE1000} French fr fr_BE fr_CA fr_CH fr_FR fr_LU)}
+%{expand:%(%{SOURCE1000} Friulan fur fur_IT)}
+%{expand:%(%{SOURCE1000} Frisian fy fy_DE fy_NL)}
+%{expand:%(%{SOURCE1000} Irish ga ga_IE)}
+%{expand:%(%{SOURCE1000} "Scottish Gaelic" gd gd_GB)}
+%{expand:%(%{SOURCE1000} Galician gl gl_ES)}
+%{expand:%(%{SOURCE1000} Gujarati gu gu_IN)}
+%{expand:%(%{SOURCE1000} "Manx Gaelic" gv gv_GB)}
+%{expand:%(%{SOURCE1000} Hausa ha ha_NG)}
+%{expand:%(%{SOURCE1000} Hebrew he he_IL iw_IL)}
+%{expand:%(%{SOURCE1000} Hindi hi bho_IN brx_IN hi_IN ur_IN)}
+%{expand:%(%{SOURCE1000} Chhattisgarhi hne hne_IN)}
+%{expand:%(%{SOURCE1000} Croatian hr hr_HR)}
+%{expand:%(%{SOURCE1000} "Upper Sorbian" hsb hsb_DE)}
+%{expand:%(%{SOURCE1000} Breyol ht ht_HT)}
+%{expand:%(%{SOURCE1000} Hungarian hu hu_HU)}
+%{expand:%(%{SOURCE1000} Armenian hy hy_AM)}
+%{expand:%(%{SOURCE1000} Interlingua ia ia_FR)}
+%{expand:%(%{SOURCE1000} Indonesian id id_ID)}
+%{expand:%(%{SOURCE1000} Igbo ig ig_NG)}
+%{expand:%(%{SOURCE1000} Inupiaq ik ik_CA)}
+%{expand:%(%{SOURCE1000} Icelandic is is_IS)}
+%{expand:%(%{SOURCE1000} Italian it it_CH it_IT)}
+%{expand:%(%{SOURCE1000} Inuktitut iu iu_CA)}
+%{expand:%(%{SOURCE1000} Japanese ja ja ja_JP)}
+%{expand:%(%{SOURCE1000} Georgian ka ka_GE)}
+%{expand:%(%{SOURCE1000} Kazakh kk kk_KZ)}
+%{expand:%(%{SOURCE1000} Greenlandic kl kl_GL)}
+%{expand:%(%{SOURCE1000} Khmer km km_KH)}
+%{expand:%(%{SOURCE1000} Kannada kn kn_IN)}
+%{expand:%(%{SOURCE1000} Korean ko ko_KR)}
+%{expand:%(%{SOURCE1000} Konkani kok kok_IN)}
+%{expand:%(%{SOURCE1000} Kashmiri ks ks_IN ks_IN@devanagari)}
+%{expand:%(%{SOURCE1000} Kurdish ku ku_TR)}
+%{expand:%(%{SOURCE1000} Cornish kw kw_GB)}
+%{expand:%(%{SOURCE1000} Kyrgyz ky ky_KG)}
+%{expand:%(%{SOURCE1000} Luxembourgish lb lb_LU)}
+%{expand:%(%{SOURCE1000} Luganda lg lg_UG)}
+%{expand:%(%{SOURCE1000} Limburguish li li_BE li_NL)}
+%{expand:%(%{SOURCE1000} Ligurian lij lij_IT)}
+%{expand:%(%{SOURCE1000} Laotian lo lo_LA)}
+%{expand:%(%{SOURCE1000} Lithuanian lt lt_LT)}
+%{expand:%(%{SOURCE1000} Latvian lv lv_LV)}
+%{expand:%(%{SOURCE1000} Magahi mag mag_IN)}
+%{expand:%(%{SOURCE1000} Maithili mai mai_IN)}
+%{expand:%(%{SOURCE1000} Malagasy mg mg_MG)}
+%{expand:%(%{SOURCE1000} Mari mhr mhr_RU)}
+%{expand:%(%{SOURCE1000} Maori mi mi_NZ)}
+%{expand:%(%{SOURCE1000} Macedonian mk mk_MK)}
+%{expand:%(%{SOURCE1000} Malayalam ml ml_IN)}
+%{expand:%(%{SOURCE1000} Mongolian mn mn_MN)}
+%{expand:%(%{SOURCE1000} Manipuri mni mni_IN)}
+%{expand:%(%{SOURCE1000} Marathi mr mr_IN)}
+%{expand:%(%{SOURCE1000} Malay ms ms_MY)}
+%{expand:%(%{SOURCE1000} Maltese mt mt_MT)}
+%{expand:%(%{SOURCE1000} Burmese my my_MM)}
+%{expand:%(%{SOURCE1000} "Lower Saxon" nds nds_DE nds_NL)}
+%{expand:%(%{SOURCE1000} Nepali ne ne_NP)}
+%{expand:%(%{SOURCE1000} Nahuatl nhn nhn_MX)}
+%{expand:%(%{SOURCE1000} Niuean niu niu_NU niu_NZ)}
+%{expand:%(%{SOURCE1000} Dutch nl nl_AW nl_BE nl_NL)}
+%{expand:%(%{SOURCE1000} Norwegian no r:nb r:nn nb_NO nn_NO)}
+%{expand:%(%{SOURCE1000} Ndebele nr nr_ZA)}
+%{expand:%(%{SOURCE1000} "Northern Sotho" nso nso_ZA)}
+%{expand:%(%{SOURCE1000} Occitan oc oc_FR)}
+%{expand:%(%{SOURCE1000} Oriya or or_IN)}
+%{expand:%(%{SOURCE1000} Ossetian os os_RU)}
+%{expand:%(%{SOURCE1000} Punjabi pa pa_IN pa_PK)}
+%{expand:%(%{SOURCE1000} Papiamento pap r:pp pap_AN pap_AW pap_CW)}
+%{expand:%(%{SOURCE1000} Polish pl csb_PL pl_PL)}
+%{expand:%(%{SOURCE1000} Pashto ps ps_AF)}
+%{expand:%(%{SOURCE1000} Portuguese pt pt_BR pt_PT)}
+%{expand:%(%{SOURCE1000} Quechua quz quz_PE)}
+%{expand:%(%{SOURCE1000} Romanian ro ro_RO)}
+%{expand:%(%{SOURCE1000} Russian ru ru_RU ru_UA)}
+%{expand:%(%{SOURCE1000} Kinyarwanda rw rw_RW)}
+%{expand:%(%{SOURCE1000} Sanskrit sa sa_IN)}
+%{expand:%(%{SOURCE1000} Santali sat sat_IN)}
+%{expand:%(%{SOURCE1000} Sardinian sc sc_IT)}
+%{expand:%(%{SOURCE1000} Sindhi sd sd_IN sd_IN@devanagari)}
+%{expand:%(%{SOURCE1000} Saami se se_NO)}
+%{expand:%(%{SOURCE1000} Secwepemctsin shs shs_CA)}
+%{expand:%(%{SOURCE1000} Sinhala si si_LK)}
+%{expand:%(%{SOURCE1000} Slovak sk sk_SK)}
+%{expand:%(%{SOURCE1000} Slovenian sl sl_SI)}
+%{expand:%(%{SOURCE1000} Serbian sr sr_ME sr_RS)}
+%{expand:%(%{SOURCE1000} Somali so so_DJ so_ET so_KE so_SO)}
+%{expand:%(%{SOURCE1000} Albanian sq sq_AL sq_MK)}
+%{expand:%(%{SOURCE1000} Swati ss ss_ZA)}
+%{expand:%(%{SOURCE1000} Sotho st st_ZA)}
+%{expand:%(%{SOURCE1000} Swedish sv sv_FI sv_SE)}
+# sw_XX?
+%{expand:%(%{SOURCE1000} Swahili sw sw_KE sw_TZ)}
+%{expand:%(%{SOURCE1000} Silesian szl szl_PL)}
+%{expand:%(%{SOURCE1000} Tamil ta ta_IN ta_LK)}
+%{expand:%(%{SOURCE1000} Telugu te te_IN)}
+%{expand:%(%{SOURCE1000} Tajik tg tg_TJ)}
+%{expand:%(%{SOURCE1000} Thai th th_TH)}
+%{expand:%(%{SOURCE1000} Tharu/Tharuhati the the_NP)}
+%{expand:%(%{SOURCE1000} Turkmen tk tk_TM)}
+%{expand:%(%{SOURCE1000} Pilipino tl r:ph fil_PH tl_PH)}
+%{expand:%(%{SOURCE1000} Tswana tn tn_ZA)}
+%{expand:%(%{SOURCE1000} Turkish tr tr_CY tr_TR)}
+%{expand:%(%{SOURCE1000} Tsonga ts ts_ZA)}
+%{expand:%(%{SOURCE1000} Tatar tt tt_RU)}
+%{expand:%(%{SOURCE1000} Uyghur ug ug_CN)}
+%{expand:%(%{SOURCE1000} Unami unm unm_US)}
+%{expand:%(%{SOURCE1000} Ukrainian uk uk_UA)}
+%{expand:%(%{SOURCE1000} Urdu ur ur_PK)}
+%{expand:%(%{SOURCE1000} Uzbek uz uz_UZ)}
+%{expand:%(%{SOURCE1000} Venda ve ve_ZA)}
+%{expand:%(%{SOURCE1000} Vietnamese vi vi_VN)}
+%{expand:%(%{SOURCE1000} Walloon wa wa_BE)}
+%{expand:%(%{SOURCE1000} Walser wae wae_CH)}
+%{expand:%(%{SOURCE1000} Wolof wo wo_SN)}
+%{expand:%(%{SOURCE1000} Xhosa xh xh_ZA)}
+%{expand:%(%{SOURCE1000} Yiddish yi yi_US)}
+%{expand:%(%{SOURCE1000} Yoruba yo yo_NG)}
+%{expand:%(%{SOURCE1000} "Yue Chinese (Cantonese)" yue yue_HK)}
+%{expand:%(%{SOURCE1000} Chinese zh zh_CN zh_HK zh_SG zh_TW cmn_TW hak_TW lzh_TW nan_TW nam_TW@latin)}
+%{expand:%(%{SOURCE1000} Zulu zu zu_ZA)}
 
 %files -f libc.lang
 %if %{with timezone}
@@ -1072,7 +1256,7 @@ rm -f  %{buildroot}%{_localedir}/locale-archive*
 rm %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 # XXX: verify
-find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
+#find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{with nscd}
     rm -f %{buildroot}%{_sbindir}/nscd
@@ -1106,7 +1290,58 @@ rm -f %{buildroot}%{_infodir}/dir
     rm -rf %{buildroot}%{_datadir}/i18n
 %endif
 
+%if ! %{without locales}
+# Build locales...
+export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
+export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+export I18NPATH=%{buildroot}%{_datadir}/i18n
+
+# make default charset pseudo-locales
+# those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
+# a lot of other locales, thus saving space
+for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
+	 ISO-8859-5 ISO-8859-7 ISO-8859-9 \
+	 ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251 
+do
+	# don't use en_DK because of LC_MONETARY
+	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
+done
+
+# Build regular locales
+SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} %make -f %{SOURCE20}
+# Locale related tools
+install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
+# And configs
+mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
+install -c -m 644 %{SOURCE1003} %{buildroot}%{_sysconfdir}/sysconfig/locales
+
+# Hardlink identical locales
+perl %{SOURCE1004} %{buildroot}%{_datadir}/locale
+# Symlink identical files
+pushd %{buildroot}%{_datadir}/locale
+for i in ??_??* ???_??*; do
+	LC_ALL=C perl %{SOURCE1005} $i
+done
+popd
+%endif
+
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
+
+%files -n locales
+%{_bindir}/locale_install.sh
+%{_bindir}/locale_uninstall.sh
+%config(noreplace) %{_sysconfdir}/sysconfig/locales
+%dir %{_datadir}/locale
+%{_datadir}/locale/ISO*
+%{_datadir}/locale/CP*
+%{_datadir}/locale/UTF*
+%{_datadir}/locale/KOI*
+
+%post -n locales
+%{_bindir}/locale_install.sh "ENCODINGS"
+
+%preun -n locales
+%{_bindir}/locale_uninstall.sh "ENCODINGS"

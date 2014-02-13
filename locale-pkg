@@ -1,0 +1,51 @@
+#!/bin/sh
+LANGNAME="$1"
+shift
+LOCALE="$1"
+if [ "$#" -gt 1 ]; then
+	shift
+fi
+
+cat <<EOF
+%package -n locales-$LOCALE
+Summary:	Base files for localization ($LANGNAME)
+Group:		System/Internationalization
+Requires:	locales = %{EVRD}
+EOF
+
+while echo "$1" |grep -q '^r:'; do
+	L="`echo $1 |cut -d: -f2-`"
+	echo "Obsoletes: locales-$L < %{EVRD}"
+	echo "Provides:	locales-$L = %{EVRD}"
+	shift
+done
+
+cat <<EOF
+%description -n locales-$LOCALE
+These are the base files for $LANGNAME language
+localization; you need it to correctly display
+non-ASCII $LANGNAME characters, and for proper
+alphabetical sorting, and representation of
+dates and numbers according to
+$LANGNAME language conventions.
+
+%post -n locales-$LOCALE
+%{_bindir}/locale_install.sh $@
+
+%preun -n locales-$LOCALE
+if [ "\$1" = "0" ]; then
+	%{_bindir}/locale_uninstall.sh $@
+fi
+
+%files -n locales-$LOCALE
+EOF
+for i in "$@"; do
+	if echo $i |grep -q '@'; then
+		continue
+	fi
+	echo %optional %{_localedir}/$i
+	echo %optional %{_localedir}/$i.*
+	echo %optional %{_localedir}/$i@*
+	echo %exclude %{_localedir}/*/LC_MESSAGES/libc.mo
+done
+echo
