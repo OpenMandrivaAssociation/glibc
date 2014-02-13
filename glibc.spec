@@ -497,7 +497,7 @@ LANG variable to their preferred language in their
 %ifarch armv7l
 %{_slibdir}/ld-linux.so.3
 %endif
-%ifarch armv7hl
+%ifarch armv7hl armv6j
 %{_slibdir}/ld-linux-armhf.so.3
 %endif
 %ifarch aarch64
@@ -940,6 +940,10 @@ function BuildGlibc() {
     armv7*)
       BuildFlags="-march=armv7-a"
       BuildCompFlags="-march=armv7-a"
+      ;;
+    armv6*)
+      BuildFlags="-march=armv6"
+      BuildCompFlags="-march=armv6"
       ;;
   esac
 
