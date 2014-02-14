@@ -71,16 +71,13 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	1
+Release:	2
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
+Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
-
-%if ! 0%{svn}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
-%endif
 
 # From Fedora
 Source2:	glibc_post_upgrade.c
@@ -1327,6 +1324,10 @@ for i in ??_??* ???_??*; do
 	LC_ALL=C perl %{SOURCE1005} $i
 done
 popd
+
+# Needed for/used by locale-archive
+mkdir -p %{buildroot}%{_prefix}/lib/locale
+touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 %endif
 
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
@@ -1339,6 +1340,8 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so l
 %{_bindir}/locale_uninstall.sh
 %config(noreplace) %{_sysconfdir}/sysconfig/locales
 %dir %{_datadir}/locale
+%dir %{_prefix}/lib/locale
+%ghost %{_prefix}/lib/locale/locale-archive
 %{_datadir}/locale/ISO*
 %{_datadir}/locale/CP*
 %{_datadir}/locale/UTF*
