@@ -47,6 +47,7 @@
 %bcond_without i18ndata
 %bcond_with timezone
 %bcond_without nsscrypt
+%bcond_without locales
 
 %ifarch %{ix86} x86_64
 %bcond_without systap
@@ -64,29 +65,30 @@
 Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
-Version:	2.18
+Version:	2.19
 %if 0%{svn}
 Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	1.2
+Release:	2
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
+Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
 
-%if ! 0%{svn}
-Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
-%endif
-
-# Fedora tarball
-Source2:	glibc-2.17-931-g30bbc0c-releng.tar.gz
+# From Fedora
+Source2:	glibc_post_upgrade.c
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 Source6:	nscd.service
 Source7:	nscd.socket
+Source10:	libc-lock.h
+
+# Locales
+Source20:	Makefile.locales
 
 # Blowfish support
 Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
@@ -95,6 +97,13 @@ Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glib
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
 Source100:	%{name}.rpmlintrc
+
+Source1000:	locale-pkg
+Source1001:	locale_install.sh
+Source1002:	locale_uninstall.sh
+Source1003:	locales.sysconfig
+Source1004:	locales-hardlink.pl
+Source1005:	locales-softlink.pl
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -117,9 +126,6 @@ Patch5:		glibc-arm-hardfloat-3.patch
 # Needs to be sent upstream
 Patch6:		glibc-rh697421.patch
 
-# stap, needs to be sent upstream
-Patch9:		glibc-stap-libm.patch
-
 # Needs to be sent upstream
 Patch10:	glibc-rh841318.patch
 
@@ -132,7 +138,6 @@ Patch12:	glibc-fedora-__libc_multiple_libcs.patch
 Patch14:	glibc-fedora-elf-ORIGIN.patch
 Patch15:	glibc-fedora-elf-init-hidden_undef.patch
 Patch16:	glibc-fedora-elf-rh737223.patch
-Patch17:	glibc-fedora-gai-canonical.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
 Patch20:	glibc-fedora-getrlimit-PLT.patch
 Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
@@ -152,9 +157,7 @@ Patch32:	glibc-fedora-manual-dircategory.patch
 Patch33:	glibc-fedora-nis-rh188246.patch
 Patch34:	glibc-fedora-nptl-linklibc.patch
 Patch35:	glibc-fedora-ppc-unwind.patch
-Patch36:	eglibc-fedora-nss-files-overflow-fix.patch
 Patch37:	eglibc-fedora-strict-aliasing.patch
-Patch28:	glibc-strcoll-cve.patch
 
 #
 # Patches from upstream
@@ -168,14 +171,10 @@ Patch28:	glibc-strcoll-cve.patch
 
 Patch38:	glibc-rh757881.patch
 Patch40:	glibc-rh741105.patch
-# Upstream BZ 9954
-Patch48:	glibc-rh739743.patch
 # Upstream BZ 13818
 Patch49:	glibc-rh800224.patch
 # Upstream BZ 14247
 Patch50:	glibc-rh827510.patch
-# Upstream BZ 13028
-Patch53:	glibc-rh841787.patch
 # Upstream BZ 14185
 Patch54:	glibc-rh819430.patch
 Patch55:	glibc-rh911307.patch
@@ -286,6 +285,179 @@ Linux system will not function.
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
+%package -n locales
+Summary:	Base files for localization
+Group:		System/Internationalization
+
+%description -n locales
+These are the base files for language localization.
+You also need to install the specific locales-?? for the
+language(s) you want. Then the user need to set the
+LANG variable to their preferred language in their
+~/.profile configuration file.
+
+# Locale specifc packages
+%{expand:%(sh %{SOURCE1000} Afar aa aa_DJ aa_ER aa_ET)}
+%{expand:%(sh %{SOURCE1000} Afrikaans af af_ZA)}
+%{expand:%(sh %{SOURCE1000} Amharic am am_ET byn_ER gez_ER gez_ET om_ET om_KE sid_ET ti_ER ti_ET tig_ER wal_ET)}
+%{expand:%(sh %{SOURCE1000} Akan ak ak_GH)}
+%{expand:%(sh %{SOURCE1000} Angika anp anp_IN)}
+%{expand:%(sh %{SOURCE1000} Arabic ar ar_AE ar_BH ar_DZ ar_EG ar_IN ar_IQ ar_JO ar_KW ar_LB ar_LY ar_MA ar_OM ar_QA ar_SA ar_SD ar_SS ar_SY ar_TN ar_YE)}
+%{expand:%(sh %{SOURCE1000} Assamese as as_IN)}
+%{expand:%(sh %{SOURCE1000} Asturian ast ast_ES)}
+%{expand:%(sh %{SOURCE1000} Aymara ayc ayc_PE)}
+%{expand:%(sh %{SOURCE1000} Azeri az az_AZ)}
+%{expand:%(sh %{SOURCE1000} Belarusian be be_BY)}
+%{expand:%(sh %{SOURCE1000} Bemba bem bem_ZM)}
+%{expand:%(sh %{SOURCE1000} Berber ber ber_DZ ber_MA)}
+%{expand:%(sh %{SOURCE1000} Bulgarian bg bg_BG)}
+%{expand:%(sh %{SOURCE1000} Bengali bn bn_BD bn_IN)}
+%{expand:%(sh %{SOURCE1000} Tibetan bo bo_CN bo_IN)}
+%{expand:%(sh %{SOURCE1000} Breton br br_FR)}
+%{expand:%(sh %{SOURCE1000} Bosnian bs bs_BA)}
+%{expand:%(sh %{SOURCE1000} Catalan ca ca_AD ca_ES ca_FR ca_IT)}
+%{expand:%(sh %{SOURCE1000} "Crimean Tatar" crh crh_UA)}
+%{expand:%(sh %{SOURCE1000} Czech cs cs_CZ)}
+%{expand:%(sh %{SOURCE1000} Chuvash cv cv_RU)}
+%{expand:%(sh %{SOURCE1000} Welsh cy cy_GB)}
+%{expand:%(sh %{SOURCE1000} Danish da da_DK)}
+%{expand:%(sh %{SOURCE1000} German de de_AT de_BE de_CH de_DE de_LU)}
+%{expand:%(sh %{SOURCE1000} Dogri doi doi_IN)}
+%{expand:%(sh %{SOURCE1000} Dhivehi dv dv_MV)}
+%{expand:%(sh %{SOURCE1000} Dzongkha dz dz_BT)}
+%{expand:%(sh %{SOURCE1000} Greek el r:gr el_CY el_GR)}
+%{expand:%(sh %{SOURCE1000} English en en_AG en_AU en_BW en_CA en_DK en_GB en_HK en_IE en_IN en_NG en_NZ en_PH en_SG en_US en_ZA en_ZM en_ZW)}
+%{expand:%(sh %{SOURCE1000} Esperanto eo eo_XX)}
+# Potentially unhandled: es@tradicional?, an = Aragonese
+%{expand:%(sh %{SOURCE1000} Spanish es an_ES es_AR es_BO es_CL es_CO es_CR es_CU es_DO es_EC es_ES es_GT es_HN es_MX es_NI es_PA es_PE es_PR es_PY es_SV es_US es_UY es_VE)}
+%{expand:%(sh %{SOURCE1000} Estonian et et_EE)}
+%{expand:%(sh %{SOURCE1000} Basque eu eu_ES)}
+%{expand:%(sh %{SOURCE1000} Farsi fa fa_IR)}
+%{expand:%(sh %{SOURCE1000} Finnish fi fi_FI)}
+%{expand:%(sh %{SOURCE1000} Fulah ff ff_SN)}
+%{expand:%(sh %{SOURCE1000} Faroese fo fo_FO)}
+%{expand:%(sh %{SOURCE1000} French fr fr_BE fr_CA fr_CH fr_FR fr_LU)}
+%{expand:%(sh %{SOURCE1000} Friulan fur fur_IT)}
+%{expand:%(sh %{SOURCE1000} Frisian fy fy_DE fy_NL)}
+%{expand:%(sh %{SOURCE1000} Irish ga ga_IE)}
+%{expand:%(sh %{SOURCE1000} "Scottish Gaelic" gd gd_GB)}
+%{expand:%(sh %{SOURCE1000} Galician gl gl_ES)}
+%{expand:%(sh %{SOURCE1000} Gujarati gu gu_IN)}
+%{expand:%(sh %{SOURCE1000} "Manx Gaelic" gv gv_GB)}
+%{expand:%(sh %{SOURCE1000} Hausa ha ha_NG)}
+%{expand:%(sh %{SOURCE1000} Hebrew he he_IL iw_IL)}
+%{expand:%(sh %{SOURCE1000} Hindi hi bho_IN brx_IN hi_IN ur_IN)}
+%{expand:%(sh %{SOURCE1000} Chhattisgarhi hne hne_IN)}
+%{expand:%(sh %{SOURCE1000} Croatian hr hr_HR)}
+%{expand:%(sh %{SOURCE1000} "Upper Sorbian" hsb hsb_DE)}
+%{expand:%(sh %{SOURCE1000} Breyol ht ht_HT)}
+%{expand:%(sh %{SOURCE1000} Hungarian hu hu_HU)}
+%{expand:%(sh %{SOURCE1000} Armenian hy hy_AM)}
+%{expand:%(sh %{SOURCE1000} Interlingua ia ia_FR)}
+%{expand:%(sh %{SOURCE1000} Indonesian id id_ID)}
+%{expand:%(sh %{SOURCE1000} Igbo ig ig_NG)}
+%{expand:%(sh %{SOURCE1000} Inupiaq ik ik_CA)}
+%{expand:%(sh %{SOURCE1000} Icelandic is is_IS)}
+%{expand:%(sh %{SOURCE1000} Italian it it_CH it_IT)}
+%{expand:%(sh %{SOURCE1000} Inuktitut iu iu_CA)}
+%{expand:%(sh %{SOURCE1000} Japanese ja ja ja_JP)}
+%{expand:%(sh %{SOURCE1000} Georgian ka ka_GE)}
+%{expand:%(sh %{SOURCE1000} Kazakh kk kk_KZ)}
+%{expand:%(sh %{SOURCE1000} Greenlandic kl kl_GL)}
+%{expand:%(sh %{SOURCE1000} Khmer km km_KH)}
+%{expand:%(sh %{SOURCE1000} Kannada kn kn_IN)}
+%{expand:%(sh %{SOURCE1000} Korean ko ko_KR)}
+%{expand:%(sh %{SOURCE1000} Konkani kok kok_IN)}
+%{expand:%(sh %{SOURCE1000} Kashmiri ks ks_IN ks_IN@devanagari)}
+%{expand:%(sh %{SOURCE1000} Kurdish ku ku_TR)}
+%{expand:%(sh %{SOURCE1000} Cornish kw kw_GB)}
+%{expand:%(sh %{SOURCE1000} Kyrgyz ky ky_KG)}
+%{expand:%(sh %{SOURCE1000} Luxembourgish lb lb_LU)}
+%{expand:%(sh %{SOURCE1000} Luganda lg lg_UG)}
+%{expand:%(sh %{SOURCE1000} Limburguish li li_BE li_NL)}
+%{expand:%(sh %{SOURCE1000} Ligurian lij lij_IT)}
+%{expand:%(sh %{SOURCE1000} Laotian lo lo_LA)}
+%{expand:%(sh %{SOURCE1000} Lithuanian lt lt_LT)}
+%{expand:%(sh %{SOURCE1000} Latvian lv lv_LV)}
+%{expand:%(sh %{SOURCE1000} Magahi mag mag_IN)}
+%{expand:%(sh %{SOURCE1000} Maithili mai mai_IN)}
+%{expand:%(sh %{SOURCE1000} Malagasy mg mg_MG)}
+%{expand:%(sh %{SOURCE1000} Mari mhr mhr_RU)}
+%{expand:%(sh %{SOURCE1000} Maori mi mi_NZ)}
+%{expand:%(sh %{SOURCE1000} Macedonian mk mk_MK)}
+%{expand:%(sh %{SOURCE1000} Malayalam ml ml_IN)}
+%{expand:%(sh %{SOURCE1000} Mongolian mn mn_MN)}
+%{expand:%(sh %{SOURCE1000} Manipuri mni mni_IN)}
+%{expand:%(sh %{SOURCE1000} Marathi mr mr_IN)}
+%{expand:%(sh %{SOURCE1000} Malay ms ms_MY)}
+%{expand:%(sh %{SOURCE1000} Maltese mt mt_MT)}
+%{expand:%(sh %{SOURCE1000} Burmese my my_MM)}
+%{expand:%(sh %{SOURCE1000} "Lower Saxon" nds nds_DE nds_NL)}
+%{expand:%(sh %{SOURCE1000} Nepali ne ne_NP)}
+%{expand:%(sh %{SOURCE1000} Nahuatl nhn nhn_MX)}
+%{expand:%(sh %{SOURCE1000} Niuean niu niu_NU niu_NZ)}
+%{expand:%(sh %{SOURCE1000} Dutch nl nl_AW nl_BE nl_NL)}
+%{expand:%(sh %{SOURCE1000} Norwegian no r:nb r:nn nb_NO nn_NO)}
+%{expand:%(sh %{SOURCE1000} Ndebele nr nr_ZA)}
+%{expand:%(sh %{SOURCE1000} "Northern Sotho" nso nso_ZA)}
+%{expand:%(sh %{SOURCE1000} Occitan oc oc_FR)}
+%{expand:%(sh %{SOURCE1000} Oriya or or_IN)}
+%{expand:%(sh %{SOURCE1000} Ossetian os os_RU)}
+%{expand:%(sh %{SOURCE1000} Punjabi pa pa_IN pa_PK)}
+%{expand:%(sh %{SOURCE1000} Papiamento pap r:pp pap_AN pap_AW pap_CW)}
+%{expand:%(sh %{SOURCE1000} Polish pl csb_PL pl_PL)}
+%{expand:%(sh %{SOURCE1000} Pashto ps ps_AF)}
+%{expand:%(sh %{SOURCE1000} Portuguese pt pt_BR pt_PT)}
+%{expand:%(sh %{SOURCE1000} Quechua quz quz_PE)}
+%{expand:%(sh %{SOURCE1000} Romanian ro ro_RO)}
+%{expand:%(sh %{SOURCE1000} Russian ru ru_RU ru_UA)}
+%{expand:%(sh %{SOURCE1000} Kinyarwanda rw rw_RW)}
+%{expand:%(sh %{SOURCE1000} Sanskrit sa sa_IN)}
+%{expand:%(sh %{SOURCE1000} Santali sat sat_IN)}
+%{expand:%(sh %{SOURCE1000} Sardinian sc sc_IT)}
+%{expand:%(sh %{SOURCE1000} Sindhi sd sd_IN sd_IN@devanagari)}
+%{expand:%(sh %{SOURCE1000} Saami se se_NO)}
+%{expand:%(sh %{SOURCE1000} Secwepemctsin shs shs_CA)}
+%{expand:%(sh %{SOURCE1000} Sinhala si si_LK)}
+%{expand:%(sh %{SOURCE1000} Slovak sk sk_SK)}
+%{expand:%(sh %{SOURCE1000} Slovenian sl sl_SI)}
+%{expand:%(sh %{SOURCE1000} Serbian sr sr_ME sr_RS)}
+%{expand:%(sh %{SOURCE1000} Somali so so_DJ so_ET so_KE so_SO)}
+%{expand:%(sh %{SOURCE1000} Albanian sq sq_AL sq_MK)}
+%{expand:%(sh %{SOURCE1000} Swati ss ss_ZA)}
+%{expand:%(sh %{SOURCE1000} Sotho st st_ZA)}
+%{expand:%(sh %{SOURCE1000} Swedish sv sv_FI sv_SE)}
+# sw_XX?
+%{expand:%(sh %{SOURCE1000} Swahili sw sw_KE sw_TZ)}
+%{expand:%(sh %{SOURCE1000} Silesian szl szl_PL)}
+%{expand:%(sh %{SOURCE1000} Tamil ta ta_IN ta_LK)}
+%{expand:%(sh %{SOURCE1000} Telugu te te_IN)}
+%{expand:%(sh %{SOURCE1000} Tajik tg tg_TJ)}
+%{expand:%(sh %{SOURCE1000} Thai th th_TH)}
+%{expand:%(sh %{SOURCE1000} Tharu/Tharuhati the the_NP)}
+%{expand:%(sh %{SOURCE1000} Turkmen tk tk_TM)}
+%{expand:%(sh %{SOURCE1000} Pilipino tl r:ph fil_PH tl_PH)}
+%{expand:%(sh %{SOURCE1000} Tswana tn tn_ZA)}
+%{expand:%(sh %{SOURCE1000} Turkish tr tr_CY tr_TR)}
+%{expand:%(sh %{SOURCE1000} Tsonga ts ts_ZA)}
+%{expand:%(sh %{SOURCE1000} Tatar tt tt_RU)}
+%{expand:%(sh %{SOURCE1000} Uyghur ug ug_CN)}
+%{expand:%(sh %{SOURCE1000} Unami unm unm_US)}
+%{expand:%(sh %{SOURCE1000} Ukrainian uk uk_UA)}
+%{expand:%(sh %{SOURCE1000} Urdu ur ur_PK)}
+%{expand:%(sh %{SOURCE1000} Uzbek uz uz_UZ)}
+%{expand:%(sh %{SOURCE1000} Venda ve ve_ZA)}
+%{expand:%(sh %{SOURCE1000} Vietnamese vi vi_VN)}
+%{expand:%(sh %{SOURCE1000} Walloon wa wa_BE)}
+%{expand:%(sh %{SOURCE1000} Walser wae wae_CH)}
+%{expand:%(sh %{SOURCE1000} Wolof wo wo_SN)}
+%{expand:%(sh %{SOURCE1000} Xhosa xh xh_ZA)}
+%{expand:%(sh %{SOURCE1000} Yiddish yi yi_US)}
+%{expand:%(sh %{SOURCE1000} Yoruba yo yo_NG)}
+%{expand:%(sh %{SOURCE1000} "Yue Chinese (Cantonese)" yue yue_HK)}
+%{expand:%(sh %{SOURCE1000} Chinese zh zh_CN zh_HK zh_SG zh_TW cmn_TW hak_TW lzh_TW nan_TW nam_TW@latin)}
+%{expand:%(sh %{SOURCE1000} Zulu zu zu_ZA)}
+
 %files -f libc.lang
 %if %{with timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
@@ -324,8 +496,12 @@ Linux system will not function.
 %ifarch armv7l
 %{_slibdir}/ld-linux.so.3
 %endif
-%ifarch armv7hl
+%ifarch armv7hl armv6j
 %{_slibdir}/ld-linux-armhf.so.3
+%endif
+%ifarch aarch64
+%{_slibdir}/ld-linux-aarch64.so.1
+%{_slibdir32}/ld-linux-aarch64.so.1
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
@@ -439,8 +615,6 @@ executables.
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
-%{_libdir}/libbsd-compat.a
-%{_libdir}/libbsd.a
 %{_libdir}/libc_nonshared.a
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
@@ -450,8 +624,6 @@ executables.
 %if %{build_multiarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
-%{_libdir32}/libbsd-compat.a
-%{_libdir32}/libbsd.a
 %{_libdir32}/libc_nonshared.a
 %{_libdir32}/libg.a
 %{_libdir32}/libieee.a
@@ -624,20 +796,17 @@ These are configuration files that describe possible time zones.
 
 tar xf %SOURCE3
 tar xf %SOURCE50
-tar x --strip-components=1 -f %SOURCE2
 
 %patch00 -p1
 %patch04 -p1
 %patch05 -p1
 %patch06 -p1
-%patch09 -p1 -b .stap~
 %patch10 -p1 -b .rh841318~
 %patch11 -p1
 %patch12 -p1 -b .multiple~
 %patch14 -p1 -b .elfORIGIN~
 %patch15 -p1
 %patch16 -p1 -b .rh737223~
-%patch17 -p1 -b .gai~
 %patch18 -p1
 %patch20 -p1
 %patch21 -p1
@@ -645,7 +814,7 @@ tar x --strip-components=1 -f %SOURCE2
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
-%patch26 -p1
+%patch26 -p1 -b .curr~
 %patch27 -p1
 %patch29 -p1 -b .locales~
 %patch30 -p1
@@ -654,14 +823,10 @@ tar x --strip-components=1 -f %SOURCE2
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
-%patch36 -p1
 %patch37 -p1 -b .aliasing~
-%patch28 -p1
 %patch40 -p1
-%patch48 -p1
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
-%patch53 -p1
 %patch54 -p1
 %patch55 -p1
 %patch51 -p1
@@ -685,7 +850,6 @@ tar x --strip-components=1 -f %SOURCE2
 %patch73 -p1
 %patch74 -p1 -b .ldbl~
 %patch75 -p1 -b .tsp~
-%patch77 -p1
 %patch79 -p1
 %patch80 -p1
 
@@ -778,6 +942,10 @@ function BuildGlibc() {
       BuildFlags="-march=armv7-a"
       BuildCompFlags="-march=armv7-a"
       ;;
+    armv6*)
+      BuildFlags="-march=armv6"
+      BuildCompFlags="-march=armv6"
+      ;;
   esac
 
   # Choose multiarch support
@@ -841,6 +1009,7 @@ function BuildGlibc() {
     --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
     --disable-profile \
+    --enable-static \
 %if %{with selinux}
     --with-selinux \
 %else
@@ -897,7 +1066,7 @@ BuildGlibc %{_target_cpu}
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
 # post install wrapper
-gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os releng/glibc_post_upgrade.c -o build-%{_target_cpu}-linux/glibc_post_upgrade \
+gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{_target_cpu}-linux/glibc_post_upgrade \
   '-DLIBTLS="/%{_lib}/tls/"' \
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
@@ -969,7 +1138,7 @@ esac
 # the generic one (RH#162634)
 install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
-install -m644 releng/libc-lock.h -D %{buildroot}%{_includedir}/bits/libc-lock.h
+install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 
 # Compatibility hack: this locale has vanished from glibc, but some other
 # programs are still using it. Normally we would handle it in the %pre
@@ -980,9 +1149,10 @@ mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 rm -f %{buildroot}%{_libdir}/libNoVersion*
 rm -f %{buildroot}%{_slibdir}/libNoVersion*
 
-ln -sf libbsd-compat.a %{buildroot}%{_libdir}/libbsd.a
-%if %{build_multiarch}
-    ln -sf libbsd-compat.a %{buildroot}%{_libdir32}/libbsd.a
+
+# (tpg) workaround for aarch64 ?
+%ifarch aarch64
+ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
 %endif
 
 install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
@@ -1091,7 +1261,7 @@ rm -f  %{buildroot}%{_localedir}/locale-archive*
 rm %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 # XXX: verify
-find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
+#find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{with nscd}
     rm -f %{buildroot}%{_sbindir}/nscd
@@ -1125,7 +1295,64 @@ rm -f %{buildroot}%{_infodir}/dir
     rm -rf %{buildroot}%{_datadir}/i18n
 %endif
 
+%if ! %{without locales}
+# Build locales...
+export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
+export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+export I18NPATH=%{buildroot}%{_datadir}/i18n
+
+# make default charset pseudo-locales
+# those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
+# a lot of other locales, thus saving space
+for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
+	 ISO-8859-5 ISO-8859-7 ISO-8859-9 \
+	 ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251 
+do
+	# don't use en_DK because of LC_MONETARY
+	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
+done
+
+# Build regular locales
+SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} %make -f %{SOURCE20}
+# Locale related tools
+install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
+# And configs
+mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
+install -c -m 644 %{SOURCE1003} %{buildroot}%{_sysconfdir}/sysconfig/locales
+
+# Hardlink identical locales
+perl %{SOURCE1004} %{buildroot}%{_datadir}/locale
+# Symlink identical files
+pushd %{buildroot}%{_datadir}/locale
+for i in ??_??* ???_??*; do
+	LC_ALL=C perl %{SOURCE1005} $i
+done
+popd
+
+# Needed for/used by locale-archive
+mkdir -p %{buildroot}%{_prefix}/lib/locale
+touch %{buildroot}%{_prefix}/lib/locale/locale-archive
+%endif
+
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
+
+%files -n locales
+%{_bindir}/locale_install.sh
+%{_bindir}/locale_uninstall.sh
+%config(noreplace) %{_sysconfdir}/sysconfig/locales
+%dir %{_datadir}/locale
+%dir %{_prefix}/lib/locale
+%ghost %{_prefix}/lib/locale/locale-archive
+%{_datadir}/locale/ISO*
+%{_datadir}/locale/CP*
+%{_datadir}/locale/UTF*
+%{_datadir}/locale/KOI*
+
+%post -n locales
+%{_bindir}/locale_install.sh "ENCODINGS"
+
+%preun -n locales
+%{_bindir}/locale_uninstall.sh "ENCODINGS"

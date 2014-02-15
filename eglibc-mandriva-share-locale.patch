@@ -9,8 +9,8 @@
  endif
  inst_localedir = $(install_root)$(localedir)
  
---- glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.in.orig	2012-09-27 13:08:49.949074767 -0300
-+++ glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.in	2012-09-27 13:09:22.748076063 -0300
+--- glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.ac.orig	2012-09-27 13:08:49.949074767 -0300
++++ glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.ac	2012-09-27 13:09:22.748076063 -0300
 @@ -18,7 +18,7 @@ case "$prefix" in
      if test "$libdir" = '${exec_prefix}/lib'; then
        libdir='${exec_prefix}/lib64';
