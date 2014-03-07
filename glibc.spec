@@ -927,7 +927,7 @@ function BuildGlibc() {
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
 %else
-	BuildFlags="-march=$arch -mtune=generic"
+	BuildFlags="-march=$arch -mtune=atom"
 %endif
       ;;
     x86_64)
