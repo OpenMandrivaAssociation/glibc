@@ -1,11 +1,4 @@
-%define svn 0
-%if 0%{svn}
-%define glibcsrcdir	%{name}-%{version}-%{svn}
-%else
-%define glibcsrcdir	%{name}-%{version}
-%endif
-
-%define	checklist	%{_builddir}/%{glibcsrcdir}/Check.list
+%define	checklist	%{_builddir}/%{name}/Check.list
 
 # crypt blowfish support
 %define crypt_bf_ver	1.2
@@ -66,15 +59,9 @@ Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
 Version:	2.19
-%if 0%{svn}
-Release:	0.%{svn}.1
-# Packaged from svn repository at svn://svn.eglibc.org/
-Source0:	e%{name}-%{version}-%{svn}.tar.xz
-%else
-Release:	3
-Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
-Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
-%endif
+Release:	1
+Source0:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz
+Source1:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
@@ -788,14 +775,7 @@ These are configuration files that describe possible time zones.
 
 ########################################################################
 %prep
-%if 0%{svn}
-%setup -q -n e%{name}-%{version}-%{svn}
-%else
-%setup -q
-%endif
-
-tar xf %SOURCE3
-tar xf %SOURCE50
+%setup -q -a3 -a50
 
 %patch00 -p1
 %patch04 -p1
