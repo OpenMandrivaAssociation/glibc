@@ -1224,8 +1224,7 @@ rm -rf %{buildroot}%{_includedir}/netatalk/
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{with timezone}
     rm -f %{buildroot}%{_sysconfdir}/localtime
-    cp -f %{buildroot}%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
-    #ln -sf ..%{_datadir}/zoneinfo/US/Eastern %{buildroot}%{_sysconfdir}/localtime
+    cp -f %{buildroot}%{_datadir}/zoneinfo/CET %{buildroot}%{_sysconfdir}/localtime
 %endif
 
 # Documentation
