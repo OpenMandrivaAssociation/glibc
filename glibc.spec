@@ -1030,7 +1030,7 @@ function BuildGlibc() {
     echo "ERROR: PrepareGlibcTest: build-$arch-linux does not exist!"
     return 1
   }
-  local BuildJobs="-j`getconf _NPROCESSORS_ONLN`"
+  local BuildJobs="%{_smp_mflags}"
   echo "$BuildJobs -d build-$arch-linux $check_flags" >> %{checklist}
 
   case $arch in
