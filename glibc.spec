@@ -1,4 +1,4 @@
-%define	checklist	%{_builddir}/%{name}/Check.list
+%define	checklist	%{_builddir}/%{name}-%{version}/Check.list
 
 # crypt blowfish support
 %define crypt_bf_ver	1.2
