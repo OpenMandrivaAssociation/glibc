@@ -677,18 +677,6 @@ performance with NIS+, and may help with DNS as well.
 %pre -n nscd
     %_pre_useradd nscd / /sbin/nologin
 
-%post -n nscd
-    %_post_service nscd
-
-%preun -n nscd
-    %_preun_service nscd
-
-%postun -n nscd
-    %_postun_userdel nscd
-    if [ "$1" -ge "1" ]; then
-	systemctl condrestart nscd > /dev/null 2>&1 || :
-    fi
-
 %files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %dir %attr(0755,root,root) /run/nscd
