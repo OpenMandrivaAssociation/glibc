@@ -59,7 +59,7 @@ Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
 Version:	2.19
-Release:	3
+Release:	4
 Source0:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -691,10 +691,22 @@ performance with NIS+, and may help with DNS as well.
 
 %files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
+%dir %attr(0755,root,root) /run/nscd
+%dir %attr(0755,root,root) %{_var}/db/nscd
 %{_unitdir}/nscd.service
 %{_unitdir}/nscd.socket
 %{_sbindir}/nscd
-/var/db/nscd
+%{_tmpfilesdir}/nscd.conf
+%attr(0644,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/nscd.pid
+%attr(0666,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/socket
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/passwd
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/group
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/hosts
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) /run/nscd/services
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/passwd
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/group
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/hosts
+%attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/services
 #-----------------------------------------------------------------------
 # with nscd
 %endif
@@ -883,7 +895,7 @@ autoconf
 # ...
 [ -d ports ] || ln -s ../ports .
 mkdir bin
-ln -sf %{_bindir}/ld.bfd bin/ld
+ln -sf %{_bindir}/ld.gold bin/ld
 export PATH=$PWD/bin:$PATH
 
 # Prepare test matrix in the next function
@@ -1142,6 +1154,7 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
     install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
     install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
     install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
+    install -m644 nscd/nscd.tmpfiles -D %{buildroot}%{_tmpfilesdir}/nscd.conf
     install -m755 -d %{buildroot}/var/db/nscd
 %endif
 
