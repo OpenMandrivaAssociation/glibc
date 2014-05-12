@@ -863,18 +863,18 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
     ln -s %{_includedir}/selinux selinux
 %endif
 
-find . -type f -size 0 -o -name "*.orig" -exec rm -f {} \;
+find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Remove patch backups from files we ship in glibc packages
-rm -f ChangeLog.[^0-9]*
-rm -f localedata/locales/{???_??,??_??}.*
-rm -f localedata/locales/[a-z_]*.*
+rm ChangeLog.[^0-9]*
+rm localedata/locales/{???_??,??_??}.*
+rm localedata/locales/[a-z_]*.*
 
 # Regenerate autoconf files, some of our patches touch them
 # Remove the autoconf 2.68 hardcode...
-sed -i -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," aclocal.m4
+sed -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," -i aclocal.m4
 # fix nss headers location
-sed -i -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' configure*
+sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' .i configure*
 
 aclocal
 autoconf
@@ -1078,7 +1078,7 @@ export PATH=$PWD/bin:$PATH
 %make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
 %if %{build_multiarch}
     %ifarch x86_64
-	rm -f %{buildroot}%{_bindir}/lddlibc4
+	rm %{buildroot}%{_bindir}/lddlibc4
     %endif
 %endif
 
@@ -1126,11 +1126,6 @@ install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 # section but with glibc that is simply not an option
 mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 
-# Remove the files we don't want to distribute
-rm -f %{buildroot}%{_libdir}/libNoVersion*
-rm -f %{buildroot}%{_slibdir}/libNoVersion*
-
-
 # (tpg) workaround for aarch64 ?
 %ifarch aarch64
 ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
@@ -1155,9 +1150,6 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 # These man pages require special attention
 mkdir -p %{buildroot}%{_mandir}/man3
 install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
-
-# Useless and takes place
-rm -rf %{buildroot}/%{_datadir}/zoneinfo/{posix,right}
 
 # Include ld.so.conf
 echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
@@ -1200,17 +1192,17 @@ pushd %{buildroot}%{_libdir}
 popd
 
 # rquota.x and rquota.h are now provided by quota
-rm -f %{buildroot}%{_includedir}/rpcsvc/rquota.[hx]
+rm %{buildroot}%{_includedir}/rpcsvc/rquota.[hx]
 
 %if %{with i18ndata}
     install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
 %endif
 
-rm -rf %{buildroot}%{_includedir}/netatalk/
+rm -r %{buildroot}%{_includedir}/netatalk/
 
 # /etc/localtime - we're proud of our timezone #Well we(mdk) may put Paris
 %if %{with timezone}
-    rm -f %{buildroot}%{_sysconfdir}/localtime
+    rm %{buildroot}%{_sysconfdir}/localtime
     cp -f %{buildroot}%{_datadir}/zoneinfo/CET %{buildroot}%{_sysconfdir}/localtime
 %endif
 
@@ -1240,45 +1232,37 @@ install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
 %find_lang libc
 
 # Remove unpackaged files
-rm -f  %{buildroot}%{_infodir}/dir.old*
-rm -rf %{buildroot}%{_includedir}/asm-*/mach-*/
-rm -f  %{buildroot}%{_localedir}/locale-archive*
-
 rm %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 # XXX: verify
 #find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{with nscd}
-    rm -f %{buildroot}%{_sbindir}/nscd
+    rm %{buildroot}%{_sbindir}/nscd
 %endif
 
-rm -f %{buildroot}%{_infodir}/dir
-
 %if %{without utils}
-    rm -f  %{buildroot}%{_bindir}/memusage
-    rm -f  %{buildroot}%{_bindir}/memusagestat
-    rm -f  %{buildroot}%{_bindir}/mtrace
-    rm -f  %{buildroot}%{_bindir}/pcprofiledump
-    rm -f  %{buildroot}%{_bindir}/xtrace
-    rm -f  %{buildroot}%{_slibdir}/libmemusage.so
-    rm -f  %{buildroot}%{_slibdir}/libpcprofile.so
+    rm %{buildroot}%{_bindir}/memusage
+    rm %{buildroot}%{_bindir}/memusagestat
+    rm %{buildroot}%{_bindir}/mtrace
+    rm %{buildroot}%{_bindir}/pcprofiledump
+    rm %{buildroot}%{_bindir}/xtrace
+    rm %{buildroot}%{_slibdir}/libmemusage.so
+    rm %{buildroot}%{_slibdir}/libpcprofile.so
     %if %{build_multiarch}
-	rm -f  %{buildroot}%{_slibdir32}/libmemusage.so
-	rm -f  %{buildroot}%{_slibdir32}/libpcprofile.so
+	rm %{buildroot}%{_slibdir32}/libmemusage.so
+	rm %{buildroot}%{_slibdir32}/libpcprofile.so
     %endif
 %endif
 
 %if !%{with timezone}
-    rm -f  %{buildroot}%{_sysconfdir}/localtime
-    rm -f  %{buildroot}%{_sbindir}/zdump
-    rm -f  %{buildroot}%{_sbindir}/zic
-    rm -f  %{buildroot}%{_mandir}/man1/zdump.1*
-    rm -rf %{buildroot}%{_datadir}/zoneinfo
+    rm  %{buildroot}%{_sbindir}/zdump
+    rm  %{buildroot}%{_sbindir}/zic
+    rm  %{buildroot}%{_mandir}/man1/zdump.1*
 %endif
 
 %if !%{with i18ndata}
-    rm -rf %{buildroot}%{_datadir}/i18n
+    rm -r %{buildroot}%{_datadir}/i18n
 %endif
 
 %if ! %{without locales}
@@ -1303,8 +1287,7 @@ SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} %make -f %{SOURCE20}
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
-mkdir -p %{buildroot}%{_sysconfdir}/sysconfig
-install -c -m 644 %{SOURCE1003} %{buildroot}%{_sysconfdir}/sysconfig/locales
+install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
 # Hardlink identical locales
 perl %{SOURCE1004} %{buildroot}%{_datadir}/locale
