@@ -695,6 +695,7 @@ performance with NIS+, and may help with DNS as well.
 %attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/group
 %attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/hosts
 %attr(0600,root,root) %verify(not md5 size mtime) %ghost %config(missingok,noreplace) %{_var}/db/nscd/services
+%ghost %config(missingok,noreplace) %{_sysconfdir}/sysconfig/nscd
 #-----------------------------------------------------------------------
 # with nscd
 %endif
@@ -1140,10 +1141,15 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 # This is for ncsd - in glibc 2.2
 %if %{with nscd}
     install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
+    install -m755 -d %{buildroot}%{_sysconfdir}/sysconfig
+    touch %{buildroot}%{_sysconfdir}/sysconfig/nscd
     install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
     install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
     install -m644 nscd/nscd.tmpfiles -D %{buildroot}%{_tmpfilesdir}/nscd.conf
-    install -m755 -d %{buildroot}/var/db/nscd
+    install -m755 -d %{buildroot}%{_var}/db/nscd
+    touch %{buildroot}%{_var}/db/nscd/{passwd,group,hosts,services}
+    install -m755 -d %{buildroot}/run/nscd
+    touch %{buildroot}/run/nscd/{nscd.pid,socket,passwd,group,hosts,services}
 %endif
 
 # These man pages require special attention
