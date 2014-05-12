@@ -883,7 +883,7 @@ autoconf
 # ...
 [ -d ports ] || ln -s ../ports .
 mkdir bin
-ln -sf %{_bindir}/ld.gold bin/ld
+ln -sf %{_bindir}/ld.bfd bin/ld
 export PATH=$PWD/bin:$PATH
 
 # Prepare test matrix in the next function
@@ -943,7 +943,7 @@ function BuildGlibc() {
   BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
-  #BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
+  BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
