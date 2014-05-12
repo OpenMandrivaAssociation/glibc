@@ -866,15 +866,13 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Remove patch backups from files we ship in glibc packages
-rm ChangeLog.[^0-9]*
-rm localedata/locales/{???_??,??_??}.*
 rm localedata/locales/[a-z_]*.*
 
 # Regenerate autoconf files, some of our patches touch them
 # Remove the autoconf 2.68 hardcode...
 sed -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," -i aclocal.m4
 # fix nss headers location
-sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' .i configure*
+sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' -i configure*
 
 aclocal
 autoconf
