@@ -939,7 +939,7 @@ function BuildGlibc() {
   BuildCC="%{__cc} $BuildCompFlags"
   BuildCXX="%{__cxx} $BuildCompFlags"
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
+  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3 -fno-lto"
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
   BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
