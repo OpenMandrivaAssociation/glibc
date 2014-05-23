@@ -59,7 +59,7 @@ Summary:	The GNU libc libraries
 Name:		glibc
 Epoch:		6
 Version:	2.19
-Release:	4
+Release:	5
 Source0:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+

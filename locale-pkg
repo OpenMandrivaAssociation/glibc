@@ -11,6 +11,8 @@ cat <<EOF
 Summary:	Base files for localization ($LANGNAME)
 Group:		System/Internationalization
 Requires:	locales = %{EVRD}
+Requires(post,preun):	sed
+Requires(post,preun):	grep
 EOF
 
 while echo "$1" |grep -q '^r:'; do
