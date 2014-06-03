@@ -23,8 +23,8 @@
 %{expand: %{?cross:		%%global build_cross 1}}
 
 %if %{build_cross}
-%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{_sourcedir}/glibc.rpmlintrc
-%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{_sourcedir}/glibc.rpmlintrc
+%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
+%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
 %define target_cpu	%{cross}
 %define cross_prefix	cross-%{target_cpu}-
 %define _prefix		/usr/%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}
@@ -75,9 +75,9 @@
 %define check_min_kver 2.6.21
 
 # Define to build a biarch package
-%define build_multiarch	0
+%define build_biarch	0
 %if %isarch x86_64 mips64 mips64el
-%define build_multiarch	1
+%define build_biarch	1
 %endif
 
 %bcond_without nscd
@@ -608,7 +608,7 @@ LANG variable to their preferred language in their
 %endif
 
 ########################################################################
-%if %{build_multiarch}
+%if %{build_biarch}
 #-----------------------------------------------------------------------
 %package -n	%{multilibc}
 Summary:	The GNU libc libraries
@@ -664,7 +664,7 @@ Linux system will not function.
 %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 #-----------------------------------------------------------------------
-# build_multiarch
+# build_biarch
 %endif
 
 #-----------------------------------------------------------------------
@@ -672,7 +672,7 @@ Linux system will not function.
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Requires:	%{name} = %{EVRD}
-%if %{build_multiarch}
+%if %{build_biarch}
 Requires:	%{multilibc} = %{EVRD}
 %endif
 %if %{build_cross}
@@ -721,7 +721,7 @@ executables.
 #%if "%{name}" == "glibc"
 %{_libdir}/librpcsvc.a
 #%endif
-%if %{build_multiarch}
+%if %{build_biarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
 %{_libdir32}/libc_nonshared.a
@@ -758,7 +758,7 @@ library.
 %{_libdir}/libresolv.a
 %{_libdir}/librt.a
 %{_libdir}/libutil.a
-%if %{build_multiarch}
+%if %{build_biarch}
 %{_libdir32}/libBrokenLocale.a
 %{_libdir32}/libanl.a
 %{_libdir32}/libc.a
@@ -838,7 +838,7 @@ If unsure if you need this, don't install this package.
 %{_bindir}/xtrace
 %{_slibdir}/libmemusage.so
 %{_slibdir}/libpcprofile.so
-%if %{build_multiarch}
+%if %{build_biarch}
 %{_slibdir32}/libmemusage.so
 %{_slibdir32}/libpcprofile.so
 %endif
@@ -940,7 +940,7 @@ These are configuration files that describe possible time zones.
 %patch67 -p1
 %patch68 -p1
 %patch69 -p1
-%patch70 -p1 -b .multiarch~
+%patch70 -p1 -b .biarch~
 %patch71 -p1 -b .hpt~
 %patch72 -p1
 %patch73 -p1
@@ -1055,7 +1055,7 @@ function BuildGlibc() {
       ;;
   esac
 
-  # Choose multiarch support
+  # Choose biarch support
   MultiArchFlags=
   case $arch in
     i686 | x86_64)
@@ -1177,7 +1177,7 @@ function BuildGlibc() {
 # Build main glibc
 BuildGlibc %{target_cpu}
 
-%if %{build_multiarch}
+%if %{build_biarch}
     %if %isarch x86_64
 	BuildGlibc i686
     %endif
@@ -1243,7 +1243,7 @@ export PATH=$PWD/bin:$PATH
 make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 
 %if 0
-%if %{build_multiarch} || %isarch %{mips} %{mipsel}
+%if %{build_biarch} || %isarch %{mips} %{mipsel}
     %if %isarch x86_64
 	ALT_ARCHES=i686-linux
     %endif
@@ -1299,7 +1299,7 @@ done
 %else
 
     %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
-    %if %{build_multiarch}
+    %if %{build_biarch}
 	%if %isarch x86_64
 	    rm %{buildroot}%{_bindir}/lddlibc4
 	%endif
@@ -1410,7 +1410,7 @@ chmod 755 %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script
 # gconv-modules.cache
 touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
-%if %{build_multiarch}
+%if %{build_biarch}
     touch %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
     chmod 644 %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
 %endif
@@ -1498,7 +1498,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
     rm -f %{buildroot}%{_bindir}/xtrace
     rm -f %{buildroot}%{_slibdir}/libmemusage.so
     rm -f %{buildroot}%{_slibdir}/libpcprofile.so
-    %if %{build_multiarch}
+    %if %{build_biarch}
 	rm -f %{buildroot}%{_slibdir32}/libmemusage.so
 	rm -f %{buildroot}%{_slibdir32}/libpcprofile.so
     %endif
