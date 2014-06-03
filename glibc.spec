@@ -84,7 +84,7 @@
 %bcond_without i18ndata
 %bcond_with timezone
 %bcond_without nsscrypt
-%bcond_without locales
+%bcond_with locales
 
 
 %if %isarch %{ix86} x86_64
