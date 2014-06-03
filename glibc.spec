@@ -343,7 +343,9 @@ contains the most important sets of shared libraries: the standard C
 library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
+%if "%{name}" != glibc
 %post -p %{_sbindir}/glibc_post_upgrade
+%endif
 
 %if %{with locales}
 %package -n locales
