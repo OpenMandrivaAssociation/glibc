@@ -1259,7 +1259,6 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
     %if %isarch mips64el
 	ALT_ARCHES="mipsel-linux mips32el-linux"
     %endif
-
     for ALT_ARCH in $ALT_ARCHES; do
 	mkdir -p %{buildroot}/$ALT_ARCH
 	%make install install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
@@ -1297,6 +1296,13 @@ rm -rf %{buildroot}/$ALT_ARCH
 done
 
 %else
+
+%if %{build_multiarch}
+    %ifarch x86_64
+	ALT_ARCH=i686
+    %endif
+    %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
+%endif
 
     %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
     %if %{build_biarch}
