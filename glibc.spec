@@ -3,11 +3,11 @@
 # crypt blowfish support
 %define crypt_bf_ver	1.2
 
-%define _slibdir	/%{_lib}
-%define _slibdir32	/lib
 %define _libdir32	%{_prefix}/lib
 
+%define	oname		glibc
 %define	major		6
+%define	source_dir	%{oname}-%{version}
 %define	libc		%mklibname c %{major}
 %define	devname		%mklibname -d c
 %define	statname	%mklibname -d -s c
@@ -16,8 +16,52 @@
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
 
-%ifarch %{arm}
-%define _gnu		-gnueabi
+
+# Define "cross" to an architecture to which glibc is to be
+# cross-compiled
+%define build_cross		0
+%{expand: %{?cross:		%%global build_cross 1}}
+
+%if %{build_cross}
+%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{_sourcedir}/glibc.rpmlintrc
+%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{_sourcedir}/glibc.rpmlintrc
+%define target_cpu	%{cross}
+%define cross_prefix	cross-%{target_cpu}-
+%define _prefix		/usr/%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}
+%define cross_program_prefix	%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}-
+%define _exec_prefix	%{_prefix}
+# brain damage alert: should not be needed imho
+# overriding _prefix and _exec_prefix should be enough
+%define _bindir		%{_exec_prefix}/bin
+%define _sbindir	%{_exec_prefix}/sbin
+%define _libexecdir	%{_exec_prefix}/libexec
+%define _datadir	%{_prefix}/share
+%define _sharedstatedir	%{_prefix}/com
+%define _localstatedir	%{_prefix}/var
+%define _lib		lib
+%define _libdir		%{_exec_prefix}/%{_lib}
+%define _slibdir	%{_exec_prefix}/%{_lib}
+%define _slibdir32	%{_exec_prefix}/lib
+%define _includedir	%{_prefix}/include
+%else
+%define gnuext		%{?_gnu}
+%define target_cpu	%{_target_cpu}
+%define cross_prefix	%{nil}
+%define cross_program_prefix	%{nil}
+%define _slibdir	/%{_lib}
+%define _slibdir32	/lib
+%endif
+
+# Define target (base) architecture
+%define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
+%define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
+
+%if %{build_cross}
+%if %isarch %arm
+%define gnuext          -gnueabi
+%else
+%define gnuext          %{?_gnu}
+%endif
 %endif
 
 # Define Xen arches to build with -mno-tls-direct-seg-refs
@@ -32,7 +76,7 @@
 
 # Define to build a biarch package
 %define build_multiarch	0
-%ifarch x86_64
+%if %isarch x86_64 mips64 mips64el
 %define build_multiarch	1
 %endif
 
@@ -42,7 +86,8 @@
 %bcond_without nsscrypt
 %bcond_without locales
 
-%ifarch %{ix86} x86_64
+
+%if %isarch %{ix86} x86_64
 %bcond_without systap
 %else
 %bcond_with systap
@@ -54,14 +99,28 @@
 # enable utils by default
 %bcond_without		utils
 
+
+# Disable a few defaults when cross-compiling a glibc
+%if %{build_cross}
+%unglobal	with_doc
+%unglobal	with_pdf
+%unglobal	with_nscd
+%unglobal	with_timezone
+%unglobal	with_i18ndata
+%unglobal	with_locales
+%unglobal	with_systap
+%unglobal	with_utils
+%unglobal	with_nsscrypt
+%endif
+
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
-Name:		glibc
+Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.19
 Release:	5
-Source0:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz
-Source1:	http://ftp.gnu.org/gnu/glibc/%{name}-%{version}.tar.xz.sig
+Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
+Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.eglibc.org/
@@ -83,7 +142,7 @@ Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.si
 Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
 Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
 
-Source100:	%{name}.rpmlintrc
+Source100:	%{oname}.rpmlintrc
 
 Source1000:	locale-pkg
 Source1001:	locale_install.sh
@@ -211,8 +270,10 @@ Patch88:	glibc-2.17-gold.patch
 Patch100:	crypt_blowfish-arm.patch
 
 BuildRequires:	autoconf2.5
+BuildRequires:	%{cross_prefix}binutils
+BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	kernel-headers
+BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
@@ -236,10 +297,14 @@ BuildRequires:	nss-devel >= 3.15.1-2
 # dependencies on '/bin/sh' or 'bash'
 Requires:	bash
 Requires:	filesystem
-%ifarch %{xenarches}
+%if %isarch %{xenarches}
 %rename		%{name}-xen
 %endif
 # The dynamic linker supports DT_GNU_HASH
+%if %{build_cross}
+Autoreq:	false
+Autoprov:	false
+%else
 Provides:	rtld(GNU_HASH)
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish = %{crypt_bf_ver}
@@ -247,6 +312,7 @@ Provides:	should-restart = system
 Obsoletes:	glibc-profile
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
+%endif
 # Determine minimum kernel versions (rhbz#619538)
 %define		enablekernel 2.6.32
 Conflicts:	kernel < %{enablekernel}
@@ -254,12 +320,18 @@ Conflicts:	kernel < %{enablekernel}
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
 %define _filter_GLIBC_PRIVATE 1
 
+%if !%{build_cross}
+
 Obsoletes:	ld.so
 Provides:	ld.so
+%ifarch %{mips} %{mipsel}
+Provides:	ld.so.1
+%endif
 
 %rename		ldconfig
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
+%endif
 
 %description
 The glibc package contains standard libraries which are used by
@@ -272,6 +344,7 @@ Linux system will not function.
 
 %post -p %{_sbindir}/glibc_post_upgrade
 
+%if %{with locales}
 %package -n locales
 Summary:	Base files for localization
 Group:		System/Internationalization
@@ -444,8 +517,10 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{SOURCE1000} "Yue Chinese (Cantonese)" yue yue_HK)}
 %{expand:%(sh %{SOURCE1000} Chinese zh zh_CN zh_HK zh_SG zh_TW cmn_TW hak_TW lzh_TW nan_TW nam_TW@latin)}
 %{expand:%(sh %{SOURCE1000} Zulu zu zu_ZA)}
+%endif
 
 %files -f libc.lang
+%if "%{name}" == "glibc"
 %if %{with timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
@@ -464,7 +539,8 @@ LANG variable to their preferred language in their
 %{_localedir}/locale.alias
 /sbin/sln
 %{_prefix}/libexec/getconf
-%ifarch x86_64
+%endif
+%if %isarch x86_64
 %exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFFBIG
 %exclude %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFF32
@@ -473,26 +549,30 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
 %{_slibdir}/ld-%{version}.so
-%ifarch %{ix86}
+%if %isarch %{ix86} x86_64
 %{_slibdir}/ld-linux.so.2
 %{_slibdir}/i686
 %endif
-%ifarch x86_64
+%if %isarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
-%ifarch armv7l
+%if %isarch %{arm}
 %{_slibdir}/ld-linux.so.3
 %endif
-%ifarch armv7hl armv6j
+%if %isarch armv7hl armv6j
 %{_slibdir}/ld-linux-armhf.so.3
 %endif
-%ifarch aarch64
+%if %isarch aarch64
 %{_slibdir}/ld-linux-aarch64.so.1
 %{_slibdir32}/ld-linux-aarch64.so.1
+%endif
+%if %isarch %{mips}
+%{_slibdir}/ld.so.1
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
+%if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
 %dir %{_libdir}/gconv
@@ -506,7 +586,7 @@ LANG variable to their preferred language in their
 %{_bindir}/getent
 %{_bindir}/iconv
 %{_bindir}/ldd
-%ifarch %{ix86}
+%if %isarch %{ix86}
 %{_bindir}/lddlibc4
 %endif
 %{_bindir}/locale
@@ -525,6 +605,7 @@ LANG variable to their preferred language in their
 %ghost %{_var}/cache/ldconfig/aux-cache
 %{_var}/lib/rpm/filetriggers/ldconfig.*
 %{_var}/db/Makefile
+%endif
 
 ########################################################################
 %if %{build_multiarch}
@@ -552,11 +633,30 @@ Linux system will not function.
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
+%if "%{name}" == "glibc"
 %dir %{_libdir32}/audit
 %{_libdir32}/audit/sotruss-lib.so
 %{_libdir32}/gconv/*.so
 %{_libdir32}/gconv/gconv-modules
 %ghost %{_libdir32}/gconv/gconv-modules.cache
+%endif
+%if %isarch %{mips} %{mipsel}
+%{_slibdir}32/ld-%{glibcversion}.so
+%{_slibdir}32/ld.so.1
+%{_slibdir}32/lib*-[.0-9]*.so
+%{_slibdir}32/lib*.so.[0-9]*
+%{_slibdir}32/libSegFault.so
+%dir %{_libdir}32/gconv
+%{_libdir}32/gconv/*
+%{_slibdir}64/ld-%{glibcversion}.so
+%{_slibdir}64/ld.so.1
+%{_slibdir}64/lib*-[.0-9]*.so
+%{_slibdir}64/lib*.so.[0-9]*
+%{_slibdir}64/libSegFault.so
+%dir %{_libdir}64/gconv
+%{_libdir}64/gconv/*
+%endif
+
 %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
 %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFFBIG
 %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFF32
@@ -575,10 +675,16 @@ Requires:	%{name} = %{EVRD}
 %if %{build_multiarch}
 Requires:	%{multilibc} = %{EVRD}
 %endif
+%if %{build_cross}
+Autoreq:	false
+Autoprov:	false
+%else
+Autoreq:	true
 Requires:	kernel-headers
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
+%endif
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
@@ -592,6 +698,7 @@ standard header and object files available in order to create the
 executables.
 
 %files		devel
+%if "%{name}" == "glibc"
 %{_mandir}/man3/*
 %{_infodir}/libc.info*
 %doc %{_docdir}/glibc/*
@@ -599,15 +706,21 @@ executables.
 %exclude %{_docdir}/glibc/gai.conf
 %exclude %{_docdir}/glibc/COPYING
 %exclude %{_docdir}/glibc/COPYING.LIB
+%endif
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
+%exclude %{_libdir}/ld*-[.0-9]*.so
+%exclude %{_libdir}/lib*-[.0-9]*.so
+%exclude %{_slibdir}/libSegFault.so
 %{_libdir}/libc_nonshared.a
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
 %{_libdir}/libpthread_nonshared.a
+#%if "%{name}" == "glibc"
 %{_libdir}/librpcsvc.a
+#%endif
 %if %{build_multiarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
@@ -616,7 +729,9 @@ executables.
 %{_libdir32}/libieee.a
 %{_libdir32}/libmcheck.a
 %{_libdir32}/libpthread_nonshared.a
+#%if "%{name}" == "glibc"
 %{_libdir32}/librpcsvc.a
+#%endif
 %endif
 
 #-----------------------------------------------------------------------
@@ -776,7 +891,7 @@ These are configuration files that describe possible time zones.
 
 ########################################################################
 %prep
-%setup -q -a3 -a50
+%setup -q -n %{source_dir} -a3 -a50
 
 %patch00 -p1
 %patch04 -p1
@@ -880,10 +995,11 @@ autoconf
 #-----------------------------------------------------------------------
 %build
 # ...
-[ -d ports ] || ln -s ../ports .
-mkdir bin
+%if !%{build_cross}
+mkdir -p bin
 ln -sf %{_bindir}/ld.bfd bin/ld
 export PATH=$PWD/bin:$PATH
+%endif
 
 # Prepare test matrix in the next function
 > %{checklist}
@@ -912,6 +1028,18 @@ function BuildGlibc() {
     x86_64)
       BuildFlags="-mtune=generic"
       ;;
+    mips|mipsel)
+      BuildFlags="-march=mips3"
+      BuildCompFlags="-march=mips3"
+      ;;
+    mips32|mips32el)
+      BuildFlags="-march=mips3 -mabi=n32"
+      BuildCompFlags="-march=mips3 -mabi=n32"
+      ;;
+    mips64|mips64el)
+      BuildFlags="-march=mips3 -mabi=64"
+      BuildCompFlags="-march=mips3 -mabi=64"
+      ;;
     armv5t*)
       BuildFlags="-march=armv5t"
       BuildCompFlags="-march=armv5t"
@@ -939,6 +1067,16 @@ function BuildGlibc() {
   BuildCC="%{__cc} $BuildCompFlags"
   BuildCXX="%{__cxx} $BuildCompFlags"
 
+  # Are we supposed to cross-compile?
+  if [[ "%{target_cpu}" != "%{_target_cpu}" ]]; then
+    # Can't use BuildCC anymore with previous changes.
+    BuildCC="%{cross_program_prefix}gcc $BuildCompFlags"
+    BuildCXX="%{cross_program_prefix}g++ $BuildCompFlags"
+    BuildCross="--build=%{_target_platform}"
+    export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
+  fi
+
+
   BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3 -fno-lto"
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
@@ -946,7 +1084,7 @@ function BuildGlibc() {
 
   # Do not use direct references against %gs when accessing tls data
   # XXX make it the default in GCC? (for other non glibc specific usage)
-%ifarch %{xenarches}
+%if %isarch %{xenarches}
   BuildFlags="$BuildFlags -mno-tls-direct-seg-refs"
 %endif
 
@@ -960,9 +1098,8 @@ function BuildGlibc() {
    # we just enable it on the main arch for now.
 %if %{with nsscrypt} || %{with systap}
    if [[ "$BuildAltArch" = "no" ]]; then
-%if %{with nsscrypt}
+%{with nsscrypt}
    ExtraFlags="$ExtraFlags --enable-nss-crypt"
-%endif
 %if %{with systap}
    ExtraFlags="$ExtraFlags --enable-systemtap"
 %endif
@@ -975,13 +1112,26 @@ function BuildGlibc() {
   # Add-ons
   AddOns="$Pthreads,ports,libidn"
 
+  # Kernel headers directory
+  KernelHeaders=%{_includedir}
+
+  # Determine library name
+  glibc_cv_cc_64bit_output=no
+  if echo ".text" | $BuildCC -c -o test.o -xassembler -; then
+    case `/usr/bin/file test.o` in
+    *"ELF 64"*)
+      glibc_cv_cc_64bit_output=yes
+      ;;
+    esac
+  fi
+  rm -f test.o
   # Force a separate and clean object dir
   rm -rf build-$arch-linux
   mkdir  build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags}" ../configure \
-    $arch-%{_target_vendor}-%{_target_os}%{?_gnu} \
+    $arch-%{_target_vendor}-%{_target_os}%{gnuext} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
@@ -998,7 +1148,7 @@ function BuildGlibc() {
     $ExtraFlags \
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \
-    --with-headers=%{_includedir} ${1+"$@"}
+    --with-headers=$KernelHeaders ${1+"$@"}
   %make -r
   popd
 
@@ -1025,15 +1175,31 @@ function BuildGlibc() {
 }
 
 # Build main glibc
-BuildGlibc %{_target_cpu}
+BuildGlibc %{target_cpu}
 
 %if %{build_multiarch}
-    %ifarch x86_64
+    %if %isarch x86_64
 	BuildGlibc i686
+    %endif
+    %if %isarch mips
+	BuildGlibc mips64
+	BuildGlibc mips32
+    %endif
+    %if %isarch mipsel
+	BuildGlibc mips64el
+	BuildGlibc mips32el
+    %endif
+    %if %isarch mips64
+	BuildGlibc mips
+	BuildGlibc mips32
+    %endif
+    %if %isarch mips64el
+	BuildGlibc mipsel
+	BuildGlibc mips32el
     %endif
 %else
     # Build i686 libraries if not already building for i686
-    case %{_target_cpu} in
+    case %{target_cpu} in
     i686)
 	;;
     i[3-5]86)
@@ -1042,16 +1208,20 @@ BuildGlibc %{_target_cpu}
     esac
 %endif
 
+%if "%{name}" == "glibc"
 make -C crypt_blowfish-%{crypt_bf_ver} man
 
 # post install wrapper
-gcc -static -Lbuild-%{_target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{_target_cpu}-linux/glibc_post_upgrade \
+gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{target_cpu}-linux/glibc_post_upgrade \
   '-DLIBTLS="/%{_lib}/tls/"' \
   '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
   '-DLD_SO_CONF="/etc/ld.so.conf"' \
   '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
+%endif
 
 #-----------------------------------------------------------------------
+
+%if !%{build_cross}
 %check
 # ...
 export PATH=$PWD/bin:$PATH
@@ -1061,27 +1231,84 @@ export TIMEOUTFACTOR=16
 while read arglist; do
     sh %{SOURCE5} $arglist || exit 1
 done < %{checklist}
+%endif
 
 #-----------------------------------------------------------------------
 %install
 # ...
+%if !%isarch %{mipsx}
 export PATH=$PWD/bin:$PATH
-
-%if %{build_multiarch}
-    %ifarch x86_64
-	ALT_ARCH=i686
-    %endif
-    %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
-%endif
-%make install install_root=%{buildroot} -C build-%{_target_cpu}-linux
-%if %{build_multiarch}
-    %ifarch x86_64
-	rm %{buildroot}%{_bindir}/lddlibc4
-    %endif
 %endif
 
-install -m700 build-%{_target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
-sh manpages/Script.sh
+make install_root=%{buildroot} install -C build-%{target_cpu}-linux
+
+%if 0
+%if %{build_multiarch} || %isarch %{mips} %{mipsel}
+    %if %isarch x86_64
+	ALT_ARCHES=i686-linux
+    %endif
+    %if %isarch %{mips}
+	ALT_ARCHES="mips64-linux mips32-linux"
+    %endif
+    %if %isarch %{mipsel}
+	ALT_ARCHES="mips64el-linux mips32el-linux"
+    %endif
+    %if %isarch mips64
+	ALT_ARCHES="mips-linux mips32-linux"
+    %endif
+    %if %isarch mips64el
+	ALT_ARCHES="mipsel-linux mips32el-linux"
+    %endif
+
+    for ALT_ARCH in $ALT_ARCHES; do
+	mkdir -p %{buildroot}/$ALT_ARCH
+	%make install install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
+
+# Dispatch */lib only
+    case "$ALT_ARCH" in
+	mips32*)
+		LIB="%{_slibdir}32"
+		;;
+	mips64*)
+		LIB="%{_slibdir}64"
+		;;
+	mips*)
+		LIB="%{_slibdir}"
+		;;
+	*)
+		LIB=/lib
+		;;
+    esac
+    %if !%{build_cross}
+	mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
+	mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* \
+	       %{buildroot}%{_prefix}/libexec/getconf/
+	[ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
+	mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
+    %else
+	mv     %{buildroot}/$ALT_ARCH%{_prefix}/lib %{buildroot}/$LIB
+	sed -i %{buildroot}/$LIB/libc.so -e "s!%{_slibdir}!$LIB!g"
+    %endif
+
+rm -rf %{buildroot}/$ALT_ARCH
+# XXX Dispatch 32-bit stubs
+(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
+> %{buildroot}%{_includedir}/gnu/stubs-32.h
+done
+
+%else
+
+    %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
+    %if %{build_multiarch}
+	%if %isarch x86_64
+	    rm %{buildroot}%{_bindir}/lddlibc4
+	%endif
+    %endif
+
+    install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
+   sh manpages/Script.sh
+%endif
+%endif
 
 # Install extra glibc libraries
 function InstallGlibc() {
@@ -1107,11 +1334,13 @@ function InstallGlibc() {
 }
 
 # Install arch-specific optimized libraries
-case %{_target_cpu} in
+%if %isarch %{ix86}
+case %{target_cpu} in
 i[3-5]86)
   InstallGlibc build-i686-linux i686
   ;;
 esac
+%endif
 
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
@@ -1125,11 +1354,13 @@ install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 
 # (tpg) workaround for aarch64 ?
-%ifarch aarch64
+%if %isarch aarch64
 ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
 %endif
 
+%if "%{name}" == "glibc"
 install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
+%endif
 
 # This is for ncsd - in glibc 2.2
 %if %{with nscd}
@@ -1150,6 +1381,12 @@ mkdir -p %{buildroot}%{_mandir}/man3
 install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
 
 # Include ld.so.conf
+# Include ld.so.conf
+%if "%{name}" == "glibc"
+%if %isarch mips mipsel
+# needed to get a ldd which understands o32, n32, 64
+install -m755 build-%{_target_cpu}-linux/elf/ldd %{buildroot}%{_bindir}/ldd
+%endif
 echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
 chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
 mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
@@ -1179,14 +1416,24 @@ chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 %endif
 
 touch %{buildroot}%{_sysconfdir}/ld.so.cache
+%endif
+
+# Are we cross-compiling?
+Strip="strip"
+if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
+  Strip="%{cross_program_prefix}$Strip"
+fi
 
 # Strip debugging info from all static libraries
-pushd %{buildroot}%{_libdir}
-    for i in *.a; do
-	if [ -f "$i" ]; then
-	    strip -g -R .comment -R .GCC.command.line $i
-	fi
-    done
+pushd %{buildroot}%{_slibdir}
+for i in *.a; do
+  if [ -f "$i" ]; then
+    case "$i" in
+    *_p.a) ;;
+    *) $Strip -g -R .comment -R .GCC.command.line         $i ;;
+    esac
+  fi
+done
 popd
 
 # rquota.x and rquota.h are now provided by quota
@@ -1206,7 +1453,7 @@ rm -r %{buildroot}%{_includedir}/netatalk/
 
 # Documentation
 install -m 755 -d %{buildroot}%{_docdir}/glibc
-    pushd build-%{_target_cpu}-linux html
+    pushd build-%{target_cpu}-linux html
 %if %{with doc}
 	make html
 	cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
@@ -1227,43 +1474,53 @@ install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
     %{buildroot}%{_docdir}/glibc/crypt_blowfish
 
 # Localization
+%if "%{name}" == "glibc"
 %find_lang libc
+%else
+touch libc.lang
+%endif
 
 # Remove unpackaged files
-rm %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
+rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 # XXX: verify
 #find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
 
 %if !%{with nscd}
-    rm %{buildroot}%{_sbindir}/nscd
+    rm -f %{buildroot}%{_sbindir}/nscd
 %endif
 
 %if %{without utils}
-    rm %{buildroot}%{_bindir}/memusage
-    rm %{buildroot}%{_bindir}/memusagestat
-    rm %{buildroot}%{_bindir}/mtrace
-    rm %{buildroot}%{_bindir}/pcprofiledump
-    rm %{buildroot}%{_bindir}/xtrace
-    rm %{buildroot}%{_slibdir}/libmemusage.so
-    rm %{buildroot}%{_slibdir}/libpcprofile.so
+    rm -f %{buildroot}%{_bindir}/memusage
+    rm -f %{buildroot}%{_bindir}/memusagestat
+    rm -f %{buildroot}%{_bindir}/mtrace
+    rm -f %{buildroot}%{_bindir}/pcprofiledump
+    rm -f %{buildroot}%{_bindir}/xtrace
+    rm -f %{buildroot}%{_slibdir}/libmemusage.so
+    rm -f %{buildroot}%{_slibdir}/libpcprofile.so
     %if %{build_multiarch}
-	rm %{buildroot}%{_slibdir32}/libmemusage.so
-	rm %{buildroot}%{_slibdir32}/libpcprofile.so
+	rm -f %{buildroot}%{_slibdir32}/libmemusage.so
+	rm -f %{buildroot}%{_slibdir32}/libpcprofile.so
+    %endif
+    %if %isarch %{mips} %{mipsel}
+	rm -f %{buildroot}%{_slibdir}32/libmemusage.so
+	rm -f %{buildroot}%{_slibdir}32/libpcprofile.so
+	rm -f %{buildroot}%{_slibdir}64/libmemusage.so
+	rm -f %{buildroot}%{_slibdir}64/libpcprofile.so
     %endif
 %endif
 
 %if !%{with timezone}
-    rm  %{buildroot}%{_sbindir}/zdump
-    rm  %{buildroot}%{_sbindir}/zic
-    rm  %{buildroot}%{_mandir}/man1/zdump.1*
+    rm -f %{buildroot}%{_sbindir}/zdump
+    rm -f %{buildroot}%{_sbindir}/zic
+    rm -f %{buildroot}%{_mandir}/man1/zdump.1*
 %endif
 
 %if !%{with i18ndata}
-    rm -r %{buildroot}%{_datadir}/i18n
+    rm -rf %{buildroot}%{_datadir}/i18n
 %endif
 
-%if ! %{without locales}
+%if %{with locales}
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
 export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
@@ -1301,11 +1558,32 @@ mkdir -p %{buildroot}%{_prefix}/lib/locale
 touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 %endif
 
+%if "%{name}" != "glibc"
+rm -rf %{buildroot}/boot
+rm -rf %{buildroot}/sbin
+rm -rf %{buildroot}/usr/share
+rm -rf %{buildroot}%{_bindir}
+rm -rf %{buildroot}%{_sbindir}
+rm -rf %{buildroot}%{_datadir}
+rm -rf %{buildroot}%{_infodir}
+rm -rf %{buildroot}%{_prefix}/etc
+rm -rf %{buildroot}%{_libdir}/gconv
+rm -rf %{buildroot}%{_libdir}/audit
+rm -rf %{buildroot}%{_libexecdir}/getconf
+rm -rf %{buildroot}%{_localstatedir}/db/Makefile
+
+
+# In case we are cross-compiling, don't bother to remake symlinks and
+# fool spec-helper when stripping files
+export DONT_SYMLINK_LIBS=1
+%endif
+
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
 
+%if %{with locales}
 %files -n locales
 %{_bindir}/locale_install.sh
 %{_bindir}/locale_uninstall.sh
@@ -1323,3 +1601,4 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so l
 
 %preun -n locales
 %{_bindir}/locale_uninstall.sh "ENCODINGS"
+%endif
