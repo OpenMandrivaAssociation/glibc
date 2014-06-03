@@ -23,6 +23,7 @@
 %{expand: %{?cross:		%%global build_cross 1}}
 
 %if %{build_cross}
+%define	_srcrpmfilename	%{oname}-%{version}-%{release}.src.rpm
 %define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
 %define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
 %define target_cpu	%{cross}
