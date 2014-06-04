@@ -1102,7 +1102,7 @@ function BuildGlibc() {
    # we just enable it on the main arch for now.
 %if %{with nsscrypt} || %{with systap}
    if [[ "$BuildAltArch" = "no" ]]; then
-%{with nsscrypt}
+%if %{with nsscrypt}
    ExtraFlags="$ExtraFlags --enable-nss-crypt"
 %if %{with systap}
    ExtraFlags="$ExtraFlags --enable-systemtap"
