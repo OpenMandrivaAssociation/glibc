@@ -23,8 +23,8 @@
 
 %if %{build_cross}
 %define	_srcrpmfilename	%{oname}-%{version}-%{release}.src.rpm
-%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
-%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{_sourcedir}/%{oname}.rpmlintrc
+%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
+%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{SOURCE100}
 %define target_cpu	%{cross}
 %define cross_prefix	cross-%{target_cpu}-
 %define _prefix		/usr/%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}
