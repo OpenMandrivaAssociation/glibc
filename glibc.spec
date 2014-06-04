@@ -2,6 +2,7 @@
 %define crypt_bf_ver	1.2
 
 %define _libdir32	%{_prefix}/lib
+%define _libdirn32	%{_prefix}/lib32
 
 %define	oname		glibc
 %define	major		6
@@ -38,10 +39,11 @@
 %define _datadir	%{_prefix}/share
 %define _sharedstatedir	%{_prefix}/com
 %define _localstatedir	%{_prefix}/var
-%define _lib		lib
+#define _lib		lib
 %define _libdir		%{_exec_prefix}/%{_lib}
 %define _slibdir	%{_exec_prefix}/%{_lib}
 %define _slibdir32	%{_exec_prefix}/lib
+%define _slibdirn32	%{_exec_prefix}/lib32
 %define _includedir	%{_prefix}/include
 %else
 %define gnuext		%{?_gnu}
@@ -608,10 +610,26 @@ LANG variable to their preferred language in their
 %ghost %{_var}/cache/ldconfig/aux-cache
 %{_var}/lib/rpm/filetriggers/ldconfig.*
 %{_var}/db/Makefile
+%else
+%if %isarch mips mipsel
+%if %{build_biarch}
+%{_slibdir32}/ld-%{version}.so
+%{_slibdir32}/ld.so.1
+%{_slibdir32}/lib*-[.0-9]*.so
+%{_slibdir32}/lib*.so.[0-9]*
+%{_slibdir32}/libSegFault.so
+%dir %{_slibdirn32}
+%{_slibdirn32}/ld*-[.0-9]*.so
+%{_slibdirn32}/ld.so.1
+%{_slibdirn32}/lib*-[.0-9]*.so
+%{_slibdirn32}/lib*.so.[0-9]*
+%{_slibdirn32}/libSegFault.so
+%endif
+%endif
 %endif
 
 ########################################################################
-%if %{build_biarch}
+%if %{build_biarch} && !%{build_cross}
 #-----------------------------------------------------------------------
 %package -n	%{multilibc}
 Summary:	The GNU libc libraries
@@ -642,22 +660,6 @@ Linux system will not function.
 %{_libdir32}/gconv/*.so
 %{_libdir32}/gconv/gconv-modules
 %ghost %{_libdir32}/gconv/gconv-modules.cache
-%endif
-%if %isarch %{mips} %{mipsel}
-%{_slibdir}32/ld-%{glibcversion}.so
-%{_slibdir}32/ld.so.1
-%{_slibdir}32/lib*-[.0-9]*.so
-%{_slibdir}32/lib*.so.[0-9]*
-%{_slibdir}32/libSegFault.so
-%dir %{_libdir}32/gconv
-%{_libdir}32/gconv/*
-%{_slibdir}64/ld-%{glibcversion}.so
-%{_slibdir}64/ld.so.1
-%{_slibdir}64/lib*-[.0-9]*.so
-%{_slibdir}64/lib*.so.[0-9]*
-%{_slibdir}64/libSegFault.so
-%dir %{_libdir}64/gconv
-%{_libdir}64/gconv/*
 %endif
 
 %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
@@ -735,6 +737,25 @@ executables.
 #%if "%{name}" == "glibc"
 %{_libdir32}/librpcsvc.a
 #%endif
+%if %isarch mips mipsel
+%exclude %{_slibdir32}/ld*-[.0-9]*.so
+%exclude %{_slibdir32}/lib*-[.0-9]*.so
+%exclude %{_slibdir32}/libSegFault.so
+%exclude %{_slibdirn32}/ld*-[.0-9]*.so
+%exclude %{_slibdirn32}/lib*-[.0-9]*.so
+%exclude %{_slibdirn32}/libSegFault.so
+%{_libdirn32}/*.o
+%{_libdirn32}/*.so
+%{_libdirn32}/libc_nonshared.a
+%{_libdirn32}/libg.a
+%{_libdirn32}/libieee.a
+%{_libdirn32}/libmcheck.a
+%{_libdirn32}/libpthread_nonshared.a
+%{_libdirn32}/librpcsvc.a
+%exclude %{_slibdir}/ld*-[.0-9]*.so
+%exclude %{_slibdir}/lib*-[.0-9]*.so
+%exclude %{_slibdir}/libSegFault.so
+%endif
 %endif
 
 #-----------------------------------------------------------------------
@@ -773,6 +794,19 @@ library.
 %{_libdir32}/libresolv.a
 %{_libdir32}/librt.a
 %{_libdir32}/libutil.a
+%if %isarch mips mipsel
+%{_libdirn32}/libBrokenLocale.a
+%{_libdirn32}/libanl.a
+%{_libdirn32}/libc.a
+%{_libdirn32}/libcrypt.a
+%{_libdirn32}/libdl.a
+%{_libdirn32}/libm.a
+%{_libdirn32}/libnsl.a
+%{_libdirn32}/libpthread.a
+%{_libdirn32}/libresolv.a
+%{_libdirn32}/librt.a
+%{_libdirn32}/libutil.a
+%endif
 %endif
 
 ########################################################################
@@ -1275,13 +1309,13 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	# Dispatch */lib only
 	case "$ALT_ARCH" in
 	    mips32*)
-		LIB="%{_slibdir}32"
+		LIB="%{_slibdirn32}"
 		;;
 	    mips64*)
-		LIB="%{_slibdir}64"
+		LIB="%{_slibdir}"
 		;;
 	    mips*)
-		LIB="%{_slibdir}"
+		LIB="%{_slibdir32}"
 		;;
 	    *)
 		LIB=/lib
@@ -1497,10 +1531,8 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 	rm -f %{buildroot}%{_slibdir32}/libpcprofile.so
     %endif
     %if %isarch %{mips} %{mipsel}
-	rm -f %{buildroot}%{_slibdir}32/libmemusage.so
-	rm -f %{buildroot}%{_slibdir}32/libpcprofile.so
-	rm -f %{buildroot}%{_slibdir}64/libmemusage.so
-	rm -f %{buildroot}%{_slibdir}64/libpcprofile.so
+	rm -f %{buildroot}%{_slibdirn32}/libmemusage.so
+	rm -f %{buildroot}%{_slibdirn32}/libpcprofile.so
     %endif
 %endif
 
@@ -1562,7 +1594,11 @@ rm -rf %{buildroot}%{_datadir}
 rm -rf %{buildroot}%{_infodir}
 rm -rf %{buildroot}%{_prefix}/etc
 rm -rf %{buildroot}%{_libdir}/gconv
+rm -rf %{buildroot}%{_libdir32}/gconv
+rm -rf %{buildroot}%{_libdirn32}/gconv
 rm -rf %{buildroot}%{_libdir}/audit
+rm -rf %{buildroot}%{_libdir32}/audit
+rm -rf %{buildroot}%{_libdirn32}/audit
 rm -rf %{buildroot}%{_libexecdir}/getconf
 rm -rf %{buildroot}%{_localstatedir}/db/Makefile
 
