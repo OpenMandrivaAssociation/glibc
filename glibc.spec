@@ -1,5 +1,3 @@
-%define	checklist	%{_builddir}/%{name}-%{version}/Check.list
-
 # crypt blowfish support
 %define crypt_bf_ver	1.2
 
@@ -8,6 +6,7 @@
 %define	oname		glibc
 %define	major		6
 %define	source_dir	%{oname}-%{version}
+%define	checklist	%{_builddir}/%{oname}-%{version}/Check.list
 %define	libc		%mklibname c %{major}
 %define	devname		%mklibname -d c
 %define	statname	%mklibname -d -s c
