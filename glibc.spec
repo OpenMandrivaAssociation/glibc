@@ -974,6 +974,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch88 -p1 -b .gold~
 
+%patch89 -p1 -b .nscd_runpath~
+
 %patch100 -p1 -b .blowfish_nonx86~
 
 %if %{with selinux}
