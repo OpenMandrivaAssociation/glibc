@@ -1148,6 +1148,9 @@ function BuildGlibc() {
 %else
     --without-selinux \
 %endif
+%if !%{with nscd}
+    --disable-build-nscd \
+%endif
     --enable-bind-now \
     $ExtraFlags \
     $MultiArchFlags \
@@ -1495,10 +1498,6 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 # XXX: verify
 #find %{buildroot}%{_localedir} -type f -name LC_\* -o -name SYS_LC_\* |xargs rm -f
-
-%if !%{with nscd}
-    rm -f %{buildroot}%{_sbindir}/nscd
-%endif
 
 %if %{without utils}
     rm -f %{buildroot}%{_bindir}/memusage
