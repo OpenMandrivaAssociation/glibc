@@ -1152,10 +1152,11 @@ function BuildGlibc() {
     --disable-build-nscd \
 %endif
     --enable-bind-now \
+    --enable-lock-elision \
     $ExtraFlags \
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \
-    --with-headers=$KernelHeaders ${1+"$@"}
+    --with-headers=$KernelHeaders ${1+"$@"} \
   %make -r
   popd
 
