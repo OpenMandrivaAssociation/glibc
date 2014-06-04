@@ -76,7 +76,7 @@
 
 # Define to build a biarch package
 %define build_biarch	0
-%if %isarch x86_64 mips64 mips64el
+%if %isarch x86_64 mips64 mips64el mips mipsel
 %define build_biarch	1
 %endif
 
