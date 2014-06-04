@@ -119,7 +119,7 @@ Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.19
-Release:	5
+Release:	6
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -267,6 +267,7 @@ Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch88:	glibc-2.17-gold.patch
+Patch89:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 

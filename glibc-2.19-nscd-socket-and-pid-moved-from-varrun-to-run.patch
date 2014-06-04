@@ -1,0 +1,15 @@
+--- glibc-2.19/nscd/nscd-client.h.runpath~	2014-06-04 13:30:35.700671072 +0200
++++ glibc-2.19/nscd/nscd-client.h	2014-06-04 13:30:00.783702730 +0200
+@@ -34,10 +34,10 @@
+ #define NSCD_VERSION 2
+ 
+ /* Path of the file where the PID of the running system is stored.  */
+-#define _PATH_NSCDPID	 "/var/run/nscd/nscd.pid"
++#define _PATH_NSCDPID	 "/run/nscd/nscd.pid"
+ 
+ /* Path for the Unix domain socket.  */
+-#define _PATH_NSCDSOCKET "/var/run/nscd/socket"
++#define _PATH_NSCDSOCKET "/run/nscd/socket"
+ 
+ /* Path for the configuration file.  */
+ #define _PATH_NSCDCONF	 "/etc/nscd.conf"
