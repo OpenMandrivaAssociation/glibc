@@ -553,7 +553,7 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
 %{_slibdir}/ld-%{version}.so
-%if %isarch %{ix86} x86_64
+%if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %{_slibdir}/i686
 %endif
@@ -714,8 +714,8 @@ executables.
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
-%exclude %{_libdir}/ld*-[.0-9]*.so
-%exclude %{_libdir}/lib*-[.0-9]*.so
+%exclude %{_slibdir}/ld*-[.0-9]*.so
+%exclude %{_slibdir}/lib*-[.0-9]*.so
 %exclude %{_slibdir}/libSegFault.so
 %{_libdir}/libc_nonshared.a
 %{_libdir}/libg.a
@@ -1253,7 +1253,6 @@ export PATH=$PWD/bin:$PATH
 
 make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 
-%if 0
 %if %{build_biarch} || %isarch %{mips} %{mipsel}
     %if %isarch x86_64
 	ALT_ARCHES=i686-linux
@@ -1274,57 +1273,41 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	mkdir -p %{buildroot}/$ALT_ARCH
 	%make install install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
 
-# Dispatch */lib only
-    case "$ALT_ARCH" in
-	mips32*)
+	# Dispatch */lib only
+	case "$ALT_ARCH" in
+	    mips32*)
 		LIB="%{_slibdir}32"
 		;;
-	mips64*)
+	    mips64*)
 		LIB="%{_slibdir}64"
 		;;
-	mips*)
+	    mips*)
 		LIB="%{_slibdir}"
 		;;
-	*)
+	    *)
 		LIB=/lib
 		;;
-    esac
-    %if !%{build_cross}
-	mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
-	mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* \
-	       %{buildroot}%{_prefix}/libexec/getconf/
-	[ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
-	mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
-    %else
-	mv     %{buildroot}/$ALT_ARCH%{_prefix}/lib %{buildroot}/$LIB
-	sed -i %{buildroot}/$LIB/libc.so -e "s!%{_slibdir}!$LIB!g"
-    %endif
-
-rm -rf %{buildroot}/$ALT_ARCH
-# XXX Dispatch 32-bit stubs
-(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
-> %{buildroot}%{_includedir}/gnu/stubs-32.h
-done
-
-%else
-
-%if %{build_multiarch}
-    %ifarch x86_64
-	ALT_ARCH=i686
-    %endif
-    %make install install_root=%{buildroot} -C build-${ALT_ARCH}-linux
-%endif
-
-    %make install install_root=%{buildroot} -C build-%{target_cpu}-linux
-    %if %{build_biarch}
-	%if %isarch x86_64
-	    rm %{buildroot}%{_bindir}/lddlibc4
+	esac
+	%if !%{build_cross}
+	    mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
+	    mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
+	    [ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
+	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
+	%else
+	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/lib %{buildroot}/$LIB
+	    sed -e "s!%{_slibdir}!$LIB!g" -i %{buildroot}/$LIB/libc.so
 	%endif
-    %endif
 
-    install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
-   sh manpages/Script.sh
+	rm -rf %{buildroot}/$ALT_ARCH
+	# XXX Dispatch 32-bit stubs
+	(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
+	> %{buildroot}%{_includedir}/gnu/stubs-32.h
+	done
 %endif
+
+%if "%{name}" == "glibc"
+    install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
+    sh manpages/Script.sh
 %endif
 
 # Install extra glibc libraries
@@ -1397,7 +1380,6 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 mkdir -p %{buildroot}%{_mandir}/man3
 install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
 
-# Include ld.so.conf
 # Include ld.so.conf
 %if "%{name}" == "glibc"
 %if %isarch mips mipsel
