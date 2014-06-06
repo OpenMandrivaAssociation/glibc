@@ -317,7 +317,7 @@ Obsoletes:	glibc-profile
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 %endif
 # Determine minimum kernel versions (rhbz#619538)
-%define		enablekernel 2.6.32
+%define		enablekernel 3.4.0
 Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
