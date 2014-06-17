@@ -1103,8 +1103,8 @@ function BuildGlibc() {
   esac
 
   # Determine C & C++ compilers
-  BuildCC="%{__cc} $BuildCompFlags"
-  BuildCXX="%{__cxx} $BuildCompFlags"
+  BuildCC="gcc $BuildCompFlags"
+  BuildCXX="g++ $BuildCompFlags"
 
   # Are we supposed to cross-compile?
   if [[ "%{target_cpu}" != "%{_target_cpu}" ]]; then
