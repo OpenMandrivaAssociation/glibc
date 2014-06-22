@@ -86,7 +86,7 @@
 %bcond_without i18ndata
 %bcond_with timezone
 %bcond_without nsscrypt
-%bcond_with locales
+%bcond_without locales
 
 
 %if %isarch %{ix86} x86_64
@@ -120,7 +120,7 @@ Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.19
-Release:	7
+Release:	8
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -229,7 +229,7 @@ Patch55:	glibc-rh911307.patch
 Patch51:	glibc-rh952799.patch
 
 #-----------------------------------------------------------------------
-# mandriva patches
+# OpenMandriva patches
 Patch56:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
 Patch57:	eglibc-mandriva-fix-dns-with-broken-routers.patch
 Patch58:	eglibc-mandriva-nss-upgrade.patch
@@ -250,6 +250,7 @@ Patch72:	eglibc-mandriva-i586-if-no-cmov.patch
 Patch73:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch74:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch75:	eglibc-mandriva-testsuite-rt-notparallel.patch
+Patch76:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
 # https://bugzilla.redhat.com/show_bug.cgi?id=696096
@@ -983,6 +984,7 @@ These are configuration files that describe possible time zones.
 %patch73 -p1
 %patch74 -p1 -b .ldbl~
 %patch75 -p1 -b .tsp~
+%patch76 -p1 -b .clang~
 %patch79 -p1
 %patch80 -p1
 
