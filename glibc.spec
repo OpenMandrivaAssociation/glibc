@@ -1551,7 +1551,9 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %if %{with locales}
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
-export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+# FIXME it is wrong to use the system libc to build the new localedata.
+# But on some updates forcing LD_LIBRARY_PATH to the new one causes crashes
+#export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
 # make default charset pseudo-locales
