@@ -16,7 +16,6 @@
 %define	_disable_ld_no_undefined	1
 %undefine _fortify_cflags
 
-
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
 %define build_cross		0
@@ -1095,6 +1094,7 @@ function BuildGlibc() {
       BuildCompFlags="-march=armv6"
       ;;
   esac
+  BuildCompFlags="$BuildCompFlags -fuse-ld=bfd"
 
   # Choose biarch support
   MultiArchFlags=
@@ -1172,7 +1172,7 @@ function BuildGlibc() {
   mkdir  build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags}" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     $arch-%{_target_vendor}-%{_target_os}%{gnuext} $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
@@ -1551,9 +1551,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %if %{with locales}
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
-# FIXME it is wrong to use the system libc to build the new localedata.
-# But on some updates forcing LD_LIBRARY_PATH to the new one causes crashes
-#export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
 # make default charset pseudo-locales
@@ -1568,7 +1566,9 @@ do
 done
 
 # Build regular locales
-SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} %make -f %{SOURCE20}
+# Don't try to use SMP make here - that would result in concurrent writes to the locale
+# archive.
+SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
