@@ -684,6 +684,7 @@ Linux system will not function.
 %if "%{name}" == "glibc"
 %dir %{_libdir32}/audit
 %{_libdir32}/audit/sotruss-lib.so
+%dir %{_libdir32}/gconv
 %{_libdir32}/gconv/*.so
 %{_libdir32}/gconv/gconv-modules
 %ghost %{_libdir32}/gconv/gconv-modules.cache
