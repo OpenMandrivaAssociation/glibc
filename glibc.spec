@@ -296,9 +296,6 @@ BuildRequires:	systemtap-devel
 %if %{with nsscrypt}
 BuildRequires:	nss-devel >= 3.15.1-2
 %endif
-# we'll be the only package requiring this, avoiding any other package
-# dependencies on '/bin/sh' or 'bash'
-Requires:	bash
 Requires:	filesystem
 %if %isarch %{xenarches}
 %rename		%{name}-xen
