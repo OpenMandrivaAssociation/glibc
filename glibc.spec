@@ -1145,7 +1145,10 @@ function BuildGlibc() {
   fi
 
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3 -fno-lto"
+  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
+  %if "%{distepoch}" >= "2015.0"
+  BuildFlags="$BuildFlags -fno-lto"
+  %endif
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
   BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
