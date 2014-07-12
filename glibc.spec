@@ -119,7 +119,7 @@ Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.19
-Release:	10
+Release:	11
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -862,6 +862,7 @@ performance with NIS+, and may help with DNS as well.
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %dir %attr(0755,root,root) /run/nscd
 %dir %attr(0755,root,root) %{_var}/db/nscd
+%dir %attr(0755,root,root) %{_sysconfdir}/netgroup
 %{_unitdir}/nscd.service
 %{_unitdir}/nscd.socket
 %{_sbindir}/nscd
@@ -1434,6 +1435,7 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
     install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
     install -m755 -d %{buildroot}%{_sysconfdir}/sysconfig
     touch %{buildroot}%{_sysconfdir}/sysconfig/nscd
+    install -m755 -d %{buildroot}%{_sysconfdir}/netgroup
     install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
     install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
     install -m644 nscd/nscd.tmpfiles -D %{buildroot}%{_tmpfilesdir}/nscd.conf
