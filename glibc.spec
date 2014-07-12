@@ -71,7 +71,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	2
+Release:	2.1
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
@@ -704,6 +704,7 @@ performance with NIS+, and may help with DNS as well.
 
 %files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
+%dir %attr(0755,root,root) %{_sysconfdir}/netgroup
 %{_unitdir}/nscd.service
 %{_unitdir}/nscd.socket
 %{_sbindir}/nscd
@@ -1163,6 +1164,7 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
     install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
     install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
     install -m755 -d %{buildroot}/var/db/nscd
+    install -m755 -d %{buildroot}%{_sysconfdir}/netgroup
 %endif
 
 # These man pages require special attention
