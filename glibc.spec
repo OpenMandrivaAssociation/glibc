@@ -119,7 +119,7 @@ Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.19
-Release:	11
+Release:	12
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -1436,8 +1436,8 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
     install -m755 -d %{buildroot}%{_sysconfdir}/sysconfig
     touch %{buildroot}%{_sysconfdir}/sysconfig/nscd
     install -m755 -d %{buildroot}%{_sysconfdir}/netgroup
-    install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
-    install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
+    install -m644 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
+    install -m644 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
     install -m644 nscd/nscd.tmpfiles -D %{buildroot}%{_tmpfilesdir}/nscd.conf
     install -m755 -d %{buildroot}%{_var}/db/nscd
     touch %{buildroot}%{_var}/db/nscd/{passwd,group,hosts,services}
