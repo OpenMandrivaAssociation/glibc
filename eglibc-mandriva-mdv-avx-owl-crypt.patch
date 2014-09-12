@@ -1,6 +1,6 @@
---- glibc-2.18/crypt/crypt-entry.c.owlCrypt~	2013-08-11 00:52:55.000000000 +0200
-+++ glibc-2.18/crypt/crypt-entry.c	2013-08-17 14:39:14.300517415 +0200
-@@ -81,7 +81,7 @@ extern struct crypt_data _ufc_foobar;
+--- glibc-2.20/crypt/crypt-entry.c.owlCrypt~	2014-09-07 10:09:09.000000000 +0200
++++ glibc-2.20/crypt/crypt-entry.c	2014-09-08 21:35:10.488406616 +0200
+@@ -71,7 +71,7 @@ extern struct crypt_data _ufc_foobar;
   */
  
  char *
@@ -9,7 +9,7 @@
       const char *key;
       const char *salt;
       struct crypt_data * __restrict data;
-@@ -155,6 +155,7 @@ __crypt_r (key, salt, data)
+@@ -145,6 +145,7 @@ __crypt_r (key, salt, data)
    _ufc_output_conversion_r (res[0], res[1], salt, data);
    return data->crypt_3_buf;
  }
@@ -17,7 +17,7 @@
  weak_alias (__crypt_r, crypt_r)
  
  char *
-@@ -180,6 +181,7 @@ crypt (key, salt)
+@@ -170,6 +171,7 @@ crypt (key, salt)
  
    return __crypt_r (key, salt, &_ufc_foobar);
  }
@@ -25,11 +25,11 @@
  
  
  /*
---- glibc-2.18/crypt/Makefile.owlCrypt~	2013-08-17 14:38:07.574351607 +0200
-+++ glibc-2.18/crypt/Makefile	2013-08-17 14:40:27.546601713 +0200
-@@ -20,13 +20,13 @@
- #
- subdir	:= crypt
+--- glibc-2.20/crypt/Makefile.owlCrypt~	2014-09-08 21:35:10.488406616 +0200
++++ glibc-2.20/crypt/Makefile	2014-09-08 21:35:57.538818405 +0200
+@@ -22,13 +22,13 @@ subdir	:= crypt
+ 
+ include ../Makeconfig
  
 -headers := crypt.h
 +headers := crypt.h gnu-crypt.h ow-crypt.h
@@ -43,8 +43,8 @@
  
  tests := cert md5c-test sha256c-test sha512c-test badsalttest
  
---- glibc-2.18/crypt/Versions.owlCrypt~	2013-08-11 00:52:55.000000000 +0200
-+++ glibc-2.18/crypt/Versions	2013-08-17 14:38:07.574351607 +0200
+--- glibc-2.20/crypt/Versions.owlCrypt~	2014-09-07 10:09:09.000000000 +0200
++++ glibc-2.20/crypt/Versions	2014-09-08 21:35:10.488406616 +0200
 @@ -1,5 +1,6 @@
  libcrypt {
    GLIBC_2.0 {

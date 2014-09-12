@@ -4,8 +4,8 @@ This is part of commit glibc-2.3.3-1564-gd0b6ac6
 - remove <stropts.h>, define _XOPEN_STREAMS -1 (#436349)
 
 diff -Nrup a/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h b/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h
---- a/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-06-05 07:42:49.000000000 -0600
-+++ b/nptl/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-06-07 12:15:21.817318674 -0600
+--- a/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-06-05 07:42:49.000000000 -0600
++++ b/sysdeps/unix/sysv/linux/bits/posix_opt.h	2012-06-07 12:15:21.817318674 -0600
 @@ -188,4 +188,7 @@
  /* Typed memory objects are not available.  */
  #define _POSIX_TYPED_MEMORY_OBJECTS	-1
@@ -18,8 +18,8 @@ diff -Nrup a/streams/Makefile b/streams/Makefile
 --- a/streams/Makefile	2012-06-05 07:42:49.000000000 -0600
 +++ b/streams/Makefile	2012-06-07 12:15:21.824318649 -0600
 @@ -20,7 +20,7 @@
- #
- subdir	:= streams
+ 
+ include ../Makeconfig
  
 -headers		= stropts.h sys/stropts.h bits/stropts.h bits/xtitypes.h
 +#headers		= stropts.h sys/stropts.h bits/stropts.h bits/xtitypes.h

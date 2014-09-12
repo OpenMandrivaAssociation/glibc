@@ -1,6 +1,17 @@
---- glibc-2.16.90-97bc38d7/Makeconfig.orig	2012-09-26 13:48:22.726000556 -0300
-+++ glibc-2.16.90-97bc38d7/Makeconfig	2012-09-26 13:48:36.276000993 -0300
-@@ -216,7 +216,7 @@ inst_zonedir = $(install_root)$(zonedir)
+--- glibc-2.20/aclocal.m4.shareLocale~	2014-09-08 21:25:10.857903029 +0200
++++ glibc-2.20/aclocal.m4	2014-09-08 21:25:19.420795978 +0200
+@@ -295,7 +295,7 @@ case "$prefix" in
+   if test "$libdir" = '${exec_prefix}/lib'; then
+     libdir='${exec_prefix}/$1';
+     # Locale data can be shared between 32-bit and 64-bit libraries.
+-    libc_cv_localedir='${exec_prefix}/lib/locale'
++    libc_cv_localedir='${exec_prefix}/share/locale'
+   fi
+   ;;
+ esac])
+--- glibc-2.20/Makeconfig.shareLocale~	2014-09-07 10:09:09.000000000 +0200
++++ glibc-2.20/Makeconfig	2014-09-08 21:22:26.383959236 +0200
+@@ -192,7 +192,7 @@ inst_zonedir = $(install_root)$(zonedir)
  
  # Where to install the locale files.
  ifndef localedir
@@ -9,14 +20,58 @@
  endif
  inst_localedir = $(install_root)$(localedir)
  
---- glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.ac.orig	2012-09-27 13:08:49.949074767 -0300
-+++ glibc-2.16.90-97bc38d7/sysdeps/gnu/configure.ac	2012-09-27 13:09:22.748076063 -0300
-@@ -18,7 +18,7 @@ case "$prefix" in
-     if test "$libdir" = '${exec_prefix}/lib'; then
-       libdir='${exec_prefix}/lib64';
-       # Locale data can be shared between 32bit and 64bit libraries
--      libc_cv_localedir='${exec_prefix}/lib/locale'
-+      libc_cv_localedir='${exec_prefix}/share/locale'
-     fi
-     ;;
-   *)
+--- glibc-2.20/sysdeps/gnu/configure.shareLocale~	2014-09-08 21:24:16.549581976 +0200
++++ glibc-2.20/sysdeps/gnu/configure	2014-09-08 21:24:25.192473925 +0200
+@@ -14,7 +14,7 @@ case "$prefix" in
+   if test "$libdir" = '${exec_prefix}/lib'; then
+     libdir='${exec_prefix}/lib';
+     # Locale data can be shared between 32-bit and 64-bit libraries.
+-    libc_cv_localedir='${exec_prefix}/lib/locale'
++    libc_cv_localedir='${exec_prefix}/share/locale'
+   fi
+   ;;
+ esac
+--- glibc-2.20/sysdeps/unix/sysv/linux/aarch64/configure.shareLocale~	2014-09-08 21:26:28.291934970 +0200
++++ glibc-2.20/sysdeps/unix/sysv/linux/aarch64/configure	2014-09-08 21:26:31.884890052 +0200
+@@ -11,7 +11,7 @@ case "$prefix" in
+   if test "$libdir" = '${exec_prefix}/lib'; then
+     libdir='${exec_prefix}/lib64';
+     # Locale data can be shared between 32-bit and 64-bit libraries.
+-    libc_cv_localedir='${exec_prefix}/lib/locale'
++    libc_cv_localedir='${exec_prefix}/share/locale'
+   fi
+   ;;
+ esac
+--- glibc-2.20/sysdeps/unix/sysv/linux/x86_64/64/configure.shareLocale~	2014-09-08 21:25:53.539369437 +0200
++++ glibc-2.20/sysdeps/unix/sysv/linux/x86_64/64/configure	2014-09-08 21:25:56.610331045 +0200
+@@ -9,7 +9,7 @@ case "$prefix" in
+   if test "$libdir" = '${exec_prefix}/lib'; then
+     libdir='${exec_prefix}/lib64';
+     # Locale data can be shared between 32-bit and 64-bit libraries.
+-    libc_cv_localedir='${exec_prefix}/lib/locale'
++    libc_cv_localedir='${exec_prefix}/share/locale'
+   fi
+   ;;
+ esac
+--- glibc-2.20/sysdeps/unix/sysv/linux/x86_64/x32/configure.shareLocale~	2014-09-08 21:24:41.749266937 +0200
++++ glibc-2.20/sysdeps/unix/sysv/linux/x86_64/x32/configure	2014-09-08 21:24:46.068212942 +0200
+@@ -11,7 +11,7 @@ case "$prefix" in
+   if test "$libdir" = '${exec_prefix}/lib'; then
+     libdir='${exec_prefix}/libx32';
+     # Locale data can be shared between 32-bit and 64-bit libraries.
+-    libc_cv_localedir='${exec_prefix}/lib/locale'
++    libc_cv_localedir='${exec_prefix}/share/locale'
+   fi
+   ;;
+ esac
+--- glibc-2.20/timezone/private.h.shareLocale~	2014-09-08 21:25:27.735692027 +0200
++++ glibc-2.20/timezone/private.h	2014-09-08 21:25:34.639605716 +0200
+@@ -63,7 +63,7 @@
+ #endif /* !defined HAVE_UTMPX_H */
+ 
+ #ifndef LOCALE_HOME
+-#define LOCALE_HOME		"/usr/lib/locale"
++#define LOCALE_HOME		"/usr/share/locale"
+ #endif /* !defined LOCALE_HOME */
+ 
+ #if HAVE_INCOMPATIBLE_CTIME_R

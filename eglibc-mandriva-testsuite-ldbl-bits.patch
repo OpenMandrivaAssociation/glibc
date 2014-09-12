@@ -1,18 +1,19 @@
---- glibc-2.18/stdlib/Makefile.ldbl~	2013-08-17 14:29:53.818524404 +0200
-+++ glibc-2.18/stdlib/Makefile	2013-08-17 14:36:20.568689362 +0200
-@@ -130,9 +130,15 @@ ifeq ($(run-built-tests),yes)
- tests: $(objpfx)tst-fmtmsg.out
- endif
+--- glibc-2.20/stdlib/Makefile.ldbl~	2014-09-08 21:30:48.771678525 +0200
++++ glibc-2.20/stdlib/Makefile	2014-09-08 21:34:51.842639720 +0200
+@@ -125,9 +125,16 @@ test-canon-ARGS = --test-dir=${common-ob
+ 
+ bug-fmtmsg1-ENV = SEV_LEVEL=foo,11,newsev
  
 +isomac-includes = -I../include $(+sysdep-includes) $(sysincludes) -I..
 +ifeq (powerpc:8, $(base-machine):$(sizeof-long-double))
 +# XXX only necessary for bootstrapping...
 +isomac-includes += -I../libio -I../stdlib -I../wcsmbs
 +endif
++
  $(objpfx)isomac.out: $(objpfx)isomac
  	$(dir $<)$(notdir $<) '$(CC)'  \
- 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $<.out
-+	'$(isomac-includes)' > $<.out
+ 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $<.out; \
++	'$(isomac-includes)' > $<.out \
+ 	$(evaluate-test)
  
  isomac-CFLAGS = -O
- $(objpfx)isomac: isomac.c

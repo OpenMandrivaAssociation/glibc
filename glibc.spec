@@ -1,5 +1,5 @@
 # crypt blowfish support
-%define crypt_bf_ver	1.2
+%define crypt_bf_ver	1.3
 
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
@@ -118,8 +118,8 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.19
-Release:	12
+Version:	2.20
+Release:	1
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -204,7 +204,6 @@ Patch32:	glibc-fedora-manual-dircategory.patch
 Patch33:	glibc-fedora-nis-rh188246.patch
 Patch34:	glibc-fedora-nptl-linklibc.patch
 Patch35:	glibc-fedora-ppc-unwind.patch
-Patch37:	eglibc-fedora-strict-aliasing.patch
 
 #
 # Patches from upstream
@@ -244,7 +243,6 @@ Patch67:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch68:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch69:	eglibc-mandriva-biarch-utils.patch
 Patch70:	eglibc-mandriva-multiarch.patch
-Patch71:	eglibc-mandriva-i586-hptiming.patch
 Patch72:	eglibc-mandriva-i586-if-no-cmov.patch
 Patch73:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch74:	eglibc-mandriva-testsuite-ldbl-bits.patch
@@ -986,17 +984,16 @@ These are configuration files that describe possible time zones.
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
-%patch37 -p1 -b .aliasing~
 %patch40 -p1
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
-%patch54 -p1
-%patch55 -p1
+%patch54 -p1 -b .rh819430~
+%patch55 -p1 -b .rh911307~
 %patch51 -p1
 %patch56 -p1
 %patch57 -p1
 %patch58 -p1 -b .nssUpgrade~
-%patch59 -p1
+%patch59 -p1 -b .shareLocale~
 %patch60 -p1
 %patch61 -p1
 %patch62 -p1
@@ -1005,10 +1002,9 @@ These are configuration files that describe possible time zones.
 %patch65 -p1
 %patch66 -p1
 %patch67 -p1
-%patch68 -p1
+%patch68 -p1 -b .ENOTTYfr~
 %patch69 -p1
 %patch70 -p1 -b .biarch~
-%patch71 -p1 -b .hpt~
 %patch72 -p1
 %patch73 -p1
 %patch74 -p1 -b .ldbl~
@@ -1181,11 +1177,8 @@ function BuildGlibc() {
    fi
 %endif
 
-  # NPTL+TLS are now the default
-  Pthreads="nptl"
-
   # Add-ons
-  AddOns="$Pthreads,ports,libidn"
+  AddOns="libidn"
 
   # Kernel headers directory
   KernelHeaders=%{_includedir}
@@ -1650,6 +1643,8 @@ export DONT_SYMLINK_LIBS=1
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
+
+unset LD_LIBRARY_PATH
 
 %if %{with locales}
 %files -n locales
