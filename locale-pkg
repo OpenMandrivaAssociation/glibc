@@ -11,6 +11,7 @@ cat <<EOF
 Summary:	Base files for localization ($LANGNAME)
 Group:		System/Internationalization
 Requires:	locales = %{EVRD}
+Obsoletes:	locales <= 2.18.90-2
 Requires(post,preun):	sed
 Requires(post,preun):	grep
 EOF
