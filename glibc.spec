@@ -119,7 +119,7 @@ Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
 Version:	2.20
-Release:	1
+Release:	2
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
@@ -348,6 +348,8 @@ Linux system will not function.
 %package -n locales
 Summary:	Base files for localization
 Group:		System/Internationalization
+Obsoletes:	locales <= 2.18.90-2
+Obsoletes:	locales < 2.20
 
 %description -n locales
 These are the base files for language localization.
