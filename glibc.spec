@@ -108,15 +108,15 @@
 
 # Disable a few defaults when cross-compiling a glibc
 %if %{build_cross}
-%unglobal	with_doc
-%unglobal	with_pdf
-%unglobal	with_nscd
-%unglobal	with_timezone
-%unglobal	with_i18ndata
-%unglobal	with_locales
-%unglobal	with_systap
-%unglobal	with_utils
-%unglobal	with_nsscrypt
+%bcond_with	doc
+%bcond_with	pdf
+%bcond_with	nscd
+%bcond_with	timezone
+%bcond_with	i18ndata
+%bcond_with	locales
+%bcond_with	systap
+%bcond_with	utils
+%bcond_with	nsscrypt
 %endif
 
 #-----------------------------------------------------------------------
