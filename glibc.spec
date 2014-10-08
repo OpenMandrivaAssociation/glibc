@@ -554,9 +554,8 @@ LANG variable to their preferred language in their
 %if %isarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
-%if %isarch %{arm}
-# Optional because we might not be building softfloat multilib
-%optional %{_slibdir}/ld-linux.so.3
+%if %isarch armv7l
+%{_slibdir}/ld-linux.so.3
 %endif
 %if %isarch armv7hl armv6j
 %{_slibdir}/ld-linux-armhf.so.3
