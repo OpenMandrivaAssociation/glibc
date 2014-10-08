@@ -18,7 +18,7 @@
 
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
-%define build_cross		0
+%define	build_cross		0
 %{expand: %{?cross:		%%global build_cross 1}}
 
 %if %{build_cross}
@@ -27,8 +27,11 @@
 %define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{SOURCE100}
 %define target_cpu	%{cross}
 %define cross_prefix	cross-%{target_cpu}-
-%define _prefix		/usr/%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}
-%define cross_program_prefix	%{target_cpu}-%{_target_vendor}-%{_target_os}%{gnuext}-
+%global	platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_vendor}-%%{_target_os}%%{?_gnu})
+%global	target_platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_platform})
+%global	_lib		%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_lib})
+%define _prefix		/usr/%{target_platform}
+%define cross_program_prefix	%{target_platform}-
 %define _exec_prefix	%{_prefix}
 # brain damage alert: should not be needed imho
 # overriding _prefix and _exec_prefix should be enough
@@ -38,14 +41,12 @@
 %define _datadir	%{_prefix}/share
 %define _sharedstatedir	%{_prefix}/com
 %define _localstatedir	%{_prefix}/var
-#define _lib		lib
 %define _libdir		%{_exec_prefix}/%{_lib}
 %define _slibdir	%{_exec_prefix}/%{_lib}
 %define _slibdir32	%{_exec_prefix}/lib
 %define _slibdirn32	%{_exec_prefix}/lib32
 %define _includedir	%{_prefix}/include
 %else
-%define gnuext		%{?_gnu}
 %define target_cpu	%{_target_cpu}
 %define cross_prefix	%{nil}
 %define cross_program_prefix	%{nil}
@@ -56,19 +57,6 @@
 # Define target (base) architecture
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
 %define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
-
-%if %{build_cross}
-%if %isarch %arm
-%define	_lib		lib
-%if "%{target_cpu}" == "armv7hl"
-%define gnuext          -gnueabihf
-%else
-%define gnuext          -gnueabi
-%endif
-%else
-%define gnuext          %{?_gnu}
-%endif
-%endif
 
 # Define Xen arches to build with -mno-tls-direct-seg-refs
 %define xenarches	%{ix86}
@@ -86,28 +74,31 @@
 %define build_biarch	1
 %endif
 
-%bcond_without nscd
-%bcond_without i18ndata
-%bcond_with timezone
-%bcond_without nsscrypt
-%bcond_without locales
+
+
+%if !%{build_cross}
+%bcond_without	nscd
+%bcond_without	i18ndata
+%bcond_with	timezone
+%bcond_without	nsscrypt
+%bcond_without	locales
 
 
 %if %isarch %{ix86} x86_64
-%bcond_without systap
+%bcond_without	systap
 %else
-%bcond_with systap
+%bcond_with	systap
 %endif
 
 # build documentation by default
-%bcond_without		doc
-%bcond_with		pdf
+%bcond_without	doc
+%bcond_with	pdf
 # enable utils by default
-%bcond_without		utils
+%bcond_without	utils
 
-
+%else
 # Disable a few defaults when cross-compiling a glibc
-%if %{build_cross}
+
 %bcond_with	doc
 %bcond_with	pdf
 %bcond_with	nscd
@@ -1087,23 +1078,21 @@ function BuildGlibc() {
   # Select optimization flags and compiler to use
   BuildAltArch="no"
   BuildCompFlags=""
-  BuildFlags=""
+  # -Wall is just added to get conditionally %%optflags printed...
+  BuildFlags="`rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##'`"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
 	BuildFlags="-march=pentium4 -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
-%else
-	BuildFlags="-march=$arch -mtune=atom"
 %endif
       ;;
     x86_64)
       BuildFlags="-mtune=generic"
       ;;
     mips|mipsel)
-      BuildFlags="-march=mips3"
-      BuildCompFlags="-march=mips3"
+      BuildCompFlags="$BuildFlags"
       ;;
     mips32|mips32el)
       BuildFlags="-march=mips3 -mabi=n32"
@@ -1119,12 +1108,10 @@ function BuildGlibc() {
       ;;
     # to check
     armv7*)
-      BuildFlags="-march=armv7-a"
-      BuildCompFlags="-march=armv7-a"
+      BuildCompFlags="$BuildFlags"
       ;;
     armv6*)
-      BuildFlags="-march=armv6"
-      BuildCompFlags="-march=armv6"
+      BuildCompFlags="$BuildFlags"
       ;;
   esac
   BuildCompFlags="$BuildCompFlags -fuse-ld=bfd"
@@ -1206,7 +1193,9 @@ function BuildGlibc() {
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
-    $arch-%{_target_vendor}-%{_target_os}%{gnuext} $BuildCross \
+    --target=$arch-%{platform} \
+    --host=$arch-%{platform} \
+    $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
     --infodir=%{_infodir} \
