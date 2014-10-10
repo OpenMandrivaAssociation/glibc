@@ -327,6 +327,10 @@ Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
 %endif
 
+%if %{build_multiarch}
+Requires:	%{multilibc} = %{EVRD}
+%endif
+
 %description
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
