@@ -71,7 +71,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	2.1
+Release:	2.2
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
@@ -273,6 +273,10 @@ Provides:	ld.so
 %rename		ldconfig
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
+
+%if %{build_multiarch}
+Requires:	%{multilibc} = %{EVRD}
+%endif
 
 %description
 The glibc package contains standard libraries which are used by
