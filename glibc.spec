@@ -714,11 +714,11 @@ Autoreq:	false
 Autoprov:	false
 %else
 Autoreq:	true
-Requires:	%{?cross:cross-}kernel-headers
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
 %rename		glibc-doc
 %endif
+Requires:	%{?cross:cross-}kernel-headers
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
