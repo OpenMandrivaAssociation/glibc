@@ -29,6 +29,7 @@
 %define cross_prefix	cross-%{target_cpu}-
 %global	platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_vendor}-%%{_target_os}%%{?_gnu})
 %global	target_platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_platform})
+%global	target_arch	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_arch})
 %global	_lib		%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_lib})
 %define _prefix		/usr/%{target_platform}
 %define cross_program_prefix	%{target_platform}-
@@ -1174,7 +1175,11 @@ function BuildGlibc() {
   AddOns="libidn"
 
   # Kernel headers directory
-  KernelHeaders=%{_includedir}
+  %if "%{name}" == "glibc"
+    KernelHeaders=%{_includedir}
+  %else
+    KernelHeaders=/usr/%{target_arch}-%{_target_os}/include
+  %endif
 
   # Determine library name
   glibc_cv_cc_64bit_output=no
@@ -1387,6 +1392,7 @@ function InstallGlibc() {
   install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
   ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
   popd
+
 }
 
 # Install arch-specific optimized libraries
@@ -1412,6 +1418,16 @@ mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 # (tpg) workaround for aarch64 ?
 %if %isarch aarch64
 ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
+%endif
+
+# kernel headers are located in a directory neutral to whatever target_cpu built for, so
+# let's create symlinks into the target tree
+%if "%{name}" != "glibc"
+  for path in /usr/%{target_arch}-%{_target_os}/include/*; do
+    dir=$(basename $path)
+    mkdir -p %{buildroot}%{_includedir}/$dir
+    ln -s $path/* %{buildroot}%{_includedir}/$dir
+  done
 %endif
 
 %if "%{name}" == "glibc"
