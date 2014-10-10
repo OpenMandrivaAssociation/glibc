@@ -328,7 +328,7 @@ Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
 %endif
 
-%if %{build_multiarch}
+%if %{build_biarch}
 Requires:	%{multilibc} = %{EVRD}
 %endif
 
