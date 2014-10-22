@@ -48,7 +48,10 @@
 %define _slibdirn32	%{_exec_prefix}/lib32
 %define _includedir	%{_prefix}/include
 %else
-%define target_cpu	%{_target_cpu}
+%global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
+%global	target_cpu	%{_target_cpu}
+%global	target_platform	%{_target_platform}
+%global	target_arch	%{_arch}
 %define cross_prefix	%{nil}
 %define cross_program_prefix	%{nil}
 %define _slibdir	/%{_lib}
