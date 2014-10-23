@@ -1228,7 +1228,8 @@ function BuildGlibc() {
     $ExtraFlags \
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \
-    --with-headers=$KernelHeaders ${1+"$@"}
+    --with-headers=$KernelHeaders ${1+"$@"} \
+    --with-bugurl=%{bugurl}
   %make -r
   popd
 
