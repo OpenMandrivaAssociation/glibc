@@ -1341,7 +1341,7 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
     %endif
     for ALT_ARCH in $ALT_ARCHES; do
 	mkdir -p %{buildroot}/$ALT_ARCH
-	%make install install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
+	%make install-headers install-lib install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
 
 	# Dispatch */lib only
 	case "$ALT_ARCH" in
