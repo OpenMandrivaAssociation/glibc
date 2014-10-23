@@ -362,167 +362,171 @@ language(s) you want. Then the user need to set the
 LANG variable to their preferred language in their
 ~/.profile configuration file.
 
+%{python:import sys; sys.path.append(rpm.expandMacro("%{_sourcedir}"))}
+%{python:from localepkg import pkg}
+
 # Locale specifc packages
-%{expand:%(sh %{SOURCE1000} Afar aa aa_DJ aa_ER aa_ET)}
-%{expand:%(sh %{SOURCE1000} Afrikaans af af_ZA)}
-%{expand:%(sh %{SOURCE1000} Amharic am am_ET byn_ER gez_ER gez_ET om_ET om_KE sid_ET ti_ER ti_ET tig_ER wal_ET)}
-%{expand:%(sh %{SOURCE1000} Akan ak ak_GH)}
-%{expand:%(sh %{SOURCE1000} Angika anp anp_IN)}
-%{expand:%(sh %{SOURCE1000} Arabic ar ar_AE ar_BH ar_DZ ar_EG ar_IN ar_IQ ar_JO ar_KW ar_LB ar_LY ar_MA ar_OM ar_QA ar_SA ar_SD ar_SS ar_SY ar_TN ar_YE)}
-%{expand:%(sh %{SOURCE1000} Assamese as as_IN)}
-%{expand:%(sh %{SOURCE1000} Asturian ast ast_ES)}
-%{expand:%(sh %{SOURCE1000} Aymara ayc ayc_PE)}
-%{expand:%(sh %{SOURCE1000} Azeri az az_AZ)}
-%{expand:%(sh %{SOURCE1000} Belarusian be be_BY)}
-%{expand:%(sh %{SOURCE1000} Bemba bem bem_ZM)}
-%{expand:%(sh %{SOURCE1000} Berber ber ber_DZ ber_MA)}
-%{expand:%(sh %{SOURCE1000} Bulgarian bg bg_BG)}
-%{expand:%(sh %{SOURCE1000} Bengali bn bn_BD bn_IN)}
-%{expand:%(sh %{SOURCE1000} Tibetan bo bo_CN bo_IN)}
-%{expand:%(sh %{SOURCE1000} Breton br br_FR)}
-%{expand:%(sh %{SOURCE1000} Bosnian bs bs_BA)}
-%{expand:%(sh %{SOURCE1000} Catalan ca ca_AD ca_ES ca_FR ca_IT)}
-%{expand:%(sh %{SOURCE1000} "Crimean Tatar" crh crh_UA)}
-%{expand:%(sh %{SOURCE1000} Czech cs cs_CZ)}
-%{expand:%(sh %{SOURCE1000} Chuvash cv cv_RU)}
-%{expand:%(sh %{SOURCE1000} Welsh cy cy_GB)}
-%{expand:%(sh %{SOURCE1000} Danish da da_DK)}
-%{expand:%(sh %{SOURCE1000} German de de_AT de_BE de_CH de_DE de_LU)}
-%{expand:%(sh %{SOURCE1000} Dogri doi doi_IN)}
-%{expand:%(sh %{SOURCE1000} Dhivehi dv dv_MV)}
-%{expand:%(sh %{SOURCE1000} Dzongkha dz dz_BT)}
-%{expand:%(sh %{SOURCE1000} Greek el r:gr el_CY el_GR)}
-%{expand:%(sh %{SOURCE1000} English en en_AG en_AU en_BW en_CA en_DK en_GB en_HK en_IE en_IN en_NG en_NZ en_PH en_SG en_US en_ZA en_ZM en_ZW)}
-%{expand:%(sh %{SOURCE1000} Esperanto eo eo_XX)}
+%{python:pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
+%{python:pkg("Afrikaans", "af", ["af_ZA"])}
+%{python:pkg("Amharic", "am", ["am_ET", "byn_ER", "gez_ER", "gez_ET", "om_ET", "om_KE", "sid_ET", "ti_ER", "ti_ET", "tig_ER", "wal_ET2"])}
+%{python:pkg("Akan", "ak", ["ak_GH"])}
+%{python:pkg("Angika", "anp", ["anp_IN"])}
+%{python:pkg("Arabic", "ar", ["ar_AE", "ar_BH", "ar_DZ", "ar_EG", "ar_IN", "ar_IQ", "ar_JO", "ar_KW", "ar_LB", "ar_LY", "ar_MA", "ar_OM", "ar_QA", "ar_SA", "ar_SD", "ar_SS", "ar_SY", "ar_TN", "ar_YE"])}
+%{python:pkg("Assamese", "as", ["as_IN"])}
+%{python:pkg("Asturian", "ast", ["ast_ES"])}
+%{python:pkg("Aymara", "ayc", ["ayc_PE"])}
+%{python:pkg("Azeri", "az", ["az_AZ"])}
+%{python:pkg("Belarusian", "be", ["be_BY"])}
+%{python:pkg("Bemba", "bem", ["bem_ZM"])}
+%{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
+%{python:pkg("Bulgarian", "bg", ["bg_BG"])}
+%{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
+%{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
+%{python:pkg("Breton", "br", ["br_FR"])}
+%{python:pkg("Bosnian", "bs", ["bs_BA"])}
+%{python:pkg("Catalan", "ca", ["ca_AD", "ca_ES", "ca_FR", "ca_IT"])}
+%{python:pkg("Crimean Tatar", "crh", ["crh_UA"])}
+%{python:pkg("Czech", "cs", ["cs_CZ"])}
+%{python:pkg("Chuvash", "cv", ["cv_RU"])}
+%{python:pkg("Welsh", "cy", ["cy_GB"])}
+%{python:pkg("Danish", "da", ["da_DK"])}
+%{python:pkg("German", "de", ["de_AT", "de_BE", "de_CH", "de_DE", "de_LU"])}
+%{python:pkg("Dogri", "doi", ["doi_IN"])}
+%{python:pkg("Dhivehi", "dv", ["dv_MV"])}
+%{python:pkg("Dzongkha", "dz", ["dz_BT"])}
+%{python:pkg("Greek", "el", ["r:gr", "el_CY", "el_GR"])}
+%{python:pkg("English", "en", ["en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
+%{python:pkg("Esperanto", "eo", ["eo_XX"])}
 # Potentially unhandled: es@tradicional?, an = Aragonese
-%{expand:%(sh %{SOURCE1000} Spanish es an_ES es_AR es_BO es_CL es_CO es_CR es_CU es_DO es_EC es_ES es_GT es_HN es_MX es_NI es_PA es_PE es_PR es_PY es_SV es_US es_UY es_VE)}
-%{expand:%(sh %{SOURCE1000} Estonian et et_EE)}
-%{expand:%(sh %{SOURCE1000} Basque eu eu_ES)}
-%{expand:%(sh %{SOURCE1000} Farsi fa fa_IR)}
-%{expand:%(sh %{SOURCE1000} Finnish fi fi_FI)}
-%{expand:%(sh %{SOURCE1000} Fulah ff ff_SN)}
-%{expand:%(sh %{SOURCE1000} Faroese fo fo_FO)}
-%{expand:%(sh %{SOURCE1000} French fr fr_BE fr_CA fr_CH fr_FR fr_LU)}
-%{expand:%(sh %{SOURCE1000} Friulan fur fur_IT)}
-%{expand:%(sh %{SOURCE1000} Frisian fy fy_DE fy_NL)}
-%{expand:%(sh %{SOURCE1000} Irish ga ga_IE)}
-%{expand:%(sh %{SOURCE1000} "Scottish Gaelic" gd gd_GB)}
-%{expand:%(sh %{SOURCE1000} Galician gl gl_ES)}
-%{expand:%(sh %{SOURCE1000} Gujarati gu gu_IN)}
-%{expand:%(sh %{SOURCE1000} "Manx Gaelic" gv gv_GB)}
-%{expand:%(sh %{SOURCE1000} Hausa ha ha_NG)}
-%{expand:%(sh %{SOURCE1000} Hebrew he he_IL iw_IL)}
-%{expand:%(sh %{SOURCE1000} Hindi hi bho_IN brx_IN hi_IN ur_IN)}
-%{expand:%(sh %{SOURCE1000} Chhattisgarhi hne hne_IN)}
-%{expand:%(sh %{SOURCE1000} Croatian hr hr_HR)}
-%{expand:%(sh %{SOURCE1000} "Upper Sorbian" hsb hsb_DE)}
-%{expand:%(sh %{SOURCE1000} Breyol ht ht_HT)}
-%{expand:%(sh %{SOURCE1000} Hungarian hu hu_HU)}
-%{expand:%(sh %{SOURCE1000} Armenian hy hy_AM)}
-%{expand:%(sh %{SOURCE1000} Interlingua ia ia_FR)}
-%{expand:%(sh %{SOURCE1000} Indonesian id id_ID)}
-%{expand:%(sh %{SOURCE1000} Igbo ig ig_NG)}
-%{expand:%(sh %{SOURCE1000} Inupiaq ik ik_CA)}
-%{expand:%(sh %{SOURCE1000} Icelandic is is_IS)}
-%{expand:%(sh %{SOURCE1000} Italian it it_CH it_IT)}
-%{expand:%(sh %{SOURCE1000} Inuktitut iu iu_CA)}
-%{expand:%(sh %{SOURCE1000} Japanese ja ja ja_JP)}
-%{expand:%(sh %{SOURCE1000} Georgian ka ka_GE)}
-%{expand:%(sh %{SOURCE1000} Kazakh kk kk_KZ)}
-%{expand:%(sh %{SOURCE1000} Greenlandic kl kl_GL)}
-%{expand:%(sh %{SOURCE1000} Khmer km km_KH)}
-%{expand:%(sh %{SOURCE1000} Kannada kn kn_IN)}
-%{expand:%(sh %{SOURCE1000} Korean ko ko_KR)}
-%{expand:%(sh %{SOURCE1000} Konkani kok kok_IN)}
-%{expand:%(sh %{SOURCE1000} Kashmiri ks ks_IN ks_IN@devanagari)}
-%{expand:%(sh %{SOURCE1000} Kurdish ku ku_TR)}
-%{expand:%(sh %{SOURCE1000} Cornish kw kw_GB)}
-%{expand:%(sh %{SOURCE1000} Kyrgyz ky ky_KG)}
-%{expand:%(sh %{SOURCE1000} Luxembourgish lb lb_LU)}
-%{expand:%(sh %{SOURCE1000} Luganda lg lg_UG)}
-%{expand:%(sh %{SOURCE1000} Limburguish li li_BE li_NL)}
-%{expand:%(sh %{SOURCE1000} Ligurian lij lij_IT)}
-%{expand:%(sh %{SOURCE1000} Laotian lo lo_LA)}
-%{expand:%(sh %{SOURCE1000} Lithuanian lt lt_LT)}
-%{expand:%(sh %{SOURCE1000} Latvian lv lv_LV)}
-%{expand:%(sh %{SOURCE1000} Magahi mag mag_IN)}
-%{expand:%(sh %{SOURCE1000} Maithili mai mai_IN)}
-%{expand:%(sh %{SOURCE1000} Malagasy mg mg_MG)}
-%{expand:%(sh %{SOURCE1000} Mari mhr mhr_RU)}
-%{expand:%(sh %{SOURCE1000} Maori mi mi_NZ)}
-%{expand:%(sh %{SOURCE1000} Macedonian mk mk_MK)}
-%{expand:%(sh %{SOURCE1000} Malayalam ml ml_IN)}
-%{expand:%(sh %{SOURCE1000} Mongolian mn mn_MN)}
-%{expand:%(sh %{SOURCE1000} Manipuri mni mni_IN)}
-%{expand:%(sh %{SOURCE1000} Marathi mr mr_IN)}
-%{expand:%(sh %{SOURCE1000} Malay ms ms_MY)}
-%{expand:%(sh %{SOURCE1000} Maltese mt mt_MT)}
-%{expand:%(sh %{SOURCE1000} Burmese my my_MM)}
-%{expand:%(sh %{SOURCE1000} "Lower Saxon" nds nds_DE nds_NL)}
-%{expand:%(sh %{SOURCE1000} Nepali ne ne_NP)}
-%{expand:%(sh %{SOURCE1000} Nahuatl nhn nhn_MX)}
-%{expand:%(sh %{SOURCE1000} Niuean niu niu_NU niu_NZ)}
-%{expand:%(sh %{SOURCE1000} Dutch nl nl_AW nl_BE nl_NL)}
-%{expand:%(sh %{SOURCE1000} Norwegian no r:nb r:nn nb_NO nn_NO)}
-%{expand:%(sh %{SOURCE1000} Ndebele nr nr_ZA)}
-%{expand:%(sh %{SOURCE1000} "Northern Sotho" nso nso_ZA)}
-%{expand:%(sh %{SOURCE1000} Occitan oc oc_FR)}
-%{expand:%(sh %{SOURCE1000} Oriya or or_IN)}
-%{expand:%(sh %{SOURCE1000} Ossetian os os_RU)}
-%{expand:%(sh %{SOURCE1000} Punjabi pa pa_IN pa_PK)}
-%{expand:%(sh %{SOURCE1000} Papiamento pap r:pp pap_AN pap_AW pap_CW)}
-%{expand:%(sh %{SOURCE1000} Polish pl csb_PL pl_PL)}
-%{expand:%(sh %{SOURCE1000} Pashto ps ps_AF)}
-%{expand:%(sh %{SOURCE1000} Portuguese pt pt_BR pt_PT)}
-%{expand:%(sh %{SOURCE1000} Quechua quz quz_PE)}
-%{expand:%(sh %{SOURCE1000} Romanian ro ro_RO)}
-%{expand:%(sh %{SOURCE1000} Russian ru ru_RU ru_UA)}
-%{expand:%(sh %{SOURCE1000} Kinyarwanda rw rw_RW)}
-%{expand:%(sh %{SOURCE1000} Sanskrit sa sa_IN)}
-%{expand:%(sh %{SOURCE1000} Santali sat sat_IN)}
-%{expand:%(sh %{SOURCE1000} Sardinian sc sc_IT)}
-%{expand:%(sh %{SOURCE1000} Sindhi sd sd_IN sd_IN@devanagari)}
-%{expand:%(sh %{SOURCE1000} Saami se se_NO)}
-%{expand:%(sh %{SOURCE1000} Secwepemctsin shs shs_CA)}
-%{expand:%(sh %{SOURCE1000} Sinhala si si_LK)}
-%{expand:%(sh %{SOURCE1000} Slovak sk sk_SK)}
-%{expand:%(sh %{SOURCE1000} Slovenian sl sl_SI)}
-%{expand:%(sh %{SOURCE1000} Serbian sr sr_ME sr_RS)}
-%{expand:%(sh %{SOURCE1000} Somali so so_DJ so_ET so_KE so_SO)}
-%{expand:%(sh %{SOURCE1000} Albanian sq sq_AL sq_MK)}
-%{expand:%(sh %{SOURCE1000} Swati ss ss_ZA)}
-%{expand:%(sh %{SOURCE1000} Sotho st st_ZA)}
-%{expand:%(sh %{SOURCE1000} Swedish sv sv_FI sv_SE)}
+%{python:pkg("Spanish", "es", ["an_ES", "es_AR", "es_BO", "es_CL", "es_CO", "es_CR", "es_CU", "es_DO", "es_EC", "es_ES", "es_GT", "es_HN", "es_MX", "es_NI", "es_PA", "es_PE", "es_PR", "es_PY", "es_SV", "es_US", "es_UY", "es_VE"])}
+%{python:pkg("Estonian", "et", ["et_EE"])}
+%{python:pkg("Basque", "eu", ["eu_ES"])}
+%{python:pkg("Farsi", "fa", ["fa_IR"])}
+%{python:pkg("Finnish", "fi", ["fi_FI"])}
+%{python:pkg("Fulah", "ff", ["ff_SN"])}
+%{python:pkg("Faroese", "fo", ["fo_FO"])}
+%{python:pkg("French", "fr", ["fr_BE", "fr_CA", "fr_CH", "fr_FR", "fr_LU"])}
+%{python:pkg("Friulan", "fur", ["fur_IT"])}
+%{python:pkg("Frisian", "fy", ["fy_DE", "fy_NL"])}
+%{python:pkg("Irish", "ga", ["ga_IE"])}
+%{python:pkg("Scottish Gaelic", "gd", ["gd_GB"])}
+%{python:pkg("Galician", "gl", ["gl_ES"])}
+%{python:pkg("Gujarati", "gu", ["gu_IN"])}
+%{python:pkg("Manx Gaelic", "gv", ["gv_GB"])}
+%{python:pkg("Hausa", "ha", ["ha_NG"])}
+%{python:pkg("Hebrew", "he", ["he_IL iw_IL"])}
+%{python:pkg("Hindi", "hi", ["bho_IN brx_IN hi_IN ur_IN"])}
+%{python:pkg("Chhattisgarhi", "hne", ["hne_IN"])}
+%{python:pkg("Croatian", "hr", ["hr_HR"])}
+%{python:pkg("Upper Sorbian", "hsb", ["hsb_DE"])}
+%{python:pkg("Breyol", "ht", ["ht_HT"])}
+%{python:pkg("Hungarian", "hu", ["hu_HU"])}
+%{python:pkg("Armenian", "hy", ["hy_AM"])}
+%{python:pkg("Interlingua", "ia", ["ia_FR"])}
+%{python:pkg("Indonesian", "id", ["id_ID"])}
+%{python:pkg("Igbo", "ig", ["ig_NG"])}
+%{python:pkg("Inupiaq", "ik", ["ik_CA"])}
+%{python:pkg("Icelandic", "is", ["is_IS"])}
+%{python:pkg("Italian", "it", ["it_CH, it_IT"])}
+%{python:pkg("Inuktitut", "iu", ["iu_CA"])}
+%{python:pkg("Japanese", "ja", ["ja", "ja_JP"])}
+%{python:pkg("Georgian", "ka", ["ka_GE"])}
+%{python:pkg("Kazakh", "kk", ["kk_KZ"])}
+%{python:pkg("Greenlandic", "kl", ["kl_GL"])}
+%{python:pkg("Khmer", "km", ["km_KH"])}
+%{python:pkg("Kannada", "kn", ["kn_IN"])}
+%{python:pkg("Korean", "ko", ["ko_KR"])}
+%{python:pkg("Konkani", "kok", ["kok_IN"])}
+%{python:pkg("Kashmiri", "ks", ["ks_IN", "ks_IN@devanagari"])}
+%{python:pkg("Kurdish", "ku", ["ku_TR"])}
+%{python:pkg("Cornish", "kw", ["kw_GB"])}
+%{python:pkg("Kyrgyz", "ky", ["ky_KG"])}
+%{python:pkg("Luxembourgish", "lb", ["lb_LU"])}
+%{python:pkg("Luganda", "lg", ["lg_UG"])}
+%{python:pkg("Limburguish", "li", ["li_BE, li_NL"])}
+%{python:pkg("Ligurian", "lij", ["lij_IT"])}
+%{python:pkg("Laotian", "lo", ["lo_LA"])}
+%{python:pkg("Lithuanian", "lt", ["lt_LT"])}
+%{python:pkg("Latvian", "lv", ["lv_LV"])}
+%{python:pkg("Magahi", "mag", ["mag_IN"])}
+%{python:pkg("Maithili", "mai", ["mai_IN"])}
+%{python:pkg("Malagasy", "mg", ["mg_MG"])}
+%{python:pkg("Mari", "mhr", ["mhr_RU"])}
+%{python:pkg("Maori", "mi", ["mi_NZ"])}
+%{python:pkg("Macedonian", "mk", ["mk_MK"])}
+%{python:pkg("Malayalam", "ml", ["ml_IN"])}
+%{python:pkg("Mongolian", "mn", ["mn_MN"])}
+%{python:pkg("Manipuri", "mni", ["mni_IN"])}
+%{python:pkg("Marathi", "mr", ["mr_IN"])}
+%{python:pkg("Malay", "ms", ["ms_MY"])}
+%{python:pkg("Maltese", "mt", ["mt_MT"])}
+%{python:pkg("Burmese", "my", ["my_MM"])}
+%{python:pkg("Lower Saxon", "nds", ["nds_DE", "nds_NL"])}
+%{python:pkg("Nepali", "ne", ["ne_NP"])}
+%{python:pkg("Nahuatl", "nhn", ["nhn_MX"])}
+%{python:pkg("Niuean", "niu", ["niu_NU", "niu_NZ"])}
+%{python:pkg("Dutch", "nl", ["nl_AW", "nl_BE", "nl_NL"])}
+%{python:pkg("Norwegian", "no", ["r:nb", "r:nn", "nb_NO", "nn_NO"])}
+%{python:pkg("Ndebele", "nr", ["nr_ZA"])}
+%{python:pkg("Northern Sotho", "nso", ["nso_ZA"])}
+%{python:pkg("Occitan", "oc", ["oc_FR"])}
+%{python:pkg("Oriya", "or", ["or_IN"])}
+%{python:pkg("Ossetian", "os", ["os_RU"])}
+%{python:pkg("Punjabi", "pa", ["pa_IN", "pa_PK"])}
+%{python:pkg("Papiamento", "pap", ["r:pp", "pap_AN", "pap_AW", "pap_CW"])}
+%{python:pkg("Polish", "pl", ["csb_PL", "pl_PL"])}
+%{python:pkg("Pashto", "ps", ["ps_AF"])}
+%{python:pkg("Portuguese", "pt", ["pt_BR, pt_PT"])}
+%{python:pkg("Quechua", "quz", ["quz_PE"])}
+%{python:pkg("Romanian", "ro", ["ro_RO"])}
+%{python:pkg("Russian", "ru", ["ru_RU", "ru_UA"])}
+%{python:pkg("Kinyarwanda", "rw", ["rw_RW"])}
+%{python:pkg("Sanskrit", "sa", ["sa_IN"])}
+%{python:pkg("Santali", "sat", ["sat_IN"])}
+%{python:pkg("Santali", "sat", ["sat_IN"])}
+%{python:pkg("Sardinian", "sc", ["sc_IT"])}
+%{python:pkg("Sindhi", "sd", ["sd_IN", "sd_IN@devanagari"])}
+%{python:pkg("Saami", "se", ["se_NO"])}
+%{python:pkg("Secwepemctsin", "shs", ["shs_CA"])}
+%{python:pkg("Sinhala", "si", ["si_LK"])}
+%{python:pkg("Slovak", "sk", ["sk_SK"])}
+%{python:pkg("Slovenian", "sl", ["sl_SI"])}
+%{python:pkg("Serbian", "sr", ["sr_ME", "sr_RS"])}
+%{python:pkg("Somali", "so", ["so_DJ", "so_ET", "so_KE", "so_SO"])}
+%{python:pkg("Albanian", "sq", ["sq_AL", "sq_MK"])}
+%{python:pkg("Swati", "ss", ["ss_ZA"])}
+%{python:pkg("Sotho", "st", ["st_ZA"])}
+%{python:pkg("Swedish", "sv", ["sv_FI", "sv_SE"])}
 # sw_XX?
-%{expand:%(sh %{SOURCE1000} Swahili sw sw_KE sw_TZ)}
-%{expand:%(sh %{SOURCE1000} Silesian szl szl_PL)}
-%{expand:%(sh %{SOURCE1000} Tamil ta ta_IN ta_LK)}
-%{expand:%(sh %{SOURCE1000} Telugu te te_IN)}
-%{expand:%(sh %{SOURCE1000} Tajik tg tg_TJ)}
-%{expand:%(sh %{SOURCE1000} Thai th th_TH)}
-%{expand:%(sh %{SOURCE1000} Tharu/Tharuhati the the_NP)}
-%{expand:%(sh %{SOURCE1000} Turkmen tk tk_TM)}
-%{expand:%(sh %{SOURCE1000} Pilipino tl r:ph fil_PH tl_PH)}
-%{expand:%(sh %{SOURCE1000} Tswana tn tn_ZA)}
-%{expand:%(sh %{SOURCE1000} Turkish tr tr_CY tr_TR)}
-%{expand:%(sh %{SOURCE1000} Tsonga ts ts_ZA)}
-%{expand:%(sh %{SOURCE1000} Tatar tt tt_RU)}
-%{expand:%(sh %{SOURCE1000} Uyghur ug ug_CN)}
-%{expand:%(sh %{SOURCE1000} Unami unm unm_US)}
-%{expand:%(sh %{SOURCE1000} Ukrainian uk uk_UA)}
-%{expand:%(sh %{SOURCE1000} Urdu ur ur_PK)}
-%{expand:%(sh %{SOURCE1000} Uzbek uz uz_UZ)}
-%{expand:%(sh %{SOURCE1000} Venda ve ve_ZA)}
-%{expand:%(sh %{SOURCE1000} Vietnamese vi vi_VN)}
-%{expand:%(sh %{SOURCE1000} Walloon wa wa_BE)}
-%{expand:%(sh %{SOURCE1000} Walser wae wae_CH)}
-%{expand:%(sh %{SOURCE1000} Wolof wo wo_SN)}
-%{expand:%(sh %{SOURCE1000} Xhosa xh xh_ZA)}
-%{expand:%(sh %{SOURCE1000} Yiddish yi yi_US)}
-%{expand:%(sh %{SOURCE1000} Yoruba yo yo_NG)}
-%{expand:%(sh %{SOURCE1000} "Yue Chinese (Cantonese)" yue yue_HK)}
-%{expand:%(sh %{SOURCE1000} Chinese zh zh_CN zh_HK zh_SG zh_TW cmn_TW hak_TW lzh_TW nan_TW nam_TW@latin)}
-%{expand:%(sh %{SOURCE1000} Zulu zu zu_ZA)}
+%{python:pkg("Swahili", "sw", ["sw_KE", "sw_TZ"])}
+%{python:pkg("Silesian", "szl", ["szl_PL"])}
+%{python:pkg("Tamil", "ta", ["ta_IN", "ta_LK"])}
+%{python:pkg("Telugu", "te", ["te_IN"])}
+%{python:pkg("Tajik", "tg", ["tg_TJ"])}
+%{python:pkg("Thai", "th", ["th_TH"])}
+%{python:pkg("Tharu/Tharuhati", "the", ["the_NP"])}
+%{python:pkg("Turkmen", "tk", ["tk_TM"])}
+%{python:pkg("Pilipino", "tl", ["r:ph", "fil_PH", "tl_PH"])}
+%{python:pkg("Tswana", "tn", ["tn_ZA"])}
+%{python:pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
+%{python:pkg("Tsonga", "ts", ["ts_ZA"])}
+%{python:pkg("Tatar", "tt", ["tt_RU"])}
+%{python:pkg("Uyghur", "ug", ["ug_CN"])}
+%{python:pkg("Unami", "unm", ["unm_US"])}
+%{python:pkg("Ukrainian", "uk", ["uk_UA"])}
+%{python:pkg("Urdu", "ur", ["ur_PK"])}
+%{python:pkg("Uzbek", "uz", ["uz_UZ"])}
+%{python:pkg("Venda", "ve", ["ve_ZA"])}
+%{python:pkg("Vietnamese", "vi", ["vi_VN"])}
+%{python:pkg("Walloon", "wa", ["wa_BE"])}
+%{python:pkg("Walser", "wae", ["wae_CH"])}
+%{python:pkg("Wolof", "wo", ["wo_SN"])}
+%{python:pkg("Xhosa", "xh", ["xh_ZA"])}
+%{python:pkg("Yiddish", "yi", ["yi_US"])}
+%{python:pkg("Yoruba", "yo", ["yo_NG"])}
+%{python:pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
+%{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW", "nam_TW@latin"])}
+%{python:pkg("Zulu", "zu", ["zu_ZA"])}
 %endif
 
 %files -f libc.lang
