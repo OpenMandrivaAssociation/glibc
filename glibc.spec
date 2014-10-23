@@ -570,7 +570,6 @@ LANG variable to their preferred language in their
 %endif
 %if %isarch aarch64
 %{_slibdir}/ld-linux-aarch64.so.1
-%{_slibdir32}/ld-linux-aarch64.so.1
 %endif
 %if %isarch %{mips}
 %{_slibdir}/ld.so.1
@@ -1203,12 +1202,14 @@ function BuildGlibc() {
   mkdir  build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
+  export libc_cv_slibdir=%{_slibdir}
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
+    --libdir=%{_libdir} \
     --infodir=%{_infodir} \
     --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
@@ -1421,11 +1422,6 @@ install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 # programs are still using it. Normally we would handle it in the %pre
 # section but with glibc that is simply not an option
 mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
-
-# (tpg) workaround for aarch64 ?
-%if %isarch aarch64
-ls -sf %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}%{_slibdir32}/ld-linux-aarch64.so.1
-%endif
 
 # kernel headers are located in a directory neutral to whatever target_cpu built for, so
 # let's create symlinks into the target tree
