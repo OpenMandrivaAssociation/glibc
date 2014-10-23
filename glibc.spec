@@ -1593,7 +1593,10 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %if %{with locales}
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
-export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+%global	glibcver %(rpm -q --qf "%%{VERSION}" glibc)
+%if "%{shrink:%{python:rpm.evrCompare(rpm.expandMacro("%{version}"),rpm.expandMacro("%{glibcver}"))}}" == "0"
+export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
+%endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
 # make default charset pseudo-locales
