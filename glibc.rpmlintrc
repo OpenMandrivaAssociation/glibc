@@ -7,4 +7,4 @@ addFilter("E: invalid-soname")
 # libc6 is unstripped by default
 addFilter("E: unstripped-binary-or-object")
 addFilter("missing-PT_GNU_STACK-section.*mips.*\.so.*")
-
+addFilter("use-of-RPM_SOURCE_DIR")
