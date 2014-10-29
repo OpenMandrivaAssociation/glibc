@@ -352,7 +352,7 @@ Linux system will not function.
 Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
-Obsoletes:	locales < 2.20
+Obsoletes:	locales < 6:2.19-13
 
 %description -n locales
 These are the base files for language localization.
