@@ -8,7 +8,7 @@ def pkg(langname, locale, isonames):
 Summary:	Base files for localization ("""+langname+""")
 Group:		System/Internationalization
 Requires:	locales = %{EVRD}
-Obsoletes:	locales <= 2.18.90-2
+Obsoletes:	locales < 6:2.19-13
 Requires(post,preun):	sed
 Requires(post,preun):	grep"""))
     for isoname in isonames:
