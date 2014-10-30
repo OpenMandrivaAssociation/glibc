@@ -4,10 +4,17 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
+%define ver 2.20
+%define linaro 2014.11
+
 %define	oname		glibc
 %define	major		6
-%define	source_dir	%{oname}-%{version}
-%define	checklist	%{_builddir}/%{oname}-%{version}/Check.list
+%if "%{linaro}" != ""
+%define source_dir	glibc-linaro-%{ver}-%{linaro}
+%else
+%define	source_dir	%{oname}-%{ver}
+%endif
+%define	checklist	%{_builddir}/%{source_dir}/Check.list
 %define	libc		%mklibname c %{major}
 %define	devname		%mklibname -d c
 %define	statname	%mklibname -d -s c
@@ -22,7 +29,7 @@
 %{expand: %{?cross:		%%global build_cross 1}}
 
 %if %{build_cross}
-%define	_srcrpmfilename	%{oname}-%{version}-%{release}.src.rpm
+%define	_srcrpmfilename	%{oname}-%{ver}-%{release}.src.rpm
 %define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
 %define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{SOURCE100}
 %define target_cpu	%{cross}
@@ -118,10 +125,15 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
+%if "%{linaro}" != ""
+Version:	%{ver}_%{linaro}
+Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{ver}-%{linaro}.tar.xz
+%else
 Version:	2.20
-Release:	3
-Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
-Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
+Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
+Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
+%endif
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -557,7 +569,7 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
-%{_slibdir}/ld-%{version}.so
+%{_slibdir}/ld-%{ver}.so
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %{_slibdir}/i686
@@ -620,7 +632,7 @@ LANG variable to their preferred language in their
 %else
 %if %isarch mips mipsel
 %if %{build_biarch}
-%{_slibdir32}/ld-%{version}.so
+%{_slibdir32}/ld-%{ver}.so
 %{_slibdir32}/ld.so.1
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -682,7 +694,7 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %files -n	%{multilibc}
-%{_slibdir32}/ld-%{version}.so
+%{_slibdir32}/ld-%{ver}.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -1597,7 +1609,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
 %global	glibcver %(rpm -q --qf "%%{VERSION}" glibc)
-%if "%{shrink:%{python:rpm.evrCompare(rpm.expandMacro("%{version}"),rpm.expandMacro("%{glibcver}"))}}" == "0"
+%if "%{shrink:%{python:rpm.evrCompare(rpm.expandMacro("%{ver}"),rpm.expandMacro("%{glibcver}"))}}" == "0"
 export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
@@ -1663,7 +1675,7 @@ export DONT_SYMLINK_LIBS=1
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
-export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
+export EXCLUDE_FROM_FULL_STRIP="ld-%{ver}.so libpthread libc-%{ver}.so libm-%{ver}.so"
 
 unset LD_LIBRARY_PATH
 
