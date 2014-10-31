@@ -373,7 +373,7 @@ language(s) you want. Then the user need to set the
 LANG variable to their preferred language in their
 ~/.profile configuration file.
 
-%{python:import sys; sys.path.append(rpm.expandMacro('%{_sourcedir}'))}
+%{python:import sys; sys.path.append(rpm.expandMacro("%{_sourcedir}"))}
 %{python:import localepkg}
 
 # Locale specifc packages
