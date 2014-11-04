@@ -374,7 +374,7 @@ LANG variable to their preferred language in their
 ~/.profile configuration file.
 
 %{python:import sys; sys.path.append(rpm.expandMacro("%{_sourcedir}"))}
-%{python:import localepkg}
+%{python:from localepkg import pkg}
 
 # Locale specifc packages
 %{python:pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
