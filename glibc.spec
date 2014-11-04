@@ -978,15 +978,6 @@ These are configuration files that describe possible time zones.
 # with timezone
 %endif
 
-########################################################################
-#	disable rpmlint when generating source rpm for older rpm versions where
-#	python embedding is broken
-# NOTE:	it's defined here rather than earlier to work around issue with macros
-#       being reloaded...
-%if "%{_rpmversion}" < "5.4.14"
-%define	_build_pkgcheck_srpm %{nil}
-%endif
-
 %prep
 %setup -q -n %{source_dir} -a3 -a50
 
