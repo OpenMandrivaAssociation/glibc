@@ -380,169 +380,169 @@ LANG variable to their preferred language in their
 ~/.profile configuration file.
 
 %{python:import sys; sys.path.append(rpm.expandMacro("%{_sourcedir}"))}
-%{python:from localepkg import pkg}
+%{python:import localepkg}
 
 # Locale specifc packages
-%{python:pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
-%{python:pkg("Afrikaans", "af", ["af_ZA"])}
-%{python:pkg("Amharic", "am", ["am_ET", "byn_ER", "gez_ER", "gez_ET", "om_ET", "om_KE", "sid_ET", "ti_ER", "ti_ET", "tig_ER", "wal_ET"])}
-%{python:pkg("Akan", "ak", ["ak_GH"])}
-%{python:pkg("Angika", "anp", ["anp_IN"])}
-%{python:pkg("Arabic", "ar", ["ar_AE", "ar_BH", "ar_DZ", "ar_EG", "ar_IN", "ar_IQ", "ar_JO", "ar_KW", "ar_LB", "ar_LY", "ar_MA", "ar_OM", "ar_QA", "ar_SA", "ar_SD", "ar_SS", "ar_SY", "ar_TN", "ar_YE"])}
-%{python:pkg("Assamese", "as", ["as_IN"])}
-%{python:pkg("Asturian", "ast", ["ast_ES"])}
-%{python:pkg("Aymara", "ayc", ["ayc_PE"])}
-%{python:pkg("Azeri", "az", ["az_AZ"])}
-%{python:pkg("Belarusian", "be", ["be_BY"])}
-%{python:pkg("Bemba", "bem", ["bem_ZM"])}
-%{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
-%{python:pkg("Bulgarian", "bg", ["bg_BG"])}
-%{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
-%{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
-%{python:pkg("Breton", "br", ["br_FR"])}
-%{python:pkg("Bosnian", "bs", ["bs_BA"])}
-%{python:pkg("Catalan", "ca", ["ca_AD", "ca_ES", "ca_FR", "ca_IT"])}
-%{python:pkg("Crimean Tatar", "crh", ["crh_UA"])}
-%{python:pkg("Czech", "cs", ["cs_CZ"])}
-%{python:pkg("Chuvash", "cv", ["cv_RU"])}
-%{python:pkg("Welsh", "cy", ["cy_GB"])}
-%{python:pkg("Danish", "da", ["da_DK"])}
-%{python:pkg("German", "de", ["de_AT", "de_BE", "de_CH", "de_DE", "de_LU"])}
-%{python:pkg("Dogri", "doi", ["doi_IN"])}
-%{python:pkg("Dhivehi", "dv", ["dv_MV"])}
-%{python:pkg("Dzongkha", "dz", ["dz_BT"])}
-%{python:pkg("Greek", "el", ["r:gr", "el_CY", "el_GR"])}
-%{python:pkg("English", "en", ["en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
-%{python:pkg("Esperanto", "eo", ["eo_XX"])}
+%{python:localepkg.pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
+%{python:localepkg.pkg("Afrikaans", "af", ["af_ZA"])}
+%{python:localepkg.pkg("Amharic", "am", ["am_ET", "byn_ER", "gez_ER", "gez_ET", "om_ET", "om_KE", "sid_ET", "ti_ER", "ti_ET", "tig_ER", "wal_ET"])}
+%{python:localepkg.pkg("Akan", "ak", ["ak_GH"])}
+%{python:localepkg.pkg("Angika", "anp", ["anp_IN"])}
+%{python:localepkg.pkg("Arabic", "ar", ["ar_AE", "ar_BH", "ar_DZ", "ar_EG", "ar_IN", "ar_IQ", "ar_JO", "ar_KW", "ar_LB", "ar_LY", "ar_MA", "ar_OM", "ar_QA", "ar_SA", "ar_SD", "ar_SS", "ar_SY", "ar_TN", "ar_YE"])}
+%{python:localepkg.pkg("Assamese", "as", ["as_IN"])}
+%{python:localepkg.pkg("Asturian", "ast", ["ast_ES"])}
+%{python:localepkg.pkg("Aymara", "ayc", ["ayc_PE"])}
+%{python:localepkg.pkg("Azeri", "az", ["az_AZ"])}
+%{python:localepkg.pkg("Belarusian", "be", ["be_BY"])}
+%{python:localepkg.pkg("Bemba", "bem", ["bem_ZM"])}
+%{python:localepkg.pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
+%{python:localepkg.pkg("Bulgarian", "bg", ["bg_BG"])}
+%{python:localepkg.pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
+%{python:localepkg.pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
+%{python:localepkg.pkg("Breton", "br", ["br_FR"])}
+%{python:localepkg.pkg("Bosnian", "bs", ["bs_BA"])}
+%{python:localepkg.pkg("Catalan", "ca", ["ca_AD", "ca_ES", "ca_FR", "ca_IT"])}
+%{python:localepkg.pkg("Crimean Tatar", "crh", ["crh_UA"])}
+%{python:localepkg.pkg("Czech", "cs", ["cs_CZ"])}
+%{python:localepkg.pkg("Chuvash", "cv", ["cv_RU"])}
+%{python:localepkg.pkg("Welsh", "cy", ["cy_GB"])}
+%{python:localepkg.pkg("Danish", "da", ["da_DK"])}
+%{python:localepkg.pkg("German", "de", ["de_AT", "de_BE", "de_CH", "de_DE", "de_LU"])}
+%{python:localepkg.pkg("Dogri", "doi", ["doi_IN"])}
+%{python:localepkg.pkg("Dhivehi", "dv", ["dv_MV"])}
+%{python:localepkg.pkg("Dzongkha", "dz", ["dz_BT"])}
+%{python:localepkg.pkg("Greek", "el", ["r:gr", "el_CY", "el_GR"])}
+%{python:localepkg.pkg("English", "en", ["en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
+%{python:localepkg.pkg("Esperanto", "eo", ["eo_XX"])}
 # Potentially unhandled: es@tradicional?, an = Aragonese
-%{python:pkg("Spanish", "es", ["an_ES", "es_AR", "es_BO", "es_CL", "es_CO", "es_CR", "es_CU", "es_DO", "es_EC", "es_ES", "es_GT", "es_HN", "es_MX", "es_NI", "es_PA", "es_PE", "es_PR", "es_PY", "es_SV", "es_US", "es_UY", "es_VE"])}
-%{python:pkg("Estonian", "et", ["et_EE"])}
-%{python:pkg("Basque", "eu", ["eu_ES"])}
-%{python:pkg("Farsi", "fa", ["fa_IR"])}
-%{python:pkg("Finnish", "fi", ["fi_FI"])}
-%{python:pkg("Fulah", "ff", ["ff_SN"])}
-%{python:pkg("Faroese", "fo", ["fo_FO"])}
-%{python:pkg("French", "fr", ["fr_BE", "fr_CA", "fr_CH", "fr_FR", "fr_LU"])}
-%{python:pkg("Friulan", "fur", ["fur_IT"])}
-%{python:pkg("Frisian", "fy", ["fy_DE", "fy_NL"])}
-%{python:pkg("Irish", "ga", ["ga_IE"])}
-%{python:pkg("Scottish Gaelic", "gd", ["gd_GB"])}
-%{python:pkg("Galician", "gl", ["gl_ES"])}
-%{python:pkg("Gujarati", "gu", ["gu_IN"])}
-%{python:pkg("Manx Gaelic", "gv", ["gv_GB"])}
-%{python:pkg("Hausa", "ha", ["ha_NG"])}
-%{python:pkg("Hebrew", "he", ["he_IL", "iw_IL"])}
-%{python:pkg("Hindi", "hi", ["bho_IN", "brx_IN", "hi_IN", "ur_IN"])}
-%{python:pkg("Chhattisgarhi", "hne", ["hne_IN"])}
-%{python:pkg("Croatian", "hr", ["hr_HR"])}
-%{python:pkg("Upper Sorbian", "hsb", ["hsb_DE"])}
-%{python:pkg("Breyol", "ht", ["ht_HT"])}
-%{python:pkg("Hungarian", "hu", ["hu_HU"])}
-%{python:pkg("Armenian", "hy", ["hy_AM"])}
-%{python:pkg("Interlingua", "ia", ["ia_FR"])}
-%{python:pkg("Indonesian", "id", ["id_ID"])}
-%{python:pkg("Igbo", "ig", ["ig_NG"])}
-%{python:pkg("Inupiaq", "ik", ["ik_CA"])}
-%{python:pkg("Icelandic", "is", ["is_IS"])}
-%{python:pkg("Italian", "it", ["it_CH", "it_IT"])}
-%{python:pkg("Inuktitut", "iu", ["iu_CA"])}
-%{python:pkg("Japanese", "ja", ["ja", "ja_JP"])}
-%{python:pkg("Georgian", "ka", ["ka_GE"])}
-%{python:pkg("Kazakh", "kk", ["kk_KZ"])}
-%{python:pkg("Greenlandic", "kl", ["kl_GL"])}
-%{python:pkg("Khmer", "km", ["km_KH"])}
-%{python:pkg("Kannada", "kn", ["kn_IN"])}
-%{python:pkg("Korean", "ko", ["ko_KR"])}
-%{python:pkg("Konkani", "kok", ["kok_IN"])}
-%{python:pkg("Kashmiri", "ks", ["ks_IN"])}
-%{python:pkg("Kurdish", "ku", ["ku_TR"])}
-%{python:pkg("Cornish", "kw", ["kw_GB"])}
-%{python:pkg("Kyrgyz", "ky", ["ky_KG"])}
-%{python:pkg("Luxembourgish", "lb", ["lb_LU"])}
-%{python:pkg("Luganda", "lg", ["lg_UG"])}
-%{python:pkg("Limburguish", "li", ["li_BE", "li_NL"])}
-%{python:pkg("Ligurian", "lij", ["lij_IT"])}
-%{python:pkg("Laotian", "lo", ["lo_LA"])}
-%{python:pkg("Lithuanian", "lt", ["lt_LT"])}
-%{python:pkg("Latvian", "lv", ["lv_LV"])}
-%{python:pkg("Magahi", "mag", ["mag_IN"])}
-%{python:pkg("Maithili", "mai", ["mai_IN"])}
-%{python:pkg("Malagasy", "mg", ["mg_MG"])}
-%{python:pkg("Mari", "mhr", ["mhr_RU"])}
-%{python:pkg("Maori", "mi", ["mi_NZ"])}
-%{python:pkg("Macedonian", "mk", ["mk_MK"])}
-%{python:pkg("Malayalam", "ml", ["ml_IN"])}
-%{python:pkg("Mongolian", "mn", ["mn_MN"])}
-%{python:pkg("Manipuri", "mni", ["mni_IN"])}
-%{python:pkg("Marathi", "mr", ["mr_IN"])}
-%{python:pkg("Malay", "ms", ["ms_MY"])}
-%{python:pkg("Maltese", "mt", ["mt_MT"])}
-%{python:pkg("Burmese", "my", ["my_MM"])}
-%{python:pkg("Lower Saxon", "nds", ["nds_DE", "nds_NL"])}
-%{python:pkg("Nepali", "ne", ["ne_NP"])}
-%{python:pkg("Nahuatl", "nhn", ["nhn_MX"])}
-%{python:pkg("Niuean", "niu", ["niu_NU", "niu_NZ"])}
-%{python:pkg("Dutch", "nl", ["nl_AW", "nl_BE", "nl_NL"])}
-%{python:pkg("Norwegian", "no", ["r:nb", "r:nn", "nb_NO", "nn_NO"])}
-%{python:pkg("Ndebele", "nr", ["nr_ZA"])}
-%{python:pkg("Northern Sotho", "nso", ["nso_ZA"])}
-%{python:pkg("Occitan", "oc", ["oc_FR"])}
-%{python:pkg("Oriya", "or", ["or_IN"])}
-%{python:pkg("Ossetian", "os", ["os_RU"])}
-%{python:pkg("Punjabi", "pa", ["pa_IN", "pa_PK"])}
-%{python:pkg("Papiamento", "pap", ["r:pp", "pap_AN", "pap_AW", "pap_CW"])}
-%{python:pkg("Polish", "pl", ["csb_PL", "pl_PL"])}
-%{python:pkg("Pashto", "ps", ["ps_AF"])}
-%{python:pkg("Portuguese", "pt", ["pt_BR", "pt_PT"])}
-%{python:pkg("Quechua", "quz", ["quz_PE"])}
-%{python:pkg("Romanian", "ro", ["ro_RO"])}
-%{python:pkg("Russian", "ru", ["ru_RU", "ru_UA"])}
-%{python:pkg("Kinyarwanda", "rw", ["rw_RW"])}
-%{python:pkg("Sanskrit", "sa", ["sa_IN"])}
-%{python:pkg("Santali", "sat", ["sat_IN"])}
-%{python:pkg("Sardinian", "sc", ["sc_IT"])}
-%{python:pkg("Sindhi", "sd", ["sd_IN"])}
-%{python:pkg("Saami", "se", ["se_NO"])}
-%{python:pkg("Secwepemctsin", "shs", ["shs_CA"])}
-%{python:pkg("Sinhala", "si", ["si_LK"])}
-%{python:pkg("Slovak", "sk", ["sk_SK"])}
-%{python:pkg("Slovenian", "sl", ["sl_SI"])}
-%{python:pkg("Serbian", "sr", ["sr_ME", "sr_RS"])}
-%{python:pkg("Somali", "so", ["so_DJ", "so_ET", "so_KE", "so_SO"])}
-%{python:pkg("Albanian", "sq", ["sq_AL", "sq_MK"])}
-%{python:pkg("Swati", "ss", ["ss_ZA"])}
-%{python:pkg("Sotho", "st", ["st_ZA"])}
-%{python:pkg("Swedish", "sv", ["sv_FI", "sv_SE"])}
+%{python:localepkg.pkg("Spanish", "es", ["an_ES", "es_AR", "es_BO", "es_CL", "es_CO", "es_CR", "es_CU", "es_DO", "es_EC", "es_ES", "es_GT", "es_HN", "es_MX", "es_NI", "es_PA", "es_PE", "es_PR", "es_PY", "es_SV", "es_US", "es_UY", "es_VE"])}
+%{python:localepkg.pkg("Estonian", "et", ["et_EE"])}
+%{python:localepkg.pkg("Basque", "eu", ["eu_ES"])}
+%{python:localepkg.pkg("Farsi", "fa", ["fa_IR"])}
+%{python:localepkg.pkg("Finnish", "fi", ["fi_FI"])}
+%{python:localepkg.pkg("Fulah", "ff", ["ff_SN"])}
+%{python:localepkg.pkg("Faroese", "fo", ["fo_FO"])}
+%{python:localepkg.pkg("French", "fr", ["fr_BE", "fr_CA", "fr_CH", "fr_FR", "fr_LU"])}
+%{python:localepkg.pkg("Friulan", "fur", ["fur_IT"])}
+%{python:localepkg.pkg("Frisian", "fy", ["fy_DE", "fy_NL"])}
+%{python:localepkg.pkg("Irish", "ga", ["ga_IE"])}
+%{python:localepkg.pkg("Scottish Gaelic", "gd", ["gd_GB"])}
+%{python:localepkg.pkg("Galician", "gl", ["gl_ES"])}
+%{python:localepkg.pkg("Gujarati", "gu", ["gu_IN"])}
+%{python:localepkg.pkg("Manx Gaelic", "gv", ["gv_GB"])}
+%{python:localepkg.pkg("Hausa", "ha", ["ha_NG"])}
+%{python:localepkg.pkg("Hebrew", "he", ["he_IL", "iw_IL"])}
+%{python:localepkg.pkg("Hindi", "hi", ["bho_IN", "brx_IN", "hi_IN", "ur_IN"])}
+%{python:localepkg.pkg("Chhattisgarhi", "hne", ["hne_IN"])}
+%{python:localepkg.pkg("Croatian", "hr", ["hr_HR"])}
+%{python:localepkg.pkg("Upper Sorbian", "hsb", ["hsb_DE"])}
+%{python:localepkg.pkg("Breyol", "ht", ["ht_HT"])}
+%{python:localepkg.pkg("Hungarian", "hu", ["hu_HU"])}
+%{python:localepkg.pkg("Armenian", "hy", ["hy_AM"])}
+%{python:localepkg.pkg("Interlingua", "ia", ["ia_FR"])}
+%{python:localepkg.pkg("Indonesian", "id", ["id_ID"])}
+%{python:localepkg.pkg("Igbo", "ig", ["ig_NG"])}
+%{python:localepkg.pkg("Inupiaq", "ik", ["ik_CA"])}
+%{python:localepkg.pkg("Icelandic", "is", ["is_IS"])}
+%{python:localepkg.pkg("Italian", "it", ["it_CH", "it_IT"])}
+%{python:localepkg.pkg("Inuktitut", "iu", ["iu_CA"])}
+%{python:localepkg.pkg("Japanese", "ja", ["ja", "ja_JP"])}
+%{python:localepkg.pkg("Georgian", "ka", ["ka_GE"])}
+%{python:localepkg.pkg("Kazakh", "kk", ["kk_KZ"])}
+%{python:localepkg.pkg("Greenlandic", "kl", ["kl_GL"])}
+%{python:localepkg.pkg("Khmer", "km", ["km_KH"])}
+%{python:localepkg.pkg("Kannada", "kn", ["kn_IN"])}
+%{python:localepkg.pkg("Korean", "ko", ["ko_KR"])}
+%{python:localepkg.pkg("Konkani", "kok", ["kok_IN"])}
+%{python:localepkg.pkg("Kashmiri", "ks", ["ks_IN"])}
+%{python:localepkg.pkg("Kurdish", "ku", ["ku_TR"])}
+%{python:localepkg.pkg("Cornish", "kw", ["kw_GB"])}
+%{python:localepkg.pkg("Kyrgyz", "ky", ["ky_KG"])}
+%{python:localepkg.pkg("Luxembourgish", "lb", ["lb_LU"])}
+%{python:localepkg.pkg("Luganda", "lg", ["lg_UG"])}
+%{python:localepkg.pkg("Limburguish", "li", ["li_BE", "li_NL"])}
+%{python:localepkg.pkg("Ligurian", "lij", ["lij_IT"])}
+%{python:localepkg.pkg("Laotian", "lo", ["lo_LA"])}
+%{python:localepkg.pkg("Lithuanian", "lt", ["lt_LT"])}
+%{python:localepkg.pkg("Latvian", "lv", ["lv_LV"])}
+%{python:localepkg.pkg("Magahi", "mag", ["mag_IN"])}
+%{python:localepkg.pkg("Maithili", "mai", ["mai_IN"])}
+%{python:localepkg.pkg("Malagasy", "mg", ["mg_MG"])}
+%{python:localepkg.pkg("Mari", "mhr", ["mhr_RU"])}
+%{python:localepkg.pkg("Maori", "mi", ["mi_NZ"])}
+%{python:localepkg.pkg("Macedonian", "mk", ["mk_MK"])}
+%{python:localepkg.pkg("Malayalam", "ml", ["ml_IN"])}
+%{python:localepkg.pkg("Mongolian", "mn", ["mn_MN"])}
+%{python:localepkg.pkg("Manipuri", "mni", ["mni_IN"])}
+%{python:localepkg.pkg("Marathi", "mr", ["mr_IN"])}
+%{python:localepkg.pkg("Malay", "ms", ["ms_MY"])}
+%{python:localepkg.pkg("Maltese", "mt", ["mt_MT"])}
+%{python:localepkg.pkg("Burmese", "my", ["my_MM"])}
+%{python:localepkg.pkg("Lower Saxon", "nds", ["nds_DE", "nds_NL"])}
+%{python:localepkg.pkg("Nepali", "ne", ["ne_NP"])}
+%{python:localepkg.pkg("Nahuatl", "nhn", ["nhn_MX"])}
+%{python:localepkg.pkg("Niuean", "niu", ["niu_NU", "niu_NZ"])}
+%{python:localepkg.pkg("Dutch", "nl", ["nl_AW", "nl_BE", "nl_NL"])}
+%{python:localepkg.pkg("Norwegian", "no", ["r:nb", "r:nn", "nb_NO", "nn_NO"])}
+%{python:localepkg.pkg("Ndebele", "nr", ["nr_ZA"])}
+%{python:localepkg.pkg("Northern Sotho", "nso", ["nso_ZA"])}
+%{python:localepkg.pkg("Occitan", "oc", ["oc_FR"])}
+%{python:localepkg.pkg("Oriya", "or", ["or_IN"])}
+%{python:localepkg.pkg("Ossetian", "os", ["os_RU"])}
+%{python:localepkg.pkg("Punjabi", "pa", ["pa_IN", "pa_PK"])}
+%{python:localepkg.pkg("Papiamento", "pap", ["r:pp", "pap_AN", "pap_AW", "pap_CW"])}
+%{python:localepkg.pkg("Polish", "pl", ["csb_PL", "pl_PL"])}
+%{python:localepkg.pkg("Pashto", "ps", ["ps_AF"])}
+%{python:localepkg.pkg("Portuguese", "pt", ["pt_BR", "pt_PT"])}
+%{python:localepkg.pkg("Quechua", "quz", ["quz_PE"])}
+%{python:localepkg.pkg("Romanian", "ro", ["ro_RO"])}
+%{python:localepkg.pkg("Russian", "ru", ["ru_RU", "ru_UA"])}
+%{python:localepkg.pkg("Kinyarwanda", "rw", ["rw_RW"])}
+%{python:localepkg.pkg("Sanskrit", "sa", ["sa_IN"])}
+%{python:localepkg.pkg("Santali", "sat", ["sat_IN"])}
+%{python:localepkg.pkg("Sardinian", "sc", ["sc_IT"])}
+%{python:localepkg.pkg("Sindhi", "sd", ["sd_IN"])}
+%{python:localepkg.pkg("Saami", "se", ["se_NO"])}
+%{python:localepkg.pkg("Secwepemctsin", "shs", ["shs_CA"])}
+%{python:localepkg.pkg("Sinhala", "si", ["si_LK"])}
+%{python:localepkg.pkg("Slovak", "sk", ["sk_SK"])}
+%{python:localepkg.pkg("Slovenian", "sl", ["sl_SI"])}
+%{python:localepkg.pkg("Serbian", "sr", ["sr_ME", "sr_RS"])}
+%{python:localepkg.pkg("Somali", "so", ["so_DJ", "so_ET", "so_KE", "so_SO"])}
+%{python:localepkg.pkg("Albanian", "sq", ["sq_AL", "sq_MK"])}
+%{python:localepkg.pkg("Swati", "ss", ["ss_ZA"])}
+%{python:localepkg.pkg("Sotho", "st", ["st_ZA"])}
+%{python:localepkg.pkg("Swedish", "sv", ["sv_FI", "sv_SE"])}
 # sw_XX?
-%{python:pkg("Swahili", "sw", ["sw_KE", "sw_TZ"])}
-%{python:pkg("Silesian", "szl", ["szl_PL"])}
-%{python:pkg("Tamil", "ta", ["ta_IN", "ta_LK"])}
-%{python:pkg("Telugu", "te", ["te_IN"])}
-%{python:pkg("Tajik", "tg", ["tg_TJ"])}
-%{python:pkg("Thai", "th", ["th_TH"])}
-%{python:pkg("Tharu/Tharuhati", "the", ["the_NP"])}
-%{python:pkg("Turkmen", "tk", ["tk_TM"])}
-%{python:pkg("Pilipino", "tl", ["r:ph", "fil_PH", "tl_PH"])}
-%{python:pkg("Tswana", "tn", ["tn_ZA"])}
-%{python:pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
-%{python:pkg("Tsonga", "ts", ["ts_ZA"])}
-%{python:pkg("Tatar", "tt", ["tt_RU"])}
-%{python:pkg("Uyghur", "ug", ["ug_CN"])}
-%{python:pkg("Unami", "unm", ["unm_US"])}
-%{python:pkg("Ukrainian", "uk", ["uk_UA"])}
-%{python:pkg("Urdu", "ur", ["ur_PK"])}
-%{python:pkg("Uzbek", "uz", ["uz_UZ"])}
-%{python:pkg("Venda", "ve", ["ve_ZA"])}
-%{python:pkg("Vietnamese", "vi", ["vi_VN"])}
-%{python:pkg("Walloon", "wa", ["wa_BE"])}
-%{python:pkg("Walser", "wae", ["wae_CH"])}
-%{python:pkg("Wolof", "wo", ["wo_SN"])}
-%{python:pkg("Xhosa", "xh", ["xh_ZA"])}
-%{python:pkg("Yiddish", "yi", ["yi_US"])}
-%{python:pkg("Yoruba", "yo", ["yo_NG"])}
-%{python:pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
-%{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW"])}
-%{python:pkg("Zulu", "zu", ["zu_ZA"])}
+%{python:localepkg.pkg("Swahili", "sw", ["sw_KE", "sw_TZ"])}
+%{python:localepkg.pkg("Silesian", "szl", ["szl_PL"])}
+%{python:localepkg.pkg("Tamil", "ta", ["ta_IN", "ta_LK"])}
+%{python:localepkg.pkg("Telugu", "te", ["te_IN"])}
+%{python:localepkg.pkg("Tajik", "tg", ["tg_TJ"])}
+%{python:localepkg.pkg("Thai", "th", ["th_TH"])}
+%{python:localepkg.pkg("Tharu/Tharuhati", "the", ["the_NP"])}
+%{python:localepkg.pkg("Turkmen", "tk", ["tk_TM"])}
+%{python:localepkg.pkg("Pilipino", "tl", ["r:ph", "fil_PH", "tl_PH"])}
+%{python:localepkg.pkg("Tswana", "tn", ["tn_ZA"])}
+%{python:localepkg.pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
+%{python:localepkg.pkg("Tsonga", "ts", ["ts_ZA"])}
+%{python:localepkg.pkg("Tatar", "tt", ["tt_RU"])}
+%{python:localepkg.pkg("Uyghur", "ug", ["ug_CN"])}
+%{python:localepkg.pkg("Unami", "unm", ["unm_US"])}
+%{python:localepkg.pkg("Ukrainian", "uk", ["uk_UA"])}
+%{python:localepkg.pkg("Urdu", "ur", ["ur_PK"])}
+%{python:localepkg.pkg("Uzbek", "uz", ["uz_UZ"])}
+%{python:localepkg.pkg("Venda", "ve", ["ve_ZA"])}
+%{python:localepkg.pkg("Vietnamese", "vi", ["vi_VN"])}
+%{python:localepkg.pkg("Walloon", "wa", ["wa_BE"])}
+%{python:localepkg.pkg("Walser", "wae", ["wae_CH"])}
+%{python:localepkg.pkg("Wolof", "wo", ["wo_SN"])}
+%{python:localepkg.pkg("Xhosa", "xh", ["xh_ZA"])}
+%{python:localepkg.pkg("Yiddish", "yi", ["yi_US"])}
+%{python:localepkg.pkg("Yoruba", "yo", ["yo_NG"])}
+%{python:localepkg.pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
+%{python:localepkg.pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW"])}
+%{python:localepkg.pkg("Zulu", "zu", ["zu_ZA"])}
 %endif
 
 %files -f libc.lang
