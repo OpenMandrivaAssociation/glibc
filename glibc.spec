@@ -550,6 +550,7 @@ LANG variable to their preferred language in their
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
+Requires(post):	glibc
 
 %post -n	%{multilibc}
     %{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
