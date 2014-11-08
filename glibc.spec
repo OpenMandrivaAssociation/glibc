@@ -71,7 +71,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	2.2
+Release:	2.3
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
@@ -1165,8 +1165,8 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
 # This is for ncsd - in glibc 2.2
 %if %{with nscd}
     install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
-    install -m755 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
-    install -m755 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
+    install -m644 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
+    install -m644 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
     install -m755 -d %{buildroot}/var/db/nscd
     install -m755 -d %{buildroot}%{_sysconfdir}/netgroup
 %endif
