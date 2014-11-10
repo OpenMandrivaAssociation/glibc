@@ -1,6 +1,4 @@
-#!/bin/env python
-
-import string, rpm
+import sys, string, rpm
 
 def pkg(langname, locale, isonames):
     print(rpm.expandMacro("""
