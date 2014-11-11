@@ -1241,8 +1241,7 @@ function BuildGlibc() {
     esac
   fi
   rm -f test.o
-  # Force a separate and clean object dir
-  rm -rf build-$arch-linux
+  # Force a separate object dir
   mkdir  build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
