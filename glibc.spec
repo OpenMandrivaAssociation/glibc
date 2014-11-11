@@ -1242,7 +1242,7 @@ function BuildGlibc() {
   fi
   rm -f test.o
   # Force a separate object dir
-  mkdir  build-$arch-linux
+  mkdir -p build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
