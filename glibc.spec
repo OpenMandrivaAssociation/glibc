@@ -352,33 +352,10 @@ Obsoletes:	nss_db
 Requires:	%{multilibc} = %{EVRD}
 %endif
 
-%description
-The glibc package contains standard libraries which are used by
-multiple programs on the system. In order to save disk space and
-memory, as well as to make upgrading easier, common system code is
-kept in one place and shared between programs. This particular package
-contains the most important sets of shared libraries: the standard C
-library and the standard math library. Without these two libraries, a
-Linux system will not function.
-
-%if "%{name}" == "glibc"
-%post -p %{_sbindir}/glibc_post_upgrade
-%endif
-
+# ----------
+# Locales...
+# ----------
 %if %{with locales}
-%package -n locales
-Summary:	Base files for localization
-Group:		System/Internationalization
-Obsoletes:	locales <= 2.18.90-2
-Obsoletes:	locales < 6:2.19-13
-
-%description -n locales
-These are the base files for language localization.
-You also need to install the specific locales-?? for the
-language(s) you want. Then the user need to set the
-LANG variable to their preferred language in their
-~/.profile configuration file.
-
 %{python:import sys; sys.path.append(rpm.expandMacro("%{_sourcedir}"))}
 %{python:from localepkg import pkg}
 
@@ -543,6 +520,35 @@ LANG variable to their preferred language in their
 %{python:pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
 %{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW"])}
 %{python:pkg("Zulu", "zu", ["zu_ZA"])}
+%endif
+
+
+%description
+The glibc package contains standard libraries which are used by
+multiple programs on the system. In order to save disk space and
+memory, as well as to make upgrading easier, common system code is
+kept in one place and shared between programs. This particular package
+contains the most important sets of shared libraries: the standard C
+library and the standard math library. Without these two libraries, a
+Linux system will not function.
+
+%if "%{name}" == "glibc"
+%post -p %{_sbindir}/glibc_post_upgrade
+%endif
+
+%if %{with locales}
+%package -n locales
+Summary:	Base files for localization
+Group:		System/Internationalization
+Obsoletes:	locales <= 2.18.90-2
+Obsoletes:	locales < 6:2.19-13
+
+%description -n locales
+These are the base files for language localization.
+You also need to install the specific locales-?? for the
+language(s) you want. Then the user need to set the
+LANG variable to their preferred language in their
+~/.profile configuration file.
 %endif
 
 %files -f libc.lang
