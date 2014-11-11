@@ -1222,6 +1222,15 @@ function BuildGlibc() {
     KernelHeaders=/usr/%{target_arch}-%{_target_os}/include
   %endif
 
+  LIB=$(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/${ARCH}-%{_target_os}/macros --target=${ARCH} -E %%{_lib})
+%if %{build_cross}
+    LIBDIR=%{_exec_prefix}/${LIB}
+    SLIBDIR=%{_exec_prefix}/${LIB}
+%else
+  LIBDIR=$(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/${ARCH}-%{_target_os}/macros --target=${ARCH} -E %%{_libdir})
+  SLIBDIR=/${LIB}
+%endif
+
   # Determine library name
   glibc_cv_cc_64bit_output=no
   if echo ".text" | $BuildCC -c -o test.o -xassembler -; then
@@ -1237,14 +1246,14 @@ function BuildGlibc() {
   mkdir  build-$arch-linux
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
-  export libc_cv_slibdir=%{_slibdir}
+  export libc_cv_slibdir=${SLIBDIR}
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
-    --libdir=%{_libdir} \
+    --libdir=${LIBDIR} \
     --infodir=%{_infodir} \
     --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
