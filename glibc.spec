@@ -1384,7 +1384,12 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
     %endif
     for ALT_ARCH in $ALT_ARCHES; do
 	mkdir -p %{buildroot}/$ALT_ARCH
-	%make install-headers install-lib install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH
+	%make install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH \
+	%if %{build_cross}
+		install-headers install-lib
+	%else
+		install
+	%endif
 
 	# Dispatch */lib only
 	case "$ALT_ARCH" in
@@ -1403,6 +1408,7 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	esac
 	%if !%{build_cross}
 	    mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
+	    mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
 	    [ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
 	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
 	%else
