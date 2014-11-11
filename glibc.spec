@@ -158,6 +158,7 @@ Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glib
 
 Source100:	%{oname}.rpmlintrc
 
+Source1000:	localepkg.py
 Source1001:	locale_install.sh
 Source1002:	locale_uninstall.sh
 Source1003:	locales.sysconfig
