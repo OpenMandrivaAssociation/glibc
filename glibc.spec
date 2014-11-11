@@ -1273,7 +1273,7 @@ function BuildGlibc() {
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
-  %make -r
+  %make -r all subdir_stubs
   popd
 
   check_flags="-k"
