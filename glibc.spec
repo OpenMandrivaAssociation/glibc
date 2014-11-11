@@ -1218,12 +1218,12 @@ function BuildGlibc() {
     KernelHeaders=/usr/%{target_arch}-%{_target_os}/include
   %endif
 
-  LIB=$(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_lib})
+  LIB=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_lib})
 %if %{build_cross}
     LIBDIR=%{_exec_prefix}/${LIB}
     SLIBDIR=%{_exec_prefix}/${LIB}
 %else
-  LIBDIR=$(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/${arcg}-%{_target_os}/macros --target=${arch} -E %%{_libdir})
+  LIBDIR=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_libdir})
   SLIBDIR=/${LIB}
 %endif
 
