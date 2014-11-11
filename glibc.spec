@@ -1403,7 +1403,6 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	esac
 	%if !%{build_cross}
 	    mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
-	    mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
 	    [ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
 	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
 	%else
