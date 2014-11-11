@@ -280,6 +280,8 @@ Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch88:	glibc-2.17-gold.patch
 Patch89:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1162810
+Patch90:	glibc-dso_deps.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
@@ -1061,6 +1063,8 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch89 -p1 -b .nscd_runpath~
 
+%patch90 -p1 -b .dsodeps~
+
 %patch100 -p1 -b .blowfish_nonx86~
 
 %if %{with selinux}
@@ -1269,7 +1273,7 @@ function BuildGlibc() {
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
-  %make -r all subdir_stubs
+  make -r all subdir_stubs
   popd
 
   check_flags="-k"
