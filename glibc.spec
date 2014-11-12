@@ -594,6 +594,7 @@ LANG variable to their preferred language in their
 %endif
 %if %isarch aarch64
 %{_slibdir}/ld-linux-aarch64.so.1
+/lib/ld-linux-aarch64.so.1
 %endif
 %if %isarch %{mips}
 %{_slibdir}/ld.so.1
@@ -1679,6 +1680,12 @@ popd
 # Needed for/used by locale-archive
 mkdir -p %{buildroot}%{_prefix}/lib/locale
 touch %{buildroot}%{_prefix}/lib/locale/locale-archive
+%endif
+
+%if %isarch aarch64
+# Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
+# as dynamic loader
+ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
 %if "%{name}" != "glibc"
