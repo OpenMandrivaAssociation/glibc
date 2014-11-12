@@ -1064,7 +1064,10 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch89 -p1 -b .nscd_runpath~
 
+%if ! %isarch %{ix86}
+# This seems to be broken on i586
 %patch90 -p1 -b .dsodeps~
+%endif
 
 %patch100 -p1 -b .blowfish_nonx86~
 
