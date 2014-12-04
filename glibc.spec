@@ -256,6 +256,7 @@ Patch67:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch68:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch69:	eglibc-mandriva-biarch-utils.patch
 Patch70:	eglibc-mandriva-multiarch.patch
+Patch71:	glibc-2.20-i586-hptiming.patch
 Patch72:	eglibc-mandriva-i586-if-no-cmov.patch
 Patch73:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch74:	eglibc-mandriva-testsuite-ldbl-bits.patch
@@ -1033,6 +1034,7 @@ These are configuration files that describe possible time zones.
 %patch68 -p1 -b .ENOTTYfr~
 %patch69 -p1
 %patch70 -p1 -b .biarch~
+%patch71 -p1
 %patch72 -p1
 %patch73 -p1
 %patch74 -p1 -b .ldbl~
