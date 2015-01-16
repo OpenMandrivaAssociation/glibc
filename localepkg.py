@@ -10,7 +10,7 @@ Obsoletes:	locales < 6:2.19-13
 Requires(post,preun):	sed
 Requires(post,preun):	grep"""))
     for isoname in isonames:
-        if isoname.count("r:"):
+        if isoname.count(":"):
             print(rpm.expandMacro("%%{rename locales-%s}" % isoname.strip('r:')))
             isonames.remove(isoname)
     print(rpm.expandMacro("""
