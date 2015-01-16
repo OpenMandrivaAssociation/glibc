@@ -10,9 +10,9 @@ Obsoletes:	locales < 6:2.19-13
 Requires(post,preun):	sed
 Requires(post,preun):	grep"""))
     for isoname in isonames:
-        if isoname.count(":"):
-            print(rpm.expandMacro("%%{rename locales-%s}" % isoname.strip('r:')))
-            isonames.remove(isoname)
+        if isoname.startswith("r:"):
+            print(rpm.expandMacro("%%{rename locales-%s}" % isoname.strip("r:")))
+    isonames[:] = filter(lambda isoname: not isoname.startswith("r:"), isonames)
     print(rpm.expandMacro("""
 %%description -n locales-"""+locale+"""
 These are the base files for """+langname+""" language
