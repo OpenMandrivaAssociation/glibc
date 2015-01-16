@@ -886,7 +886,7 @@ performance with NIS+, and may help with DNS as well.
 %pre -n nscd
 %_pre_useradd nscd / /sbin/nologin
 
-%post
+%post -n nscd
 nscd -i passwd -i group || :
 %systemd_post nscd.socket nscd.service
 
