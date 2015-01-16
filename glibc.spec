@@ -888,6 +888,7 @@ performance with NIS+, and may help with DNS as well.
 
 %post
 nscd -i passwd -i group || :
+%systemd_post nscd.socket nscd.service
 
 %files -n 	nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
