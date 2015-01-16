@@ -11,6 +11,7 @@ Requires(post,preun):	sed
 Requires(post,preun):	grep"""))
     for isoname in isonames:
         if isoname.count(":"):
+          	isoname = isoname.strip('r:'):
             print(rpm.expandMacro("%%{rename locales-%s}" % isoname))
             isonames.remove(isoname)
     print(rpm.expandMacro("""
