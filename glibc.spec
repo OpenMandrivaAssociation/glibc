@@ -375,7 +375,7 @@ Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
 Obsoletes:	locales < 6:2.19-13
-Requires(post,preun):	rpm-helper
+Requires(post,preun):	bash grep sed coreutils glibc rpm
 
 %description -n locales
 These are the base files for language localization.
