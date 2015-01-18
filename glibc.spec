@@ -134,7 +134,7 @@ Version:	2.20
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -375,6 +375,7 @@ Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
 Obsoletes:	locales < 6:2.19-13
+Requires(post,preun):	rpm-helper
 
 %description -n locales
 These are the base files for language localization.
