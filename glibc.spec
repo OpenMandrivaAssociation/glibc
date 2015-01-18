@@ -311,6 +311,7 @@ BuildRequires:	systemtap-devel
 BuildRequires:	nss-devel >= 3.15.1-2
 %endif
 Requires:	filesystem
+Requires(post):	filesystem
 %if %isarch %{xenarches}
 %rename		%{name}-xen
 %endif
