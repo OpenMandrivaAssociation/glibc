@@ -4,8 +4,8 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.20
-%define linaro		2014.11
+%define ver		2.21
+%define linaro		%{nil}
 
 %define	oname		glibc
 %define	major		6
@@ -186,20 +186,13 @@ Patch5:		glibc-arm-hardfloat-3.patch
 # Needs to be sent upstream
 Patch6:		glibc-rh697421.patch
 
-# Needs to be sent upstream
-Patch10:	glibc-rh841318.patch
-
 # All these were from the glibc-fedora.patch mega-patch and need another
 # round of reviewing.  Ideally they'll either be submitted upstream or
 # dropped.
 
-Patch11:	glibc-fedora-uname-getrlimit.patch
-Patch12:	glibc-fedora-__libc_multiple_libcs.patch
-Patch14:	glibc-fedora-elf-ORIGIN.patch
 Patch15:	glibc-fedora-elf-init-hidden_undef.patch
 Patch16:	glibc-fedora-elf-rh737223.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
-Patch20:	glibc-fedora-getrlimit-PLT.patch
 Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
 Patch22:	eglibc-fedora-pt_chown.patch
 Patch23:	glibc-fedora-include-bits-ldbl.patch
@@ -236,7 +229,6 @@ Patch49:	glibc-rh800224.patch
 Patch50:	glibc-rh827510.patch
 # Upstream BZ 14185
 Patch54:	glibc-rh819430.patch
-Patch55:	glibc-rh911307.patch
 Patch51:	glibc-rh952799.patch
 
 #-----------------------------------------------------------------------
@@ -268,7 +260,6 @@ Patch76:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 # https://bugzilla.redhat.com/attachment.cgi?id=491198
 Patch77:	eglibc-mandriva-fix-for-new-memcpy-behavior.patch
 Patch79:	eglibc-mandriva-no-leaf-attribute.patch
-Patch80:	eglibc-mandriva-string-format-fixes.patch
 Patch81:	eglibc-mandriva-mdv-avx-owl-crypt.patch
 Patch82:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
 Patch83:	eglibc-mandriva-avx-relocate_fcrypt.patch
@@ -403,11 +394,13 @@ LANG variable to their preferred language in their
 %{python:pkg("Bemba", "bem", ["bem_ZM"])}
 %{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
 %{python:pkg("Bulgarian", "bg", ["bg_BG"])}
+%{python:pkg("Bhili", "bh", ["bh_IN"])}
 %{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
 %{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
 %{python:pkg("Breton", "br", ["br_FR"])}
 %{python:pkg("Bosnian", "bs", ["bs_BA"])}
 %{python:pkg("Catalan", "ca", ["ca_AD", "ca_ES", "ca_FR", "ca_IT"])}
+%{python:pkg("Chechen", "ce", ["ce_RU"])}
 %{python:pkg("Crimean Tatar", "crh", ["crh_UA"])}
 %{python:pkg("Czech", "cs", ["cs_CZ"])}
 %{python:pkg("Chuvash", "cv", ["cv_RU"])}
@@ -501,6 +494,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Pashto", "ps", ["ps_AF"])}
 %{python:pkg("Portuguese", "pt", ["pt_BR", "pt_PT"])}
 %{python:pkg("Quechua", "quz", ["quz_PE"])}
+%{python:pkg("Rajasthani", "raj", ["raj_IN"])}
 %{python:pkg("Romanian", "ro", ["ro_RO"])}
 %{python:pkg("Russian", "ru", ["ru_RU", "ru_UA"])}
 %{python:pkg("Kinyarwanda", "rw", ["rw_RW"])}
@@ -533,6 +527,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
 %{python:pkg("Tsonga", "ts", ["ts_ZA"])}
 %{python:pkg("Tatar", "tt", ["tt_RU"])}
+%{python:pkg("Tulu", "tu", ["tu_IN"])}
 %{python:pkg("Uyghur", "ug", ["ug_CN"])}
 %{python:pkg("Unami", "unm", ["unm_US"])}
 %{python:pkg("Ukrainian", "uk", ["uk_UA"])}
@@ -997,14 +992,9 @@ These are configuration files that describe possible time zones.
 %patch04 -p1
 %patch05 -p1
 %patch06 -p1
-%patch10 -p1 -b .rh841318~
-%patch11 -p1
-%patch12 -p1 -b .multiple~
-%patch14 -p1 -b .elfORIGIN~
 %patch15 -p1
 %patch16 -p1 -b .rh737223~
 %patch18 -p1
-%patch20 -p1
 %patch21 -p1
 %patch22 -p1
 %patch23 -p1
@@ -1023,7 +1013,6 @@ These are configuration files that describe possible time zones.
 %patch49 -p1 -b .rh800224~
 %patch50 -p1
 %patch54 -p1 -b .rh819430~
-%patch55 -p1 -b .rh911307~
 %patch51 -p1
 %patch56 -p1
 %patch57 -p1
@@ -1042,12 +1031,11 @@ These are configuration files that describe possible time zones.
 %patch70 -p1 -b .biarch~
 %patch71 -p1
 %patch72 -p1
-%patch73 -p1
+%patch73 -p1 -b .ptBR~
 %patch74 -p1 -b .ldbl~
 %patch75 -p1 -b .tsp~
 %patch76 -p1 -b .clang~
 %patch79 -p1
-%patch80 -p1
 
 # copy freesec source
 cp %{SOURCE52} %{SOURCE53} crypt/
@@ -1255,7 +1243,7 @@ function BuildGlibc() {
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \

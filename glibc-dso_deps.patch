@@ -1,8 +1,8 @@
---- glibc-linaro-2.20-2014.11/elf/dl-deps.c.dsodeps~	2014-10-22 17:03:50.000000000 +0200
-+++ glibc-linaro-2.20-2014.11/elf/dl-deps.c	2014-11-11 19:48:12.058033328 +0100
-@@ -139,6 +139,55 @@ cannot load auxiliary `%s' because of em
-     __result; })
- 
+--- glibc-2.21/elf/dl-deps.c.dsodeps~	2015-02-06 07:40:18.000000000 +0100
++++ glibc-2.21/elf/dl-deps.c	2015-02-07 14:32:43.667285775 +0100
+@@ -152,6 +152,56 @@ preload (struct list *known, unsigned in
+   map->l_reserved = 1;
+ }
  
 +static int compare (struct link_map *a, struct link_map *b)
 +{
@@ -53,10 +53,11 @@
 +    }
 +}
 +
++
  void
  internal_function
  _dl_map_object_deps (struct link_map *map,
-@@ -611,61 +660,7 @@ Filters not supported with LD_TRACE_PREL
+@@ -611,61 +661,7 @@ Filters not supported with LD_TRACE_PREL
    memcpy (l_initfini, map->l_searchlist.r_list,
  	  nlist * sizeof (struct link_map *));
    if (__glibc_likely (nlist > 1))
@@ -119,8 +120,8 @@
  
    /* Terminate the list of dependencies.  */
    l_initfini[nlist] = NULL;
---- glibc-linaro-2.20-2014.11/elf/dl-fini.c.dsodeps~	2014-10-22 17:03:50.000000000 +0200
-+++ glibc-linaro-2.20-2014.11/elf/dl-fini.c	2014-11-11 19:45:14.223256569 +0100
+--- glibc-2.21/elf/dl-fini.c.dsodeps~	2015-02-06 07:40:18.000000000 +0100
++++ glibc-2.21/elf/dl-fini.c	2015-02-07 14:31:26.369897612 +0100
 @@ -26,101 +26,83 @@
  typedef void (*fini_t) (void);
  
