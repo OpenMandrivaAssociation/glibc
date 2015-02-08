@@ -134,7 +134,7 @@ Version:	2.20
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -340,6 +340,9 @@ Provides:	ld.so.1
 %endif
 
 %rename		ldconfig
+%define		nssfilesmajor   2
+%define		libnssfiles     %mklibname nss_files %{nssfilesmajor}
+%rename		%{libnssfiles}
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
 %endif
@@ -599,10 +602,6 @@ LANG variable to their preferred language in their
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
-%if !%{build_cross}
-%exclude %{_slibdir}/libnss_files*-[.0-9]*.so
-%exclude %{_slibdir}/libnss_files*.so.[0-9]*
-%endif
 %{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
@@ -653,31 +652,6 @@ LANG variable to their preferred language in their
 %{_slibdirn32}/libSegFault.so
 %endif
 %endif
-%endif
-
-%if !%{build_cross}
-%define	nssfilesmajor	2
-%define	libnssfiles	%mklibname nss_files %{nssfilesmajor}
-
-%package -n	%{libnssfiles}
-Summary:	The libnss_files library required for setting file ownerships
-Group:		System/Libraries
-Conflicts:	glibc < 6:2.19-9
-Requires(post):	setup
-
-%description -n	%{libnssfiles}
-The libnss_files library required for setting file ownerships and is packaged
-separately due to ordering for it to be installed as early as possible.
-This way files and directories of packages following will be able to have
-their ownership set correctly.
-
-# avoid dependencies generated against other libraries as they're not
-# required for file ownership to be set.
-%define	__noautoreqfiles '(%{_slibdir}/libnss_files.*)'
-
-%files -n	%{libnssfiles}
-%{_slibdir}/libnss_files*-[.0-9]*.so
-%{_slibdir}/libnss_files*.so.%{nssfilesmajor}
 %endif
 
 ########################################################################
