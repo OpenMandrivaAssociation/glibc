@@ -1139,16 +1139,6 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  # There's two issues here:
-  # 1) in flags defiuned in our macros, -Wp,-D_FORTIFY_SOURCE=2 is passed to
-  #    compiler, which passes it directly to preprocessor, resulting in it not
-  #    being undefined by -U_FORTIFY_SOURCE during build.
-  #    The right fix for this is to correct the rpm macro, there's no reason
-  #    for passing it with '-Wp,'....
-  # 2) When the embedded python interpreter is loaded, all macros are reread
-  #    again, so it needs to be defined afterwards. To be on the safe side,
-  #    we'll just define it right before it's use. RPM needs to be patched
-  #    not to reload all macros when first invoking the embedded interpreter...
   BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
