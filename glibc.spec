@@ -1149,7 +1149,6 @@ function BuildGlibc() {
   #    again, so it needs to be defined afterwards. To be on the safe side,
   #    we'll just define it right before it's use. RPM needs to be patched
   #    not to reload all macros when first invoking the embedded interpreter...
-  %define _fortify_cflags -D_FORTIFY_SOURCE=2
   BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
