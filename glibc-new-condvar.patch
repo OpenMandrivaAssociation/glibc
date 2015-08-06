@@ -1,0 +1,6264 @@
+commit db7d3860a02a6617d4d77324185aa0547cc58391
+Author: Torvald Riegel <triegel@redhat.com>
+Date:   Sun Nov 10 15:43:14 2013 +0100
+
+    New condvar implementation that provides stronger ordering guarantees.
+
+diff --git a/nptl/DESIGN-condvar.txt b/nptl/DESIGN-condvar.txt
+deleted file mode 100644
+index 4845251..0000000
+--- a/nptl/DESIGN-condvar.txt
++++ /dev/null
+@@ -1,134 +0,0 @@
+-Conditional Variable pseudocode.
+-================================
+-
+-       int pthread_cond_timedwait (pthread_cond_t *cv, pthread_mutex_t *mutex);
+-       int pthread_cond_signal    (pthread_cond_t *cv);
+-       int pthread_cond_broadcast (pthread_cond_t *cv);
+-
+-struct pthread_cond_t {
+-
+-   unsigned int cond_lock;
+-
+-         internal mutex
+-
+-   uint64_t total_seq;
+-
+-     Total number of threads using the conditional variable.
+-
+-   uint64_t wakeup_seq;
+-
+-     sequence number for next wakeup.
+-
+-   uint64_t woken_seq;
+-
+-     sequence number of last woken thread.
+-
+-   uint32_t broadcast_seq;
+-
+-}
+-
+-
+-struct cv_data {
+-
+-   pthread_cond_t *cv;
+-
+-   uint32_t bc_seq
+-
+-}
+-
+-
+-
+-cleanup_handler(cv_data)
+-{
+-  cv = cv_data->cv;
+-  lll_lock(cv->lock);
+-
+-  if (cv_data->bc_seq == cv->broadcast_seq) {
+-    ++cv->wakeup_seq;
+-    ++cv->woken_seq;
+-  }
+-
+-  /* make sure no signal gets lost.  */
+-  FUTEX_WAKE(cv->wakeup_seq, ALL);
+-
+-  lll_unlock(cv->lock);
+-}
+-
+-
+-cond_timedwait(cv, mutex, timeout):
+-{
+-   lll_lock(cv->lock);
+-   mutex_unlock(mutex);
+-
+-   cleanup_push
+-
+-   ++cv->total_seq;
+-   val = seq =  cv->wakeup_seq;
+-   cv_data.bc = cv->broadcast_seq;
+-   cv_data.cv = cv;
+-
+-   while (1) {
+-
+-     lll_unlock(cv->lock);
+-
+-     enable_async(&cv_data);
+-
+-     ret = FUTEX_WAIT(cv->wakeup_seq, val, timeout);
+-
+-     restore_async
+-
+-     lll_lock(cv->lock);
+-
+-     if (bc != cv->broadcast_seq)
+-       goto bc_out;
+-
+-     val = cv->wakeup_seq;
+-
+-     if (val != seq && cv->woken_seq != val) {
+-       ret = 0;
+-       break;
+-     }
+-
+-     if (ret == TIMEDOUT) {
+-       ++cv->wakeup_seq;
+-       break;
+-     }
+-   }
+-
+-   ++cv->woken_seq;
+-
+- bc_out:
+-   lll_unlock(cv->lock);
+-
+-   cleanup_pop
+-
+-   mutex_lock(mutex);
+-
+-   return ret;
+-}
+-
+-cond_signal(cv)
+-{
+-   lll_lock(cv->lock);
+-
+-   if (cv->total_seq > cv->wakeup_seq) {
+-     ++cv->wakeup_seq;
+-     FUTEX_WAKE(cv->wakeup_seq, 1);
+-   }
+-
+-   lll_unlock(cv->lock);
+-}
+-
+-cond_broadcast(cv)
+-{
+-   lll_lock(cv->lock);
+-
+-   if (cv->total_seq > cv->wakeup_seq) {
+-     cv->wakeup_seq = cv->total_seq;
+-     cv->woken_seq = cv->total_seq;
+-     ++cv->broadcast_seq;
+-     FUTEX_WAKE(cv->wakeup_seq, ALL);
+-   }
+-
+-   lll_unlock(cv->lock);
+-}
+diff --git a/nptl/Makefile b/nptl/Makefile
+index 89fdc8b..50a85a6 100644
+--- a/nptl/Makefile
++++ b/nptl/Makefile
+@@ -71,7 +71,7 @@ libpthread-routines = nptl-init vars events version \
+ 		      pthread_rwlockattr_getkind_np \
+ 		      pthread_rwlockattr_setkind_np \
+ 		      pthread_cond_init pthread_cond_destroy \
+-		      pthread_cond_wait pthread_cond_timedwait \
++		      pthread_cond_wait \
+ 		      pthread_cond_signal pthread_cond_broadcast \
+ 		      old_pthread_cond_init old_pthread_cond_destroy \
+ 		      old_pthread_cond_wait old_pthread_cond_timedwait \
+@@ -178,7 +178,6 @@ CFLAGS-pthread_timedjoin.c = -fexceptions -fasynchronous-unwind-tables
+ CFLAGS-pthread_once.c = $(uses-callbacks) -fexceptions \
+ 			-fasynchronous-unwind-tables
+ CFLAGS-pthread_cond_wait.c = -fexceptions -fasynchronous-unwind-tables
+-CFLAGS-pthread_cond_timedwait.c = -fexceptions -fasynchronous-unwind-tables
+ CFLAGS-sem_wait.c = -fexceptions -fasynchronous-unwind-tables
+ CFLAGS-sem_timedwait.c = -fexceptions -fasynchronous-unwind-tables
+ 
+@@ -216,7 +215,7 @@ tests = tst-typesizes \
+ 	tst-cond8 tst-cond9 tst-cond10 tst-cond11 tst-cond12 tst-cond13 \
+ 	tst-cond14 tst-cond15 tst-cond16 tst-cond17 tst-cond18 tst-cond19 \
+ 	tst-cond20 tst-cond21 tst-cond22 tst-cond23 tst-cond24 tst-cond25 \
+-	tst-cond-except \
++	tst-cond26 tst-cond27 tst-cond28 tst-cond-except \
+ 	tst-robust1 tst-robust2 tst-robust3 tst-robust4 tst-robust5 \
+ 	tst-robust6 tst-robust7 tst-robust8 tst-robust9 \
+ 	tst-robustpi1 tst-robustpi2 tst-robustpi3 tst-robustpi4 tst-robustpi5 \
+@@ -280,8 +279,7 @@ test-srcs = tst-oddstacklimit
+ # Files which must not be linked with libpthread.
+ tests-nolibpthread = tst-unload
+ 
+-gen-as-const-headers = pthread-errnos.sym \
+-		       lowlevelcond.sym lowlevelrwlock.sym \
++gen-as-const-headers = pthread-errnos.sym lowlevelrwlock.sym \
+ 		       lowlevelbarrier.sym unwindbuf.sym \
+ 		       lowlevelrobustlock.sym pthread-pi-defines.sym
+ 
+diff --git a/nptl/lowlevelcond.sym b/nptl/lowlevelcond.sym
+deleted file mode 100644
+index 18e1ada..0000000
+--- a/nptl/lowlevelcond.sym
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#include <stddef.h>
+-#include <sched.h>
+-#include <bits/pthreadtypes.h>
+-#include <internaltypes.h>
+-
+---
+-
+-cond_lock	offsetof (pthread_cond_t, __data.__lock)
+-cond_futex	offsetof (pthread_cond_t, __data.__futex)
+-cond_nwaiters	offsetof (pthread_cond_t, __data.__nwaiters)
+-total_seq	offsetof (pthread_cond_t, __data.__total_seq)
+-wakeup_seq	offsetof (pthread_cond_t, __data.__wakeup_seq)
+-woken_seq	offsetof (pthread_cond_t, __data.__woken_seq)
+-dep_mutex	offsetof (pthread_cond_t, __data.__mutex)
+-broadcast_seq	offsetof (pthread_cond_t, __data.__broadcast_seq)
+-nwaiters_shift	COND_NWAITERS_SHIFT
+diff --git a/nptl/pthread_cond_broadcast.c b/nptl/pthread_cond_broadcast.c
+index 881d098..6848d61 100644
+--- a/nptl/pthread_cond_broadcast.c
++++ b/nptl/pthread_cond_broadcast.c
+@@ -23,69 +23,74 @@
+ #include <pthread.h>
+ #include <pthreadP.h>
+ #include <stap-probe.h>
++#include <atomic.h>
+ 
+ #include <shlib-compat.h>
+ #include <kernel-features.h>
+ 
+ 
++/* See __pthread_cond_wait for a high-level description of the algorithm.  */
+ int
+-__pthread_cond_broadcast (cond)
+-     pthread_cond_t *cond;
++__pthread_cond_broadcast (pthread_cond_t *cond)
+ {
+-  LIBC_PROBE (cond_broadcast, 1, cond);
++  unsigned int gen, wseq, ssent;
+ 
+-  int pshared = (cond->__data.__mutex == (void *) ~0l)
++  /* See comment in __pthread_cond_signal.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+-  /* Make sure we are alone.  */
+-  lll_lock (cond->__data.__lock, pshared);
+-
+-  /* Are there any waiters to be woken?  */
+-  if (cond->__data.__total_seq > cond->__data.__wakeup_seq)
+-    {
+-      /* Yes.  Mark them all as woken.  */
+-      cond->__data.__wakeup_seq = cond->__data.__total_seq;
+-      cond->__data.__woken_seq = cond->__data.__total_seq;
+-      cond->__data.__futex = (unsigned int) cond->__data.__total_seq * 2;
+-      int futex_val = cond->__data.__futex;
+-      /* Signal that a broadcast happened.  */
+-      ++cond->__data.__broadcast_seq;
+-
+-      /* We are done.  */
+-      lll_unlock (cond->__data.__lock, pshared);
+ 
+-      /* Wake everybody.  */
+-      pthread_mutex_t *mut = (pthread_mutex_t *) cond->__data.__mutex;
+-
+-      /* Do not use requeue for pshared condvars.  */
+-      if (mut == (void *) ~0l
+-	  || PTHREAD_MUTEX_PSHARED (mut) & PTHREAD_MUTEX_PSHARED_BIT)
+-	goto wake_all;
++  LIBC_PROBE (cond_broadcast, 1, cond);
+ 
+-#if (defined lll_futex_cmp_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-      if (USE_REQUEUE_PI (mut))
+-	{
+-	  if (lll_futex_cmp_requeue_pi (&cond->__data.__futex, 1, INT_MAX,
+-					&mut->__data.__lock, futex_val,
+-					LLL_PRIVATE) == 0)
+-	    return 0;
+-	}
+-      else
+-#endif
+-	/* lll_futex_requeue returns 0 for success and non-zero
+-	   for errors.  */
+-	if (!__builtin_expect (lll_futex_requeue (&cond->__data.__futex, 1,
+-						  INT_MAX, &mut->__data.__lock,
+-						  futex_val, LLL_PRIVATE), 0))
+-	  return 0;
++  /* We use the same approach for broadcasts as for normal signals but wake
++     all waiters (i.e., we try to set SIGNALS_SENT to WSEQ).  However, to
++     prevent an excessive number of spurious wake-ups, we need to check
++     whether we read values for SIGNALS_SENT and WSEQ that are from one
++     generation; otherwise, we could read a not-yet-reset WSEQ and a reset
++     SIGNAL_SENT, resulting in a very large number of spurious wake-ups that
++     we make available.  Checking the generation won't prevent an ABA problem
++     for the CAS in the loop below when the generation changes between our
++     generation check and the CAS; however, in this case, we just add a still
++     reasonable number of spurious wake-ups (i.e., equal to the number of
++     waiters than were actually blocked on the condvar at some point in the
++     past).  Therefore, we first load the current generation.  We need
++     acquire MO here to make sure that we next read values for WSEQ and
++     SIGNALS_SENT from this or a later generation (see the matching release
++     MOs in __pthread_cond_wait).  */
++  gen = atomic_load_acquire (&cond->__data.__generation);
++  wseq = atomic_load_relaxed (&cond->__data.__wseq);
++  ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
++  do
++    {
+ 
+-wake_all:
+-      lll_futex_wake (&cond->__data.__futex, INT_MAX, pshared);
+-      return 0;
++      /* If the generation changed concurrently, then we could have been
++         positioned in the earlier generation; thus, all waiters we must wake
++         have been or will be woken during the quiescence period.  The other
++         conditions are the same as in __pthread_cond_signal.
++         We add an acquire-MO fence to ensure that loading the stores to WSEQ
++         and SIGNALS_SENT that we read from above happened before we read
++         GENERATION a second time, which allows us to detect if we read
++         partially reset state or state from a new generation (see
++         __pthread_cond_wait and the matching release MO stores there).  */
++      atomic_thread_fence_acquire ();
++      if (gen != atomic_load_relaxed (&cond->__data.__generation)
++	  || ssent >= wseq || wseq >= __PTHREAD_COND_WSEQ_THRESHOLD)
++	return 0;
+     }
+-
+-  /* We are done.  */
+-  lll_unlock (cond->__data.__lock, pshared);
++  while (!atomic_compare_exchange_weak_relaxed (&cond->__data.__signals_sent,
++						&ssent, wseq));
++
++  /* XXX Could we skip the futex_wake if not necessary (eg, if there are just
++     spinning waiters)?  This would need additional communication but could it
++     be more efficient than the kernel-side communication?  Should we spin for
++     a while to see if our signal was consumed in the meantime?  */
++  /* TODO Use futex_requeue on the mutex?  Could increase broadcast scalability
++     if there are many waiters, but this depends on the scalability of the
++     mutex.  It also prevents use of lock elision, and requires all waiters
++     to put the mutex in contended state when they re-acquire it, independent
++     of whether they were woken by a broadcast or not.  Notes that we can only
++     requeue if the mutex is set already (ie, we had waiters already).  */
++  /* XXX Really INT_MAX? Would WSEQ-SIGNALS_SENT be possible?  Useful?  */
++  lll_futex_wake (&cond->__data.__signals_sent, INT_MAX, pshared);
+ 
+   return 0;
+ }
+diff --git a/nptl/pthread_cond_destroy.c b/nptl/pthread_cond_destroy.c
+index 410e52d..7c9cf13 100644
+--- a/nptl/pthread_cond_destroy.c
++++ b/nptl/pthread_cond_destroy.c
+@@ -20,67 +20,94 @@
+ #include <shlib-compat.h>
+ #include "pthreadP.h"
+ #include <stap-probe.h>
+-
+-
++#include <atomic.h>
++
++
++/* See __pthread_cond_wait for a high-level description of the algorithm.
++
++   A correct program must make sure that no waiters are blocked on the condvar
++   when it is destroyed, and that there are no concurrent signals or
++   broadcasts.  To wake waiters reliably, the program must signal or
++   broadcast while holding the mutex or after having held the mutex.  It must
++   also ensure that no signal or broadcast are still pending to unblock
++   waiters; IOW, because waiters can wake up spuriously, the program must
++   effectively ensure that destruction happens after the execution of those
++   signal or broadcast calls.
++   Thus, we can assume that any waiters that are still accessing the condvar
++   will either (1) have been woken but not yet confirmed that they woke up or
++   (2) wait for quiescence to finish (i.e., the only steps they will perform
++   are waiting on GENERATION and then decrementing QUIESCENCE_WAITERS; all
++   other steps related to quiescence are performed by waiters before they
++   release the mutex).
++   Thus, if we are not yet in an ongoing quiescence state, we just make
++   the last concurrently confirming waiter believe we are so that it notifies
++   us; then we wait for QUIESCENCE_WAITERS to finish waiting for the end of
++   the quiescence state.  */
+ int
+-__pthread_cond_destroy (cond)
+-     pthread_cond_t *cond;
++__pthread_cond_destroy (pthread_cond_t *cond)
+ {
+-  int pshared = (cond->__data.__mutex == (void *) ~0l)
++  unsigned int wseq, val;
++
++  /* See comment in __pthread_cond_signal.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+ 
+   LIBC_PROBE (cond_destroy, 1, cond);
+ 
+-  /* Make sure we are alone.  */
+-  lll_lock (cond->__data.__lock, pshared);
+-
+-  if (cond->__data.__total_seq > cond->__data.__wakeup_seq)
+-    {
+-      /* If there are still some waiters which have not been
+-	 woken up, this is an application bug.  */
+-      lll_unlock (cond->__data.__lock, pshared);
+-      return EBUSY;
+-    }
+-
+-  /* Tell pthread_cond_*wait that this condvar is being destroyed.  */
+-  cond->__data.__total_seq = -1ULL;
+-
+-  /* If there are waiters which have been already signalled or
+-     broadcasted, but still are using the pthread_cond_t structure,
+-     pthread_cond_destroy needs to wait for them.  */
+-  unsigned int nwaiters = cond->__data.__nwaiters;
+-
+-  if (nwaiters >= (1 << COND_NWAITERS_SHIFT))
++  /* If we are already in the quiescence state, then signals and broadcasts
++     will not modify SIGNALS_SENT anymore because all waiters will wake up
++     anyway (and we don't have to synchronize between signal/broadcast and the
++     reset of SIGNALS_SENT when quiescence is finished).  Thus, never do the
++     following check in this case; it cannot be reliably anyway, and is also
++     just recommended by POSIX.  */
++  wseq = atomic_load_relaxed (&cond->__data.__wseq);
++  if (wseq != __PTHREAD_COND_WSEQ_THRESHOLD
++      && wseq > atomic_load_relaxed (&cond->__data.__signals_sent))
++    return EBUSY;
++
++  /* Waiters can either be (1) pending to confirm that they have been woken
++     or (2) spinning/blocking on GENERATION to become odd.  Thus, we first
++     need to make sure that any waiter woken by the program has finished the
++     condvar-internal synchronization (i.e., it has confirmed the wake-up).
++     We use the quiescence mechanism to get notified when all of them are
++     finished by adding the right amount of artificial confirmed waiters.
++     XXX Or is just relaxed MO sufficient because happens-before is
++     established through the total modification order on CONFIRMED?  */
++  if (atomic_fetch_add_acq_rel (&cond->__data.__confirmed,
++				__PTHREAD_COND_WSEQ_THRESHOLD - wseq)
++      < wseq)
+     {
+-      /* Wake everybody on the associated mutex in case there are
+-	 threads that have been requeued to it.
+-	 Without this, pthread_cond_destroy could block potentially
+-	 for a long time or forever, as it would depend on other
+-	 thread's using the mutex.
+-	 When all threads waiting on the mutex are woken up, pthread_cond_wait
+-	 only waits for threads to acquire and release the internal
+-	 condvar lock.  */
+-      if (cond->__data.__mutex != NULL
+-	  && cond->__data.__mutex != (void *) ~0l)
++      /* There are waiters that haven't yet confirmed.  If we have an even
++	 number for generation, wait until it is changed by the last waiter
++	 to confirm.  (The last waiter will increase to WSEQ_THRESHOLD, so
++	 it will increase GENERATION to an odd value.)  We need acquire MO
++	 to make any waiters' accesses to the condvar happen before we
++	 destroy it.*/
++      while (1)
+ 	{
+-	  pthread_mutex_t *mut = (pthread_mutex_t *) cond->__data.__mutex;
+-	  lll_futex_wake (&mut->__data.__lock, INT_MAX,
+-			  PTHREAD_MUTEX_PSHARED (mut));
++	  val = atomic_load_acquire (&cond->__data.__generation);
++	  if ((val & 1) != 1)
++	    lll_futex_wait (&cond->__data.__generation, val, pshared);
++	  else
++	    break;
+ 	}
++    }
+ 
+-      do
+-	{
+-	  lll_unlock (cond->__data.__lock, pshared);
+-
+-	  lll_futex_wait (&cond->__data.__nwaiters, nwaiters, pshared);
+-
+-	  lll_lock (cond->__data.__lock, pshared);
+-
+-	  nwaiters = cond->__data.__nwaiters;
+-	}
+-      while (nwaiters >= (1 << COND_NWAITERS_SHIFT));
++  /* If we are in a quiescence period, we also need to wait for those waiters
++     that are waiting for quiescence to finish.  Note that we cannot have
++     pushed waiters into this state by artificially introducing quiescence
++     above, so we also do not wake any such waiters.  As above, we need
++     acquire MO.  */
++  while (1)
++    {
++      val = atomic_load_acquire (&cond->__data.__quiescence_waiters);
++      if (val > 0)
++	lll_futex_wait (&cond->__data.__quiescence_waiters, val, pshared);
++      else
++	break;
+     }
+ 
++  /* The memory the condvar occupies can now be reused.  */
+   return 0;
+ }
+ versioned_symbol (libpthread, __pthread_cond_destroy,
+diff --git a/nptl/pthread_cond_init.c b/nptl/pthread_cond_init.c
+index ce954c7..b3aa779 100644
+--- a/nptl/pthread_cond_init.c
++++ b/nptl/pthread_cond_init.c
+@@ -28,18 +28,17 @@ __pthread_cond_init (cond, cond_attr)
+ {
+   struct pthread_condattr *icond_attr = (struct pthread_condattr *) cond_attr;
+ 
+-  cond->__data.__lock = LLL_LOCK_INITIALIZER;
+-  cond->__data.__futex = 0;
+-  cond->__data.__nwaiters = (icond_attr != NULL
+-			     ? ((icond_attr->value >> 1)
+-				& ((1 << COND_NWAITERS_SHIFT) - 1))
+-			     : CLOCK_REALTIME);
+-  cond->__data.__total_seq = 0;
+-  cond->__data.__wakeup_seq = 0;
+-  cond->__data.__woken_seq = 0;
++  cond->__data.__wseq = 0;
++  cond->__data.__signals_sent = 0;
++  cond->__data.__confirmed = 0;
++  cond->__data.__generation = 0;
+   cond->__data.__mutex = (icond_attr == NULL || (icond_attr->value & 1) == 0
+ 			  ? NULL : (void *) ~0l);
+-  cond->__data.__broadcast_seq = 0;
++  cond->__data.__quiescence_waiters = 0;
++  cond->__data.__clockid = (icond_attr != NULL
++			     ? ((icond_attr->value >> 1)
++				& ((1 << COND_CLOCK_BITS) - 1))
++			     : CLOCK_REALTIME);
+ 
+   LIBC_PROBE (cond_init, 2, cond, cond_attr);
+ 
+diff --git a/nptl/pthread_cond_signal.c b/nptl/pthread_cond_signal.c
+index ba32f40..86968e9 100644
+--- a/nptl/pthread_cond_signal.c
++++ b/nptl/pthread_cond_signal.c
+@@ -22,60 +22,88 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
++#include <atomic.h>
+ 
+ #include <shlib-compat.h>
+ #include <kernel-features.h>
+ #include <stap-probe.h>
+ 
+ 
++/* See __pthread_cond_wait for a high-level description of the algorithm.  */
+ int
+-__pthread_cond_signal (cond)
+-     pthread_cond_t *cond;
++__pthread_cond_signal (pthread_cond_t *cond)
+ {
+-  int pshared = (cond->__data.__mutex == (void *) ~0l)
++  unsigned int wseq, ssent;
++
++  /* MUTEX might get modified concurrently, but relaxed memory order is fine:
++     In case of a shared condvar, the field will be set to value ~0l during
++     initialization of the condvar (which happens before any signaling) and
++     is immutable afterwards; otherwise, the field will never be set to a
++     value of ~0l.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
+ 		? LLL_SHARED : LLL_PRIVATE;
+ 
+   LIBC_PROBE (cond_signal, 1, cond);
+ 
+-  /* Make sure we are alone.  */
+-  lll_lock (cond->__data.__lock, pshared);
+-
+-  /* Are there any waiters to be woken?  */
+-  if (cond->__data.__total_seq > cond->__data.__wakeup_seq)
++  /* Load the waiter sequence number, which represents our relative ordering
++     to any waiters.  Also load the number of signals sent so far.
++     We do not need stronger MOs for both loads nor an atomic snapshot of both
++     because:
++     1) We can pick any position that is allowed by external happens-before
++        constraints.  In particular, if another __pthread_cond_wait call
++        happened before us, this waiter must be eligible for being woken by
++        us.  The only way do establish such a happens-before is by signaling
++        while holding the mutex associated with the condvar and ensuring that
++        the signal's critical section happens after the waiter.  Thus, the
++        mutex ensures that we see this waiter's wseq increase.
++     2) Once we pick a position, we do not need to communicate this to the
++        program via a happens-before that we set up: First, any wake-up could
++        be a spurious wake-up, so the program must not interpret a wake-up as
++        an indication that the waiter happened before a particular signal;
++        second, a program cannot detect whether a waiter has not yet been
++        woken (i.e., it cannot distinguish between a non-woken waiter and one
++        that has been woken but hasn't resumed execution yet), and thus it
++        cannot try to deduce that a signal happened before a particular
++        waiter.
++     3) The load of WSEQ does not need to constrain which value we load for
++        SIGNALS_SENT: If we read an older value for SIGNALS_SENT (compared to
++        what would have been current if we had an atomic snapshot of both),
++        we might send a signal even if we don't need to; thus, we just get a
++        spurious wakeup.  If we read a more recent value (again, compared to
++        an atomic snapshot), then some other signal interfered and might have
++        taken "our" position in the waiter/wake-up sequence; thus the waiters
++        we had to wake will get woken either way.
++     Note that we do not need to check whether the generation changed
++     concurrently: If it would change, we would just skip any signaling
++     because we could have been positioned in the earlier generation -- all
++     the waiters we would have to wake will have been woken during the
++     quiescence period.  Thus, at worst we will cause one additional spurious
++     wake-up if we don't detect this.  */
++  wseq = atomic_load_relaxed (&cond->__data.__wseq);
++  ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
++  do
+     {
+-      /* Yes.  Mark one of them as woken.  */
+-      ++cond->__data.__wakeup_seq;
+-      ++cond->__data.__futex;
+-
+-#if (defined lll_futex_cmp_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-      pthread_mutex_t *mut = cond->__data.__mutex;
+-
+-      if (USE_REQUEUE_PI (mut)
+-	/* This can only really fail with a ENOSYS, since nobody can modify
+-	   futex while we have the cond_lock.  */
+-	  && lll_futex_cmp_requeue_pi (&cond->__data.__futex, 1, 0,
+-				       &mut->__data.__lock,
+-				       cond->__data.__futex, pshared) == 0)
+-	{
+-	  lll_unlock (cond->__data.__lock, pshared);
+-	  return 0;
+-	}
+-      else
+-#endif
+-	/* Wake one.  */
+-	if (! __builtin_expect (lll_futex_wake_unlock (&cond->__data.__futex,
+-						       1, 1,
+-						       &cond->__data.__lock,
+-						       pshared), 0))
+-	  return 0;
+-
+-      /* Fallback if neither of them work.  */
+-      lll_futex_wake (&cond->__data.__futex, 1, pshared);
++      /* If we don't have more waiters than signals or are in a quiescence
++         period, just return because all waiters we must wake have been or
++         will be woken.  See above for further details.  */
++      if (ssent >= wseq || wseq >= __PTHREAD_COND_WSEQ_THRESHOLD)
++	return 0;
+     }
+-
+-  /* We are done.  */
+-  lll_unlock (cond->__data.__lock, pshared);
++  /* Using a CAS loop here instead of a fetch-and-increment avoids one source
++     of spurious wake-ups, namely several signalers racing to wake up a fewer
++     number of waiters and thus also waking subsequent waiters spuriously.
++     The cost of this is somewhat more contention on SIGNALS_SENT on archs
++     that offer atomic fetch-and-increment.
++     TODO Relaxed MO is sufficient here.
++   */
++  while (!atomic_compare_exchange_weak_relaxed (&cond->__data.__signals_sent,
++						&ssent, ssent + 1));
++
++  /* XXX Could we skip the futex_wake if not necessary (eg, if there are just
++     spinning waiters)?  This would need additional communication but could it
++     be more efficient than the kernel-side communication?  Should we spin for
++     a while to see if our signal was consumed in the meantime?  */
++  lll_futex_wake (&cond->__data.__signals_sent, 1, pshared);
+ 
+   return 0;
+ }
+diff --git a/nptl/pthread_cond_timedwait.c b/nptl/pthread_cond_timedwait.c
+deleted file mode 100644
+index bf80467..0000000
+--- a/nptl/pthread_cond_timedwait.c
++++ /dev/null
+@@ -1,268 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Martin Schwidefsky <schwidefsky@de.ibm.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <endian.h>
+-#include <errno.h>
+-#include <sysdep.h>
+-#include <lowlevellock.h>
+-#include <pthread.h>
+-#include <pthreadP.h>
+-#include <sys/time.h>
+-#include <kernel-features.h>
+-
+-#include <shlib-compat.h>
+-
+-#ifndef HAVE_CLOCK_GETTIME_VSYSCALL
+-# undef INTERNAL_VSYSCALL
+-# define INTERNAL_VSYSCALL INTERNAL_SYSCALL
+-# undef INLINE_VSYSCALL
+-# define INLINE_VSYSCALL INLINE_SYSCALL
+-#else
+-# include <libc-vdso.h>
+-#endif
+-
+-/* Cleanup handler, defined in pthread_cond_wait.c.  */
+-extern void __condvar_cleanup (void *arg)
+-     __attribute__ ((visibility ("hidden")));
+-
+-struct _condvar_cleanup_buffer
+-{
+-  int oldtype;
+-  pthread_cond_t *cond;
+-  pthread_mutex_t *mutex;
+-  unsigned int bc_seq;
+-};
+-
+-int
+-__pthread_cond_timedwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
+-			  const struct timespec *abstime)
+-{
+-  struct _pthread_cleanup_buffer buffer;
+-  struct _condvar_cleanup_buffer cbuffer;
+-  int result = 0;
+-
+-  /* Catch invalid parameters.  */
+-  if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+-    return EINVAL;
+-
+-  int pshared = (cond->__data.__mutex == (void *) ~0l)
+-		? LLL_SHARED : LLL_PRIVATE;
+-
+-#if (defined lll_futex_timed_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-  int pi_flag = 0;
+-#endif
+-
+-  /* Make sure we are alone.  */
+-  lll_lock (cond->__data.__lock, pshared);
+-
+-  /* Now we can release the mutex.  */
+-  int err = __pthread_mutex_unlock_usercnt (mutex, 0);
+-  if (err)
+-    {
+-      lll_unlock (cond->__data.__lock, pshared);
+-      return err;
+-    }
+-
+-  /* We have one new user of the condvar.  */
+-  ++cond->__data.__total_seq;
+-  ++cond->__data.__futex;
+-  cond->__data.__nwaiters += 1 << COND_NWAITERS_SHIFT;
+-
+-  /* Work around the fact that the kernel rejects negative timeout values
+-     despite them being valid.  */
+-  if (__glibc_unlikely (abstime->tv_sec < 0))
+-    goto timeout;
+-
+-  /* Remember the mutex we are using here.  If there is already a
+-     different address store this is a bad user bug.  Do not store
+-     anything for pshared condvars.  */
+-  if (cond->__data.__mutex != (void *) ~0l)
+-    cond->__data.__mutex = mutex;
+-
+-  /* Prepare structure passed to cancellation handler.  */
+-  cbuffer.cond = cond;
+-  cbuffer.mutex = mutex;
+-
+-  /* Before we block we enable cancellation.  Therefore we have to
+-     install a cancellation handler.  */
+-  __pthread_cleanup_push (&buffer, __condvar_cleanup, &cbuffer);
+-
+-  /* The current values of the wakeup counter.  The "woken" counter
+-     must exceed this value.  */
+-  unsigned long long int val;
+-  unsigned long long int seq;
+-  val = seq = cond->__data.__wakeup_seq;
+-  /* Remember the broadcast counter.  */
+-  cbuffer.bc_seq = cond->__data.__broadcast_seq;
+-
+-  while (1)
+-    {
+-#if (!defined __ASSUME_FUTEX_CLOCK_REALTIME \
+-     || !defined lll_futex_timed_wait_bitset)
+-      struct timespec rt;
+-      {
+-# ifdef __NR_clock_gettime
+-	INTERNAL_SYSCALL_DECL (err);
+-	(void) INTERNAL_VSYSCALL (clock_gettime, err, 2,
+-				  (cond->__data.__nwaiters
+-				   & ((1 << COND_NWAITERS_SHIFT) - 1)),
+-				  &rt);
+-	/* Convert the absolute timeout value to a relative timeout.  */
+-	rt.tv_sec = abstime->tv_sec - rt.tv_sec;
+-	rt.tv_nsec = abstime->tv_nsec - rt.tv_nsec;
+-# else
+-	/* Get the current time.  So far we support only one clock.  */
+-	struct timeval tv;
+-	(void) __gettimeofday (&tv, NULL);
+-
+-	/* Convert the absolute timeout value to a relative timeout.  */
+-	rt.tv_sec = abstime->tv_sec - tv.tv_sec;
+-	rt.tv_nsec = abstime->tv_nsec - tv.tv_usec * 1000;
+-# endif
+-      }
+-      if (rt.tv_nsec < 0)
+-	{
+-	  rt.tv_nsec += 1000000000;
+-	  --rt.tv_sec;
+-	}
+-      /* Did we already time out?  */
+-      if (__glibc_unlikely (rt.tv_sec < 0))
+-	{
+-	  if (cbuffer.bc_seq != cond->__data.__broadcast_seq)
+-	    goto bc_out;
+-
+-	  goto timeout;
+-	}
+-#endif
+-
+-      unsigned int futex_val = cond->__data.__futex;
+-
+-      /* Prepare to wait.  Release the condvar futex.  */
+-      lll_unlock (cond->__data.__lock, pshared);
+-
+-      /* Enable asynchronous cancellation.  Required by the standard.  */
+-      cbuffer.oldtype = __pthread_enable_asynccancel ();
+-
+-/* REQUEUE_PI was implemented after FUTEX_CLOCK_REALTIME, so it is sufficient
+-   to check just the former.  */
+-#if (defined lll_futex_timed_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-      /* If pi_flag remained 1 then it means that we had the lock and the mutex
+-	 but a spurious waker raced ahead of us.  Give back the mutex before
+-	 going into wait again.  */
+-      if (pi_flag)
+-	{
+-	  __pthread_mutex_cond_lock_adjust (mutex);
+-	  __pthread_mutex_unlock_usercnt (mutex, 0);
+-	}
+-      pi_flag = USE_REQUEUE_PI (mutex);
+-
+-      if (pi_flag)
+-	{
+-	  unsigned int clockbit = (cond->__data.__nwaiters & 1
+-				   ? 0 : FUTEX_CLOCK_REALTIME);
+-	  err = lll_futex_timed_wait_requeue_pi (&cond->__data.__futex,
+-						 futex_val, abstime, clockbit,
+-						 &mutex->__data.__lock,
+-						 pshared);
+-	  pi_flag = (err == 0);
+-	}
+-      else
+-#endif
+-
+-	{
+-#if (!defined __ASSUME_FUTEX_CLOCK_REALTIME \
+-     || !defined lll_futex_timed_wait_bitset)
+-	  /* Wait until woken by signal or broadcast.  */
+-	  err = lll_futex_timed_wait (&cond->__data.__futex,
+-				      futex_val, &rt, pshared);
+-#else
+-	  unsigned int clockbit = (cond->__data.__nwaiters & 1
+-				   ? 0 : FUTEX_CLOCK_REALTIME);
+-	  err = lll_futex_timed_wait_bitset (&cond->__data.__futex, futex_val,
+-					     abstime, clockbit, pshared);
+-#endif
+-	}
+-
+-      /* Disable asynchronous cancellation.  */
+-      __pthread_disable_asynccancel (cbuffer.oldtype);
+-
+-      /* We are going to look at shared data again, so get the lock.  */
+-      lll_lock (cond->__data.__lock, pshared);
+-
+-      /* If a broadcast happened, we are done.  */
+-      if (cbuffer.bc_seq != cond->__data.__broadcast_seq)
+-	goto bc_out;
+-
+-      /* Check whether we are eligible for wakeup.  */
+-      val = cond->__data.__wakeup_seq;
+-      if (val != seq && cond->__data.__woken_seq != val)
+-	break;
+-
+-      /* Not woken yet.  Maybe the time expired?  */
+-      if (__glibc_unlikely (err == -ETIMEDOUT))
+-	{
+-	timeout:
+-	  /* Yep.  Adjust the counters.  */
+-	  ++cond->__data.__wakeup_seq;
+-	  ++cond->__data.__futex;
+-
+-	  /* The error value.  */
+-	  result = ETIMEDOUT;
+-	  break;
+-	}
+-    }
+-
+-  /* Another thread woken up.  */
+-  ++cond->__data.__woken_seq;
+-
+- bc_out:
+-
+-  cond->__data.__nwaiters -= 1 << COND_NWAITERS_SHIFT;
+-
+-  /* If pthread_cond_destroy was called on this variable already,
+-     notify the pthread_cond_destroy caller all waiters have left
+-     and it can be successfully destroyed.  */
+-  if (cond->__data.__total_seq == -1ULL
+-      && cond->__data.__nwaiters < (1 << COND_NWAITERS_SHIFT))
+-    lll_futex_wake (&cond->__data.__nwaiters, 1, pshared);
+-
+-  /* We are done with the condvar.  */
+-  lll_unlock (cond->__data.__lock, pshared);
+-
+-  /* The cancellation handling is back to normal, remove the handler.  */
+-  __pthread_cleanup_pop (&buffer, 0);
+-
+-  /* Get the mutex before returning.  */
+-#if (defined lll_futex_timed_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-  if (pi_flag)
+-    {
+-      __pthread_mutex_cond_lock_adjust (mutex);
+-      err = 0;
+-    }
+-  else
+-#endif
+-    err = __pthread_mutex_cond_lock (mutex);
+-
+-  return err ?: result;
+-}
+-
+-versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
+-		  GLIBC_2_3_2);
+diff --git a/nptl/pthread_cond_wait.c b/nptl/pthread_cond_wait.c
+index 0d6558b..2106bf6 100644
+--- a/nptl/pthread_cond_wait.c
++++ b/nptl/pthread_cond_wait.c
+@@ -22,216 +22,555 @@
+ #include <lowlevellock.h>
+ #include <pthread.h>
+ #include <pthreadP.h>
+-#include <kernel-features.h>
++#include <sys/time.h>
++#include <atomic.h>
+ 
+ #include <shlib-compat.h>
+ #include <stap-probe.h>
++#include <kernel-features.h>
++
++#ifndef HAVE_CLOCK_GETTIME_VSYSCALL
++# undef INTERNAL_VSYSCALL
++# define INTERNAL_VSYSCALL INTERNAL_SYSCALL
++# undef INLINE_VSYSCALL
++# define INLINE_VSYSCALL INLINE_SYSCALL
++#else
++# include <libc-vdso.h>
++#endif
+ 
+ struct _condvar_cleanup_buffer
+ {
+   int oldtype;
+   pthread_cond_t *cond;
+   pthread_mutex_t *mutex;
+-  unsigned int bc_seq;
+ };
+ 
+-
+-void
+-__attribute__ ((visibility ("hidden")))
+-__condvar_cleanup (void *arg)
++static __always_inline void
++__condvar_confirm_wakeup (pthread_cond_t *cond, int pshared)
+ {
+-  struct _condvar_cleanup_buffer *cbuffer =
+-    (struct _condvar_cleanup_buffer *) arg;
+-  unsigned int destroying;
+-  int pshared = (cbuffer->cond->__data.__mutex == (void *) ~0l)
+-		? LLL_SHARED : LLL_PRIVATE;
+-
+-  /* We are going to modify shared data.  */
+-  lll_lock (cbuffer->cond->__data.__lock, pshared);
+-
+-  if (cbuffer->bc_seq == cbuffer->cond->__data.__broadcast_seq)
++  /* Confirm that we have been woken.  If the number of confirmations reaches
++     WSEQ_THRESHOLD, we must be in a quiescence period (i.e., WSEQ must be
++     equal to WSEQ_THRESHOLD).
++     We use acquire-release MO to ensure that accesses to this generation's
++     condvar state happen before any reset of the condvar.
++     XXX Or is just relaxed MO sufficient because happens-before is
++     established through the total modification order on CONFIRMED?  */
++  if (atomic_fetch_add_acq_rel (&cond->__data.__confirmed, 1)
++      == __PTHREAD_COND_WSEQ_THRESHOLD - 1)
+     {
+-      /* This thread is not waiting anymore.  Adjust the sequence counters
+-	 appropriately.  We do not increment WAKEUP_SEQ if this would
+-	 bump it over the value of TOTAL_SEQ.  This can happen if a thread
+-	 was woken and then canceled.  */
+-      if (cbuffer->cond->__data.__wakeup_seq
+-	  < cbuffer->cond->__data.__total_seq)
+-	{
+-	  ++cbuffer->cond->__data.__wakeup_seq;
+-	  ++cbuffer->cond->__data.__futex;
+-	}
+-      ++cbuffer->cond->__data.__woken_seq;
++      /* Need release MO to make our accesses to the condvar happen before
++	 the reset that some other thread will execute.  */
++      atomic_fetch_add_release (&cond->__data.__generation, 1);
++      lll_futex_wake (&cond->__data.__generation, INT_MAX, pshared);
+     }
+ 
+-  cbuffer->cond->__data.__nwaiters -= 1 << COND_NWAITERS_SHIFT;
++}
++
++/* Cancel waiting after having registered as a waiter already.
++   We must not consume another waiter's signal, so we must add an artificial
++   signal.  If we are the first blocked waiter (i.e., SEQ == SIGNALS_SENT,
++   SEQ being our position in WSEQ), then an artificial signal is obviously
++   fine.  If we are blocked (i.e., SEQ > SIGNALS_SENT), then a fake signal
++   might lead to spurious wake-ups of waiters with a smaller position in WSEQ;
++   however, not adding the artificial signal could prevent wake-up of waiters
++   with a larger position in WSEQ because we weren't actually waiting yet
++   effectively consume a signal because we have reserved a slot in WSEQ.  If
++   we are not blocked anymore (i.e., SEQ < SIGNALS_SENT), we still have to
++   add the artificial signal if there are still unblocked threads (i.e.,
++   SIGNALS_SENT < WSEQ).  */
++static __always_inline void
++__condvar_cancel_waiting (pthread_cond_t *cond, int pshared)
++{
++  unsigned int wseq, ssent;
+ 
+-  /* If pthread_cond_destroy was called on this variable already,
+-     notify the pthread_cond_destroy caller all waiters have left
+-     and it can be successfully destroyed.  */
+-  destroying = 0;
+-  if (cbuffer->cond->__data.__total_seq == -1ULL
+-      && cbuffer->cond->__data.__nwaiters < (1 << COND_NWAITERS_SHIFT))
++  /* Add an artificial signal.  See __pthread_cond_signal.  */
++  wseq = atomic_load_relaxed (&cond->__data.__wseq);
++  ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
++  do
+     {
+-      lll_futex_wake (&cbuffer->cond->__data.__nwaiters, 1, pshared);
+-      destroying = 1;
++      if (ssent >= wseq || wseq >= __PTHREAD_COND_WSEQ_THRESHOLD)
++	break;
+     }
++  while (!atomic_compare_exchange_weak_relaxed (&cond->__data.__signals_sent,
++						&ssent, ssent + 1));
++}
+ 
+-  /* We are done.  */
+-  lll_unlock (cbuffer->cond->__data.__lock, pshared);
+-
+-  /* Wake everybody to make sure no condvar signal gets lost.  */
+-  if (! destroying)
+-    lll_futex_wake (&cbuffer->cond->__data.__futex, INT_MAX, pshared);
+-
+-  /* Get the mutex before returning unless asynchronous cancellation
+-     is in effect.  We don't try to get the mutex if we already own it.  */
+-  if (!(USE_REQUEUE_PI (cbuffer->mutex))
+-      || ((cbuffer->mutex->__data.__lock & FUTEX_TID_MASK)
+-	  != THREAD_GETMEM (THREAD_SELF, tid)))
+-  {
+-    __pthread_mutex_cond_lock (cbuffer->mutex);
+-  }
+-  else
+-    __pthread_mutex_cond_lock_adjust (cbuffer->mutex);
++/* Clean-up for cancellation of waiters waiting for normal signals.  We cancel
++   our registration as a waiter, confirm we have woken up, and re-acquire the
++   mutex.  */
++static void
++__condvar_cleanup_waiting (void *arg)
++{
++  struct _condvar_cleanup_buffer *cbuffer =
++    (struct _condvar_cleanup_buffer *) arg;
++  pthread_cond_t *cond = cbuffer->cond;
++  /* See comment in __pthread_cond_signal.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
++		? LLL_SHARED : LLL_PRIVATE;
++
++  __condvar_cancel_waiting (cond, pshared);
++  __condvar_confirm_wakeup (cond, pshared);
++
++  /* Cancellation can happen after we have been woken by a signal's
++     futex_wake (unlike when we cancel waiting due to a timeout on futex_wait,
++     for example).  We do provide an artificial signal in
++     __condvar_cancel_waiting, but we still can have consumed a futex_wake
++     that should have woken another waiter.  We cannot reliably wake this
++     waiter because there might be other, non-eligible waiters that started
++     to block after we have been cancelled; therefore, we need to wake all
++     blocked waiters to really undo our consumption of the futex_wake.  */
++  /* XXX Once we have implemented a form of cancellation that is just enabled
++     during futex_wait, we can try to optimize this.  */
++  lll_futex_wake (&cond->__data.__signals_sent, INT_MAX, pshared);
++
++  /* XXX If locking the mutex fails, should we just stop execution?  This
++     might be better than silently ignoring the error.  */
++  __pthread_mutex_cond_lock (cbuffer->mutex);
+ }
+ 
++/* Clean-up for cancellation of waiters waiting on quiescence to finish.  */
++static void
++__condvar_cleanup_quiescence (void *arg)
++{
++  struct _condvar_cleanup_buffer *cbuffer =
++    (struct _condvar_cleanup_buffer *) arg;
++  pthread_cond_t *cond = cbuffer->cond;
++  /* See comment in __pthread_cond_signal.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
++		? LLL_SHARED : LLL_PRIVATE;
+ 
+-int
+-__pthread_cond_wait (pthread_cond_t *cond, pthread_mutex_t *mutex)
++  /* See __pthread_cond_wait.  */
++  if (atomic_fetch_add_release (&cond->__data.__quiescence_waiters, -1) == 1)
++    lll_futex_wake (&cond->__data.__quiescence_waiters, INT_MAX,
++	pshared);
++
++  /* XXX If locking the mutex fails, should we just stop execution?  This
++     might be better than silently ignoring the error.  */
++  __pthread_mutex_cond_lock (cbuffer->mutex);
++}
++
++/* This condvar implementation guarantees that all calls to signal and
++   broadcast and all of the three virtually atomic parts of each call to wait
++   (i.e., (1) releasing the mutex and blocking, (2) unblocking, and (3) re-
++   acquiring the mutex) happen in some total order that is consistent with the
++   happens-before relations in the calling program.  However, this order does
++   not necessarily result in additional happens-before relations being
++   established (which aligns well with spurious wake-ups being allowed).
++
++   All waiters acquire a certain position in a waiter sequence, WSEQ.  Signals
++   and broadcasts acquire a position or a whole interval in the SIGNALS_SENT
++   sequence.  Waiters are allowed to wake up if either SIGNALS_SENT is larger
++   or equal to their position in WSEQ, or if they have been blocked on a
++   certain futex and selected by the kernel to wake up after a signal or
++   broadcast woke threads that were blocked on this futex.  This is also the
++   primary source for spurious wake-ups: For waiters W1 and W2 with W2's
++   position in WSEQ larger than W1's, if W2 blocks earlier than W1 using this
++   futex, then a signal will wake both W1 and W2.  However, having the
++   possibility of waking waiters spuriously simplifies the algorithm and
++   allows for a lean implementation.
++
++   Futexes only compare 32b values when deciding whether to block a thread,
++   but we need to distinguish more than 1<<32 states for the condvar.  Unlike
++   mutexes, which are just free/acquired/contended, the position of waiters
++   and signals matters because of the requirement of them forming a total
++   order.  Therefore, to avoid ABA issues and prevent potential lost wake-ups,
++   we need to safely reset WSEQ and SIGNALS_SENT.  We do so by quiescing the
++   condvar once WSEQ reaches a threshold (WSEQ_THRESHOLD): We wait for all
++   waiters to confirm that they have woken up by incrementing the CONFIRMED
++   counter, and then reset the condvar state.  Waiters arriving in this
++   quiescence period (i.e., the time between WSEQ reaching WSEQ_THRESHOLD and
++   the reset being complete) will wake up spuriously.
++   To avoid ABA issues for broadcasts that could lead to excessive numbers of
++   spurious wake-ups, we maintain a GENERATION counter that increases
++   whenever we enter and exit a quiescence period; waiters also use this
++   counter to communicate when the quiescence period can be finished by
++   incrementing GENERATION to an odd value.
++   When waiters wait for quiescence to finish, they will have pending accesses
++   to the condvar even though they are not registered as waiters.  Therefore,
++   we count this number of waiters in QUIESCENCE_WAITERS; destruction of the
++   condvar will not take place until there are no such waiters anymore.
++
++   WSEQ is only modified while holding MUTEX, but signals and broadcasts read
++   it without holding the mutex (see both functions for an explanation why
++   this is safe).  SIGNALS_SENT is only modified with CAS operations by
++   signals and broadcast; the only exception is the reset of the condvar
++   during quiescence (but this is fine due to how signals and broadcasts
++   update SIGNALS_SENT).  CONFIRMED is accessed by just waiters with atomic
++   operations, and reset during quiescence.  GENERATION is modified by waiters
++   during quiescence handling, and used by broadcasts to check whether a
++   snapshot of WSEQ and SIGNALS_SENT happened within a single generation.
++   QUIESCENCE_WAITERS is only modified by waiters that wait for quiescence to
++   finish.
++
++   The common-case state is WSEQ < WSEQ_THRESHOLD and GENERATION being even.
++   CONFIRMED is always smaller or equal to WSEQ except during reset.
++   SIGNALS_SENT can be larger than WSEQ, but this happens just during reset
++   or if a signal or broadcast tripped over a reset or the hardware reordered
++   in a funny way, in which case we just get a few more spurious wake-ups
++   (see __pthread_cond_broadcast for details on how we minimize that).
++   If WSEQ equals WSEQ_THRESHOLD, then incoming waiters will wait for all
++   waiters in the current generation to finish, or they will reset the condvar
++   and start a new generation.  If GENERATION is odd, the condvar state is
++   ready for being reset.
++
++   Limitations:
++   * This condvar isn't designed to allow for more than
++     WSEQ_THRESHOLD * (1 << (sizeof(GENERATION) * 8 - 1)) calls to
++     __pthread_cond_wait.  It probably only suffers from potential ABA issues
++     afterwards, but this hasn't been checked nor tested.
++   * More than (1 << (sizeof(QUIESCENCE_WAITERS) * 8) -1 concurrent waiters
++     are not supported.
++   * Beyond what is allowed as errors by POSIX or documented, we can also
++     return the following errors:
++     * EPERM if MUTEX is a recursive mutex and the caller doesn't own it.
++     * EOWNERDEAD or ENOTRECOVERABLE when using robust mutexes.  Unlike
++       for other errors, this can happen when we re-acquire the mutex; this
++       isn't allowed by POSIX (which requires all errors to virtually happen
++       before we release the mutex or change the condvar state), but there's
++       nothing we can do really.
++     * EAGAIN if MUTEX is a recursive mutex and trying to lock it exceeded
++       the maximum number of recursive locks.  The caller cannot expect to own
++       MUTEX.
++     * When using PTHREAD_MUTEX_PP_* mutexes, we can also return all errors
++       returned by __pthread_tpp_change_priority.  We will already have
++       released the mutex in such cases, so the caller cannot expect to own
++       MUTEX.
++
++   Other notes:
++   * Instead of the normal mutex unlock / lock functions, we use
++     __pthread_mutex_unlock_usercnt(m, 0) / __pthread_mutex_cond_lock(m)
++     because those will not change the mutex-internal users count, so that it
++     can be detected when a condvar is still associated with a particular
++     mutex because there is a waiter blocked on this condvar using this mutex.
++*/
++static __always_inline int
++__pthread_cond_wait_common (pthread_cond_t *cond, pthread_mutex_t *mutex,
++    const struct timespec *abstime)
+ {
+   struct _pthread_cleanup_buffer buffer;
+   struct _condvar_cleanup_buffer cbuffer;
++  const int maxspin = 0;
+   int err;
+-  int pshared = (cond->__data.__mutex == (void *) ~0l)
+-		? LLL_SHARED : LLL_PRIVATE;
++  int result = 0;
++  unsigned int spin, seq, gen, ssent;
+ 
+-#if (defined lll_futex_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-  int pi_flag = 0;
+-#endif
++  /* We (can assume to) hold the mutex, so there are no concurrent
++     modifications.  */
++  int pshared = (atomic_load_relaxed (&cond->__data.__mutex) == (void *) ~0l)
++		? LLL_SHARED : LLL_PRIVATE;
+ 
+   LIBC_PROBE (cond_wait, 2, cond, mutex);
+ 
+-  /* Make sure we are alone.  */
+-  lll_lock (cond->__data.__lock, pshared);
++  /* Remember the mutex we are using here, unless it's a pshared condvar.
++     Users must ensure that a condvar is associated with exactly one mutex,
++     so we cannot store an incorrect address if the program is correct.  */
++  if (pshared != LLL_SHARED)
++    atomic_store_relaxed (&cond->__data.__mutex, mutex);
++
++  /* Acquire a position (SEQ) in the waiter sequence (WSEQ) iff this will not
++     cause overflow.  We use an an atomic operation because signals and
++     broadcasts may read while not holding the mutex.  We do not need release
++     MO here because we do not need to establish any happens-before relation
++     with signalers (see __pthread_cond_signal).  */
++  seq = atomic_load_relaxed (&cond->__data.__wseq);
++  if (__glibc_likely (seq < __PTHREAD_COND_WSEQ_THRESHOLD))
++    atomic_store_relaxed (&cond->__data.__wseq, seq + 1);
++
++  /* If we reached WSEQ_THRESHOLD, we need to quiesce the condvar.  */
++  if (seq >= __PTHREAD_COND_WSEQ_THRESHOLD - 1)
++    {
++      /* If we are the waiter that triggered quiescence, we need to still
++         confirm that we have woken up (which can update GENERATION if we are
++         the last one active).
++         XXX We probably do not need to wake anyone because we still hold the
++         mutex so no other waiter can observe that we started quiescence.  */
++      if (seq == __PTHREAD_COND_WSEQ_THRESHOLD - 1)
++	__condvar_confirm_wakeup (cond, pshared);
++      /* Check whether all waiters in the current generation have confirmed
++	 that they do not wait anymore (and thus don't use the condvar state
++	 anymore), and either reset or wait for this to happen.  We do that
++	 while holding the mutex so we will never see WSEQ==WSEQ_THRESHOLD and
++	 an even value for GENERATION that is already a new generation.  We
++	 need acquire MO on the load to ensure that we happen after the last
++	 of the current generation's waiters confirmed that it isn't using the
++	 condvar anymore (see below).
++	 Note that in both cases, we must not actually wait for any signal to
++	 arrive but wake up spuriously.  This allows signalers to not take
++	 actively part in quiescence because they can assume that if they
++	 hit a quiescence period, all waiters they might have to wake will
++	 wake up on their own.  */
++      gen = atomic_load_acquire (&cond->__data.__generation);
++      if ((gen & 1) != 0)
++	{
++	  /* No waiter uses the condvar currently, so we can reset.
++	     This barrier / release-MO fence is necessary to match the
++	     acquire-MO fence in __pthread_cond_broadcast.  It makes sure that
++	     if a broadcast sees one of the values stored during reset, it
++	     will also observe an even value for GENERATION (i.e., broadcast
++	     can check whether it read condvar state that was from different
++	     generations or partially reset).  We store atomically because
++	     the fence, according to the memory model, only has the desired
++	     effect in combination with atomic operations.  */
++	  atomic_thread_fence_release ();
++	  atomic_store_relaxed (&cond->__data.__wseq, 0);
++	  atomic_store_relaxed (&cond->__data.__signals_sent, 0);
++	  atomic_store_relaxed (&cond->__data.__confirmed, 0);
++	  /* Need release MO to make sure that if a broadcast loads the new
++	     generation, it will also observe a fully reset condvar.  */
++	  atomic_fetch_add_release (&cond->__data.__generation, 1);
++	  /* TODO Discuss issues around PI support on quiescence.  */
++	  lll_futex_wake (&cond->__data.__generation, INT_MAX, pshared);
++	  /* We haven't released the mutex, so we can just return.  */
++	  return 0;
++	}
++      else
++	{
++	  /* There are still some waiters that haven't yet confirmed to not be
++	     using the condvar anymore.  Wake all of them if this hasn't
++	     happened yet.  Relaxed MO is sufficient because we only need to
++	     max out SIGNALS_SENT and we still hold the mutex, so a new
++	     generation cannot have been started concurrently.  */
++	  ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
++	  while (1)
++	    {
++	      if (ssent == __PTHREAD_COND_WSEQ_THRESHOLD)
++		break;
++	      if (atomic_compare_exchange_weak_relaxed (
++		  &cond->__data.__signals_sent, &ssent,
++		  __PTHREAD_COND_WSEQ_THRESHOLD))
++		{
++		  /* If we made any signals available, wake up all waiters
++		     blocked on the futex.  */
++		  lll_futex_wake (&cond->__data.__signals_sent, INT_MAX,
++				  pshared);
++		  break;
++		}
++	    }
++	  /* Now wait until no waiter is using the condvar anymore, and wake
++	     up spuriously.  Don't hold the mutex while we wait.  We also
++	     need to tell __pthread_cond_destroy that we will have pending
++	     accesses to the condvar state; we do so before we release the
++	     mutex to make sure that this is visible to destruction.  */
++	  atomic_fetch_add_relaxed (&cond->__data.__quiescence_waiters, 1);
++	  err = __pthread_mutex_unlock_usercnt (mutex, 0);
++
++	  if (__glibc_likely (err == 0))
++	    {
++	      /* Enable asynchronous cancellation before we block, as required
++		 by the standard.  In the cancellation handler, we just do
++		 the same steps as after a normal futex wake-up.  */
++	      cbuffer.cond = cond;
++	      cbuffer.mutex = mutex;
++	      __pthread_cleanup_push (&buffer, __condvar_cleanup_quiescence,
++		  &cbuffer);
++	      cbuffer.oldtype = __pthread_enable_asynccancel ();
++
++	      /* We don't really need to care whether the futex_wait fails
++		 because a spurious wake-up is just fine.  */
++	      /* TODO Spin on generation (with acquire MO)?  */
++	      /* TODO Discuss issues around PI support on quiescence.  */
++	      lll_futex_wait (&cond->__data.__generation, gen, pshared);
++
++	      /* Stopped blocking; disable cancellation.  */
++	      __pthread_disable_asynccancel (cbuffer.oldtype);
++	      __pthread_cleanup_pop (&buffer, 0);
++	    }
++	  /* Notify __pthread_cond_destroy that we won't access the condvar
++	     anymore.  Release MO to make our accesses happen before
++	     destruction.  */
++	  if (atomic_fetch_add_release (&cond->__data.__quiescence_waiters, -1)
++	      == 1)
++	    lll_futex_wake (&cond->__data.__quiescence_waiters, INT_MAX,
++		pshared);
++
++	  /* If unlocking the mutex returned an error, we haven't released it.
++	     We have decremented QUIESCENCE_WAITERS already, so we can just
++	     return here.  */
++	  if (__glibc_unlikely (err != 0))
++	    return err;
++
++	  /* Re-acquire the mutex, and just wake up spuriously.  */
++	  /* XXX Rather abort on errors that are disallowed by POSIX?  */
++	  return __pthread_mutex_cond_lock (mutex);
++	}
++    }
+ 
+-  /* Now we can release the mutex.  */
++  /* Now that we are registered as a waiter, we can release the mutex.
++     Waiting on the condvar must be atomic with releasing the mutex, so if
++     the mutex is used to establish a happens-before relation with any
++     signaler, the waiter must be visible to the latter; thus, we release the
++     mutex after registering as waiter.
++     If releasing the mutex fails, we just cancel our registration as a
++     waiter and confirm that we have woken up.  */
+   err = __pthread_mutex_unlock_usercnt (mutex, 0);
+-  if (__glibc_unlikely (err))
++  if (__glibc_unlikely (err != 0))
+     {
+-      lll_unlock (cond->__data.__lock, pshared);
++      __condvar_cancel_waiting (cond, pshared);
++      __condvar_confirm_wakeup (cond, pshared);
+       return err;
+     }
+ 
+-  /* We have one new user of the condvar.  */
+-  ++cond->__data.__total_seq;
+-  ++cond->__data.__futex;
+-  cond->__data.__nwaiters += 1 << COND_NWAITERS_SHIFT;
+-
+-  /* Remember the mutex we are using here.  If there is already a
+-     different address store this is a bad user bug.  Do not store
+-     anything for pshared condvars.  */
+-  if (cond->__data.__mutex != (void *) ~0l)
+-    cond->__data.__mutex = mutex;
+-
+-  /* Prepare structure passed to cancellation handler.  */
++  /* We might block on a futex, so push the cancellation handler.  */
+   cbuffer.cond = cond;
+   cbuffer.mutex = mutex;
+-
+-  /* Before we block we enable cancellation.  Therefore we have to
+-     install a cancellation handler.  */
+-  __pthread_cleanup_push (&buffer, __condvar_cleanup, &cbuffer);
+-
+-  /* The current values of the wakeup counter.  The "woken" counter
+-     must exceed this value.  */
+-  unsigned long long int val;
+-  unsigned long long int seq;
+-  val = seq = cond->__data.__wakeup_seq;
+-  /* Remember the broadcast counter.  */
+-  cbuffer.bc_seq = cond->__data.__broadcast_seq;
+-
+-  do
++  __pthread_cleanup_push (&buffer, __condvar_cleanup_waiting, &cbuffer);
++
++  /* Loop until we might have been woken, which is the case if either (1) more
++     signals have been sent than what is our position in the waiter sequence
++     or (2) the kernel woke us after we blocked in a futex_wait operation.  We
++     have to consider the latter independently of the former because the
++     kernel might wake in an order that is different from the waiter sequence
++     we determined (and we don't know in which order the individual waiters'
++     futex_wait calls were actually processed in the kernel).
++     We do not need acquire MO for the load from SIGNALS_SENT because we do
++     not need to establish a happens-before with the sender of the signal;
++     because every wake-up could be spurious, the program has to check its
++     condition associated with the condvar anyway and must use suitable
++     synchronization to do so.  IOW, we ensure that the virtual ordering of
++     waiters and signalers is consistent with happens-before, but we do not
++     transfer this order back into happens-before.  Also see the comments
++     in __pthread_cond_signal.  */
++  ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
++  spin = maxspin;
++  while (ssent <= seq)
+     {
+-      unsigned int futex_val = cond->__data.__futex;
+-      /* Prepare to wait.  Release the condvar futex.  */
+-      lll_unlock (cond->__data.__lock, pshared);
+-
+-      /* Enable asynchronous cancellation.  Required by the standard.  */
+-      cbuffer.oldtype = __pthread_enable_asynccancel ();
+-
+-#if (defined lll_futex_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-      /* If pi_flag remained 1 then it means that we had the lock and the mutex
+-	 but a spurious waker raced ahead of us.  Give back the mutex before
+-	 going into wait again.  */
+-      if (pi_flag)
+-	{
+-	  __pthread_mutex_cond_lock_adjust (mutex);
+-	  __pthread_mutex_unlock_usercnt (mutex, 0);
+-	}
+-      pi_flag = USE_REQUEUE_PI (mutex);
+-
+-      if (pi_flag)
+-	{
+-	  err = lll_futex_wait_requeue_pi (&cond->__data.__futex,
+-					   futex_val, &mutex->__data.__lock,
+-					   pshared);
+-
+-	  pi_flag = (err == 0);
+-	}
++      if (spin > 0)
++	spin--;
+       else
++	{
++	  if (abstime == NULL)
++	    {
++	      /* Enable asynchronous cancellation before we block, as required
++		 by the standard.  */
++	      cbuffer.oldtype = __pthread_enable_asynccancel ();
++	      /* Block using SIGNALS_SENT as futex.  If we get woken due to a
++		 concurrent change to the number of signals sent (i.e.,
++		 EAGAIN is returned), we fall back to spinning and
++		 eventually will try to block again.  All other possible
++		 errors returned from the futex_wait call are either
++		 programming errors, or similar to EAGAIN (i.e., EINTR
++		 on a spurious wake-up by the futex).  Otherwise, we have
++		 been woken by a real signal, so the kernel picked us for the
++		 wake-up, and we can stop waiting.  */
++	      err = lll_futex_wait (&cond->__data.__signals_sent, ssent,
++				    pshared);
++	      /* Stopped blocking; disable cancellation.  */
++	      __pthread_disable_asynccancel (cbuffer.oldtype);
++	      if (err == 0)
++		break;
++	    }
++	  else
++	    {
++	      /* Block, but with a timeout.  */
++	      /* Work around the fact that the kernel rejects negative timeout
++		 values despite them being valid.  */
++	      if (__glibc_unlikely (abstime->tv_sec < 0))
++	        goto timeout;
++
++#if (!defined __ASSUME_FUTEX_CLOCK_REALTIME \
++     || !defined lll_futex_timed_wait_bitset)
++	      struct timespec rt;
++	      {
++# ifdef __NR_clock_gettime
++		INTERNAL_SYSCALL_DECL (err);
++		(void) INTERNAL_VSYSCALL (clock_gettime, err, 2,
++		    cond->__data.__clockid, &rt);
++		/* Convert the absolute timeout value to a relative
++		   timeout.  */
++		rt.tv_sec = abstime->tv_sec - rt.tv_sec;
++		rt.tv_nsec = abstime->tv_nsec - rt.tv_nsec;
++# else
++		/* Get the current time.  So far, we support only one
++		   clock.  */
++		struct timeval tv;
++		(void) __gettimeofday (&tv, NULL);
++		/* Convert the absolute timeout value to a relative
++		   timeout.  */
++		rt.tv_sec = abstime->tv_sec - tv.tv_sec;
++		rt.tv_nsec = abstime->tv_nsec - tv.tv_usec * 1000;
++# endif
++	      }
++	      if (rt.tv_nsec < 0)
++		{
++		  rt.tv_nsec += 1000000000;
++		  --rt.tv_sec;
++		}
++	      /* Did we already time out?  */
++	      if (__glibc_unlikely (rt.tv_sec < 0))
++		goto timeout;
++
++	      /* Enable asynchronous cancellation before we block, as required
++		 by the standard.  */
++	      cbuffer.oldtype = __pthread_enable_asynccancel ();
++	      err = lll_futex_timed_wait (&cond->__data.__signals_sent, ssent,
++		  &rt, pshared);
++
++#else
++	      unsigned int clockbit = (cond->__data.__clockid == 1
++		  ? 0 : FUTEX_CLOCK_REALTIME);
++	      /* Enable asynchronous cancellation before we block, as required
++		 by the standard.  */
++	      cbuffer.oldtype = __pthread_enable_asynccancel ();
++	      err = lll_futex_timed_wait_bitset (&cond->__data.__signals_sent,
++		  ssent, abstime, clockbit, pshared);
+ #endif
+-	  /* Wait until woken by signal or broadcast.  */
+-	lll_futex_wait (&cond->__data.__futex, futex_val, pshared);
+-
+-      /* Disable asynchronous cancellation.  */
+-      __pthread_disable_asynccancel (cbuffer.oldtype);
+-
+-      /* We are going to look at shared data again, so get the lock.  */
+-      lll_lock (cond->__data.__lock, pshared);
+-
+-      /* If a broadcast happened, we are done.  */
+-      if (cbuffer.bc_seq != cond->__data.__broadcast_seq)
+-	goto bc_out;
++	      /* Stopped blocking; disable cancellation.  */
++	      __pthread_disable_asynccancel (cbuffer.oldtype);
++
++	      if (err == 0)
++		break;
++	      else if (__glibc_unlikely (err == -ETIMEDOUT))
++		{
++		  timeout:
++		  /* When we timed out, we effectively cancel waiting.  */
++		  __condvar_cancel_waiting (cond, pshared);
++		  result = ETIMEDOUT;
++		  break;
++		}
++	    }
++
++	  spin = maxspin;
++	}
+ 
+-      /* Check whether we are eligible for wakeup.  */
+-      val = cond->__data.__wakeup_seq;
++      /* (Spin-)Wait until enough signals have been sent.  */
++      ssent = atomic_load_relaxed (&cond->__data.__signals_sent);
+     }
+-  while (val == seq || cond->__data.__woken_seq == val);
+-
+-  /* Another thread woken up.  */
+-  ++cond->__data.__woken_seq;
+-
+- bc_out:
+-
+-  cond->__data.__nwaiters -= 1 << COND_NWAITERS_SHIFT;
+ 
+-  /* If pthread_cond_destroy was called on this varaible already,
+-     notify the pthread_cond_destroy caller all waiters have left
+-     and it can be successfully destroyed.  */
+-  if (cond->__data.__total_seq == -1ULL
+-      && cond->__data.__nwaiters < (1 << COND_NWAITERS_SHIFT))
+-    lll_futex_wake (&cond->__data.__nwaiters, 1, pshared);
++  /* We won't block on a futex anymore.  */
++  __pthread_cleanup_pop (&buffer, 0);
+ 
+-  /* We are done with the condvar.  */
+-  lll_unlock (cond->__data.__lock, pshared);
++  /* Confirm that we have been woken.  We do that before acquiring the mutex
++     to reduce the latency of dealing with quiescence, and to allow that
++     pthread_cond_destroy can be executed while having acquired the mutex.
++     Neither signalers nor waiters will wait for quiescence to complete
++     while they hold the mutex.  */
++  __condvar_confirm_wakeup (cond, pshared);
++
++  /* Woken up; now re-acquire the mutex.  If this doesn't fail, return RESULT,
++     which is set to ETIMEDOUT if a timeout occured, or zero otherwise.  */
++  err = __pthread_mutex_cond_lock (mutex);
++  /* XXX Rather abort on errors that are disallowed by POSIX?  */
++  return (err != 0) ? err : result;
++}
+ 
+-  /* The cancellation handling is back to normal, remove the handler.  */
+-  __pthread_cleanup_pop (&buffer, 0);
++int
++__pthread_cond_wait (pthread_cond_t *cond, pthread_mutex_t *mutex)
++{
++  return __pthread_cond_wait_common (cond, mutex, NULL);
++}
+ 
+-  /* Get the mutex before returning.  Not needed for PI.  */
+-#if (defined lll_futex_wait_requeue_pi \
+-     && defined __ASSUME_REQUEUE_PI)
+-  if (pi_flag)
+-    {
+-      __pthread_mutex_cond_lock_adjust (mutex);
+-      return 0;
+-    }
+-  else
+-#endif
+-    return __pthread_mutex_cond_lock (mutex);
++int
++__pthread_cond_timedwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
++    const struct timespec *abstime)
++{
++  /* Check parameter validity.  This should also tell the compiler that
++     it can assume that abstime is not NULL.  */
++  if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
++    return EINVAL;
++  return __pthread_cond_wait_common (cond, mutex, abstime);
+ }
+ 
+ versioned_symbol (libpthread, __pthread_cond_wait, pthread_cond_wait,
+ 		  GLIBC_2_3_2);
++versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
++		  GLIBC_2_3_2);
+diff --git a/nptl/pthread_condattr_getclock.c b/nptl/pthread_condattr_getclock.c
+index 020d21a..2ad585b 100644
+--- a/nptl/pthread_condattr_getclock.c
++++ b/nptl/pthread_condattr_getclock.c
+@@ -25,6 +25,6 @@ pthread_condattr_getclock (attr, clock_id)
+      clockid_t *clock_id;
+ {
+   *clock_id = (((((const struct pthread_condattr *) attr)->value) >> 1)
+-	       & ((1 << COND_NWAITERS_SHIFT) - 1));
++	       & ((1 << COND_CLOCK_BITS) - 1));
+   return 0;
+ }
+diff --git a/nptl/pthread_condattr_setclock.c b/nptl/pthread_condattr_setclock.c
+index 0748d78..cb8d8dd 100644
+--- a/nptl/pthread_condattr_setclock.c
++++ b/nptl/pthread_condattr_setclock.c
+@@ -36,11 +36,11 @@ pthread_condattr_setclock (attr, clock_id)
+     return EINVAL;
+ 
+   /* Make sure the value fits in the bits we reserved.  */
+-  assert (clock_id < (1 << COND_NWAITERS_SHIFT));
++  assert (clock_id < (1 << COND_CLOCK_BITS));
+ 
+   int *valuep = &((struct pthread_condattr *) attr)->value;
+ 
+-  *valuep = ((*valuep & ~(((1 << COND_NWAITERS_SHIFT) - 1) << 1))
++  *valuep = ((*valuep & ~(((1 << COND_CLOCK_BITS) - 1) << 1))
+ 	     | (clock_id << 1));
+ 
+   return 0;
+diff --git a/nptl/tst-cond1.c b/nptl/tst-cond1.c
+index 64f90e0..fab2b19 100644
+--- a/nptl/tst-cond1.c
++++ b/nptl/tst-cond1.c
+@@ -73,6 +73,9 @@ do_test (void)
+ 
+   puts ("parent: wait for condition");
+ 
++  /* This test will fail on spurious wake-ups, which are allowed; however,
++     the current implementation shouldn't produce spurious wake-ups in the
++     scenario we are testing here.  */
+   err = pthread_cond_wait (&cond, &mut);
+   if (err != 0)
+     error (EXIT_FAILURE, err, "parent: cannot wait fir signal");
+diff --git a/nptl/tst-cond18.c b/nptl/tst-cond18.c
+index ceeb1aa..b14ed79 100644
+--- a/nptl/tst-cond18.c
++++ b/nptl/tst-cond18.c
+@@ -23,6 +23,7 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
++#include <atomic.h>
+ 
+ pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
+ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+@@ -43,6 +44,26 @@ tf (void *id)
+ 	  pthread_mutex_unlock (&lock);
+ 
+ 	  pthread_mutex_lock (&lock);
++#ifdef TEST_QUIESCENCE
++	  /* Make sure we're triggering quiescence regularly by simply
++	     increasing all of WSEQ, SIGNALS_SENT, and CONFIRMED.
++	     We have acquire the lock, so there's no concurrent registration
++	     of waiters nor quiescence reset; thus, WSEQ is not concurrently
++	     modified, and when we increase CONFIRMED, we can never reach
++	     the threshold (but CONFIRMED can be concurrently modified).
++	     Also, there's no other thread doing signals, so we're the only
++	     one modifying SIGNALS_SENT.  */
++	  unsigned int seq = atomic_load_relaxed (&cv.__data.__wseq);
++	  if (seq < __PTHREAD_COND_WSEQ_THRESHOLD - 3 * count)
++	    {
++	      unsigned int d = __PTHREAD_COND_WSEQ_THRESHOLD - 3 * count
++		  - seq;
++	      atomic_store_relaxed (&cv.__data.__wseq, seq + d);
++	      atomic_store_relaxed (&cv.__data.__signals_sent,
++		  atomic_load_relaxed (&cv.__data.__signals_sent) + d);
++	      atomic_fetch_add_relaxed (&cv.__data.__confirmed, d);
++	    }
++#endif
+ 	  int njobs = rand () % (count + 1);
+ 	  nn = njobs;
+ 	  if ((rand () % 30) == 0)
+diff --git a/nptl/tst-cond20.c b/nptl/tst-cond20.c
+index 9de062a..5122370 100644
+--- a/nptl/tst-cond20.c
++++ b/nptl/tst-cond20.c
+@@ -82,6 +82,7 @@ do_test (void)
+       puts ("barrier_init failed");
+       return 1;
+     }
++  /* We simply don't test quiescence in the first round.  See below.  */
+ 
+   pthread_mutex_lock (&mut);
+ 
+@@ -96,7 +97,10 @@ do_test (void)
+ 
+   for (i = 0; i < ROUNDS; ++i)
+     {
+-      pthread_cond_wait (&cond2, &mut);
++      /* Make sure we discard spurious wake-ups.  */
++      do
++	pthread_cond_wait (&cond2, &mut);
++      while (count != N);
+ 
+       if (i & 1)
+         pthread_mutex_unlock (&mut);
+@@ -150,6 +154,14 @@ do_test (void)
+ 	  printf ("pthread_cond_init failed: %s\n", strerror (err));
+ 	  return 1;
+ 	}
++#ifdef TEST_QUIESCENCE
++      /* This results in the condvar being in a quiescence state as soon as
++	 some or all of the waiters have started to block.  Note that we
++	 must not put it immediately in the quiescence state because we
++	 need some of the waiters to change the generation etc.  */
++      cond.__data.__wseq = cond.__data.__signals_sent = cond.__data.__confirmed
++	  =__PTHREAD_COND_WSEQ_THRESHOLD - i % N - 1;
++#endif
+     }
+ 
+   for (i = 0; i < N; ++i)
+diff --git a/nptl/tst-cond22.c b/nptl/tst-cond22.c
+index bd978e5..1ee5188 100644
+--- a/nptl/tst-cond22.c
++++ b/nptl/tst-cond22.c
+@@ -106,10 +106,10 @@ do_test (void)
+       status = 1;
+     }
+ 
+-  printf ("cond = { %d, %x, %lld, %lld, %lld, %p, %u, %u }\n",
+-	  c.__data.__lock, c.__data.__futex, c.__data.__total_seq,
+-	  c.__data.__wakeup_seq, c.__data.__woken_seq, c.__data.__mutex,
+-	  c.__data.__nwaiters, c.__data.__broadcast_seq);
++  printf ("cond = { %u, %u, %u, %u, %p, %u }\n",
++	  c.__data.__wseq, c.__data.__signals_sent, c.__data.__confirmed,
++	  c.__data.__generation, c.__data.__mutex,
++	  c.__data.__quiescence_waiters);
+ 
+   if (pthread_create (&th, NULL, tf, (void *) 1l) != 0)
+     {
+@@ -148,10 +148,10 @@ do_test (void)
+       status = 1;
+     }
+ 
+-  printf ("cond = { %d, %x, %lld, %lld, %lld, %p, %u, %u }\n",
+-	  c.__data.__lock, c.__data.__futex, c.__data.__total_seq,
+-	  c.__data.__wakeup_seq, c.__data.__woken_seq, c.__data.__mutex,
+-	  c.__data.__nwaiters, c.__data.__broadcast_seq);
++  printf ("cond = { %u, %u, %u, %u, %p, %u }\n",
++	  c.__data.__wseq, c.__data.__signals_sent, c.__data.__confirmed,
++	  c.__data.__generation, c.__data.__mutex,
++	  c.__data.__quiescence_waiters);
+ 
+   return status;
+ }
+diff --git a/nptl/tst-cond25.c b/nptl/tst-cond25.c
+index be0bec4..ddc37a0 100644
+--- a/nptl/tst-cond25.c
++++ b/nptl/tst-cond25.c
+@@ -216,6 +216,14 @@ do_test_wait (thr_func f)
+ 	  printf ("cond_init failed: %s\n", strerror (ret));
+ 	  goto out;
+ 	}
++#ifdef TEST_QUIESCENCE
++      /* This results in the condvar being in a quiescence state as soon as
++	 some or all of the waiters have started to block.  Note that we
++	 must not put it immediately in the quiescence state because we
++	 need some of the waiters to change the generation etc.  */
++      cond.__data.__wseq = cond.__data.__signals_sent = cond.__data.__confirmed
++	  =__PTHREAD_COND_WSEQ_THRESHOLD - i % NUM - 1;
++#endif
+ 
+       if ((ret = pthread_mutex_init (&mutex, &attr)) != 0)
+         {
+diff --git a/nptl/tst-cond26.c b/nptl/tst-cond26.c
+new file mode 100644
+index 0000000..b611d62
+--- /dev/null
++++ b/nptl/tst-cond26.c
+@@ -0,0 +1,2 @@
++#define TEST_QUIESCENCE 1
++#include "tst-cond20.c"
+diff --git a/nptl/tst-cond27.c b/nptl/tst-cond27.c
+new file mode 100644
+index 0000000..8668a24
+--- /dev/null
++++ b/nptl/tst-cond27.c
+@@ -0,0 +1,2 @@
++#define TEST_QUIESCENCE 1
++#include "tst-cond25.c"
+diff --git a/nptl/tst-cond28.c b/nptl/tst-cond28.c
+new file mode 100644
+index 0000000..7fc3b6b
+--- /dev/null
++++ b/nptl/tst-cond28.c
+@@ -0,0 +1,2 @@
++#define TEST_QUIESCENCE 1
++#include "tst-cond18.c"
+diff --git a/sysdeps/aarch64/nptl/bits/pthreadtypes.h b/sysdeps/aarch64/nptl/bits/pthreadtypes.h
+index 0e4795e..c9ae0d6 100644
+--- a/sysdeps/aarch64/nptl/bits/pthreadtypes.h
++++ b/sysdeps/aarch64/nptl/bits/pthreadtypes.h
+@@ -90,14 +90,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   long int __align;
+diff --git a/sysdeps/arm/nptl/bits/pthreadtypes.h b/sysdeps/arm/nptl/bits/pthreadtypes.h
+index 9f2efc2..f84c272 100644
+--- a/sysdeps/arm/nptl/bits/pthreadtypes.h
++++ b/sysdeps/arm/nptl/bits/pthreadtypes.h
+@@ -93,14 +93,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/hppa/nptl/bits/pthreadtypes.h b/sysdeps/hppa/nptl/bits/pthreadtypes.h
+index 845629d..fcd45c9 100644
+--- a/sysdeps/hppa/nptl/bits/pthreadtypes.h
++++ b/sysdeps/hppa/nptl/bits/pthreadtypes.h
+@@ -119,23 +119,19 @@ typedef union
+        start of the 4-word lock structure, the next four words
+        are set all to 1 by the Linuxthreads
+        PTHREAD_COND_INITIALIZER.  */
+-    int __lock __attribute__ ((aligned(16)));
++    unsigned int __wseq __attribute__ ((aligned(16)));
+     /* Tracks the initialization of this structure:
+        0  initialized with NPTL PTHREAD_COND_INITIALIZER.
+        1  initialized with Linuxthreads PTHREAD_COND_INITIALIZER.
+        2  initialization in progress.  */
+     int __initializer;
+-    unsigned int __futex;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    /* In the old Linuxthreads this would have been the start
+-       of the pthread_fastlock status word.  */
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
+-    /* The NPTL pthread_cond_t is exactly the same size as
+-       the Linuxthreads version, there are no words to spare.  */
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/ia64/nptl/bits/pthreadtypes.h b/sysdeps/ia64/nptl/bits/pthreadtypes.h
+index e9762f5..9477f9a 100644
+--- a/sysdeps/ia64/nptl/bits/pthreadtypes.h
++++ b/sysdeps/ia64/nptl/bits/pthreadtypes.h
+@@ -90,14 +90,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   long int __align;
+diff --git a/sysdeps/m68k/nptl/bits/pthreadtypes.h b/sysdeps/m68k/nptl/bits/pthreadtypes.h
+index 0e2bcdd..40fdec1 100644
+--- a/sysdeps/m68k/nptl/bits/pthreadtypes.h
++++ b/sysdeps/m68k/nptl/bits/pthreadtypes.h
+@@ -93,14 +93,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock __attribute__ ((__aligned__ (4)));
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq __attribute__ ((__aligned__ (4)));
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/microblaze/nptl/bits/pthreadtypes.h b/sysdeps/microblaze/nptl/bits/pthreadtypes.h
+index b8bd828..58a0daa 100644
+--- a/sysdeps/microblaze/nptl/bits/pthreadtypes.h
++++ b/sysdeps/microblaze/nptl/bits/pthreadtypes.h
+@@ -91,14 +91,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/mips/nptl/bits/pthreadtypes.h b/sysdeps/mips/nptl/bits/pthreadtypes.h
+index 8cf4547..4267568 100644
+--- a/sysdeps/mips/nptl/bits/pthreadtypes.h
++++ b/sysdeps/mips/nptl/bits/pthreadtypes.h
+@@ -122,14 +122,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/nios2/nptl/bits/pthreadtypes.h b/sysdeps/nios2/nptl/bits/pthreadtypes.h
+index 4a20803..d35bd01 100644
+--- a/sysdeps/nios2/nptl/bits/pthreadtypes.h
++++ b/sysdeps/nios2/nptl/bits/pthreadtypes.h
+@@ -93,14 +93,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/nptl/internaltypes.h b/sysdeps/nptl/internaltypes.h
+index 8f5cfa4..726a760 100644
+--- a/sysdeps/nptl/internaltypes.h
++++ b/sysdeps/nptl/internaltypes.h
+@@ -68,20 +68,13 @@ struct pthread_condattr
+ {
+   /* Combination of values:
+ 
+-     Bit 0  : flag whether conditional variable will be sharable between
+-	      processes.
+-
+-     Bit 1-7: clock ID.  */
++     Bit 0                : flag whether conditional variable will be
++                            sharable between processes.
++     Bit 1-COND_CLOCK_BITS: Clock ID.  COND_CLOCK_BITS is the number of bits
++                            needed to represent the ID of the clock.  */
+   int value;
+ };
+-
+-
+-/* The __NWAITERS field is used as a counter and to house the number
+-   of bits for other purposes.  COND_CLOCK_BITS is the number
+-   of bits needed to represent the ID of the clock.  COND_NWAITERS_SHIFT
+-   is the number of bits reserved for other purposes like the clock.  */
+-#define COND_CLOCK_BITS		1
+-#define COND_NWAITERS_SHIFT	1
++#define COND_CLOCK_BITS	1
+ 
+ 
+ /* Read-write lock variable attribute data structure.  */
+diff --git a/sysdeps/nptl/pthread.h b/sysdeps/nptl/pthread.h
+index 70ff250..3749f08 100644
+--- a/sysdeps/nptl/pthread.h
++++ b/sysdeps/nptl/pthread.h
+@@ -185,7 +185,7 @@ enum
+ 
+ 
+ /* Conditional variable handling.  */
+-#define PTHREAD_COND_INITIALIZER { { 0, 0, 0, 0, 0, (void *) 0, 0, 0 } }
++#define PTHREAD_COND_INITIALIZER { { 0, 0, 0, 0, (void *) 0, 0, 0 } }
+ 
+ 
+ /* Cleanup buffers */
+diff --git a/sysdeps/s390/nptl/bits/pthreadtypes.h b/sysdeps/s390/nptl/bits/pthreadtypes.h
+index 1f3bb14..d96dbbe 100644
+--- a/sysdeps/s390/nptl/bits/pthreadtypes.h
++++ b/sysdeps/s390/nptl/bits/pthreadtypes.h
+@@ -142,14 +142,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/sh/nptl/bits/pthreadtypes.h b/sysdeps/sh/nptl/bits/pthreadtypes.h
+index 5940232..412e831 100644
+--- a/sysdeps/sh/nptl/bits/pthreadtypes.h
++++ b/sysdeps/sh/nptl/bits/pthreadtypes.h
+@@ -93,14 +93,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/sparc/nptl/bits/pthreadtypes.h b/sysdeps/sparc/nptl/bits/pthreadtypes.h
+index 6faf8b2..5e72d77 100644
+--- a/sysdeps/sparc/nptl/bits/pthreadtypes.h
++++ b/sysdeps/sparc/nptl/bits/pthreadtypes.h
+@@ -122,14 +122,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/tile/nptl/bits/pthreadtypes.h b/sysdeps/tile/nptl/bits/pthreadtypes.h
+index 1f6553d..bb521b7 100644
+--- a/sysdeps/tile/nptl/bits/pthreadtypes.h
++++ b/sysdeps/tile/nptl/bits/pthreadtypes.h
+@@ -122,14 +122,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/unix/sysv/linux/alpha/bits/pthreadtypes.h b/sysdeps/unix/sysv/linux/alpha/bits/pthreadtypes.h
+index 7121d0b..5d42d70 100644
+--- a/sysdeps/unix/sysv/linux/alpha/bits/pthreadtypes.h
++++ b/sysdeps/unix/sysv/linux/alpha/bits/pthreadtypes.h
+@@ -89,14 +89,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/unix/sysv/linux/hppa/internaltypes.h b/sysdeps/unix/sysv/linux/hppa/internaltypes.h
+index 651ce2e..d649657 100644
+--- a/sysdeps/unix/sysv/linux/hppa/internaltypes.h
++++ b/sysdeps/unix/sysv/linux/hppa/internaltypes.h
+@@ -46,32 +46,38 @@ fails because __initializer is zero, and the structure will be used as
+ is correctly.  */
+ 
+ #define cond_compat_clear(var) \
+-({											\
+-  int tmp = 0;										\
+-  var->__data.__lock = 0;								\
+-  var->__data.__futex = 0;								\
+-  var->__data.__mutex = NULL;								\
+-  /* Clear __initializer last, to indicate initialization is done.  */			\
+-  __asm__ __volatile__ ("stw,ma %1,0(%0)"						\
+-			: : "r" (&var->__data.__initializer), "r" (tmp) : "memory");	\
++({									\
++  int tmp = 0;								\
++  var->__data.__wseq = 0;						\
++  var->__data.__signals_sent = 0;					\
++  var->__data.__confirmed = 0;						\
++  var->__data.__generation = 0;						\
++  var->__data.__mutex = NULL;						\
++  var->__data.__quiescence_waiters = 0;					\
++  var->__data.__clockid = 0;						\
++  /* Clear __initializer last, to indicate initialization is done.  */	\
++  /* This synchronizes-with the acquire load below.  */			\
++  atomic_store_release (&var->__data.__initializer, 0);			\
+ })
+ 
+ #define cond_compat_check_and_clear(var) \
+ ({								\
+-  int ret;							\
+-  volatile int *value = &var->__data.__initializer;		\
+-  if ((ret = atomic_compare_and_exchange_val_acq(value, 2, 1)))	\
++  int v;							\
++  int *value = &var->__data.__initializer;			\
++  /* This synchronizes-with the release store above.  */	\
++  while ((v = atomic_load_acquire (value)) != 0)		\
+     {								\
+-      if (ret == 1)						\
++      if (v == 1						\
++	  /* Relaxed MO is fine; it only matters who's first.  */        \
++	  && atomic_compare_exchange_acquire_weak_relaxed (value, 1, 2)) \
+ 	{							\
+-	  /* Initialize structure.  */				\
++	  /* We're first; initialize structure.  */		\
+ 	  cond_compat_clear (var);				\
++	  break;						\
+ 	}							\
+       else							\
+-        {							\
+-	  /* Yield until structure is initialized.  */		\
+-	  while (*value == 2) sched_yield ();			\
+-        }							\
++	/* Yield before we re-check initialization status.  */	\
++	sched_yield ();						\
+     }								\
+ })
+ 
+diff --git a/sysdeps/unix/sysv/linux/hppa/pthread_cond_timedwait.c b/sysdeps/unix/sysv/linux/hppa/pthread_cond_timedwait.c
+deleted file mode 100644
+index 6199013..0000000
+--- a/sysdeps/unix/sysv/linux/hppa/pthread_cond_timedwait.c
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/* Copyright (C) 2009-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Carlos O'Donell <carlos@codesourcery.com>, 2009.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library.  If not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#ifndef INCLUDED_SELF
+-# define INCLUDED_SELF
+-# include <pthread_cond_timedwait.c>
+-#else
+-# include <pthread.h>
+-# include <pthreadP.h>
+-# include <internaltypes.h>
+-# include <shlib-compat.h>
+-int
+-__pthread_cond_timedwait (cond, mutex, abstime)
+-     pthread_cond_t *cond;
+-     pthread_mutex_t *mutex;
+-     const struct timespec *abstime;
+-{
+-  cond_compat_check_and_clear (cond);
+-  return __pthread_cond_timedwait_internal (cond, mutex, abstime);
+-}
+-versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
+-                  GLIBC_2_3_2);
+-# undef versioned_symbol
+-# define versioned_symbol(lib, local, symbol, version)
+-# undef __pthread_cond_timedwait
+-# define __pthread_cond_timedwait __pthread_cond_timedwait_internal
+-# include_next <pthread_cond_timedwait.c>
+-#endif
+diff --git a/sysdeps/unix/sysv/linux/hppa/pthread_cond_wait.c b/sysdeps/unix/sysv/linux/hppa/pthread_cond_wait.c
+index 5e1506f..1496730 100644
+--- a/sysdeps/unix/sysv/linux/hppa/pthread_cond_wait.c
++++ b/sysdeps/unix/sysv/linux/hppa/pthread_cond_wait.c
+@@ -34,9 +34,22 @@ __pthread_cond_wait (cond, mutex)
+ }
+ versioned_symbol (libpthread, __pthread_cond_wait, pthread_cond_wait,
+                   GLIBC_2_3_2);
++int
++__pthread_cond_timedwait (cond, mutex, abstime)
++     pthread_cond_t *cond;
++     pthread_mutex_t *mutex;
++     const struct timespec *abstime;
++{
++  cond_compat_check_and_clear (cond);
++  return __pthread_cond_timedwait_internal (cond, mutex, abstime);
++}
++versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
++                  GLIBC_2_3_2);
+ # undef versioned_symbol
+ # define versioned_symbol(lib, local, symbol, version)
+ # undef __pthread_cond_wait
+ # define __pthread_cond_wait __pthread_cond_wait_internal
++# undef __pthread_cond_timedwait
++# define __pthread_cond_timedwait __pthread_cond_timedwait_internal
+ # include_next <pthread_cond_wait.c>
+ #endif
+diff --git a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S b/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S
+deleted file mode 100644
+index 5ddd5ac..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_broadcast.S
++++ /dev/null
+@@ -1,241 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <kernel-features.h>
+-#include <pthread-pi-defines.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-	.text
+-
+-	/* int pthread_cond_broadcast (pthread_cond_t *cond) */
+-	.globl	__pthread_cond_broadcast
+-	.type	__pthread_cond_broadcast, @function
+-	.align	16
+-__pthread_cond_broadcast:
+-	cfi_startproc
+-	pushl	%ebx
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebx, 0)
+-	pushl	%esi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%esi, 0)
+-	pushl	%edi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%edi, 0)
+-	pushl	%ebp
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebp, 0)
+-	cfi_remember_state
+-
+-	movl	20(%esp), %ebx
+-
+-	LIBC_PROBE (cond_broadcast, 1, %edx)
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jnz	1f
+-
+-2:	addl	$cond_futex, %ebx
+-	movl	total_seq+4-cond_futex(%ebx), %eax
+-	movl	total_seq-cond_futex(%ebx), %ebp
+-	cmpl	wakeup_seq+4-cond_futex(%ebx), %eax
+-	ja	3f
+-	jb	4f
+-	cmpl	wakeup_seq-cond_futex(%ebx), %ebp
+-	jna	4f
+-
+-	/* Cause all currently waiting threads to recognize they are
+-	   woken up.  */
+-3:	movl	%ebp, wakeup_seq-cond_futex(%ebx)
+-	movl	%eax, wakeup_seq-cond_futex+4(%ebx)
+-	movl	%ebp, woken_seq-cond_futex(%ebx)
+-	movl	%eax, woken_seq-cond_futex+4(%ebx)
+-	addl	%ebp, %ebp
+-	addl	$1, broadcast_seq-cond_futex(%ebx)
+-	movl	%ebp, (%ebx)
+-
+-	/* Get the address of the mutex used.  */
+-	movl	dep_mutex-cond_futex(%ebx), %edi
+-
+-	/* Unlock.  */
+-	LOCK
+-	subl	$1, cond_lock-cond_futex(%ebx)
+-	jne	7f
+-
+-	/* Don't use requeue for pshared condvars.  */
+-8:	cmpl	$-1, %edi
+-	je	9f
+-
+-	/* Do not use requeue for pshared condvars.  */
+-	testl	$PS_BIT, MUTEX_KIND(%edi)
+-	jne	9f
+-
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	   the robust bit is not set.  */
+-	movl	MUTEX_KIND(%edi), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	je	81f
+-
+-	/* Wake up all threads.  */
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$(FUTEX_CMP_REQUEUE|FUTEX_PRIVATE_FLAG), %ecx
+-#else
+-	movl	%gs:PRIVATE_FUTEX, %ecx
+-	orl	$FUTEX_CMP_REQUEUE, %ecx
+-#endif
+-	movl	$SYS_futex, %eax
+-	movl	$0x7fffffff, %esi
+-	movl	$1, %edx
+-	/* Get the address of the futex involved.  */
+-# if MUTEX_FUTEX != 0
+-	addl	$MUTEX_FUTEX, %edi
+-# endif
+-/* FIXME: Until Ingo fixes 4G/4G vDSO, 6 arg syscalls are broken for sysenter.
+-	ENTER_KERNEL  */
+-	int	$0x80
+-
+-	/* For any kind of error, which mainly is EAGAIN, we try again
+-	   with WAKE.  The general test also covers running on old
+-	   kernels.  */
+-	cmpl	$0xfffff001, %eax
+-	jae	9f
+-
+-6:	xorl	%eax, %eax
+-	popl	%ebp
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebp)
+-	popl	%edi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%edi)
+-	popl	%esi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%esi)
+-	popl	%ebx
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebx)
+-	ret
+-
+-	cfi_restore_state
+-
+-81:	movl	$(FUTEX_CMP_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %ecx
+-	movl	$SYS_futex, %eax
+-	movl	$0x7fffffff, %esi
+-	movl	$1, %edx
+-	/* Get the address of the futex involved.  */
+-# if MUTEX_FUTEX != 0
+-	addl	$MUTEX_FUTEX, %edi
+-# endif
+-	int	$0x80
+-
+-	/* For any kind of error, which mainly is EAGAIN, we try again
+-	with WAKE.  The general test also covers running on old
+-	kernels.  */
+-	cmpl	$0xfffff001, %eax
+-	jb	6b
+-	jmp	9f
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	2b
+-
+-	.align	16
+-	/* Unlock.  */
+-4:	LOCK
+-	subl	$1, cond_lock-cond_futex(%ebx)
+-	je	6b
+-
+-	/* Unlock in loop requires wakeup.  */
+-5:	leal	cond_lock-cond_futex(%ebx), %eax
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	6b
+-
+-	/* Unlock in loop requires wakeup.  */
+-7:	leal	cond_lock-cond_futex(%ebx), %eax
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	8b
+-
+-9:	/* The futex requeue functionality is not available.  */
+-	movl	$0x7fffffff, %edx
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	jmp	6b
+-	cfi_endproc
+-	.size	__pthread_cond_broadcast, .-__pthread_cond_broadcast
+-versioned_symbol (libpthread, __pthread_cond_broadcast, pthread_cond_broadcast,
+-		  GLIBC_2_3_2)
+diff --git a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S b/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S
+deleted file mode 100644
+index 8f4d937..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_signal.S
++++ /dev/null
+@@ -1,216 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <kernel-features.h>
+-#include <pthread-pi-defines.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-	.text
+-
+-	/* int pthread_cond_signal (pthread_cond_t *cond) */
+-	.globl	__pthread_cond_signal
+-	.type	__pthread_cond_signal, @function
+-	.align	16
+-__pthread_cond_signal:
+-
+-	cfi_startproc
+-	pushl	%ebx
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebx, 0)
+-	pushl	%edi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%edi, 0)
+-	cfi_remember_state
+-
+-	movl	12(%esp), %edi
+-
+-	LIBC_PROBE (cond_signal, 1, %edi)
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%edi)
+-#else
+-	cmpxchgl %edx, cond_lock(%edi)
+-#endif
+-	jnz	1f
+-
+-2:	leal	cond_futex(%edi), %ebx
+-	movl	total_seq+4(%edi), %eax
+-	movl	total_seq(%edi), %ecx
+-	cmpl	wakeup_seq+4(%edi), %eax
+-#if cond_lock != 0
+-	/* Must use leal to preserve the flags.  */
+-	leal	cond_lock(%edi), %edi
+-#endif
+-	ja	3f
+-	jb	4f
+-	cmpl	wakeup_seq-cond_futex(%ebx), %ecx
+-	jbe	4f
+-
+-	/* Bump the wakeup number.  */
+-3:	addl	$1, wakeup_seq-cond_futex(%ebx)
+-	adcl	$0, wakeup_seq-cond_futex+4(%ebx)
+-	addl	$1, (%ebx)
+-
+-	/* Wake up one thread.  */
+-	pushl	%esi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%esi, 0)
+-	pushl	%ebp
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebp, 0)
+-
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	sete	%cl
+-	je	8f
+-
+-	movl	dep_mutex-cond_futex(%ebx), %edx
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	   the robust bit is not set.  */
+-	movl	MUTEX_KIND(%edx), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	je	9f
+-
+-8:	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE_OP, %ecx
+-	movl	$SYS_futex, %eax
+-	movl	$1, %edx
+-	movl	$1, %esi
+-	movl	$FUTEX_OP_CLEAR_WAKE_IF_GT_ONE, %ebp
+-	/* FIXME: Until Ingo fixes 4G/4G vDSO, 6 arg syscalls are broken for
+-	   sysenter.
+-	ENTER_KERNEL  */
+-	int	$0x80
+-	popl	%ebp
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebp)
+-	popl	%esi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%esi)
+-
+-	/* For any kind of error, we try again with WAKE.
+-	   The general test also covers running on old kernels.  */
+-	cmpl	$-4095, %eax
+-	jae	7f
+-
+-6:	xorl	%eax, %eax
+-	popl	%edi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%edi)
+-	popl	%ebx
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebx)
+-	ret
+-
+-	cfi_restore_state
+-
+-9:	movl	$(FUTEX_CMP_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %ecx
+-	movl	$SYS_futex, %eax
+-	movl	$1, %edx
+-	xorl	%esi, %esi
+-	movl	dep_mutex-cond_futex(%ebx), %edi
+-	movl	(%ebx), %ebp
+-	/* FIXME: Until Ingo fixes 4G/4G vDSO, 6 arg syscalls are broken for
+-	   sysenter.
+-	ENTER_KERNEL  */
+-	int	$0x80
+-	popl	%ebp
+-	popl	%esi
+-
+-	leal	-cond_futex(%ebx), %edi
+-
+-	/* For any kind of error, we try again with WAKE.
+-	   The general test also covers running on old kernels.  */
+-	cmpl	$-4095, %eax
+-	jb	4f
+-
+-7:
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	orl	$FUTEX_WAKE, %ecx
+-
+-	movl	$SYS_futex, %eax
+-	/* %edx should be 1 already from $FUTEX_WAKE_OP syscall.
+-	movl	$1, %edx  */
+-	ENTER_KERNEL
+-
+-	/* Unlock.  Note that at this point %edi always points to
+-	   cond_lock.  */
+-4:	LOCK
+-	subl	$1, (%edi)
+-	je	6b
+-
+-	/* Unlock in loop requires wakeup.  */
+-5:	movl	%edi, %eax
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	6b
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock == 0
+-	movl	%edi, %edx
+-#else
+-	leal	cond_lock(%edi), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%edi)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	2b
+-
+-	cfi_endproc
+-	.size	__pthread_cond_signal, .-__pthread_cond_signal
+-versioned_symbol (libpthread, __pthread_cond_signal, pthread_cond_signal,
+-		  GLIBC_2_3_2)
+diff --git a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S b/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S
+deleted file mode 100644
+index 130c090..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S
++++ /dev/null
+@@ -1,973 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <pthread-errnos.h>
+-#include <pthread-pi-defines.h>
+-#include <kernel-features.h>
+-#include <stap-probe.h>
+-
+-	.text
+-
+-/* int pthread_cond_timedwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
+-			       const struct timespec *abstime)  */
+-	.globl	__pthread_cond_timedwait
+-	.type	__pthread_cond_timedwait, @function
+-	.align	16
+-__pthread_cond_timedwait:
+-.LSTARTCODE:
+-	cfi_startproc
+-#ifdef SHARED
+-	cfi_personality(DW_EH_PE_pcrel | DW_EH_PE_sdata4 | DW_EH_PE_indirect,
+-			DW.ref.__gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_pcrel | DW_EH_PE_sdata4, .LexceptSTART)
+-#else
+-	cfi_personality(DW_EH_PE_udata4, __gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_udata4, .LexceptSTART)
+-#endif
+-
+-	pushl	%ebp
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebp, 0)
+-	pushl	%edi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%edi, 0)
+-	pushl	%esi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%esi, 0)
+-	pushl	%ebx
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebx, 0)
+-
+-	movl	20(%esp), %ebx
+-	movl	28(%esp), %ebp
+-
+-	LIBC_PROBE (cond_timedwait, 3, %ebx, 24(%esp), %ebp)
+-
+-	cmpl	$1000000000, 4(%ebp)
+-	movl	$EINVAL, %eax
+-	jae	18f
+-
+-	/* Stack frame:
+-
+-	   esp + 32
+-		    +--------------------------+
+-	   esp + 24 | timeout value            |
+-		    +--------------------------+
+-	   esp + 20 | futex pointer            |
+-		    +--------------------------+
+-	   esp + 16 | pi-requeued flag         |
+-		    +--------------------------+
+-	   esp + 12 | old broadcast_seq value  |
+-		    +--------------------------+
+-	   esp +  4 | old wake_seq value       |
+-		    +--------------------------+
+-	   esp +  0 | old cancellation mode    |
+-		    +--------------------------+
+-	*/
+-
+-#ifndef __ASSUME_FUTEX_CLOCK_REALTIME
+-# ifdef PIC
+-	LOAD_PIC_REG (cx)
+-	cmpl	$0, __have_futex_clock_realtime@GOTOFF(%ecx)
+-# else
+-	cmpl	$0, __have_futex_clock_realtime
+-# endif
+-	je	.Lreltmo
+-#endif
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jnz	1f
+-
+-	/* Store the reference to the mutex.  If there is already a
+-	   different value in there this is a bad user bug.  */
+-2:	cmpl	$-1, dep_mutex(%ebx)
+-	movl	24(%esp), %eax
+-	je	17f
+-	movl	%eax, dep_mutex(%ebx)
+-
+-	/* Unlock the mutex.  */
+-17:	xorl	%edx, %edx
+-	call	__pthread_mutex_unlock_usercnt
+-
+-	testl	%eax, %eax
+-	jne	16f
+-
+-	addl	$1, total_seq(%ebx)
+-	adcl	$0, total_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-	addl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-#ifdef __ASSUME_FUTEX_CLOCK_REALTIME
+-# define FRAME_SIZE 24
+-#else
+-# define FRAME_SIZE 32
+-#endif
+-	subl	$FRAME_SIZE, %esp
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-	cfi_remember_state
+-
+-	/* Get and store current wakeup_seq value.  */
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-	movl	broadcast_seq(%ebx), %eax
+-	movl	%edi, 4(%esp)
+-	movl	%edx, 8(%esp)
+-	movl	%eax, 12(%esp)
+-
+-	/* Reset the pi-requeued flag.  */
+-	movl	$0, 16(%esp)
+-
+-	cmpl	$0, (%ebp)
+-	movl	$-ETIMEDOUT, %esi
+-	js	6f
+-
+-8:	movl	cond_futex(%ebx), %edi
+-	movl	%edi, 20(%esp)
+-
+-	/* Unlock.  */
+-	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	3f
+-
+-.LcleanupSTART:
+-4:	call	__pthread_enable_asynccancel
+-	movl	%eax, (%esp)
+-
+-	leal	(%ebp), %esi
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	sete	%cl
+-	je	40f
+-
+-	movl	dep_mutex(%ebx), %edi
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	   the robust bit is not set.  */
+-	movl	MUTEX_KIND(%edi), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	40f
+-
+-	movl	$(FUTEX_WAIT_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %ecx
+-	/* The following only works like this because we only support
+-	   two clocks, represented using a single bit.  */
+-	testl	$1, cond_nwaiters(%ebx)
+-	/* XXX Need to implement using sete instead of a jump.  */
+-	jne	42f
+-	orl	$FUTEX_CLOCK_REALTIME, %ecx
+-
+-42:	movl	20(%esp), %edx
+-	addl	$cond_futex, %ebx
+-.Ladd_cond_futex_pi:
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	subl	$cond_futex, %ebx
+-.Lsub_cond_futex_pi:
+-	movl	%eax, %esi
+-	/* Set the pi-requeued flag only if the kernel has returned 0. The
+-	   kernel does not hold the mutex on ETIMEDOUT or any other error.  */
+-	cmpl	$0, %eax
+-	sete	16(%esp)
+-	je	41f
+-
+-	/* When a futex syscall with FUTEX_WAIT_REQUEUE_PI returns
+-	   successfully, it has already locked the mutex for us and the
+-	   pi_flag (16(%esp)) is set to denote that fact.  However, if another
+-	   thread changed the futex value before we entered the wait, the
+-	   syscall may return an EAGAIN and the mutex is not locked.  We go
+-	   ahead with a success anyway since later we look at the pi_flag to
+-	   decide if we got the mutex or not.  The sequence numbers then make
+-	   sure that only one of the threads actually wake up.  We retry using
+-	   normal FUTEX_WAIT only if the kernel returned ENOSYS, since normal
+-	   and PI futexes don't mix.
+-
+-	   Note that we don't check for EAGAIN specifically; we assume that the
+-	   only other error the futex function could return is EAGAIN (barring
+-	   the ETIMEOUT of course, for the timeout case in futex) since
+-	   anything else would mean an error in our function.  It is too
+-	   expensive to do that check for every call (which is  quite common in
+-	   case of a large number of threads), so it has been skipped.  */
+-	cmpl	$-ENOSYS, %eax
+-	jne	41f
+-	xorl	%ecx, %ecx
+-
+-40:	subl	$1, %ecx
+-	movl	$0, 16(%esp)
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAIT_BITSET, %ecx
+-	/* The following only works like this because we only support
+-	   two clocks, represented using a single bit.  */
+-	testl	$1, cond_nwaiters(%ebx)
+-	jne	30f
+-	orl	$FUTEX_CLOCK_REALTIME, %ecx
+-30:
+-	movl	20(%esp), %edx
+-	movl	$0xffffffff, %ebp
+-	addl	$cond_futex, %ebx
+-.Ladd_cond_futex:
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	subl	$cond_futex, %ebx
+-.Lsub_cond_futex:
+-	movl	28+FRAME_SIZE(%esp), %ebp
+-	movl	%eax, %esi
+-
+-41:	movl	(%esp), %eax
+-	call	__pthread_disable_asynccancel
+-.LcleanupEND:
+-
+-	/* Lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jnz	5f
+-
+-6:	movl	broadcast_seq(%ebx), %eax
+-	cmpl	12(%esp), %eax
+-	jne	23f
+-
+-	movl	woken_seq(%ebx), %eax
+-	movl	woken_seq+4(%ebx), %ecx
+-
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-
+-	cmpl	8(%esp), %edx
+-	jne	7f
+-	cmpl	4(%esp), %edi
+-	je	15f
+-
+-7:	cmpl	%ecx, %edx
+-	jne	9f
+-	cmp	%eax, %edi
+-	jne	9f
+-
+-15:	cmpl	$-ETIMEDOUT, %esi
+-	je	28f
+-
+-	/* We need to go back to futex_wait.  If we're using requeue_pi, then
+-	   release the mutex we had acquired and go back.  */
+-	movl	16(%esp), %edx
+-	test	%edx, %edx
+-	jz	8b
+-
+-	/* Adjust the mutex values first and then unlock it.  The unlock
+-	   should always succeed or else the kernel did not lock the mutex
+-	   correctly.  */
+-	movl	dep_mutex(%ebx), %eax
+-	call	__pthread_mutex_cond_lock_adjust
+-	xorl	%edx, %edx
+-	call	__pthread_mutex_unlock_usercnt
+-	jmp	8b
+-
+-28:	addl	$1, wakeup_seq(%ebx)
+-	adcl	$0, wakeup_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-	movl	$ETIMEDOUT, %esi
+-	jmp	14f
+-
+-23:	xorl	%esi, %esi
+-	jmp	24f
+-
+-9:	xorl	%esi, %esi
+-14:	addl	$1, woken_seq(%ebx)
+-	adcl	$0, woken_seq+4(%ebx)
+-
+-24:	subl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	movl	total_seq(%ebx), %eax
+-	andl	total_seq+4(%ebx), %eax
+-	cmpl	$0xffffffff, %eax
+-	jne	25f
+-	movl	cond_nwaiters(%ebx), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	25f
+-
+-	addl	$cond_nwaiters, %ebx
+-	movl	$SYS_futex, %eax
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_nwaiters(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$1, %edx
+-	ENTER_KERNEL
+-	subl	$cond_nwaiters, %ebx
+-
+-25:	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	10f
+-
+-11:	movl	24+FRAME_SIZE(%esp), %eax
+-	/* With requeue_pi, the mutex lock is held in the kernel.  */
+-	movl	16(%esp), %ecx
+-	testl	%ecx, %ecx
+-	jnz	27f
+-
+-	call	__pthread_mutex_cond_lock
+-26:	addl	$FRAME_SIZE, %esp
+-	cfi_adjust_cfa_offset(-FRAME_SIZE)
+-
+-	/* We return the result of the mutex_lock operation if it failed.  */
+-	testl	%eax, %eax
+-#ifdef HAVE_CMOV
+-	cmovel	%esi, %eax
+-#else
+-	jne	22f
+-	movl	%esi, %eax
+-22:
+-#endif
+-
+-18:	popl	%ebx
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebx)
+-	popl	%esi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%esi)
+-	popl	%edi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%edi)
+-	popl	%ebp
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebp)
+-
+-	ret
+-
+-	cfi_restore_state
+-
+-27:	call	__pthread_mutex_cond_lock_adjust
+-	xorl	%eax, %eax
+-	jmp	26b
+-
+-	cfi_adjust_cfa_offset(-FRAME_SIZE);
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	2b
+-
+-	/* The initial unlocking of the mutex failed.  */
+-16:
+-	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	18b
+-
+-	movl	%eax, %esi
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-
+-	movl	%esi, %eax
+-	jmp	18b
+-
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-	/* Unlock in loop requires wakeup.  */
+-3:
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	4b
+-
+-	/* Locking in loop failed.  */
+-5:
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	6b
+-
+-	/* Unlock after loop requires wakeup.  */
+-10:
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	11b
+-
+-#ifndef __ASSUME_FUTEX_CLOCK_REALTIME
+-	cfi_adjust_cfa_offset(-FRAME_SIZE)
+-.Lreltmo:
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-# if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-# else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-# endif
+-	jnz	101f
+-
+-	/* Store the reference to the mutex.  If there is already a
+-	   different value in there this is a bad user bug.  */
+-102:	cmpl	$-1, dep_mutex(%ebx)
+-	movl	24(%esp), %eax
+-	je	117f
+-	movl	%eax, dep_mutex(%ebx)
+-
+-	/* Unlock the mutex.  */
+-117:	xorl	%edx, %edx
+-	call	__pthread_mutex_unlock_usercnt
+-
+-	testl	%eax, %eax
+-	jne	16b
+-
+-	addl	$1, total_seq(%ebx)
+-	adcl	$0, total_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-	addl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-	subl	$FRAME_SIZE, %esp
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-	/* Get and store current wakeup_seq value.  */
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-	movl	broadcast_seq(%ebx), %eax
+-	movl	%edi, 4(%esp)
+-	movl	%edx, 8(%esp)
+-	movl	%eax, 12(%esp)
+-
+-	/* Reset the pi-requeued flag.  */
+-	movl	$0, 16(%esp)
+-
+-	/* Get the current time.  */
+-108:	movl	%ebx, %edx
+-# ifdef __NR_clock_gettime
+-	/* Get the clock number.  */
+-	movl	cond_nwaiters(%ebx), %ebx
+-	andl	$((1 << nwaiters_shift) - 1), %ebx
+-	/* Only clocks 0 and 1 are allowed so far.  Both are handled in the
+-	   kernel.  */
+-	leal	24(%esp), %ecx
+-	movl	$__NR_clock_gettime, %eax
+-	ENTER_KERNEL
+-	movl	%edx, %ebx
+-
+-	/* Compute relative timeout.  */
+-	movl	(%ebp), %ecx
+-	movl	4(%ebp), %edx
+-	subl	24(%esp), %ecx
+-	subl	28(%esp), %edx
+-# else
+-	/* Get the current time.  */
+-	leal	24(%esp), %ebx
+-	xorl	%ecx, %ecx
+-	movl	$__NR_gettimeofday, %eax
+-	ENTER_KERNEL
+-	movl	%edx, %ebx
+-
+-	/* Compute relative timeout.  */
+-	movl	28(%esp), %eax
+-	movl	$1000, %edx
+-	mul	%edx		/* Milli seconds to nano seconds.  */
+-	movl	(%ebp), %ecx
+-	movl	4(%ebp), %edx
+-	subl	24(%esp), %ecx
+-	subl	%eax, %edx
+-# endif
+-	jns	112f
+-	addl	$1000000000, %edx
+-	subl	$1, %ecx
+-112:	testl	%ecx, %ecx
+-	movl	$-ETIMEDOUT, %esi
+-	js	106f
+-
+-	/* Store relative timeout.  */
+-121:	movl	%ecx, 24(%esp)
+-	movl	%edx, 28(%esp)
+-
+-	movl	cond_futex(%ebx), %edi
+-	movl	%edi, 20(%esp)
+-
+-	/* Unlock.  */
+-	LOCK
+-# if cond_lock == 0
+-	subl	$1, (%ebx)
+-# else
+-	subl	$1, cond_lock(%ebx)
+-# endif
+-	jne	103f
+-
+-.LcleanupSTART2:
+-104:	call	__pthread_enable_asynccancel
+-	movl	%eax, (%esp)
+-
+-	leal	24(%esp), %esi
+-# if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-# endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-# ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-# else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-# endif
+-# if FUTEX_WAIT != 0
+-	addl	$FUTEX_WAIT, %ecx
+-# endif
+-	movl	20(%esp), %edx
+-	addl	$cond_futex, %ebx
+-.Ladd_cond_futex2:
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	subl	$cond_futex, %ebx
+-.Lsub_cond_futex2:
+-	movl	%eax, %esi
+-
+-141:	movl	(%esp), %eax
+-	call	__pthread_disable_asynccancel
+-.LcleanupEND2:
+-
+-
+-	/* Lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-# if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-# else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-# endif
+-	jnz	105f
+-
+-106:	movl	broadcast_seq(%ebx), %eax
+-	cmpl	12(%esp), %eax
+-	jne	23b
+-
+-	movl	woken_seq(%ebx), %eax
+-	movl	woken_seq+4(%ebx), %ecx
+-
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-
+-	cmpl	8(%esp), %edx
+-	jne	107f
+-	cmpl	4(%esp), %edi
+-	je	115f
+-
+-107:	cmpl	%ecx, %edx
+-	jne	9b
+-	cmp	%eax, %edi
+-	jne	9b
+-
+-115:	cmpl	$-ETIMEDOUT, %esi
+-	je	28b
+-
+-	jmp	8b
+-
+-	cfi_adjust_cfa_offset(-FRAME_SIZE)
+-	/* Initial locking failed.  */
+-101:
+-# if cond_lock == 0
+-	movl	%ebx, %edx
+-# else
+-	leal	cond_lock(%ebx), %edx
+-# endif
+-# if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-# endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-# if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-# endif
+-	call	__lll_lock_wait
+-	jmp	102b
+-
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-	/* Unlock in loop requires wakeup.  */
+-103:
+-# if cond_lock == 0
+-	movl	%ebx, %eax
+-# else
+-	leal	cond_lock(%ebx), %eax
+-# endif
+-# if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-# endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-# if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-# endif
+-	call	__lll_unlock_wake
+-	jmp	104b
+-
+-	/* Locking in loop failed.  */
+-105:
+-# if cond_lock == 0
+-	movl	%ebx, %edx
+-# else
+-	leal	cond_lock(%ebx), %edx
+-# endif
+-# if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-# endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-# if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-# endif
+-	call	__lll_lock_wait
+-	jmp	106b
+-#endif
+-
+-	.size	__pthread_cond_timedwait, .-__pthread_cond_timedwait
+-versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
+-		  GLIBC_2_3_2)
+-
+-
+-	.type	__condvar_tw_cleanup2, @function
+-__condvar_tw_cleanup2:
+-	subl	$cond_futex, %ebx
+-	.size	__condvar_tw_cleanup2, .-__condvar_tw_cleanup2
+-	.type	__condvar_tw_cleanup, @function
+-__condvar_tw_cleanup:
+-	movl	%eax, %esi
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jz	1f
+-
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-
+-1:	movl	broadcast_seq(%ebx), %eax
+-	cmpl	12(%esp), %eax
+-	jne	3f
+-
+-	/* We increment the wakeup_seq counter only if it is lower than
+-	   total_seq.  If this is not the case the thread was woken and
+-	   then canceled.  In this case we ignore the signal.  */
+-	movl	total_seq(%ebx), %eax
+-	movl	total_seq+4(%ebx), %edi
+-	cmpl	wakeup_seq+4(%ebx), %edi
+-	jb	6f
+-	ja	7f
+-	cmpl	wakeup_seq(%ebx), %eax
+-	jbe	7f
+-
+-6:	addl	$1, wakeup_seq(%ebx)
+-	adcl	$0, wakeup_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-
+-7:	addl	$1, woken_seq(%ebx)
+-	adcl	$0, woken_seq+4(%ebx)
+-
+-3:	subl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	xorl	%edi, %edi
+-	movl	total_seq(%ebx), %eax
+-	andl	total_seq+4(%ebx), %eax
+-	cmpl	$0xffffffff, %eax
+-	jne	4f
+-	movl	cond_nwaiters(%ebx), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	4f
+-
+-	addl	$cond_nwaiters, %ebx
+-	movl	$SYS_futex, %eax
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_nwaiters(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$1, %edx
+-	ENTER_KERNEL
+-	subl	$cond_nwaiters, %ebx
+-	movl	$1, %edi
+-
+-4:	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	je	2f
+-
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-
+-	/* Wake up all waiters to make sure no signal gets lost.  */
+-2:	testl	%edi, %edi
+-	jnz	5f
+-	addl	$cond_futex, %ebx
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$SYS_futex, %eax
+-	movl	$0x7fffffff, %edx
+-	ENTER_KERNEL
+-
+-	/* Lock the mutex only if we don't own it already.  This only happens
+-	   in case of PI mutexes, if we got cancelled after a successful
+-	   return of the futex syscall and before disabling async
+-	   cancellation.  */
+-5:	movl	24+FRAME_SIZE(%esp), %eax
+-	movl	MUTEX_KIND(%eax), %ebx
+-	andl	$(ROBUST_BIT|PI_BIT), %ebx
+-	cmpl	$PI_BIT, %ebx
+-	jne	8f
+-
+-	movl	(%eax), %ebx
+-	andl	$TID_MASK, %ebx
+-	cmpl	%ebx, %gs:TID
+-	jne	8f
+-	/* We managed to get the lock.  Fix it up before returning.  */
+-	call	__pthread_mutex_cond_lock_adjust
+-	jmp	9f
+-
+-8:	call	__pthread_mutex_cond_lock
+-
+-9:	movl	%esi, (%esp)
+-.LcallUR:
+-	call	_Unwind_Resume
+-	hlt
+-.LENDCODE:
+-	cfi_endproc
+-	.size	__condvar_tw_cleanup, .-__condvar_tw_cleanup
+-
+-
+-	.section .gcc_except_table,"a",@progbits
+-.LexceptSTART:
+-	.byte	DW_EH_PE_omit			# @LPStart format (omit)
+-	.byte	DW_EH_PE_omit			# @TType format (omit)
+-	.byte	DW_EH_PE_sdata4			# call-site format
+-						# DW_EH_PE_sdata4
+-	.uleb128 .Lcstend-.Lcstbegin
+-.Lcstbegin:
+-	.long	.LcleanupSTART-.LSTARTCODE
+-	.long	.Ladd_cond_futex_pi-.LcleanupSTART
+-	.long	__condvar_tw_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Ladd_cond_futex_pi-.LSTARTCODE
+-	.long	.Lsub_cond_futex_pi-.Ladd_cond_futex_pi
+-	.long	__condvar_tw_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Lsub_cond_futex_pi-.LSTARTCODE
+-	.long	.Ladd_cond_futex-.Lsub_cond_futex_pi
+-	.long	__condvar_tw_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Ladd_cond_futex-.LSTARTCODE
+-	.long	.Lsub_cond_futex-.Ladd_cond_futex
+-	.long	__condvar_tw_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Lsub_cond_futex-.LSTARTCODE
+-	.long	.LcleanupEND-.Lsub_cond_futex
+-	.long	__condvar_tw_cleanup-.LSTARTCODE
+-	.uleb128  0
+-#ifndef __ASSUME_FUTEX_CLOCK_REALTIME
+-	.long	.LcleanupSTART2-.LSTARTCODE
+-	.long	.Ladd_cond_futex2-.LcleanupSTART2
+-	.long	__condvar_tw_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Ladd_cond_futex2-.LSTARTCODE
+-	.long	.Lsub_cond_futex2-.Ladd_cond_futex2
+-	.long	__condvar_tw_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Lsub_cond_futex2-.LSTARTCODE
+-	.long	.LcleanupEND2-.Lsub_cond_futex2
+-	.long	__condvar_tw_cleanup-.LSTARTCODE
+-	.uleb128  0
+-#endif
+-	.long	.LcallUR-.LSTARTCODE
+-	.long	.LENDCODE-.LcallUR
+-	.long	0
+-	.uleb128  0
+-.Lcstend:
+-
+-
+-#ifdef SHARED
+-	.hidden DW.ref.__gcc_personality_v0
+-	.weak	DW.ref.__gcc_personality_v0
+-	.section .gnu.linkonce.d.DW.ref.__gcc_personality_v0,"aw",@progbits
+-	.align	4
+-	.type	DW.ref.__gcc_personality_v0, @object
+-	.size	DW.ref.__gcc_personality_v0, 4
+-DW.ref.__gcc_personality_v0:
+-	.long   __gcc_personality_v0
+-#endif
+diff --git a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S b/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S
+deleted file mode 100644
+index ec3538f..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S
++++ /dev/null
+@@ -1,641 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <tcb-offsets.h>
+-#include <pthread-errnos.h>
+-#include <pthread-pi-defines.h>
+-#include <kernel-features.h>
+-#include <stap-probe.h>
+-
+-
+-	.text
+-
+-/* int pthread_cond_wait (pthread_cond_t *cond, pthread_mutex_t *mutex)  */
+-	.globl	__pthread_cond_wait
+-	.type	__pthread_cond_wait, @function
+-	.align	16
+-__pthread_cond_wait:
+-.LSTARTCODE:
+-	cfi_startproc
+-#ifdef SHARED
+-	cfi_personality(DW_EH_PE_pcrel | DW_EH_PE_sdata4 | DW_EH_PE_indirect,
+-			DW.ref.__gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_pcrel | DW_EH_PE_sdata4, .LexceptSTART)
+-#else
+-	cfi_personality(DW_EH_PE_udata4, __gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_udata4, .LexceptSTART)
+-#endif
+-
+-	pushl	%ebp
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebp, 0)
+-	pushl	%edi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%edi, 0)
+-	pushl	%esi
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%esi, 0)
+-	pushl	%ebx
+-	cfi_adjust_cfa_offset(4)
+-	cfi_rel_offset(%ebx, 0)
+-
+-	xorl	%esi, %esi
+-	movl	20(%esp), %ebx
+-
+-	LIBC_PROBE (cond_wait, 2, 24(%esp), %ebx)
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jnz	1f
+-
+-	/* Store the reference to the mutex.  If there is already a
+-	   different value in there this is a bad user bug.  */
+-2:	cmpl	$-1, dep_mutex(%ebx)
+-	movl	24(%esp), %eax
+-	je	15f
+-	movl	%eax, dep_mutex(%ebx)
+-
+-	/* Unlock the mutex.  */
+-15:	xorl	%edx, %edx
+-	call	__pthread_mutex_unlock_usercnt
+-
+-	testl	%eax, %eax
+-	jne	12f
+-
+-	addl	$1, total_seq(%ebx)
+-	adcl	$0, total_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-	addl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-#define FRAME_SIZE 20
+-	subl	$FRAME_SIZE, %esp
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-	cfi_remember_state
+-
+-	/* Get and store current wakeup_seq value.  */
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-	movl	broadcast_seq(%ebx), %eax
+-	movl	%edi, 4(%esp)
+-	movl	%edx, 8(%esp)
+-	movl	%eax, 12(%esp)
+-
+-	/* Reset the pi-requeued flag.  */
+-8:	movl	$0, 16(%esp)
+-	movl	cond_futex(%ebx), %ebp
+-
+-	/* Unlock.  */
+-	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	3f
+-
+-.LcleanupSTART:
+-4:	call	__pthread_enable_asynccancel
+-	movl	%eax, (%esp)
+-
+-	xorl	%ecx, %ecx
+-	cmpl	$-1, dep_mutex(%ebx)
+-	sete	%cl
+-	je	18f
+-
+-	movl	dep_mutex(%ebx), %edi
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	   the robust bit is not set.  */
+-	movl	MUTEX_KIND(%edi), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	18f
+-
+-	movl	$(FUTEX_WAIT_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %ecx
+-	movl	%ebp, %edx
+-	xorl	%esi, %esi
+-	addl	$cond_futex, %ebx
+-.Ladd_cond_futex_pi:
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	subl	$cond_futex, %ebx
+-.Lsub_cond_futex_pi:
+-	/* Set the pi-requeued flag only if the kernel has returned 0. The
+-	   kernel does not hold the mutex on error.  */
+-	cmpl	$0, %eax
+-	sete	16(%esp)
+-	je	19f
+-
+-	/* When a futex syscall with FUTEX_WAIT_REQUEUE_PI returns
+-	   successfully, it has already locked the mutex for us and the
+-	   pi_flag (16(%esp)) is set to denote that fact.  However, if another
+-	   thread changed the futex value before we entered the wait, the
+-	   syscall may return an EAGAIN and the mutex is not locked.  We go
+-	   ahead with a success anyway since later we look at the pi_flag to
+-	   decide if we got the mutex or not.  The sequence numbers then make
+-	   sure that only one of the threads actually wake up.  We retry using
+-	   normal FUTEX_WAIT only if the kernel returned ENOSYS, since normal
+-	   and PI futexes don't mix.
+-
+-	   Note that we don't check for EAGAIN specifically; we assume that the
+-	   only other error the futex function could return is EAGAIN since
+-	   anything else would mean an error in our function.  It is too
+-	   expensive to do that check for every call (which is 	quite common in
+-	   case of a large number of threads), so it has been skipped.  */
+-	cmpl	$-ENOSYS, %eax
+-	jne	19f
+-	xorl	%ecx, %ecx
+-
+-18:	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-#if FUTEX_WAIT != 0
+-	addl	$FUTEX_WAIT, %ecx
+-#endif
+-	movl	%ebp, %edx
+-	addl	$cond_futex, %ebx
+-.Ladd_cond_futex:
+-	movl	$SYS_futex, %eax
+-	ENTER_KERNEL
+-	subl	$cond_futex, %ebx
+-.Lsub_cond_futex:
+-
+-19:	movl	(%esp), %eax
+-	call	__pthread_disable_asynccancel
+-.LcleanupEND:
+-
+-	/* Lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jnz	5f
+-
+-6:	movl	broadcast_seq(%ebx), %eax
+-	cmpl	12(%esp), %eax
+-	jne	16f
+-
+-	movl	woken_seq(%ebx), %eax
+-	movl	woken_seq+4(%ebx), %ecx
+-
+-	movl	wakeup_seq(%ebx), %edi
+-	movl	wakeup_seq+4(%ebx), %edx
+-
+-	cmpl	8(%esp), %edx
+-	jne	7f
+-	cmpl	4(%esp), %edi
+-	je	22f
+-
+-7:	cmpl	%ecx, %edx
+-	jne	9f
+-	cmp	%eax, %edi
+-	je	22f
+-
+-9:	addl	$1, woken_seq(%ebx)
+-	adcl	$0, woken_seq+4(%ebx)
+-
+-	/* Unlock */
+-16:	subl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	movl	total_seq(%ebx), %eax
+-	andl	total_seq+4(%ebx), %eax
+-	cmpl	$0xffffffff, %eax
+-	jne	17f
+-	movl	cond_nwaiters(%ebx), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	17f
+-
+-	addl	$cond_nwaiters, %ebx
+-	movl	$SYS_futex, %eax
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_nwaiters(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$1, %edx
+-	ENTER_KERNEL
+-	subl	$cond_nwaiters, %ebx
+-
+-17:	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	10f
+-
+-	/* With requeue_pi, the mutex lock is held in the kernel.  */
+-11:	movl	24+FRAME_SIZE(%esp), %eax
+-	movl	16(%esp), %ecx
+-	testl	%ecx, %ecx
+-	jnz	21f
+-
+-	call	__pthread_mutex_cond_lock
+-20:	addl	$FRAME_SIZE, %esp
+-	cfi_adjust_cfa_offset(-FRAME_SIZE);
+-
+-14:	popl	%ebx
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebx)
+-	popl	%esi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%esi)
+-	popl	%edi
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%edi)
+-	popl	%ebp
+-	cfi_adjust_cfa_offset(-4)
+-	cfi_restore(%ebp)
+-
+-	/* We return the result of the mutex_lock operation.  */
+-	ret
+-
+-	cfi_restore_state
+-
+-21:	call	__pthread_mutex_cond_lock_adjust
+-	xorl	%eax, %eax
+-	jmp	20b
+-
+-	cfi_adjust_cfa_offset(-FRAME_SIZE);
+-
+-	/* We need to go back to futex_wait.  If we're using requeue_pi, then
+-	   release the mutex we had acquired and go back.  */
+-22:	movl	16(%esp), %edx
+-	test	%edx, %edx
+-	jz	8b
+-
+-	/* Adjust the mutex values first and then unlock it.  The unlock
+-	   should always succeed or else the kernel did not lock the mutex
+-	   correctly.  */
+-	movl	dep_mutex(%ebx), %eax
+-	call    __pthread_mutex_cond_lock_adjust
+-	xorl	%edx, %edx
+-	call	__pthread_mutex_unlock_usercnt
+-	jmp	8b
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	2b
+-
+-	/* The initial unlocking of the mutex failed.  */
+-12:
+-	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	jne	14b
+-
+-	movl	%eax, %esi
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-
+-	movl	%esi, %eax
+-	jmp	14b
+-
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-	/* Unlock in loop requires wakeup.  */
+-3:
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	4b
+-
+-	/* Locking in loop failed.  */
+-5:
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-	jmp	6b
+-
+-	/* Unlock after loop requires wakeup.  */
+-10:
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-	jmp	11b
+-
+-	.size	__pthread_cond_wait, .-__pthread_cond_wait
+-versioned_symbol (libpthread, __pthread_cond_wait, pthread_cond_wait,
+-		  GLIBC_2_3_2)
+-
+-
+-	.type	__condvar_w_cleanup2, @function
+-__condvar_w_cleanup2:
+-	subl	$cond_futex, %ebx
+-	.size	__condvar_w_cleanup2, .-__condvar_w_cleanup2
+-.LSbl4:
+-	.type	__condvar_w_cleanup, @function
+-__condvar_w_cleanup:
+-	movl	%eax, %esi
+-
+-	/* Get internal lock.  */
+-	movl	$1, %edx
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %edx, (%ebx)
+-#else
+-	cmpxchgl %edx, cond_lock(%ebx)
+-#endif
+-	jz	1f
+-
+-#if cond_lock == 0
+-	movl	%ebx, %edx
+-#else
+-	leal	cond_lock(%ebx), %edx
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_lock_wait
+-
+-1:	movl	broadcast_seq(%ebx), %eax
+-	cmpl	12(%esp), %eax
+-	jne	3f
+-
+-	/* We increment the wakeup_seq counter only if it is lower than
+-	   total_seq.  If this is not the case the thread was woken and
+-	   then canceled.  In this case we ignore the signal.  */
+-	movl	total_seq(%ebx), %eax
+-	movl	total_seq+4(%ebx), %edi
+-	cmpl	wakeup_seq+4(%ebx), %edi
+-	jb	6f
+-	ja	7f
+-	cmpl	wakeup_seq(%ebx), %eax
+-	jbe	7f
+-
+-6:	addl	$1, wakeup_seq(%ebx)
+-	adcl	$0, wakeup_seq+4(%ebx)
+-	addl	$1, cond_futex(%ebx)
+-
+-7:	addl	$1, woken_seq(%ebx)
+-	adcl	$0, woken_seq+4(%ebx)
+-
+-3:	subl	$(1 << nwaiters_shift), cond_nwaiters(%ebx)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	xorl	%edi, %edi
+-	movl	total_seq(%ebx), %eax
+-	andl	total_seq+4(%ebx), %eax
+-	cmpl	$0xffffffff, %eax
+-	jne	4f
+-	movl	cond_nwaiters(%ebx), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	4f
+-
+-	addl	$cond_nwaiters, %ebx
+-	movl	$SYS_futex, %eax
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_nwaiters(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$1, %edx
+-	ENTER_KERNEL
+-	subl	$cond_nwaiters, %ebx
+-	movl	$1, %edi
+-
+-4:	LOCK
+-#if cond_lock == 0
+-	subl	$1, (%ebx)
+-#else
+-	subl	$1, cond_lock(%ebx)
+-#endif
+-	je	2f
+-
+-#if cond_lock == 0
+-	movl	%ebx, %eax
+-#else
+-	leal	cond_lock(%ebx), %eax
+-#endif
+-#if (LLL_SHARED-LLL_PRIVATE) > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex(%ebx)
+-	setne	%cl
+-	subl	$1, %ecx
+-	andl	$(LLL_SHARED-LLL_PRIVATE), %ecx
+-#if LLL_PRIVATE != 0
+-	addl	$LLL_PRIVATE, %ecx
+-#endif
+-	call	__lll_unlock_wake
+-
+-	/* Wake up all waiters to make sure no signal gets lost.  */
+-2:	testl	%edi, %edi
+-	jnz	5f
+-	addl	$cond_futex, %ebx
+-#if FUTEX_PRIVATE_FLAG > 255
+-	xorl	%ecx, %ecx
+-#endif
+-	cmpl	$-1, dep_mutex-cond_futex(%ebx)
+-	sete	%cl
+-	subl	$1, %ecx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %ecx
+-#else
+-	andl	%gs:PRIVATE_FUTEX, %ecx
+-#endif
+-	addl	$FUTEX_WAKE, %ecx
+-	movl	$SYS_futex, %eax
+-	movl	$0x7fffffff, %edx
+-	ENTER_KERNEL
+-
+-	/* Lock the mutex only if we don't own it already.  This only happens
+-	   in case of PI mutexes, if we got cancelled after a successful
+-	   return of the futex syscall and before disabling async
+-	   cancellation.  */
+-5:	movl	24+FRAME_SIZE(%esp), %eax
+-	movl	MUTEX_KIND(%eax), %ebx
+-	andl	$(ROBUST_BIT|PI_BIT), %ebx
+-	cmpl	$PI_BIT, %ebx
+-	jne	8f
+-
+-	movl	(%eax), %ebx
+-	andl	$TID_MASK, %ebx
+-	cmpl	%ebx, %gs:TID
+-	jne	8f
+-	/* We managed to get the lock.  Fix it up before returning.  */
+-	call	__pthread_mutex_cond_lock_adjust
+-	jmp	9f
+-
+-8:	call	__pthread_mutex_cond_lock
+-
+-9:	movl	%esi, (%esp)
+-.LcallUR:
+-	call	_Unwind_Resume
+-	hlt
+-.LENDCODE:
+-	cfi_endproc
+-	.size	__condvar_w_cleanup, .-__condvar_w_cleanup
+-
+-
+-	.section .gcc_except_table,"a",@progbits
+-.LexceptSTART:
+-	.byte	DW_EH_PE_omit			# @LPStart format (omit)
+-	.byte	DW_EH_PE_omit			# @TType format (omit)
+-	.byte	DW_EH_PE_sdata4			# call-site format
+-						# DW_EH_PE_sdata4
+-	.uleb128 .Lcstend-.Lcstbegin
+-.Lcstbegin:
+-	.long	.LcleanupSTART-.LSTARTCODE
+-	.long	.Ladd_cond_futex_pi-.LcleanupSTART
+-	.long	__condvar_w_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Ladd_cond_futex_pi-.LSTARTCODE
+-	.long	.Lsub_cond_futex_pi-.Ladd_cond_futex_pi
+-	.long	__condvar_w_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Lsub_cond_futex_pi-.LSTARTCODE
+-	.long	.Ladd_cond_futex-.Lsub_cond_futex_pi
+-	.long	__condvar_w_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Ladd_cond_futex-.LSTARTCODE
+-	.long	.Lsub_cond_futex-.Ladd_cond_futex
+-	.long	__condvar_w_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.long	.Lsub_cond_futex-.LSTARTCODE
+-	.long	.LcleanupEND-.Lsub_cond_futex
+-	.long	__condvar_w_cleanup-.LSTARTCODE
+-	.uleb128  0
+-	.long	.LcallUR-.LSTARTCODE
+-	.long	.LENDCODE-.LcallUR
+-	.long	0
+-	.uleb128  0
+-.Lcstend:
+-
+-#ifdef SHARED
+-	.hidden DW.ref.__gcc_personality_v0
+-	.weak   DW.ref.__gcc_personality_v0
+-	.section .gnu.linkonce.d.DW.ref.__gcc_personality_v0,"aw",@progbits
+-	.align 4
+-	.type   DW.ref.__gcc_personality_v0, @object
+-	.size   DW.ref.__gcc_personality_v0, 4
+-DW.ref.__gcc_personality_v0:
+-	.long   __gcc_personality_v0
+-#endif
+diff --git a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_broadcast.S b/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_broadcast.S
+deleted file mode 100644
+index 9a4006a..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_broadcast.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_broadcast.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_signal.S b/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_signal.S
+deleted file mode 100644
+index 59f93b6..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_signal.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_signal.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_timedwait.S b/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_timedwait.S
+deleted file mode 100644
+index d96af08..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_timedwait.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_timedwait.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_wait.S b/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_wait.S
+deleted file mode 100644
+index 9696972..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i586/pthread_cond_wait.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_wait.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_broadcast.S b/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_broadcast.S
+deleted file mode 100644
+index 9a4006a..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_broadcast.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_broadcast.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_signal.S b/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_signal.S
+deleted file mode 100644
+index 59f93b6..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_signal.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_signal.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_timedwait.S b/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_timedwait.S
+deleted file mode 100644
+index 0e8d7ff..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_timedwait.S
++++ /dev/null
+@@ -1,20 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#define HAVE_CMOV 1
+-#include "../i486/pthread_cond_timedwait.S"
+diff --git a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_wait.S b/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_wait.S
+deleted file mode 100644
+index 9696972..0000000
+--- a/sysdeps/unix/sysv/linux/i386/i686/pthread_cond_wait.S
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/* Copyright (C) 2003-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include "../i486/pthread_cond_wait.S"
+diff --git a/sysdeps/unix/sysv/linux/powerpc/bits/pthreadtypes.h b/sysdeps/unix/sysv/linux/powerpc/bits/pthreadtypes.h
+index 7cbdb2c..70b65d3 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/bits/pthreadtypes.h
++++ b/sysdeps/unix/sysv/linux/powerpc/bits/pthreadtypes.h
+@@ -128,14 +128,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;
+diff --git a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S b/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S
+deleted file mode 100644
+index df635af..0000000
+--- a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_broadcast.S
++++ /dev/null
+@@ -1,179 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <kernel-features.h>
+-#include <pthread-pi-defines.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-	.text
+-
+-	/* int pthread_cond_broadcast (pthread_cond_t *cond) */
+-	.globl	__pthread_cond_broadcast
+-	.type	__pthread_cond_broadcast, @function
+-	.align	16
+-__pthread_cond_broadcast:
+-
+-	LIBC_PROBE (cond_broadcast, 1, %rdi)
+-
+-	/* Get internal lock.  */
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jnz	1f
+-
+-2:	addq	$cond_futex, %rdi
+-	movq	total_seq-cond_futex(%rdi), %r9
+-	cmpq	wakeup_seq-cond_futex(%rdi), %r9
+-	jna	4f
+-
+-	/* Cause all currently waiting threads to recognize they are
+-	   woken up.  */
+-	movq	%r9, wakeup_seq-cond_futex(%rdi)
+-	movq	%r9, woken_seq-cond_futex(%rdi)
+-	addq	%r9, %r9
+-	movl	%r9d, (%rdi)
+-	incl	broadcast_seq-cond_futex(%rdi)
+-
+-	/* Get the address of the mutex used.  */
+-	mov	dep_mutex-cond_futex(%rdi), %R8_LP
+-
+-	/* Unlock.  */
+-	LOCK
+-	decl	cond_lock-cond_futex(%rdi)
+-	jne	7f
+-
+-8:	cmp	$-1, %R8_LP
+-	je	9f
+-
+-	/* Do not use requeue for pshared condvars.  */
+-	testl	$PS_BIT, MUTEX_KIND(%r8)
+-	jne	9f
+-
+-	/* Requeue to a PI mutex if the PI bit is set.  */
+-	movl	MUTEX_KIND(%r8), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	je	81f
+-
+-	/* Wake up all threads.  */
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$(FUTEX_CMP_REQUEUE|FUTEX_PRIVATE_FLAG), %esi
+-#else
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	orl	$FUTEX_CMP_REQUEUE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	movl	$1, %edx
+-	movl	$0x7fffffff, %r10d
+-	syscall
+-
+-	/* For any kind of error, which mainly is EAGAIN, we try again
+-	   with WAKE.  The general test also covers running on old
+-	   kernels.  */
+-	cmpq	$-4095, %rax
+-	jae	9f
+-
+-10:	xorl	%eax, %eax
+-	retq
+-
+-	/* Wake up all threads.  */
+-81:	movl	$(FUTEX_CMP_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %esi
+-	movl	$SYS_futex, %eax
+-	movl	$1, %edx
+-	movl	$0x7fffffff, %r10d
+-	syscall
+-
+-	/* For any kind of error, which mainly is EAGAIN, we try again
+-	   with WAKE.  The general test also covers running on old
+-	   kernels.  */
+-	cmpq	$-4095, %rax
+-	jb	10b
+-	jmp	9f
+-
+-	.align	16
+-	/* Unlock.  */
+-4:	LOCK
+-	decl	cond_lock-cond_futex(%rdi)
+-	jne	5f
+-
+-6:	xorl	%eax, %eax
+-	retq
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-	jmp	2b
+-
+-	/* Unlock in loop requires wakeup.  */
+-5:	addq	$cond_lock-cond_futex, %rdi
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	jmp	6b
+-
+-	/* Unlock in loop requires wakeup.  */
+-7:	addq	$cond_lock-cond_futex, %rdi
+-	cmp	$-1, %R8_LP
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	subq	$cond_lock-cond_futex, %rdi
+-	jmp	8b
+-
+-9:	/* The futex requeue functionality is not available.  */
+-	cmp	$-1, %R8_LP
+-	movl	$0x7fffffff, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-	jmp	10b
+-	.size	__pthread_cond_broadcast, .-__pthread_cond_broadcast
+-versioned_symbol (libpthread, __pthread_cond_broadcast, pthread_cond_broadcast,
+-		  GLIBC_2_3_2)
+diff --git a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S b/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S
+deleted file mode 100644
+index 0e8fe0c..0000000
+--- a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_signal.S
++++ /dev/null
+@@ -1,164 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <pthread-pi-defines.h>
+-#include <kernel-features.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-
+-	.text
+-
+-	/* int pthread_cond_signal (pthread_cond_t *cond) */
+-	.globl	__pthread_cond_signal
+-	.type	__pthread_cond_signal, @function
+-	.align	16
+-__pthread_cond_signal:
+-
+-	LIBC_PROBE (cond_signal, 1, %rdi)
+-
+-	/* Get internal lock.  */
+-	movq	%rdi, %r8
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jnz	1f
+-
+-2:	addq	$cond_futex, %rdi
+-	movq	total_seq(%r8), %rcx
+-	cmpq	wakeup_seq(%r8), %rcx
+-	jbe	4f
+-
+-	/* Bump the wakeup number.  */
+-	addq	$1, wakeup_seq(%r8)
+-	addl	$1, (%rdi)
+-
+-	/* Wake up one thread.  */
+-	LP_OP(cmp) $-1, dep_mutex(%r8)
+-	movl	$FUTEX_WAKE_OP, %esi
+-	movl	$1, %edx
+-	movl	$SYS_futex, %eax
+-	je	8f
+-
+-	/* Get the address of the mutex used.  */
+-	mov     dep_mutex(%r8), %RCX_LP
+-	movl	MUTEX_KIND(%rcx), %r11d
+-	andl	$(ROBUST_BIT|PI_BIT), %r11d
+-	cmpl	$PI_BIT, %r11d
+-	je	9f
+-
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$(FUTEX_WAKE_OP|FUTEX_PRIVATE_FLAG), %esi
+-#else
+-	orl	%fs:PRIVATE_FUTEX, %esi
+-#endif
+-
+-8:	movl	$1, %r10d
+-#if cond_lock != 0
+-	addq	$cond_lock, %r8
+-#endif
+-	movl	$FUTEX_OP_CLEAR_WAKE_IF_GT_ONE, %r9d
+-	syscall
+-#if cond_lock != 0
+-	subq	$cond_lock, %r8
+-#endif
+-	/* For any kind of error, we try again with WAKE.
+-	   The general test also covers running on old kernels.  */
+-	cmpq	$-4095, %rax
+-	jae	7f
+-
+-	xorl	%eax, %eax
+-	retq
+-
+-	/* Wake up one thread and requeue none in the PI Mutex case.  */
+-9:	movl	$(FUTEX_CMP_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %esi
+-	movq	%rcx, %r8
+-	xorq	%r10, %r10
+-	movl	(%rdi), %r9d	// XXX Can this be right?
+-	syscall
+-
+-	leaq	-cond_futex(%rdi), %r8
+-
+-	/* For any kind of error, we try again with WAKE.
+-	   The general test also covers running on old kernels.  */
+-	cmpq	$-4095, %rax
+-	jb	4f
+-
+-7:
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	andl	$FUTEX_PRIVATE_FLAG, %esi
+-#else
+-	andl	%fs:PRIVATE_FUTEX, %esi
+-#endif
+-	orl	$FUTEX_WAKE, %esi
+-	movl	$SYS_futex, %eax
+-	/* %rdx should be 1 already from $FUTEX_WAKE_OP syscall.
+-	movl	$1, %edx  */
+-	syscall
+-
+-	/* Unlock.  */
+-4:	LOCK
+-#if cond_lock == 0
+-	decl	(%r8)
+-#else
+-	decl	cond_lock(%r8)
+-#endif
+-	jne	5f
+-
+-6:	xorl	%eax, %eax
+-	retq
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-	jmp	2b
+-
+-	/* Unlock in loop requires wakeup.  */
+-5:
+-	movq	%r8, %rdi
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	jmp	6b
+-	.size	__pthread_cond_signal, .-__pthread_cond_signal
+-versioned_symbol (libpthread, __pthread_cond_signal, pthread_cond_signal,
+-		  GLIBC_2_3_2)
+diff --git a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S b/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S
+deleted file mode 100644
+index 15b872d..0000000
+--- a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S
++++ /dev/null
+@@ -1,623 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <pthread-pi-defines.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-#include <kernel-features.h>
+-
+-
+-	.text
+-
+-
+-/* int pthread_cond_timedwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
+-			       const struct timespec *abstime)  */
+-	.globl	__pthread_cond_timedwait
+-	.type	__pthread_cond_timedwait, @function
+-	.align	16
+-__pthread_cond_timedwait:
+-.LSTARTCODE:
+-	cfi_startproc
+-#ifdef SHARED
+-	cfi_personality(DW_EH_PE_pcrel | DW_EH_PE_sdata4 | DW_EH_PE_indirect,
+-			DW.ref.__gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_pcrel | DW_EH_PE_sdata4, .LexceptSTART)
+-#else
+-	cfi_personality(DW_EH_PE_udata4, __gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_udata4, .LexceptSTART)
+-#endif
+-
+-	pushq	%r12
+-	cfi_adjust_cfa_offset(8)
+-	cfi_rel_offset(%r12, 0)
+-	pushq	%r13
+-	cfi_adjust_cfa_offset(8)
+-	cfi_rel_offset(%r13, 0)
+-	pushq	%r14
+-	cfi_adjust_cfa_offset(8)
+-	cfi_rel_offset(%r14, 0)
+-	pushq	%r15
+-	cfi_adjust_cfa_offset(8)
+-	cfi_rel_offset(%r15, 0)
+-#define FRAME_SIZE (32+8)
+-	subq	$FRAME_SIZE, %rsp
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-	cfi_remember_state
+-
+-	LIBC_PROBE (cond_timedwait, 3, %rdi, %rsi, %rdx)
+-
+-	cmpq	$1000000000, 8(%rdx)
+-	movl	$EINVAL, %eax
+-	jae	48f
+-
+-	/* Stack frame:
+-
+-	   rsp + 48
+-		    +--------------------------+
+-	   rsp + 32 | timeout value            |
+-		    +--------------------------+
+-	   rsp + 24 | old wake_seq value       |
+-		    +--------------------------+
+-	   rsp + 16 | mutex pointer            |
+-		    +--------------------------+
+-	   rsp +  8 | condvar pointer          |
+-		    +--------------------------+
+-	   rsp +  4 | old broadcast_seq value  |
+-		    +--------------------------+
+-	   rsp +  0 | old cancellation mode    |
+-		    +--------------------------+
+-	*/
+-
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-
+-	/* Prepare structure passed to cancellation handler.  */
+-	movq	%rdi, 8(%rsp)
+-	movq	%rsi, 16(%rsp)
+-	movq	%rdx, %r13
+-
+-	je	22f
+-	mov	%RSI_LP, dep_mutex(%rdi)
+-
+-22:
+-	xorb	%r15b, %r15b
+-
+-	/* Get internal lock.  */
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jnz	31f
+-
+-	/* Unlock the mutex.  */
+-32:	movq	16(%rsp), %rdi
+-	xorl	%esi, %esi
+-	callq	__pthread_mutex_unlock_usercnt
+-
+-	testl	%eax, %eax
+-	jne	46f
+-
+-	movq	8(%rsp), %rdi
+-	incq	total_seq(%rdi)
+-	incl	cond_futex(%rdi)
+-	addl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Get and store current wakeup_seq value.  */
+-	movq	8(%rsp), %rdi
+-	movq	wakeup_seq(%rdi), %r9
+-	movl	broadcast_seq(%rdi), %edx
+-	movq	%r9, 24(%rsp)
+-	movl	%edx, 4(%rsp)
+-
+-	cmpq	$0, (%r13)
+-	movq	$-ETIMEDOUT, %r14
+-	js	36f
+-
+-38:	movl	cond_futex(%rdi), %r12d
+-
+-	/* Unlock.  */
+-	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	jne	33f
+-
+-.LcleanupSTART1:
+-34:	callq	__pthread_enable_asynccancel
+-	movl	%eax, (%rsp)
+-
+-	movq	%r13, %r10
+-	movl	$FUTEX_WAIT_BITSET, %esi
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-	je	60f
+-
+-	mov	dep_mutex(%rdi), %R8_LP
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	the robust bit is not set.  */
+-	movl	MUTEX_KIND(%r8), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	61f
+-
+-	movl	$(FUTEX_WAIT_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %esi
+-	xorl	%eax, %eax
+-	/* The following only works like this because we only support
+-	   two clocks, represented using a single bit.  */
+-	testl	$1, cond_nwaiters(%rdi)
+-	movl	$FUTEX_CLOCK_REALTIME, %edx
+-	cmove	%edx, %eax
+-	orl	%eax, %esi
+-	movq	%r12, %rdx
+-	addq	$cond_futex, %rdi
+-	movl	$SYS_futex, %eax
+-	syscall
+-
+-	cmpl	$0, %eax
+-	sete	%r15b
+-
+-#ifdef __ASSUME_REQUEUE_PI
+-	jmp	62f
+-#else
+-	je	62f
+-
+-	/* When a futex syscall with FUTEX_WAIT_REQUEUE_PI returns
+-	   successfully, it has already locked the mutex for us and the
+-	   pi_flag (%r15b) is set to denote that fact.  However, if another
+-	   thread changed the futex value before we entered the wait, the
+-	   syscall may return an EAGAIN and the mutex is not locked.  We go
+-	   ahead with a success anyway since later we look at the pi_flag to
+-	   decide if we got the mutex or not.  The sequence numbers then make
+-	   sure that only one of the threads actually wake up.  We retry using
+-	   normal FUTEX_WAIT only if the kernel returned ENOSYS, since normal
+-	   and PI futexes don't mix.
+-
+-	   Note that we don't check for EAGAIN specifically; we assume that the
+-	   only other error the futex function could return is EAGAIN (barring
+-	   the ETIMEOUT of course, for the timeout case in futex) since
+-	   anything else would mean an error in our function.  It is too
+-	   expensive to do that check for every call (which is  quite common in
+-	   case of a large number of threads), so it has been skipped.  */
+-	cmpl    $-ENOSYS, %eax
+-	jne     62f
+-
+-	subq	$cond_futex, %rdi
+-#endif
+-
+-61:	movl	$(FUTEX_WAIT_BITSET|FUTEX_PRIVATE_FLAG), %esi
+-60:	xorb	%r15b, %r15b
+-	xorl	%eax, %eax
+-	/* The following only works like this because we only support
+-	   two clocks, represented using a single bit.  */
+-	testl	$1, cond_nwaiters(%rdi)
+-	movl	$FUTEX_CLOCK_REALTIME, %edx
+-	movl	$0xffffffff, %r9d
+-	cmove	%edx, %eax
+-	orl	%eax, %esi
+-	movq	%r12, %rdx
+-	addq	$cond_futex, %rdi
+-	movl	$SYS_futex, %eax
+-	syscall
+-62:	movq	%rax, %r14
+-
+-	movl	(%rsp), %edi
+-	callq	__pthread_disable_asynccancel
+-.LcleanupEND1:
+-
+-	/* Lock.  */
+-	movq	8(%rsp), %rdi
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jne	35f
+-
+-36:	movl	broadcast_seq(%rdi), %edx
+-
+-	movq	woken_seq(%rdi), %rax
+-
+-	movq	wakeup_seq(%rdi), %r9
+-
+-	cmpl	4(%rsp), %edx
+-	jne	53f
+-
+-	cmpq	24(%rsp), %r9
+-	jbe	45f
+-
+-	cmpq	%rax, %r9
+-	ja	39f
+-
+-45:	cmpq	$-ETIMEDOUT, %r14
+-	je	99f
+-
+-	/* We need to go back to futex_wait.  If we're using requeue_pi, then
+-	   release the mutex we had acquired and go back.  */
+-	test	%r15b, %r15b
+-	jz	38b
+-
+-	/* Adjust the mutex values first and then unlock it.  The unlock
+-	   should always succeed or else the kernel did not lock the
+-	   mutex correctly.  */
+-	movq	%r8, %rdi
+-	callq	__pthread_mutex_cond_lock_adjust
+-	xorl	%esi, %esi
+-	callq	__pthread_mutex_unlock_usercnt
+-	/* Reload cond_var.  */
+-	movq	8(%rsp), %rdi
+-	jmp	38b
+-
+-99:	incq	wakeup_seq(%rdi)
+-	incl	cond_futex(%rdi)
+-	movl	$ETIMEDOUT, %r14d
+-	jmp	44f
+-
+-53:	xorq	%r14, %r14
+-	jmp	54f
+-
+-39:	xorq	%r14, %r14
+-44:	incq	woken_seq(%rdi)
+-
+-54:	subl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	cmpq	$0xffffffffffffffff, total_seq(%rdi)
+-	jne	55f
+-	movl	cond_nwaiters(%rdi), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	55f
+-
+-	addq	$cond_nwaiters, %rdi
+-	LP_OP(cmp) $-1, dep_mutex-cond_nwaiters(%rdi)
+-	movl	$1, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-	subq	$cond_nwaiters, %rdi
+-
+-55:	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	jne	40f
+-
+-	/* If requeue_pi is used the kernel performs the locking of the
+-	   mutex. */
+-41:	movq	16(%rsp), %rdi
+-	testb	%r15b, %r15b
+-	jnz	64f
+-
+-	callq	__pthread_mutex_cond_lock
+-
+-63:	testq	%rax, %rax
+-	cmoveq	%r14, %rax
+-
+-48:	addq	$FRAME_SIZE, %rsp
+-	cfi_adjust_cfa_offset(-FRAME_SIZE)
+-	popq	%r15
+-	cfi_adjust_cfa_offset(-8)
+-	cfi_restore(%r15)
+-	popq	%r14
+-	cfi_adjust_cfa_offset(-8)
+-	cfi_restore(%r14)
+-	popq	%r13
+-	cfi_adjust_cfa_offset(-8)
+-	cfi_restore(%r13)
+-	popq	%r12
+-	cfi_adjust_cfa_offset(-8)
+-	cfi_restore(%r12)
+-
+-	retq
+-
+-	cfi_restore_state
+-
+-64:	callq	__pthread_mutex_cond_lock_adjust
+-	movq	%r14, %rax
+-	jmp	48b
+-
+-	/* Initial locking failed.  */
+-31:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-	jmp	32b
+-
+-	/* Unlock in loop requires wakeup.  */
+-33:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	jmp	34b
+-
+-	/* Locking in loop failed.  */
+-35:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-	jmp	36b
+-
+-	/* Unlock after loop requires wakeup.  */
+-40:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	jmp	41b
+-
+-	/* The initial unlocking of the mutex failed.  */
+-46:	movq	8(%rsp), %rdi
+-	movq	%rax, (%rsp)
+-	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	jne	47f
+-
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-
+-47:	movq	(%rsp), %rax
+-	jmp	48b
+-
+-	.size	__pthread_cond_timedwait, .-__pthread_cond_timedwait
+-versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
+-		  GLIBC_2_3_2)
+-
+-
+-	.align	16
+-	.type	__condvar_cleanup2, @function
+-__condvar_cleanup2:
+-	/* Stack frame:
+-
+-	   rsp + 72
+-		    +--------------------------+
+-	   rsp + 64 | %r12                     |
+-		    +--------------------------+
+-	   rsp + 56 | %r13                     |
+-		    +--------------------------+
+-	   rsp + 48 | %r14                     |
+-		    +--------------------------+
+-	   rsp + 24 | unused                   |
+-		    +--------------------------+
+-	   rsp + 16 | mutex pointer            |
+-		    +--------------------------+
+-	   rsp +  8 | condvar pointer          |
+-		    +--------------------------+
+-	   rsp +  4 | old broadcast_seq value  |
+-		    +--------------------------+
+-	   rsp +  0 | old cancellation mode    |
+-		    +--------------------------+
+-	*/
+-
+-	movq	%rax, 24(%rsp)
+-
+-	/* Get internal lock.  */
+-	movq	8(%rsp), %rdi
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jz	1f
+-
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-
+-1:	movl	broadcast_seq(%rdi), %edx
+-	cmpl	4(%rsp), %edx
+-	jne	3f
+-
+-	/* We increment the wakeup_seq counter only if it is lower than
+-	   total_seq.  If this is not the case the thread was woken and
+-	   then canceled.  In this case we ignore the signal.  */
+-	movq	total_seq(%rdi), %rax
+-	cmpq	wakeup_seq(%rdi), %rax
+-	jbe	6f
+-	incq	wakeup_seq(%rdi)
+-	incl	cond_futex(%rdi)
+-6:	incq	woken_seq(%rdi)
+-
+-3:	subl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	xorq	%r12, %r12
+-	cmpq	$0xffffffffffffffff, total_seq(%rdi)
+-	jne	4f
+-	movl	cond_nwaiters(%rdi), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	4f
+-
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-	leaq	cond_nwaiters(%rdi), %rdi
+-	movl	$1, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-	subq	$cond_nwaiters, %rdi
+-	movl	$1, %r12d
+-
+-4:	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	je	2f
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-
+-	/* Wake up all waiters to make sure no signal gets lost.  */
+-2:	testq	%r12, %r12
+-	jnz	5f
+-	addq	$cond_futex, %rdi
+-	LP_OP(cmp) $-1, dep_mutex-cond_futex(%rdi)
+-	movl	$0x7fffffff, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-
+-	/* Lock the mutex only if we don't own it already.  This only happens
+-	   in case of PI mutexes, if we got cancelled after a successful
+-	   return of the futex syscall and before disabling async
+-	   cancellation.  */
+-5:	movq	16(%rsp), %rdi
+-	movl	MUTEX_KIND(%rdi), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	7f
+-
+-	movl	(%rdi), %eax
+-	andl	$TID_MASK, %eax
+-	cmpl	%eax, %fs:TID
+-	jne	7f
+-	/* We managed to get the lock.  Fix it up before returning.  */
+-	callq	__pthread_mutex_cond_lock_adjust
+-	jmp	8f
+-
+-7:	callq	__pthread_mutex_cond_lock
+-
+-8:	movq	24(%rsp), %rdi
+-	movq	FRAME_SIZE(%rsp), %r15
+-	movq	FRAME_SIZE+8(%rsp), %r14
+-	movq	FRAME_SIZE+16(%rsp), %r13
+-	movq	FRAME_SIZE+24(%rsp), %r12
+-.LcallUR:
+-	call	_Unwind_Resume@PLT
+-	hlt
+-.LENDCODE:
+-	cfi_endproc
+-	.size	__condvar_cleanup2, .-__condvar_cleanup2
+-
+-
+-	.section .gcc_except_table,"a",@progbits
+-.LexceptSTART:
+-	.byte	DW_EH_PE_omit			# @LPStart format
+-	.byte	DW_EH_PE_omit			# @TType format
+-	.byte	DW_EH_PE_uleb128		# call-site format
+-	.uleb128 .Lcstend-.Lcstbegin
+-.Lcstbegin:
+-	.uleb128 .LcleanupSTART1-.LSTARTCODE
+-	.uleb128 .LcleanupEND1-.LcleanupSTART1
+-	.uleb128 __condvar_cleanup2-.LSTARTCODE
+-	.uleb128  0
+-	.uleb128 .LcallUR-.LSTARTCODE
+-	.uleb128 .LENDCODE-.LcallUR
+-	.uleb128 0
+-	.uleb128  0
+-.Lcstend:
+-
+-
+-#ifdef SHARED
+-	.hidden	DW.ref.__gcc_personality_v0
+-	.weak	DW.ref.__gcc_personality_v0
+-	.section .gnu.linkonce.d.DW.ref.__gcc_personality_v0,"aw",@progbits
+-	.align	LP_SIZE
+-	.type	DW.ref.__gcc_personality_v0, @object
+-	.size	DW.ref.__gcc_personality_v0, LP_SIZE
+-DW.ref.__gcc_personality_v0:
+-	ASM_ADDR __gcc_personality_v0
+-#endif
+diff --git a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S b/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S
+deleted file mode 100644
+index 2e564a7..0000000
+--- a/sysdeps/unix/sysv/linux/x86_64/pthread_cond_wait.S
++++ /dev/null
+@@ -1,555 +0,0 @@
+-/* Copyright (C) 2002-2015 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-#include <shlib-compat.h>
+-#include <lowlevellock.h>
+-#include <lowlevelcond.h>
+-#include <tcb-offsets.h>
+-#include <pthread-pi-defines.h>
+-#include <pthread-errnos.h>
+-#include <stap-probe.h>
+-
+-#include <kernel-features.h>
+-
+-
+-	.text
+-
+-/* int pthread_cond_wait (pthread_cond_t *cond, pthread_mutex_t *mutex)  */
+-	.globl	__pthread_cond_wait
+-	.type	__pthread_cond_wait, @function
+-	.align	16
+-__pthread_cond_wait:
+-.LSTARTCODE:
+-	cfi_startproc
+-#ifdef SHARED
+-	cfi_personality(DW_EH_PE_pcrel | DW_EH_PE_sdata4 | DW_EH_PE_indirect,
+-			DW.ref.__gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_pcrel | DW_EH_PE_sdata4, .LexceptSTART)
+-#else
+-	cfi_personality(DW_EH_PE_udata4, __gcc_personality_v0)
+-	cfi_lsda(DW_EH_PE_udata4, .LexceptSTART)
+-#endif
+-
+-#define FRAME_SIZE (32+8)
+-	leaq	-FRAME_SIZE(%rsp), %rsp
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-	/* Stack frame:
+-
+-	   rsp + 32
+-		    +--------------------------+
+-	   rsp + 24 | old wake_seq value       |
+-		    +--------------------------+
+-	   rsp + 16 | mutex pointer            |
+-		    +--------------------------+
+-	   rsp +  8 | condvar pointer          |
+-		    +--------------------------+
+-	   rsp +  4 | old broadcast_seq value  |
+-		    +--------------------------+
+-	   rsp +  0 | old cancellation mode    |
+-		    +--------------------------+
+-	*/
+-
+-	LIBC_PROBE (cond_wait, 2, %rdi, %rsi)
+-
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-
+-	/* Prepare structure passed to cancellation handler.  */
+-	movq	%rdi, 8(%rsp)
+-	movq	%rsi, 16(%rsp)
+-
+-	je	15f
+-	mov	%RSI_LP, dep_mutex(%rdi)
+-
+-	/* Get internal lock.  */
+-15:	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jne	1f
+-
+-	/* Unlock the mutex.  */
+-2:	movq	16(%rsp), %rdi
+-	xorl	%esi, %esi
+-	callq	__pthread_mutex_unlock_usercnt
+-
+-	testl	%eax, %eax
+-	jne	12f
+-
+-	movq	8(%rsp), %rdi
+-	incq	total_seq(%rdi)
+-	incl	cond_futex(%rdi)
+-	addl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Get and store current wakeup_seq value.  */
+-	movq	8(%rsp), %rdi
+-	movq	wakeup_seq(%rdi), %r9
+-	movl	broadcast_seq(%rdi), %edx
+-	movq	%r9, 24(%rsp)
+-	movl	%edx, 4(%rsp)
+-
+-	/* Unlock.  */
+-8:	movl	cond_futex(%rdi), %edx
+-	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	jne	3f
+-
+-.LcleanupSTART:
+-4:	callq	__pthread_enable_asynccancel
+-	movl	%eax, (%rsp)
+-
+-	xorq	%r10, %r10
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-	leaq	cond_futex(%rdi), %rdi
+-	movl	$FUTEX_WAIT, %esi
+-	je	60f
+-
+-	mov	dep_mutex-cond_futex(%rdi), %R8_LP
+-	/* Requeue to a non-robust PI mutex if the PI bit is set and
+-	the robust bit is not set.  */
+-	movl	MUTEX_KIND(%r8), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	61f
+-
+-	movl	$(FUTEX_WAIT_REQUEUE_PI|FUTEX_PRIVATE_FLAG), %esi
+-	movl	$SYS_futex, %eax
+-	syscall
+-
+-	cmpl	$0, %eax
+-	sete	%r8b
+-
+-#ifdef __ASSUME_REQUEUE_PI
+-	jmp	62f
+-#else
+-	je	62f
+-
+-	/* When a futex syscall with FUTEX_WAIT_REQUEUE_PI returns
+-	   successfully, it has already locked the mutex for us and the
+-	   pi_flag (%r8b) is set to denote that fact.  However, if another
+-	   thread changed the futex value before we entered the wait, the
+-	   syscall may return an EAGAIN and the mutex is not locked.  We go
+-	   ahead with a success anyway since later we look at the pi_flag to
+-	   decide if we got the mutex or not.  The sequence numbers then make
+-	   sure that only one of the threads actually wake up.  We retry using
+-	   normal FUTEX_WAIT only if the kernel returned ENOSYS, since normal
+-	   and PI futexes don't mix.
+-
+-	   Note that we don't check for EAGAIN specifically; we assume that the
+-	   only other error the futex function could return is EAGAIN since
+-	   anything else would mean an error in our function.  It is too
+-	   expensive to do that check for every call (which is 	quite common in
+-	   case of a large number of threads), so it has been skipped.  */
+-	cmpl	$-ENOSYS, %eax
+-	jne	62f
+-
+-# ifndef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAIT, %esi
+-# endif
+-#endif
+-
+-61:
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$(FUTEX_WAIT|FUTEX_PRIVATE_FLAG), %esi
+-#else
+-	orl	%fs:PRIVATE_FUTEX, %esi
+-#endif
+-60:	xorb	%r8b, %r8b
+-	movl	$SYS_futex, %eax
+-	syscall
+-
+-62:	movl	(%rsp), %edi
+-	callq	__pthread_disable_asynccancel
+-.LcleanupEND:
+-
+-	/* Lock.  */
+-	movq	8(%rsp), %rdi
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jnz	5f
+-
+-6:	movl	broadcast_seq(%rdi), %edx
+-
+-	movq	woken_seq(%rdi), %rax
+-
+-	movq	wakeup_seq(%rdi), %r9
+-
+-	cmpl	4(%rsp), %edx
+-	jne	16f
+-
+-	cmpq	24(%rsp), %r9
+-	jbe	19f
+-
+-	cmpq	%rax, %r9
+-	jna	19f
+-
+-	incq	woken_seq(%rdi)
+-
+-	/* Unlock */
+-16:	subl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	cmpq	$0xffffffffffffffff, total_seq(%rdi)
+-	jne	17f
+-	movl	cond_nwaiters(%rdi), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	17f
+-
+-	addq	$cond_nwaiters, %rdi
+-	LP_OP(cmp) $-1, dep_mutex-cond_nwaiters(%rdi)
+-	movl	$1, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-	subq	$cond_nwaiters, %rdi
+-
+-17:	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	jne	10f
+-
+-	/* If requeue_pi is used the kernel performs the locking of the
+-	   mutex. */
+-11:	movq	16(%rsp), %rdi
+-	testb	%r8b, %r8b
+-	jnz	18f
+-
+-	callq	__pthread_mutex_cond_lock
+-
+-14:	leaq	FRAME_SIZE(%rsp), %rsp
+-	cfi_adjust_cfa_offset(-FRAME_SIZE)
+-
+-	/* We return the result of the mutex_lock operation.  */
+-	retq
+-
+-	cfi_adjust_cfa_offset(FRAME_SIZE)
+-
+-18:	callq	__pthread_mutex_cond_lock_adjust
+-	xorl	%eax, %eax
+-	jmp	14b
+-
+-	/* We need to go back to futex_wait.  If we're using requeue_pi, then
+-	   release the mutex we had acquired and go back.  */
+-19:	testb	%r8b, %r8b
+-	jz	8b
+-
+-	/* Adjust the mutex values first and then unlock it.  The unlock
+-	   should always succeed or else the kernel did not lock the mutex
+-	   correctly.  */
+-	movq	16(%rsp), %rdi
+-	callq	__pthread_mutex_cond_lock_adjust
+-	movq	%rdi, %r8
+-	xorl	%esi, %esi
+-	callq	__pthread_mutex_unlock_usercnt
+-	/* Reload cond_var.  */
+-	movq	8(%rsp), %rdi
+-	jmp	8b
+-
+-	/* Initial locking failed.  */
+-1:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-	jmp	2b
+-
+-	/* Unlock in loop requires wakeup.  */
+-3:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	/* The call preserves %rdx.  */
+-	callq	__lll_unlock_wake
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-	jmp	4b
+-
+-	/* Locking in loop failed.  */
+-5:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-	jmp	6b
+-
+-	/* Unlock after loop requires wakeup.  */
+-10:
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-	jmp	11b
+-
+-	/* The initial unlocking of the mutex failed.  */
+-12:	movq	%rax, %r10
+-	movq	8(%rsp), %rdi
+-	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	je	13f
+-
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_unlock_wake
+-
+-13:	movq	%r10, %rax
+-	jmp	14b
+-
+-	.size	__pthread_cond_wait, .-__pthread_cond_wait
+-versioned_symbol (libpthread, __pthread_cond_wait, pthread_cond_wait,
+-		  GLIBC_2_3_2)
+-
+-
+-	.align	16
+-	.type	__condvar_cleanup1, @function
+-	.globl	__condvar_cleanup1
+-	.hidden	__condvar_cleanup1
+-__condvar_cleanup1:
+-	/* Stack frame:
+-
+-	   rsp + 32
+-		    +--------------------------+
+-	   rsp + 24 | unused                   |
+-		    +--------------------------+
+-	   rsp + 16 | mutex pointer            |
+-		    +--------------------------+
+-	   rsp +  8 | condvar pointer          |
+-		    +--------------------------+
+-	   rsp +  4 | old broadcast_seq value  |
+-		    +--------------------------+
+-	   rsp +  0 | old cancellation mode    |
+-		    +--------------------------+
+-	*/
+-
+-	movq	%rax, 24(%rsp)
+-
+-	/* Get internal lock.  */
+-	movq	8(%rsp), %rdi
+-	movl	$1, %esi
+-	xorl	%eax, %eax
+-	LOCK
+-#if cond_lock == 0
+-	cmpxchgl %esi, (%rdi)
+-#else
+-	cmpxchgl %esi, cond_lock(%rdi)
+-#endif
+-	jz	1f
+-
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	callq	__lll_lock_wait
+-#if cond_lock != 0
+-	subq	$cond_lock, %rdi
+-#endif
+-
+-1:	movl	broadcast_seq(%rdi), %edx
+-	cmpl	4(%rsp), %edx
+-	jne	3f
+-
+-	/* We increment the wakeup_seq counter only if it is lower than
+-	   total_seq.  If this is not the case the thread was woken and
+-	   then canceled.  In this case we ignore the signal.  */
+-	movq	total_seq(%rdi), %rax
+-	cmpq	wakeup_seq(%rdi), %rax
+-	jbe	6f
+-	incq	wakeup_seq(%rdi)
+-	incl	cond_futex(%rdi)
+-6:	incq	woken_seq(%rdi)
+-
+-3:	subl	$(1 << nwaiters_shift), cond_nwaiters(%rdi)
+-
+-	/* Wake up a thread which wants to destroy the condvar object.  */
+-	xorl	%ecx, %ecx
+-	cmpq	$0xffffffffffffffff, total_seq(%rdi)
+-	jne	4f
+-	movl	cond_nwaiters(%rdi), %eax
+-	andl	$~((1 << nwaiters_shift) - 1), %eax
+-	jne	4f
+-
+-	LP_OP(cmp) $-1, dep_mutex(%rdi)
+-	leaq	cond_nwaiters(%rdi), %rdi
+-	movl	$1, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-	subq	$cond_nwaiters, %rdi
+-	movl	$1, %ecx
+-
+-4:	LOCK
+-#if cond_lock == 0
+-	decl	(%rdi)
+-#else
+-	decl	cond_lock(%rdi)
+-#endif
+-	je	2f
+-#if cond_lock != 0
+-	addq	$cond_lock, %rdi
+-#endif
+-	LP_OP(cmp) $-1, dep_mutex-cond_lock(%rdi)
+-	movl	$LLL_PRIVATE, %eax
+-	movl	$LLL_SHARED, %esi
+-	cmovne	%eax, %esi
+-	/* The call preserves %rcx.  */
+-	callq	__lll_unlock_wake
+-
+-	/* Wake up all waiters to make sure no signal gets lost.  */
+-2:	testl	%ecx, %ecx
+-	jnz	5f
+-	addq	$cond_futex, %rdi
+-	LP_OP(cmp) $-1, dep_mutex-cond_futex(%rdi)
+-	movl	$0x7fffffff, %edx
+-#ifdef __ASSUME_PRIVATE_FUTEX
+-	movl	$FUTEX_WAKE, %eax
+-	movl	$(FUTEX_WAKE|FUTEX_PRIVATE_FLAG), %esi
+-	cmove	%eax, %esi
+-#else
+-	movl	$0, %eax
+-	movl	%fs:PRIVATE_FUTEX, %esi
+-	cmove	%eax, %esi
+-	orl	$FUTEX_WAKE, %esi
+-#endif
+-	movl	$SYS_futex, %eax
+-	syscall
+-
+-	/* Lock the mutex only if we don't own it already.  This only happens
+-	   in case of PI mutexes, if we got cancelled after a successful
+-	   return of the futex syscall and before disabling async
+-	   cancellation.  */
+-5:	movq	16(%rsp), %rdi
+-	movl	MUTEX_KIND(%rdi), %eax
+-	andl	$(ROBUST_BIT|PI_BIT), %eax
+-	cmpl	$PI_BIT, %eax
+-	jne	7f
+-
+-	movl	(%rdi), %eax
+-	andl	$TID_MASK, %eax
+-	cmpl	%eax, %fs:TID
+-	jne	7f
+-	/* We managed to get the lock.  Fix it up before returning.  */
+-	callq	__pthread_mutex_cond_lock_adjust
+-	jmp	8f
+-
+-
+-7:	callq	__pthread_mutex_cond_lock
+-
+-8:	movq	24(%rsp), %rdi
+-.LcallUR:
+-	call	_Unwind_Resume@PLT
+-	hlt
+-.LENDCODE:
+-	cfi_endproc
+-	.size	__condvar_cleanup1, .-__condvar_cleanup1
+-
+-
+-	.section .gcc_except_table,"a",@progbits
+-.LexceptSTART:
+-	.byte	DW_EH_PE_omit			# @LPStart format
+-	.byte	DW_EH_PE_omit			# @TType format
+-	.byte	DW_EH_PE_uleb128		# call-site format
+-	.uleb128 .Lcstend-.Lcstbegin
+-.Lcstbegin:
+-	.uleb128 .LcleanupSTART-.LSTARTCODE
+-	.uleb128 .LcleanupEND-.LcleanupSTART
+-	.uleb128 __condvar_cleanup1-.LSTARTCODE
+-	.uleb128 0
+-	.uleb128 .LcallUR-.LSTARTCODE
+-	.uleb128 .LENDCODE-.LcallUR
+-	.uleb128 0
+-	.uleb128 0
+-.Lcstend:
+-
+-
+-#ifdef SHARED
+-	.hidden	DW.ref.__gcc_personality_v0
+-	.weak	DW.ref.__gcc_personality_v0
+-	.section .gnu.linkonce.d.DW.ref.__gcc_personality_v0,"aw",@progbits
+-	.align	LP_SIZE
+-	.type	DW.ref.__gcc_personality_v0, @object
+-	.size	DW.ref.__gcc_personality_v0, LP_SIZE
+-DW.ref.__gcc_personality_v0:
+-	ASM_ADDR __gcc_personality_v0
+-#endif
+diff --git a/sysdeps/x86/bits/pthreadtypes.h b/sysdeps/x86/bits/pthreadtypes.h
+index 4460615..0898455 100644
+--- a/sysdeps/x86/bits/pthreadtypes.h
++++ b/sysdeps/x86/bits/pthreadtypes.h
+@@ -140,14 +140,14 @@ typedef union
+ {
+   struct
+   {
+-    int __lock;
+-    unsigned int __futex;
+-    __extension__ unsigned long long int __total_seq;
+-    __extension__ unsigned long long int __wakeup_seq;
+-    __extension__ unsigned long long int __woken_seq;
++    unsigned int __wseq;
++#define __PTHREAD_COND_WSEQ_THRESHOLD (~ (unsigned int) 0)
++    unsigned int __signals_sent;
++    unsigned int __confirmed;
++    unsigned int __generation;
+     void *__mutex;
+-    unsigned int __nwaiters;
+-    unsigned int __broadcast_seq;
++    unsigned int __quiescence_waiters;
++    int __clockid;
+   } __data;
+   char __size[__SIZEOF_PTHREAD_COND_T];
+   __extension__ long long int __align;

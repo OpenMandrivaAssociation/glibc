@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.21
+%define ver		2.22
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -22,6 +22,8 @@
 %define	statname	%mklibname -d -s c
 %define	multilibc	libc%{major}
 
+%define _disable_rebuild_configure 1
+%define _disable_lto 1
 %define	_disable_ld_no_undefined	1
 
 # Define "cross" to an architecture to which glibc is to be
@@ -134,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	3
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -223,8 +225,6 @@ Patch35:	glibc-fedora-ppc-unwind.patch
 
 Patch38:	glibc-rh757881.patch
 Patch40:	glibc-rh741105.patch
-# Upstream BZ 13818
-Patch49:	glibc-rh800224.patch
 # Upstream BZ 14247
 Patch50:	glibc-rh827510.patch
 # Upstream BZ 14185
@@ -397,7 +397,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Bemba", "bem", ["bem_ZM"])}
 %{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
 %{python:pkg("Bulgarian", "bg", ["bg_BG"])}
-%{python:pkg("Bhili", "bh", ["bh_IN"])}
+%{python:pkg("Bhili", "bhb", ["bhb_IN"])}
 %{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
 %{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
 %{python:pkg("Breton", "br", ["br_FR"])}
@@ -530,7 +530,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
 %{python:pkg("Tsonga", "ts", ["ts_ZA"])}
 %{python:pkg("Tatar", "tt", ["tt_RU"])}
-%{python:pkg("Tulu", "tu", ["tu_IN"])}
+%{python:pkg("Tulu", "tcy", ["tcy_IN"])}
 %{python:pkg("Uyghur", "ug", ["ug_CN"])}
 %{python:pkg("Unami", "unm", ["unm_US"])}
 %{python:pkg("Ukrainian", "uk", ["uk_UA"])}
@@ -750,6 +750,7 @@ executables.
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
+%optional %{_libdir}/libmvec.a
 %{_libdir}/libpthread_nonshared.a
 #%if "%{name}" == "glibc"
 %{_libdir}/librpcsvc.a
@@ -984,7 +985,6 @@ These are configuration files that describe possible time zones.
 %patch34 -p1
 %patch35 -p1
 %patch40 -p1
-%patch49 -p1 -b .rh800224~
 %patch50 -p1
 %patch54 -p1 -b .rh819430~
 %patch51 -p1
@@ -1028,7 +1028,7 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %patch86 -p1 -b .compile~
 
-%patch87 -p1 -b .boLocale~
+#patch87 -p1 -b .boLocale~
 
 %patch88 -p1 -b .gold~
 
@@ -1047,7 +1047,7 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Remove patch backups from files we ship in glibc packages
-rm localedata/locales/[a-z_]*.*
+#rm localedata/locales/[a-z_]*.*
 
 # Regenerate autoconf files, some of our patches touch them
 # Remove the autoconf 2.68 hardcode...

@@ -7,5 +7,5 @@ diff -Nrup a/localedata/Makefile b/localedata/Makefile
  	$(LOCALEDEF) --alias-file=../intl/locale.alias \
 +		     --no-archive \
  		     -i locales/$$input -c -f charmaps/$$charset \
- 		     $(addprefix --prefix=,$(install_root)) $$locale; \
- 	echo ' done'; \
+ 		     $(addprefix --prefix=,$(install_root)) $$locale \
+ 	&& echo ' done'; \

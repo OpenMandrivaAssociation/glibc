@@ -1,11 +1,11 @@
---- libc/scripts/check-local-headers.sh.multiarch~	2012-11-17 18:50:14.000000000 +0100
-+++ libc/scripts/check-local-headers.sh	2012-12-27 20:01:52.821383910 +0100
+--- glibc-2.22/scripts/check-local-headers.sh.biarch~	2015-08-05 20:11:04.290067495 +0200
++++ glibc-2.22/scripts/check-local-headers.sh	2015-08-05 20:15:21.434202315 +0200
 @@ -33,7 +33,7 @@ exec ${AWK} -v includedir="$includedir"
  BEGIN {
    status = 0
    exclude = "^" includedir \
--    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
-+    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|multiarch-|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
+-    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs)|cthreads\\.h|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
++    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs)|cthreads\\.h|multiarch-|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
  }
  /^[^ ]/ && $1 ~ /.*:/ { obj = $1 }
  {

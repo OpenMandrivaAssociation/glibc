@@ -1,0 +1,102 @@
+#
+# Based on the following upstream commit:
+#
+# commit 6e6249d0b461b952d0f544792372663feb6d792a
+# Author: Roland McGrath <roland@hack.frob.com>
+# Date:   Wed Oct 24 14:50:46 2012 -0700
+#
+#    BZ#14743: Move clock_* symbols from librt to libc.
+#
+# We remove the clock* functions from librtkaio.so.1 and
+# use those provided in libc.so.6, matching librt.so.
+#
+--- glibc-2.21-63-gebf27d1.mod/rtkaio/clock-compat.c	1969-12-31 19:00:00.000000000 -0500
++++ glibc-2.21-63-gebf27d1/rtkaio/clock-compat.c	2015-02-12 01:28:59.615026597 -0500
+@@ -0,0 +1,2 @@
++#define librt librtkaio
++#include <rt/clock-compat.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_getcpuclockid.c glibc-2.21-59-gd35273f/rtkaio/kaio_clock_getcpuclockid.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_getcpuclockid.c	2015-02-11 13:00:55.105400863 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_clock_getcpuclockid.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <clock_getcpuclockid.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_getres.c glibc-2.21-59-gd35273f/rtkaio/kaio_clock_getres.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_getres.c	2015-02-11 13:00:55.105400863 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_clock_getres.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <clock_getres.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_gettime.c glibc-2.21-59-gd35273f/rtkaio/kaio_clock_gettime.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_gettime.c	2015-02-11 13:00:55.109400738 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_clock_gettime.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <clock_gettime.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_nanosleep.c glibc-2.21-59-gd35273f/rtkaio/kaio_clock_nanosleep.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_nanosleep.c	2015-02-11 13:00:55.115400552 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_clock_nanosleep.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <clock_nanosleep.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_settime.c glibc-2.21-59-gd35273f/rtkaio/kaio_clock_settime.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_clock_settime.c	2015-02-11 13:00:55.110400708 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_clock_settime.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <clock_settime.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/kaio_get_clockfreq.c glibc-2.21-59-gd35273f/rtkaio/kaio_get_clockfreq.c
+--- glibc-2.21-59-gd35273f.mod/rtkaio/kaio_get_clockfreq.c	2015-02-11 13:00:55.118400459 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/kaio_get_clockfreq.c	1969-12-31 19:00:00.000000000 -0500
+@@ -1 +0,0 @@
+-#include <get_clockfreq.c>
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/Makefile glibc-2.21-59-gd35273f/rtkaio/Makefile
+--- glibc-2.21-59-gd35273f.mod/rtkaio/Makefile	2015-02-11 13:00:55.107400801 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/Makefile	2015-02-11 22:46:46.930374298 -0500
+@@ -25,9 +25,6 @@
+ 		  aio_read64 aio_return aio_suspend aio_write		\
+ 		  aio_write64 lio_listio lio_listio64 aio_sigqueue	\
+ 		  aio_notify
+-clock-routines := get_clockfreq clock_getcpuclockid			\
+-		  clock_getres clock_gettime clock_settime		\
+-		  clock_nanosleep
+ timer-routines := timer_create timer_delete timer_getoverr		\
+ 		  timer_gettime timer_settime
+ shm-routines   := shm_open shm_unlink
+@@ -36,8 +33,9 @@
+ 		  mq_timedreceive
+ 
+ librtkaio-routines = $(patsubst %,k%,$(aio-routines)) \
+-		     $(patsubst %,kaio_%,$(clock-routines) $(timer-routines) \
+-					 $(shm-routines) $(mq-routines))
++		     $(patsubst %,kaio_%,$(timer-routines) \
++					 $(shm-routines) $(mq-routines)) \
++		     clock-compat
+ 
+ tests := tst-shm tst-clock tst-clock_nanosleep tst-timer tst-timer2 \
+ 	 tst-aio tst-aio64 tst-aio2 tst-aio3 tst-aio4 tst-aio5 tst-aio6 \
+@@ -64,7 +62,6 @@
+ include $(..)Rules
+ 
+ CFLAGS-kaio_suspend.c = -fexceptions
+-CFLAGS-kaio_clock_nanosleep.c = -fexceptions -fasynchronous-unwind-tables
+ CFLAGS-kaio_librt-cancellation.c = -fasynchronous-unwind-tables
+ 
+ LDFLAGS-rtkaio.so = -Wl,-soname=lib$(libprefix)rt.so$(librt.so-version) \
+@@ -88,9 +85,6 @@
+ else
+ $(addprefix $(objpfx),$(tests)): $(objpfx)librtkaio.a $(static-thread-library)
+ endif
+-ifeq (yes,$(build-bounded))
+-$(tests:%=$(objpfx)%-bp): $(objpfx)librtkaio_b.a $(bounded-thread-library)
+-endif
+ 
+ tst-mqueue7-ARGS = -- $(built-program-file)
+ 
+diff -urN glibc-2.21-59-gd35273f.mod/rtkaio/Versions glibc-2.21-59-gd35273f/rtkaio/Versions
+--- glibc-2.21-59-gd35273f.mod/rtkaio/Versions	2015-02-11 13:00:55.118400459 -0500
++++ glibc-2.21-59-gd35273f/rtkaio/Versions	2015-02-11 22:36:11.974051389 -0500
+@@ -6,7 +6,7 @@
+     aio_suspend64; aio_write; aio_write64; lio_listio; lio_listio64;
+   }
+   GLIBC_2.2 {
+-    # c*
++    # These have moved to libc and are still here only for compatibility.
+     clock_getres; clock_gettime; clock_settime; clock_getcpuclockid;
+     clock_nanosleep;
+ 

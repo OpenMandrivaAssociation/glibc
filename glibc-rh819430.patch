@@ -1,6 +1,7 @@
---- glibc-2.20/posix/fnmatch.c.rh819430~	2014-09-07 10:09:09.000000000 +0200
-+++ glibc-2.20/posix/fnmatch.c	2014-09-08 21:19:36.619081589 +0200
-@@ -327,6 +327,7 @@ fnmatch (pattern, string, flags)
+diff -Nrup a/posix/fnmatch.c b/posix/fnmatch.c
+--- a/posix/fnmatch.c	2012-01-01 07:16:32.000000000 -0500
++++ b/posix/fnmatch.c	2012-05-23 14:14:29.099461189 -0400
+@@ -333,6 +333,7 @@ fnmatch (pattern, string, flags)
  # if HANDLE_MULTIBYTE
    if (__builtin_expect (MB_CUR_MAX, 1) != 1)
      {
@@ -8,7 +9,7 @@
        mbstate_t ps;
        size_t n;
        const char *p;
-@@ -350,10 +351,8 @@ fnmatch (pattern, string, flags)
+@@ -356,10 +357,8 @@ fnmatch (pattern, string, flags)
  						 alloca_used);
  	  n = mbsrtowcs (wpattern, &p, n + 1, &ps);
  	  if (__glibc_unlikely (n == (size_t) -1))
@@ -21,7 +22,7 @@
  	  if (p)
  	    {
  	      memset (&ps, '\0', sizeof (ps));
-@@ -365,10 +364,8 @@ fnmatch (pattern, string, flags)
+@@ -371,10 +370,8 @@ fnmatch (pattern, string, flags)
  	prepare_wpattern:
  	  n = mbsrtowcs (NULL, &pattern, 0, &ps);
  	  if (__glibc_unlikely (n == (size_t) -1))
@@ -29,12 +30,12 @@
 -	       XXX Do we have to set `errno' to something which mbsrtows hasn't
 -	       already done?  */
 -	    return -1;
-+	    /* Something wrong: Fall back to single byte matching. */
++	    /*Something wrong: Fall back to single byte matching. */
 +	    goto try_singlebyte;
  	  if (__glibc_unlikely (n >= (size_t) -1 / sizeof (wchar_t)))
  	    {
  	      __set_errno (ENOMEM);
-@@ -395,14 +392,8 @@ fnmatch (pattern, string, flags)
+@@ -401,14 +398,8 @@ fnmatch (pattern, string, flags)
  						alloca_used);
  	  n = mbsrtowcs (wstring, &p, n + 1, &ps);
  	  if (__glibc_unlikely (n == (size_t) -1))
@@ -51,7 +52,7 @@
  	  if (p)
  	    {
  	      memset (&ps, '\0', sizeof (ps));
-@@ -414,10 +405,8 @@ fnmatch (pattern, string, flags)
+@@ -420,10 +411,8 @@ fnmatch (pattern, string, flags)
  	prepare_wstring:
  	  n = mbsrtowcs (NULL, &string, 0, &ps);
  	  if (__glibc_unlikely (n == (size_t) -1))
@@ -59,12 +60,12 @@
 -	       XXX Do we have to set `errno' to something which mbsrtows hasn't
 -	       already done?  */
 -	    goto free_return;
-+	    /* Something wrong: Fall back to single byte matching. */
++	    /* Something wrong: Fall back to singlebyte matching. */
 +	    goto free_and_try_singlebyte;
  	  if (__glibc_unlikely (n >= (size_t) -1 / sizeof (wchar_t)))
  	    {
  	      free (wpattern_malloc);
-@@ -444,6 +433,10 @@ fnmatch (pattern, string, flags)
+@@ -450,6 +439,10 @@ fnmatch (pattern, string, flags)
        free (wpattern_malloc);
  
        return res;
