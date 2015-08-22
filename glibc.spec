@@ -223,7 +223,6 @@ Patch35:	glibc-fedora-ppc-unwind.patch
 # Obviously we're not there right now, but that's the goal
 #
 
-Patch38:	glibc-rh757881.patch
 Patch40:	glibc-rh741105.patch
 # Upstream BZ 14247
 Patch50:	glibc-rh827510.patch
@@ -255,10 +254,6 @@ Patch74:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch75:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch76:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=638477#c275
-# https://bugzilla.redhat.com/show_bug.cgi?id=696096
-# https://bugzilla.redhat.com/attachment.cgi?id=491198
-Patch77:	eglibc-mandriva-fix-for-new-memcpy-behavior.patch
 Patch79:	eglibc-mandriva-no-leaf-attribute.patch
 Patch81:	eglibc-mandriva-mdv-avx-owl-crypt.patch
 Patch82:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
