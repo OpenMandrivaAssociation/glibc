@@ -1076,7 +1076,8 @@ function BuildGlibc() {
   BuildAltArch="no"
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
-  BuildFlags="`rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##'`"
+  # cut -flto flag
+  BuildFlags="`rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##'`"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
