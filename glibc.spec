@@ -136,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -269,6 +269,8 @@ Patch88:	glibc-2.17-gold.patch
 Patch89:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1162810
 Patch90:	glibc-dso_deps.patch
+# http://thread.gmane.org/gmane.linux.kernel/1790211
+Patch91:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
 
@@ -1030,6 +1032,7 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch89 -p1 -b .nscd_runpath~
 
 %patch90 -p1 -b .dsodeps~
+%patch91 -p1 -b .elision~
 
 %patch100 -p1 -b .blowfish_nonx86~
 
