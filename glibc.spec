@@ -71,7 +71,7 @@ Release:	0.%{svn}.1
 # Packaged from svn repository at svn://svn.eglibc.org/
 Source0:	e%{name}-%{version}-%{svn}.tar.xz
 %else
-Release:	2.3
+Release:	2.4
 Source0:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{glibcsrcdir}.tar.xz.sig
 %endif
@@ -222,6 +222,10 @@ Patch87:	eglibc-2.17-bo-locale-buildfix.patch
 Patch88:	glibc-2.17-gold.patch
 # Crypt-blowfish patches
 Patch100:	crypt_blowfish-arm.patch
+
+# Debian updates from glibc git branch
+Patch101:	git-updates.diff
+Patch102:	local-CVE-2015-7547.diff
 
 BuildRequires:	autoconf2.5
 BuildRequires:	gettext
@@ -881,6 +885,10 @@ cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 %patch88 -p1 -b .gold~
 
 %patch100 -p1 -b .blowfish_nonx86~
+%patch101 -p1
+%patch102 -p1
+
+
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
