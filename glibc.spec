@@ -743,7 +743,8 @@ executables.
 %exclude %{_slibdir}/lib*-[.0-9]*.so
 %exclude %{_slibdir}/libSegFault.so
 %{_libdir}/libc_nonshared.a
-%{_libdir}/libmvec_nonshared.a
+# Exists for some, but not all arches
+%optional %{_libdir}/libmvec_nonshared.a
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
