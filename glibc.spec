@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.22
+%define ver		2.23
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -196,7 +196,6 @@ Patch15:	glibc-fedora-elf-init-hidden_undef.patch
 Patch16:	glibc-fedora-elf-rh737223.patch
 Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
 Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
-Patch22:	eglibc-fedora-pt_chown.patch
 Patch23:	glibc-fedora-include-bits-ldbl.patch
 Patch24:	glibc-fedora-ldd.patch
 Patch25:	glibc-fedora-linux-tcsetattr.patch
@@ -744,6 +743,7 @@ executables.
 %exclude %{_slibdir}/lib*-[.0-9]*.so
 %exclude %{_slibdir}/libSegFault.so
 %{_libdir}/libc_nonshared.a
+%{_libdir}/libmvec_nonshared.a
 %{_libdir}/libg.a
 %{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
@@ -968,7 +968,6 @@ These are configuration files that describe possible time zones.
 %patch16 -p1 -b .rh737223~
 %patch18 -p1
 %patch21 -p1
-%patch22 -p1
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
@@ -1001,7 +1000,7 @@ These are configuration files that describe possible time zones.
 %patch69 -p1
 %patch70 -p1 -b .biarch~
 %patch71 -p1
-%patch72 -p1
+%patch72 -p1 -b .cmov586~
 %patch73 -p1 -b .ptBR~
 %patch74 -p1 -b .ldbl~
 %patch75 -p1 -b .tsp~
@@ -1115,7 +1114,7 @@ function BuildGlibc() {
       BuildCompFlags="$BuildFlags"
       ;;
   esac
-  BuildCompFlags="$BuildCompFlags -fuse-ld=bfd"
+  BuildCompFlags="$BuildCompFlags"
 
   # Choose biarch support
   MultiArchFlags=
@@ -1126,8 +1125,8 @@ function BuildGlibc() {
   esac
 
   # Determine C & C++ compilers
-  BuildCC="gcc $BuildCompFlags"
-  BuildCXX="g++ $BuildCompFlags"
+  BuildCC="gcc -fuse-ld=bfd $BuildCompFlags"
+  BuildCXX="g++ -fuse-ld=bfd $BuildCompFlags"
 
   # Are we supposed to cross-compile?
   if [[ "%{target_cpu}" != "%{_target_cpu}" ]]; then
@@ -1142,6 +1141,12 @@ function BuildGlibc() {
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
+
+  if [ "$arch" = "i686" ]; then
+    # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
+    BuildCC="$BuildCC -fomit-frame-pointer"
+    BuildCXX="$BuildCXX -fomit-frame-pointer"
+  fi
 
   # XXX: -frecord-gcc-switches makes gold abort with assertion error and gcc segfault :|
   BuildFlags="$(echo $BuildFlags |sed -e 's#-frecord-gcc-switches##g')"
@@ -1422,7 +1427,7 @@ esac
 
 # NPTL <bits/stdio-lock.h> is not usable outside of glibc, so include
 # the generic one (RH#162634)
-install -m644 bits/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
+install -m644 sysdeps/generic/stdio-lock.h -D %{buildroot}%{_includedir}/bits/stdio-lock.h
 # And <bits/libc-lock.h> needs sanitizing as well.
 install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 

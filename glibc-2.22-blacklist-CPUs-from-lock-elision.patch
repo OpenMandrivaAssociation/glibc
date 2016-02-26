@@ -1,79 +1,79 @@
---- glibc-2.22/sysdeps/unix/sysv/linux/x86/elision-conf.c.omv~	2016-02-02 18:16:37.330066628 +0100
-+++ glibc-2.22/sysdeps/unix/sysv/linux/x86/elision-conf.c	2016-02-02 18:18:00.025917400 +0100
+--- glibc-2.23/sysdeps/unix/sysv/linux/x86/elision-conf.c.elision~	2016-02-18 21:11:55.674780755 +0100
++++ glibc-2.23/sysdeps/unix/sysv/linux/x86/elision-conf.c	2016-02-18 21:15:46.725884980 +0100
 @@ -66,8 +66,11 @@ elision_init (int argc __attribute__ ((u
  #ifdef ENABLE_LOCK_ELISION
    __pthread_force_elision = __libc_enable_secure ? 0 : __elision_available;
  #endif
--  if (!HAS_RTM)
-+  if (!HAS_RTM) {
+-  if (!HAS_CPU_FEATURE (RTM))
++  if (!HAS_CPU_FEATURE (RTM)) {
+     __elision_aconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
 +    __elision_available = 0;
 +    __pthread_force_elision = 0;
-     __elision_aconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
 +  }
  }
  
  #ifdef SHARED
---- glibc-2.22/sysdeps/x86_64/multiarch/init-arch.c.omv~	2016-02-02 17:55:49.463428925 +0100
-+++ glibc-2.22/sysdeps/x86_64/multiarch/init-arch.c	2016-02-02 18:01:23.130179516 +0100
-@@ -26,7 +26,7 @@ struct cpu_features __cpu_features attri
- 
- 
- static void
--get_common_indeces (unsigned int *family, unsigned int *model)
-+get_common_indeces (unsigned int *family, unsigned int *model, unsigned int *stepping)
+--- glibc-2.23/sysdeps/x86/cpu-features.c.elision~	2016-02-18 21:17:44.885449779 +0100
++++ glibc-2.23/sysdeps/x86/cpu-features.c	2016-02-18 21:23:04.884936081 +0100
+@@ -22,7 +22,7 @@
+ static inline void
+ get_common_indeces (struct cpu_features *cpu_features,
+ 		    unsigned int *family, unsigned int *model,
+-		    unsigned int *extended_model)
++		    unsigned int *extended_model, unsigned int *stepping)
  {
-   __cpuid (1, __cpu_features.cpuid[COMMON_CPUID_INDEX_1].eax,
- 	   __cpu_features.cpuid[COMMON_CPUID_INDEX_1].ebx,
-@@ -36,6 +36,7 @@ get_common_indeces (unsigned int *family
-   unsigned int eax = __cpu_features.cpuid[COMMON_CPUID_INDEX_1].eax;
+   unsigned int eax;
+   __cpuid (1, eax, cpu_features->cpuid[COMMON_CPUID_INDEX_1].ebx,
+@@ -32,6 +32,7 @@ get_common_indeces (struct cpu_features
    *family = (eax >> 8) & 0x0f;
    *model = (eax >> 4) & 0x0f;
+   *extended_model = (eax >> 12) & 0xf0;
 +  *stepping = eax & 0x0f;
- }
- 
- 
-@@ -47,6 +48,7 @@ __init_cpu_features (void)
-   unsigned int edx;
+   if (*family == 0x0f)
+     {
+       *family += (eax >> 20) & 0xff;
+@@ -45,6 +46,7 @@ init_cpu_features (struct cpu_features *
+   unsigned int ebx, ecx, edx;
    unsigned int family = 0;
    unsigned int model = 0;
 +  unsigned int stepping = 0;
    enum cpu_features_kind kind;
  
-   __cpuid (0, __cpu_features.max_cpuid, ebx, ecx, edx);
-@@ -56,7 +58,7 @@ __init_cpu_features (void)
-     {
+ #if !HAS_CPUID
+@@ -64,7 +66,7 @@ init_cpu_features (struct cpu_features *
+ 
        kind = arch_kind_intel;
  
--      get_common_indeces (&family, &model);
-+      get_common_indeces (&family, &model, &stepping);
+-      get_common_indeces (cpu_features, &family, &model, &extended_model);
++      get_common_indeces (cpu_features, &family, &model, &extended_model, &stepping);
  
-       unsigned int eax = __cpu_features.cpuid[COMMON_CPUID_INDEX_1].eax;
-       unsigned int extended_family = (eax >> 20) & 0xff;
-@@ -135,7 +137,7 @@ __init_cpu_features (void)
-     {
+       if (family == 0x06)
+ 	{
+@@ -142,7 +144,7 @@ init_cpu_features (struct cpu_features *
+ 
        kind = arch_kind_amd;
  
--      get_common_indeces (&family, &model);
-+      get_common_indeces (&family, &model, &stepping);
+-      get_common_indeces (cpu_features, &family, &model, &extended_model);
++      get_common_indeces (cpu_features, &family, &model, &extended_model, &stepping);
  
-       ecx = __cpu_features.cpuid[COMMON_CPUID_INDEX_1].ecx;
+       ecx = cpu_features->cpuid[COMMON_CPUID_INDEX_1].ecx;
  
-@@ -205,6 +207,12 @@ __init_cpu_features (void)
- 	}
-     }
+@@ -232,6 +234,12 @@ init_cpu_features (struct cpu_features *
+ no_cpuid:
+ #endif
  
 +  /* Disable Intel TSX (HLE and RTM) due to erratum HSD136/HSW136
 +     on Haswell processors */
 +  if (kind == arch_kind_intel && family == 6 &&
 +      ((model == 63 && stepping <= 2) || (model == 60 && stepping <= 3) ||
 +       (model == 69 && stepping <= 1) || (model == 70 && stepping <= 1)))
-+    __cpu_features.cpuid[COMMON_CPUID_INDEX_7].ebx &= ~(bit_RTM | bit_HLE);
-   __cpu_features.family = family;
-   __cpu_features.model = model;
-   atomic_write_barrier ();
---- glibc-2.22/sysdeps/x86_64/multiarch/init-arch.h.omv~	2016-02-02 18:01:25.071178084 +0100
-+++ glibc-2.22/sysdeps/x86_64/multiarch/init-arch.h	2016-02-02 18:01:53.734156959 +0100
-@@ -44,6 +44,7 @@
++    cpu_features->cpuid[COMMON_CPUID_INDEX_7].ebx &= ~(bit_RTM | bit_HLE);
+   cpu_features->family = family;
+   cpu_features->model = model;
+   cpu_features->kind = kind;
+--- glibc-2.23/sysdeps/x86/cpu-features.h.elision~	2016-02-18 21:23:24.974580084 +0100
++++ glibc-2.23/sysdeps/x86/cpu-features.h	2016-02-18 21:23:39.720650083 +0100
+@@ -53,6 +53,7 @@
  
  /* COMMON_CPUID_INDEX_7.  */
  #define bit_RTM		(1 << 11)

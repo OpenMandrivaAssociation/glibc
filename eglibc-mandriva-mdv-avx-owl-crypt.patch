@@ -1,15 +1,17 @@
---- glibc-2.20/crypt/crypt-entry.c.owlCrypt~	2014-09-07 10:09:09.000000000 +0200
-+++ glibc-2.20/crypt/crypt-entry.c	2014-09-08 21:35:10.488406616 +0200
-@@ -71,7 +71,7 @@ extern struct crypt_data _ufc_foobar;
+--- glibc-2.23/crypt/crypt-entry.c.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
++++ glibc-2.23/crypt/crypt-entry.c	2016-02-18 21:09:26.589068442 +0100
+@@ -71,8 +71,8 @@ extern struct crypt_data _ufc_foobar;
   */
  
  char *
--__crypt_r (key, salt, data)
-+__des_crypt_r (key, salt, data)
-      const char *key;
-      const char *salt;
-      struct crypt_data * __restrict data;
-@@ -145,6 +145,7 @@ __crypt_r (key, salt, data)
+-__crypt_r (const char *key, const char *salt,
+-	   struct crypt_data * __restrict data)
++__des_crypt_r (const char *key, const char *salt,
++	       struct crypt_data * __restrict data)
+ {
+   ufc_long res[4];
+   char ktab[9];
+@@ -143,6 +143,7 @@ __crypt_r (const char *key, const char *
    _ufc_output_conversion_r (res[0], res[1], salt, data);
    return data->crypt_3_buf;
  }
@@ -17,7 +19,7 @@
  weak_alias (__crypt_r, crypt_r)
  
  char *
-@@ -170,6 +171,7 @@ crypt (key, salt)
+@@ -166,6 +167,7 @@ crypt (const char *key, const char *salt
  
    return __crypt_r (key, salt, &_ufc_foobar);
  }
@@ -25,8 +27,8 @@
  
  
  /*
---- glibc-2.20/crypt/Makefile.owlCrypt~	2014-09-08 21:35:10.488406616 +0200
-+++ glibc-2.20/crypt/Makefile	2014-09-08 21:35:57.538818405 +0200
+--- glibc-2.23/crypt/Makefile.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
++++ glibc-2.23/crypt/Makefile	2016-02-18 21:08:03.819673066 +0100
 @@ -22,13 +22,13 @@ subdir	:= crypt
  
  include ../Makeconfig
@@ -43,8 +45,8 @@
  
  tests := cert md5c-test sha256c-test sha512c-test badsalttest
  
---- glibc-2.20/crypt/Versions.owlCrypt~	2014-09-07 10:09:09.000000000 +0200
-+++ glibc-2.20/crypt/Versions	2014-09-08 21:35:10.488406616 +0200
+--- glibc-2.23/crypt/Versions.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
++++ glibc-2.23/crypt/Versions	2016-02-18 21:08:03.819673066 +0100
 @@ -1,5 +1,6 @@
  libcrypt {
    GLIBC_2.0 {

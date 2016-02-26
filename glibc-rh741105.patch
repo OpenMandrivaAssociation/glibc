@@ -1,7 +1,8 @@
-diff -rup a/elf/dl-load.c b/elf/dl-load.c
---- a/elf/dl-load.c	2012-02-03 10:59:58.917870716 -0700
-+++ b/elf/dl-load.c	2012-02-03 11:01:01.796580644 -0700
-@@ -880,7 +880,8 @@ _dl_map_object_from_fd (const char *name, int fd, struct filebuf *fbp,
+Index: glibc-2.22-386-g95e8397/elf/dl-load.c
+===================================================================
+--- glibc-2.22-386-g95e8397.orig/elf/dl-load.c
++++ glibc-2.22-386-g95e8397/elf/dl-load.c
+@@ -881,7 +881,8 @@ _dl_map_object_from_fd (const char *name
  
    /* Get file information.  */
    struct r_file_id id;
@@ -11,7 +12,7 @@ diff -rup a/elf/dl-load.c b/elf/dl-load.c
      {
        errstring = N_("cannot stat shared object");
      call_lose_errno:
-@@ -1130,6 +1130,16 @@ _dl_map_object_from_fd (const char *name
+@@ -1076,6 +1077,16 @@ _dl_map_object_from_fd (const char *name
  		= N_("ELF load command address/offset not properly aligned");
  	      goto call_lose;
  	    }
@@ -27,11 +28,11 @@ diff -rup a/elf/dl-load.c b/elf/dl-load.c
 +	    }
  
  	  struct loadcmd *c = &loadcmds[nloadcmds++];
- 	  c->mapstart = ph->p_vaddr & ~(GLRO(dl_pagesize) - 1);
-diff --git a/sysdeps/generic/dl-fileid.h b/sysdeps/generic/dl-fileid.h
-index 2cbd21d..9b7f410 100644
---- a/sysdeps/generic/dl-fileid.h
-+++ b/sysdeps/generic/dl-fileid.h
+ 	  c->mapstart = ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize));
+Index: glibc-2.22-386-g95e8397/sysdeps/generic/dl-fileid.h
+===================================================================
+--- glibc-2.22-386-g95e8397.orig/sysdeps/generic/dl-fileid.h
++++ glibc-2.22-386-g95e8397/sysdeps/generic/dl-fileid.h
 @@ -29,7 +29,8 @@ struct r_file_id
     On error, returns false, with errno set.  */
  static inline bool
@@ -42,10 +43,10 @@ index 2cbd21d..9b7f410 100644
  {
    return true;
  }
-diff --git a/sysdeps/posix/dl-fileid.h b/sysdeps/posix/dl-fileid.h
-index d0d5436..7115c3b 100644
---- a/sysdeps/posix/dl-fileid.h
-+++ b/sysdeps/posix/dl-fileid.h
+Index: glibc-2.22-386-g95e8397/sysdeps/posix/dl-fileid.h
+===================================================================
+--- glibc-2.22-386-g95e8397.orig/sysdeps/posix/dl-fileid.h
++++ glibc-2.22-386-g95e8397/sysdeps/posix/dl-fileid.h
 @@ -27,18 +27,16 @@ struct r_file_id
      ino64_t ino;
    };

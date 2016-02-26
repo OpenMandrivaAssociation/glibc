@@ -1,11 +1,6 @@
-2003-08-29  Gwenole Beauchesne  <gbeauchesne@mandrakesoft.com>
-
-	* sysdeps/i386/dl-machine.h (dl_platform_init): Avoid i686
-	libraries to be loaded if the host doesn't support CMOV.
-
---- glibc-2.3.3/sysdeps/i386/dl-machine.h.i586-if-no-cmov	2004-06-03 01:21:36.000000000 +0200
-+++ glibc-2.3.3/sysdeps/i386/dl-machine.h	2004-06-03 07:09:51.518703634 +0200
-@@ -347,6 +347,9 @@ _dl_start_user:\n\
+--- glibc-2.23/sysdeps/i386/dl-machine.h.cmov586~	2016-02-18 18:54:00.000000000 +0100
++++ glibc-2.23/sysdeps/i386/dl-machine.h	2016-02-18 21:07:37.688548257 +0100
+@@ -226,6 +226,9 @@ _dl_start_user:\n\
     Prelinked libraries may use Elf32_Rela though.  */
  #define ELF_MACHINE_PLT_REL 1
  
@@ -15,10 +10,10 @@
  /* We define an initialization functions.  This is called very early in
     _dl_sysdep_start.  */
  #define DL_PLATFORM_INIT dl_platform_init ()
-@@ -357,6 +360,12 @@ dl_platform_init (void)
-   if (GLRO(dl_platform) != NULL && *GLRO(dl_platform) == '\0')
-     /* Avoid an empty string which would disturb us.  */
+@@ -238,6 +241,12 @@ dl_platform_init (void)
      GLRO(dl_platform) = NULL;
+ 
+   init_cpu_features (&GLRO(dl_x86_cpu_features));
 +
 +  if (GLRO(dl_platform) != NULL
 +      && GLRO(dl_platform)[1] >= '6' && (GLRO(dl_hwcap) & HWCAP_I386_CMOV) == 0)
