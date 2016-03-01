@@ -136,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -657,10 +657,11 @@ LANG variable to their preferred language in their
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
+Requires(post):	%{name}
 Requires(post):	bash
 
-%post -n	%{multilibc}
-    %{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
+%post -n %{multilibc}
+%{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
 
 %description -n	%{multilibc}
 The glibc package contains standard libraries which are used by
