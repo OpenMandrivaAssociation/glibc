@@ -136,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -712,7 +712,6 @@ Autoprov:	false
 Autoreq:	true
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
-%rename		glibc-doc
 %endif
 Requires:	%{?cross:cross-}kernel-headers
 %if %{with pdf}
@@ -727,15 +726,25 @@ will use the standard C libraries, your system needs to have these
 standard header and object files available in order to create the
 executables.
 
-%files		devel
-%if "%{name}" == "glibc"
-%{_mandir}/man3/*
-%{_infodir}/libc.info*
+%package	doc
+Summary:	Docs for %{name}
+Group:		Development/C
+BuildArch:	noarch
+
+%description	doc
+The glibc-docs package contains docs for %{name}.
+
+%files		doc
 %doc %{_docdir}/glibc/*
 %exclude %{_docdir}/glibc/nss
 %exclude %{_docdir}/glibc/gai.conf
 %exclude %{_docdir}/glibc/COPYING
 %exclude %{_docdir}/glibc/COPYING.LIB
+
+%files		devel
+%if "%{name}" == "glibc"
+%{_mandir}/man3/*
+%{_infodir}/libc.info*
 %endif
 %{_includedir}/*
 %{_libdir}/*.o
