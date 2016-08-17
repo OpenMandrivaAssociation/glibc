@@ -1,11 +1,11 @@
---- glibc-2.22/scripts/check-local-headers.sh.biarch~	2015-08-05 20:11:04.290067495 +0200
-+++ glibc-2.22/scripts/check-local-headers.sh	2015-08-05 20:15:21.434202315 +0200
+--- glibc-2.24/scripts/check-local-headers.sh.biarch~	2016-08-17 16:52:14.092668284 +0200
++++ glibc-2.24/scripts/check-local-headers.sh	2016-08-17 16:55:02.911984338 +0200
 @@ -33,7 +33,7 @@ exec ${AWK} -v includedir="$includedir"
  BEGIN {
    status = 0
    exclude = "^" includedir \
--    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs)|cthreads\\.h|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
-+    "/(.*-.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs)|cthreads\\.h|multiarch-|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
+-    "/(.*-.*-.*/|.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs|ihash\\.h)|cthreads\\.h|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
++    "/(.*-.*-.*/|.*-.*/|)(asm[-/]|arch|linux/|selinux/|mach/|device/|hurd/(((hurd|ioctl)_types|paths)\\.h|ioctls\\.defs|ihash\\.h)|cthreads\\.h|multiarch-|gd|nss3/|c\\+\\+/|sys/(capability|sdt(|-config))\\.h|libaudit\\.h)"
  }
  /^[^ ]/ && $1 ~ /.*:/ { obj = $1 }
  {

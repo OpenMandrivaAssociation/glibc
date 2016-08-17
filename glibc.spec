@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.23
+%define ver		2.24
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -136,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	4
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -169,109 +169,99 @@ Source1005:	locales-softlink.pl
 
 #-----------------------------------------------------------------------
 # fedora patches
-#
-# Patches that are highly unlikely to ever be accepated upstream.
-#
-
-# Configuration twiddle, not sure there's a good case to get upstream to
-# change this.
-Patch0: 	glibc-fedora-nscd.patch
-
-# Build info files in the source tree, then move to the build
-# tree so that they're identical for multilib builds
-Patch4:		glibc-rh825061.patch
-
-# Horrible hack, never to be upstreamed.  Can go away once the world
-# has been rebuilt to use the new ld.so path.
-Patch5:		glibc-arm-hardfloat-3.patch
-
-# Needs to be sent upstream
-Patch6:		glibc-rh697421.patch
-
-# All these were from the glibc-fedora.patch mega-patch and need another
-# round of reviewing.  Ideally they'll either be submitted upstream or
-# dropped.
-
-Patch15:	glibc-fedora-elf-init-hidden_undef.patch
-Patch16:	glibc-fedora-elf-rh737223.patch
-Patch18:	eglibc-fedora-test-debug-gnuc-hack.patch
-Patch21:	glibc-fedora-i386-tls-direct-seg-refs.patch
-Patch23:	glibc-fedora-include-bits-ldbl.patch
-Patch24:	glibc-fedora-ldd.patch
-Patch25:	glibc-fedora-linux-tcsetattr.patch
+Patch21:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-i386-tls-direct-seg-refs.patch
+Patch23:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-include-bits-ldbl.patch
+Patch24:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ldd.patch
+Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
-Patch27:	eglibc-fedora-localedata-locales-fixes.patch
+Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedata-rh61908.patch
 # We disagree with
-#		glibc-fedora-streams-rh436349.patch
+#		http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-streams-rh436349.patch
 # Therefore we don't package/apply it.
-Patch29:	glibc-fedora-localedata-rh61908.patch
-Patch30:	glibc-fedora-localedef.patch
-Patch31:	glibc-fedora-locarchive.patch
-Patch32:	glibc-fedora-manual-dircategory.patch
-Patch33:	glibc-fedora-nis-rh188246.patch
-Patch34:	glibc-fedora-nptl-linklibc.patch
-Patch35:	glibc-fedora-ppc-unwind.patch
+Patch30:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedef.patch
+Patch31:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-locarchive.patch
+Patch32:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
+Patch33:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nis-rh188246.patch
+Patch34:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nptl-linklibc.patch
+Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
+Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
+Patch37:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-workaround-nzcv-clobber-in-tlsdesc.patch
+Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
+Patch39:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-bug-regex-gcc5.patch
+Patch40:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-c-utf8-locale.patch
+Patch41:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
+# We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
+# Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
+Patch43:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-dns-host-gcc5.patch
+Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__libc_multiple_libcs.patch
+Patch45:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-elf-ORIGIN.patch
+Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
+Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
+Patch48:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gethnamaddr-gcc5.patch
+Patch49:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-ld-ctype-gcc5.patch
+Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
+Patch51:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-res-hconf-gcc5.patch
+Patch52:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1009145.patch
+Patch53:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1013801.patch
+Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416.patch
+Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
+Patch56:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-1.patch
+Patch57:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
+Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
+Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
+Patch60:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1351108-update-to-unicode-9.0.0.patch
+Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
+Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.patch
+Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
+Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
+Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
+Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh952799.patch
 
 #
 # Patches from upstream
 #
 
-#
-# Patches submitted, but not yet approved upstream.
-# Each should be associated with a BZ.
-# Obviously we're not there right now, but that's the goal
-#
-
-Patch40:	glibc-rh741105.patch
-# Upstream BZ 14247
-Patch50:	glibc-rh827510.patch
-# Upstream BZ 14185
-Patch54:	glibc-rh819430.patch
-Patch51:	glibc-rh952799.patch
-
 #-----------------------------------------------------------------------
 # OpenMandriva patches
-Patch56:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
-Patch57:	eglibc-mandriva-fix-dns-with-broken-routers.patch
-Patch58:	eglibc-mandriva-nss-upgrade.patch
-Patch59:	eglibc-mandriva-share-locale.patch
-Patch60:	eglibc-mandriva-nsswitch.conf.patch
-Patch61:	eglibc-mandriva-xterm-xvt.patch
-Patch62:	eglibc-mandriva-nscd-enable.patch
-Patch63:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch64:	eglibc-mandriva-i386-hwcapinfo.patch
-Patch65:	eglibc-mandriva-nscd-init-should-start.patch
-Patch66:	eglibc-mandriva-timezone.patch
-Patch67:	eglibc-mandriva-biarch-cpp-defines.patch
-Patch68:	eglibc-mandriva-ENOTTY-fr-translation.patch
-Patch69:	eglibc-mandriva-biarch-utils.patch
-Patch70:	eglibc-mandriva-multiarch.patch
-Patch71:	glibc-2.20-i586-hptiming.patch
-Patch72:	eglibc-mandriva-i586-if-no-cmov.patch
-Patch73:	eglibc-mandriva-pt_BR-i18nfixes.patch
-Patch74:	eglibc-mandriva-testsuite-ldbl-bits.patch
-Patch75:	eglibc-mandriva-testsuite-rt-notparallel.patch
-Patch76:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
-
-Patch79:	eglibc-mandriva-no-leaf-attribute.patch
-Patch81:	eglibc-mandriva-mdv-avx-owl-crypt.patch
-Patch82:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
-Patch83:	eglibc-mandriva-avx-relocate_fcrypt.patch
-Patch84:	eglibc-mandriva-avx-increase_BF_FRAME.patch
-Patch85:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
+Patch100:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
+Patch101:	eglibc-mandriva-fix-dns-with-broken-routers.patch
+Patch102:	eglibc-mandriva-nss-upgrade.patch
+Patch103:	eglibc-mandriva-share-locale.patch
+Patch104:	eglibc-mandriva-nsswitch.conf.patch
+Patch105:	eglibc-mandriva-xterm-xvt.patch
+Patch106:	eglibc-mandriva-nscd-enable.patch
+Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
+Patch108:	eglibc-mandriva-i386-hwcapinfo.patch
+Patch109:	eglibc-mandriva-nscd-init-should-start.patch
+Patch110:	eglibc-mandriva-timezone.patch
+Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
+Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
+Patch113:	eglibc-mandriva-biarch-utils.patch
+Patch114:	eglibc-mandriva-multiarch.patch
+Patch115:	glibc-2.20-i586-hptiming.patch
+Patch116:	eglibc-mandriva-i586-if-no-cmov.patch
+Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
+Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
+Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
+Patch120:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
+Patch121:	eglibc-mandriva-no-leaf-attribute.patch
+Patch122:	eglibc-mandriva-mdv-avx-owl-crypt.patch
+Patch123:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
+Patch124:	eglibc-mandriva-avx-relocate_fcrypt.patch
+Patch125:	eglibc-mandriva-avx-increase_BF_FRAME.patch
+Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # Reverts a part of eglibc-fedora-uname-getrlimit.patch that breaks the build
-Patch86:	nptl-getrlimit-compile.patch
-Patch87:	eglibc-2.17-bo-locale-buildfix.patch
+#Patch127:	nptl-getrlimit-compile.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
-Patch88:	glibc-2.17-gold.patch
-Patch89:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
+Patch128:	glibc-2.17-gold.patch
+Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1162810
-Patch90:	glibc-dso_deps.patch
+Patch130:	glibc-dso_deps.patch
 # http://thread.gmane.org/gmane.linux.kernel/1790211
-Patch91:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
+Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 # Crypt-blowfish patches
-Patch100:	crypt_blowfish-arm.patch
+Patch200:	crypt_blowfish-arm.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils
@@ -400,18 +390,19 @@ LANG variable to their preferred language in their
 %{python:pkg("Bosnian", "bs", ["bs_BA"])}
 %{python:pkg("Catalan", "ca", ["ca_AD", "ca_ES", "ca_FR", "ca_IT"])}
 %{python:pkg("Chechen", "ce", ["ce_RU"])}
+%{python:pkg("Cherokee", "chr", ["chr_US"])}
 %{python:pkg("Crimean Tatar", "crh", ["crh_UA"])}
 %{python:pkg("Czech", "cs", ["cs_CZ"])}
 %{python:pkg("Chuvash", "cv", ["cv_RU"])}
 %{python:pkg("Welsh", "cy", ["cy_GB"])}
 %{python:pkg("Danish", "da", ["da_DK"])}
-%{python:pkg("German", "de", ["de_AT", "de_BE", "de_CH", "de_DE", "de_LU"])}
+%{python:pkg("German", "de", ["de_AT", "de_BE", "de_CH", "de_DE", "de_LU", "de_IT", "de_LI"])}
 %{python:pkg("Dogri", "doi", ["doi_IN"])}
 %{python:pkg("Dhivehi", "dv", ["dv_MV"])}
 %{python:pkg("Dzongkha", "dz", ["dz_BT"])}
 %{python:pkg("Greek", "el", ["r:gr", "el_CY", "el_GR"])}
-%{python:pkg("English", "en", ["en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
-%{python:pkg("Esperanto", "eo", ["eo_XX"])}
+%{python:pkg("English", "en", ["C", "en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IL", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
+%{python:pkg("Esperanto", "eo", ["eo", "eo_XX"])}
 # Potentially unhandled: es@tradicional?, an = Aragonese
 %{python:pkg("Spanish", "es", ["an_ES", "es_AR", "es_BO", "es_CL", "es_CO", "es_CR", "es_CU", "es_DO", "es_EC", "es_ES", "es_GT", "es_HN", "es_MX", "es_NI", "es_PA", "es_PE", "es_PR", "es_PY", "es_SV", "es_US", "es_UY", "es_VE"])}
 %{python:pkg("Estonian", "et", ["et_EE"])}
@@ -460,6 +451,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Luganda", "lg", ["lg_UG"])}
 %{python:pkg("Limburguish", "li", ["li_BE", "li_NL"])}
 %{python:pkg("Ligurian", "lij", ["lij_IT"])}
+%{python:pkg("Lingala", "ln", ["ln_CD"])}
 %{python:pkg("Laotian", "lo", ["lo_LA"])}
 %{python:pkg("Lithuanian", "lt", ["lt_LT"])}
 %{python:pkg("Latvian", "lv", ["lv_LV"])}
@@ -502,6 +494,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Sardinian", "sc", ["sc_IT"])}
 %{python:pkg("Sindhi", "sd", ["sd_IN"])}
 %{python:pkg("Saami", "se", ["se_NO"])}
+%{python:pkg("Samogitian", "sgs", ["sgs_LT"])}
 %{python:pkg("Secwepemctsin", "shs", ["shs_CA"])}
 %{python:pkg("Sinhala", "si", ["si_LK"])}
 %{python:pkg("Slovak", "sk", ["sk_SK"])}
@@ -970,81 +963,13 @@ These are configuration files that describe possible time zones.
 
 %prep
 %setup -q -n %{source_dir} -a3 -a50
-
-%patch00 -p1
-%patch04 -p1
-%patch05 -p1
-%patch06 -p1
-%patch15 -p1
-%patch16 -p1 -b .rh737223~
-%patch18 -p1
-%patch21 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1 -b .curr~
-%patch27 -p1
-%patch29 -p1 -b .locales~
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch40 -p1
-%patch50 -p1
-%patch54 -p1 -b .rh819430~
-%patch51 -p1
-%patch56 -p1
-%patch57 -p1
-%patch58 -p1 -b .nssUpgrade~
-%patch59 -p1 -b .shareLocale~
-%patch60 -p1
-%patch61 -p1
-%patch62 -p1
-%patch63 -p1
-%patch64 -p1 -b .hwcap~
-%patch65 -p1
-%patch66 -p1
-%patch67 -p1
-%patch68 -p1 -b .ENOTTYfr~
-%patch69 -p1
-%patch70 -p1 -b .biarch~
-%patch71 -p1
-%patch72 -p1 -b .cmov586~
-%patch73 -p1 -b .ptBR~
-%patch74 -p1 -b .ldbl~
-%patch75 -p1 -b .tsp~
-%patch76 -p1 -b .clang~
-%patch79 -p1
-
 # copy freesec source
 cp %{SOURCE52} %{SOURCE53} crypt/
-echo "Applying crypt_blowfish patch:"
-%patch81 -p1 -b .owlCrypt~
 mv crypt/crypt.h crypt/gnu-crypt.h
 chmod 0644 crypt_blowfish-%{crypt_bf_ver}/*.[chS]
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
-## FreeSec support for extended/new-style/BSDI hashes in crypt(3)
-%patch82 -p1 -b .freesec~
-%patch83 -p1 -b .relocateFcrypt~
-%patch84 -p0
-# add sha256-crypt and sha512-crypt support to the Openwall wrapper
-%patch85 -p1
-
-%patch86 -p1 -b .compile~
-
-#patch87 -p1 -b .boLocale~
-
-%patch88 -p1 -b .gold~
-
-%patch89 -p1 -b .nscd_runpath~
-
-%patch90 -p1 -b .dsodeps~
-%patch91 -p1 -b .elision~
-
-%patch100 -p1 -b .blowfish_nonx86~
+%apply_patches
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc

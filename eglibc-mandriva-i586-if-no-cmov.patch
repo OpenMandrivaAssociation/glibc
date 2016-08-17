@@ -1,5 +1,5 @@
---- glibc-2.23/sysdeps/i386/dl-machine.h.cmov586~	2016-02-18 18:54:00.000000000 +0100
-+++ glibc-2.23/sysdeps/i386/dl-machine.h	2016-02-18 21:07:37.688548257 +0100
+--- glibc-2.24/sysdeps/i386/dl-machine.h.0072~	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/sysdeps/i386/dl-machine.h	2016-08-17 16:58:27.711996583 +0200
 @@ -226,6 +226,9 @@ _dl_start_user:\n\
     Prelinked libraries may use Elf32_Rela though.  */
  #define ELF_MACHINE_PLT_REL 1
@@ -10,9 +10,9 @@
  /* We define an initialization functions.  This is called very early in
     _dl_sysdep_start.  */
  #define DL_PLATFORM_INIT dl_platform_init ()
-@@ -238,6 +241,12 @@ dl_platform_init (void)
-     GLRO(dl_platform) = NULL;
- 
+@@ -241,6 +244,12 @@ dl_platform_init (void)
+   /* init_cpu_features has been called early from __libc_start_main in
+      static executable.  */
    init_cpu_features (&GLRO(dl_x86_cpu_features));
 +
 +  if (GLRO(dl_platform) != NULL
@@ -20,6 +20,6 @@
 +    /* Avoid i686 compiled libraries to be loaded if the host doesn't
 +       support CMOV instructions.  */
 +    GLRO(dl_platform) = "i586";
+ #endif
  }
  
- static inline Elf32_Addr

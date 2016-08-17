@@ -1,0 +1,113 @@
+This patch creates a crypt-glibc subdirectory which builds the
+libgcrypt files, but this time against the glibc sources.
+
+The default subdirs list does not include this subdirectory because
+the file names conflict with the crypt directory.  The spec file does
+not use the install target to install the built libcrypt.so file,
+either.
+
+Index: b/crypt-glibc/Makefile
+===================================================================
+--- /dev/null
++++ b/crypt-glibc/Makefile
+@@ -0,0 +1,60 @@
++# Build libcrypt against internal cryptographic algorithms.
++# Copyright (C) 1996-2016 Free Software Foundation, Inc.
++# This file is part of the GNU C Library.
++
++# The GNU C Library is free software; you can redistribute it and/or
++# modify it under the terms of the GNU Lesser General Public
++# License as published by the Free Software Foundation; either
++# version 2.1 of the License, or (at your option) any later version.
++
++# The GNU C Library is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++# Lesser General Public License for more details.
++
++# You should have received a copy of the GNU Lesser General Public
++# License along with the GNU C Library; if not, see
++# <http://www.gnu.org/licenses/>.
++
++#
++#	Sub-makefile for crypt() portion of the library.
++#
++subdir	:= crypt-glibc
++
++include ../Makeconfig
++
++extra-libs := libcrypt
++extra-libs-others := $(extra-libs)
++
++# Use the sources in the crypt subdirectory.
++vpath %.c ../crypt
++
++libcrypt-routines := \
++  crypt-entry md5-crypt sha256-crypt sha512-crypt crypt crypt_util
++
++tests := cert md5c-test sha256c-test sha512c-test badsalttest
++
++libcrypt-routines += md5 sha256 sha512
++
++tests += md5test sha256test sha512test
++
++# The test md5test-giant uses up to 400 MB of RSS and runs on a fast
++# machine over a minute.
++xtests = md5test-giant
++
++include ../Rules
++
++md5-routines := md5 $(filter md5%,$(libcrypt-sysdep_routines))
++sha256-routines := sha256 $(filter sha256%,$(libcrypt-sysdep_routines))
++sha512-routines := sha512 $(filter sha512%,$(libcrypt-sysdep_routines))
++
++$(objpfx)md5test: $(patsubst %, $(objpfx)%.o,$(md5-routines))
++$(objpfx)md5test-giant: $(patsubst %, $(objpfx)%.o,$(md5-routines))
++$(objpfx)sha256test: $(patsubst %, $(objpfx)%.o,$(sha256-routines))
++$(objpfx)sha512test: $(patsubst %, $(objpfx)%.o,$(sha512-routines))
++
++ifeq (yes,$(build-shared))
++$(addprefix $(objpfx),$(tests)): $(objpfx)libcrypt.so
++else
++$(addprefix $(objpfx),$(tests)): $(objpfx)libcrypt.a
++endif
+Index: b/crypt/md5.c
+===================================================================
+--- a/crypt/md5.c
++++ b/crypt/md5.c
+@@ -270,4 +270,4 @@ md5_process_bytes (const void *buffer, s
+     }
+ }
+ 
+-#include <md5-block.c>
++#include "md5-block.c"
+Index: b/crypt/sha256.c
+===================================================================
+--- a/crypt/sha256.c
++++ b/crypt/sha256.c
+@@ -212,4 +212,4 @@ __sha256_process_bytes (const void *buff
+     }
+ }
+ 
+-#include <sha256-block.c>
++#include "sha256-block.c"
+Index: b/crypt/sha512.c
+===================================================================
+--- a/crypt/sha512.c
++++ b/crypt/sha512.c
+@@ -235,4 +235,4 @@ __sha512_process_bytes (const void *buff
+     }
+ }
+ 
+-#include <sha512-block.c>
++#include "sha512-block.c"
+Index: b/crypt-glibc/Versions
+===================================================================
+--- /dev/null
++++ b/crypt-glibc/Versions
+@@ -0,0 +1,5 @@
++libcrypt {
++  GLIBC_2.0 {
++    crypt; crypt_r; encrypt; encrypt_r; fcrypt; setkey; setkey_r;
++  }
++}

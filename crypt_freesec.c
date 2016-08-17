@@ -37,7 +37,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *	$Owl: Owl/packages/glibc/crypt_freesec.c,v 1.6 2010/02/20 14:45:06 solar Exp $
+ *	$Owl: Owl/packages/glibc/crypt_freesec.c,v 1.8 2014/07/07 15:44:50 solar Exp $
  *	$Id: crypt.c,v 1.15 1994/09/13 04:58:49 davidb Exp $
  *
  * This is an original implementation of the DES and the crypt(3) interfaces
@@ -219,7 +219,6 @@ _crypt_extended_init(void)
 	u_int32_t *p, *il, *ir, *fl, *fr;
 	u_int32_t *bits28, *bits24;
 	u_char inv_key_perm[64];
-	u_char u_key_perm[56];
 	u_char inv_comp_perm[56];
 	u_char init_perm[64], final_perm[64];
 	u_char u_sbox[8][64];
@@ -261,7 +260,6 @@ _crypt_extended_init(void)
 	 * compression permutation.
 	 */
 	for (i = 0; i < 56; i++) {
-		u_key_perm[i] = key_perm[i] - 1;
 		inv_key_perm[key_perm[i] - 1] = i;
 		inv_comp_perm[i] = 255;
 	}
@@ -630,7 +628,8 @@ _crypt_extended_r(const char *key, const char *setting,
 	 */
 	q = (u_char *) keybuf;
 	while (q - (u_char *) keybuf < sizeof(keybuf)) {
-		if ((*q++ = *key << 1))
+		*q++ = *key << 1;
+		if (*key)
 			key++;
 	}
 	if (des_setkey((u_char *) keybuf, data))
@@ -760,6 +759,8 @@ static struct {
 	{"_J9..SDizxmRI1GjnQuE", "zxyDPWgydbQjgq"},
 	{"_K9..SaltNrQgIYUAeoY", "726 even"},
 	{"_J9..SDSD5YGyRCr4W4c", ""},
+	{"_01234567IBjxKliXXRQ", "\xc3\x80" "1234abcd"},
+	{"_012345678OSGpGQRVHA", "\xc3\x80" "9234abcd"},
 /* "old"-style, valid salts */
 	{"CCNf8Sbh3HDfQ", "U*U*U*U*"},
 	{"CCX.K.MFy4Ois", "U*U***U"},
@@ -771,6 +772,8 @@ static struct {
 	{"A9RXdR23Y.cY6", "password"},
 	{"ZziFATVXHo2.6", "password"},
 	{"zZDDIZ0NOlPzw", "password"},
+	{"99PxawtsTfX56", "\xc3\x80" "1234abcd"},
+	{"99jcVcGxUZOWk", "\xc3\x80" "9234abcd"},
 /* "old"-style, "reasonable" invalid salts, UFC-crypt behavior expected */
 	{"\001\002wyd0KZo65Jo", "password"},
 	{"a_C10Dk/ExaG.", "password"},
