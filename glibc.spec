@@ -1477,7 +1477,7 @@ rm -r %{buildroot}%{_includedir}/netatalk/
 
 # Documentation
 install -m 755 -d %{buildroot}%{_docdir}/glibc
-    pushd build-%{target_cpu}-linux html
+    pushd build-%{target_cpu}-linux
 %if %{with doc}
 	make html
 	cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
