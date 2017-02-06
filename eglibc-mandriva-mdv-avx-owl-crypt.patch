@@ -1,5 +1,5 @@
---- glibc-2.23/crypt/crypt-entry.c.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
-+++ glibc-2.23/crypt/crypt-entry.c	2016-02-18 21:09:26.589068442 +0100
+--- glibc-2.25/crypt/crypt-entry.c.0122~	2017-02-05 16:28:43.000000000 +0100
++++ glibc-2.25/crypt/crypt-entry.c	2017-02-06 21:04:59.125974544 +0100
 @@ -71,8 +71,8 @@ extern struct crypt_data _ufc_foobar;
   */
  
@@ -11,15 +11,15 @@
  {
    ufc_long res[4];
    char ktab[9];
-@@ -143,6 +143,7 @@ __crypt_r (const char *key, const char *
-   _ufc_output_conversion_r (res[0], res[1], salt, data);
+@@ -152,6 +152,7 @@ __crypt_r (const char *key, const char *
+ 
    return data->crypt_3_buf;
  }
 +#if 0
  weak_alias (__crypt_r, crypt_r)
  
  char *
-@@ -166,6 +167,7 @@ crypt (const char *key, const char *salt
+@@ -175,6 +176,7 @@ crypt (const char *key, const char *salt
  
    return __crypt_r (key, salt, &_ufc_foobar);
  }
@@ -27,8 +27,8 @@
  
  
  /*
---- glibc-2.23/crypt/Makefile.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
-+++ glibc-2.23/crypt/Makefile	2016-02-18 21:08:03.819673066 +0100
+--- glibc-2.25/crypt/Makefile.0122~	2017-02-05 16:28:43.000000000 +0100
++++ glibc-2.25/crypt/Makefile	2017-02-06 21:02:22.539522044 +0100
 @@ -22,13 +22,13 @@ subdir	:= crypt
  
  include ../Makeconfig
@@ -45,8 +45,8 @@
  
  tests := cert md5c-test sha256c-test sha512c-test badsalttest
  
---- glibc-2.23/crypt/Versions.owlCrypt~	2016-02-18 18:54:00.000000000 +0100
-+++ glibc-2.23/crypt/Versions	2016-02-18 21:08:03.819673066 +0100
+--- glibc-2.25/crypt/Versions.0122~	2017-02-05 16:28:43.000000000 +0100
++++ glibc-2.25/crypt/Versions	2017-02-06 21:02:22.539522044 +0100
 @@ -1,5 +1,6 @@
  libcrypt {
    GLIBC_2.0 {

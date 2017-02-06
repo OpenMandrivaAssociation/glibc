@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.24
+%define ver		2.25
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -197,18 +197,15 @@ Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__
 Patch45:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-elf-ORIGIN.patch
 Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
 Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
-Patch48:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gethnamaddr-gcc5.patch
 Patch49:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-ld-ctype-gcc5.patch
 Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
 Patch51:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-res-hconf-gcc5.patch
 Patch52:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1009145.patch
-Patch53:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1013801.patch
 Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416.patch
-Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
-Patch56:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-1.patch
-Patch57:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
+#Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
+#Patch57:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
-Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
+#Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
 Patch60:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1351108-update-to-unicode-9.0.0.patch
 Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
 Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.patch
@@ -259,7 +256,7 @@ Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1162810
 Patch130:	glibc-dso_deps.patch
 # http://thread.gmane.org/gmane.linux.kernel/1790211
-Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
+#Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
 
@@ -807,6 +804,7 @@ library.
 %{_libdir}/libcrypt.a
 %{_libdir}/libdl.a
 %{_libdir}/libm.a
+%{_libdir}/libm-%{version}.a
 %{_libdir}/libnsl.a
 %{_libdir}/libpthread.a
 %{_libdir}/libresolv.a
@@ -1488,7 +1486,7 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
 %endif
     popd
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL BUGS		\
-    PROJECTS CONFORMANCE hesiod/README.hesiod				\
+    CONFORMANCE hesiod/README.hesiod					\
     ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
 xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
