@@ -804,7 +804,8 @@ library.
 %{_libdir}/libcrypt.a
 %{_libdir}/libdl.a
 %{_libdir}/libm.a
-%{_libdir}/libm-%{version}.a
+# Versioned libm.a seems to be generated only on x86_64
+%optional %{_libdir}/libm-%{version}.a
 %{_libdir}/libnsl.a
 %{_libdir}/libpthread.a
 %{_libdir}/libresolv.a
