@@ -136,7 +136,7 @@ Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -257,6 +257,8 @@ Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch130:	glibc-dso_deps.patch
 # http://thread.gmane.org/gmane.linux.kernel/1790211
 #Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
+Patch132:	glibc-2.25-fix-warnings.patch
+Patch133:	glibc-2.25-force-use-ld-bfd.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
 
@@ -1584,6 +1586,11 @@ touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
+%endif
+
+%if %isarch x86_64
+# Needed for bootstrapping x32 compilers
+[ -e %{buildroot}%{_includedir}/gnu/stubs-x32.h ] || cp %{buildroot}%{_includedir}/gnu/stubs-64.h %{buildroot}%{_includedir}/gnu/stubs-x32.h
 %endif
 
 %if "%{name}" != "glibc"

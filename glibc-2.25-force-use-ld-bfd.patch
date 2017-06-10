@@ -1,0 +1,13 @@
+--- glibc-2.25/Makeconfig.omv~	2017-06-07 15:00:07.805776340 +0200
++++ glibc-2.25/Makeconfig	2017-06-07 15:01:03.346470129 +0200
+@@ -367,6 +367,10 @@ ifndef static-start-installed-name
+ static-start-installed-name = $(start-installed-name)
+ endif
+ 
++# glibc doesn't like gold or lld
++LDFLAGS.so += -fuse-ld=bfd
++LDFLAGS-rtld += -fuse-ld=bfd
++
+ ifeq (yesyes,$(build-shared)$(have-z-combreloc))
+ combreloc-LDFLAGS = -Wl,-z,combreloc
+ LDFLAGS.so += $(combreloc-LDFLAGS)

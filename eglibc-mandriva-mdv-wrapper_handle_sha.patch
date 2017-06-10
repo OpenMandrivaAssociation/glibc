@@ -1,15 +1,17 @@
 diff -Naurp glibc-2.14-121-g5551a7b/crypt/crypt_gensalt.c glibc-2.14-121-g5551a7b.oden/crypt/crypt_gensalt.c
 --- glibc-2.14-121-g5551a7b/crypt/crypt_gensalt.c	2011-07-16 11:06:53.000000000 -0400
 +++ glibc-2.14-121-g5551a7b.oden/crypt/crypt_gensalt.c	2011-11-25 04:08:39.264489146 -0500
-@@ -122,3 +122,78 @@ char *_crypt_gensalt_md5_rn(const char *
+@@ -122,3 +122,82 @@ char *_crypt_gensalt_md5_rn(const char *
  
  	return output;
  }
 +
-+char *_crypt_gensalt_sha256c_rn(unsigned long count,
++char *_crypt_gensalt_sha256c_rn(const char *prefix, unsigned long count,
 +	const char *input, int size, char *output, int output_size)
 +{
 +	unsigned long value;
++
++	(void) prefix;
 +
 +	if (size < 3 || output_size < 3 + 4 + 1 || (count && count != 1000)) {
 +		if (output_size > 0) output[0] = '\0';
@@ -44,10 +46,12 @@ diff -Naurp glibc-2.14-121-g5551a7b/crypt/crypt_gensalt.c glibc-2.14-121-g5551a7
 +}
 +
 +
-+char *_crypt_gensalt_sha512c_rn(unsigned long count,
++char *_crypt_gensalt_sha512c_rn(const char *prefix, unsigned long count,
 +	const char *input, int size, char *output, int output_size)
 +{
 +	unsigned long value;
++
++	(void) prefix;
 +
 +	if (size < 3 || output_size < 3 + 4 + 1 || (count && count != 1000)) {
 +		if (output_size > 0) output[0] = '\0';
@@ -88,9 +92,9 @@ diff -Naurp glibc-2.14-121-g5551a7b/crypt/crypt_gensalt.h glibc-2.14-121-g5551a7
  extern char *_crypt_gensalt_md5_rn(const char *prefix, unsigned long count,
  	const char *input, int size, char *output, int output_size);
 -
-+extern char *_crypt_gensalt_sha256c_rn(unsigned long count,
++extern char *_crypt_gensalt_sha256c_rn(const char *prefix, unsigned long count,
 +	const char *input, int size, char *output, int output_size);
-+extern char *_crypt_gensalt_sha512c_rn(unsigned long count,
++extern char *_crypt_gensalt_sha512c_rn(const char *prefix, unsigned long count,
 +	const char *input, int size, char *output, int output_size);
  #endif
 diff -Naurp glibc-2.14-121-g5551a7b/crypt/wrapper.c glibc-2.14-121-g5551a7b.oden/crypt/wrapper.c

@@ -1,0 +1,40 @@
+--- glibc-2.25/elf/dl-deps.c.omv~	2017-06-07 14:52:38.372273585 +0200
++++ glibc-2.25/elf/dl-deps.c	2017-06-07 14:52:50.386992963 +0200
+@@ -154,7 +154,7 @@ preload (struct list *known, unsigned in
+ 
+ static int compare (struct link_map *a, struct link_map *b)
+ {
+-  struct link_map **r, **s;
++  struct link_map **r;
+   /* Check if must swap */
+   if ((r = b->l_initfini))
+     {
+--- glibc-2.25/crypt/crypt_freesec.c.omv~	2017-06-07 15:06:09.531918336 +0200
++++ glibc-2.25/crypt/crypt_freesec.c	2017-06-07 15:07:43.005646479 +0200
+@@ -632,7 +632,7 @@ _crypt_extended_r(const char *key, const
+ 		if (*key)
+ 			key++;
+ 	}
+-	if (des_setkey((u_char *) keybuf, data))
++	if (des_setkey((char *) keybuf, data))
+ 		return(NULL);
+ 
+ 	if (*setting == _PASSWORD_EFMT1) {
+@@ -661,7 +661,7 @@ _crypt_extended_r(const char *key, const
+ 			/*
+ 			 * Encrypt the key with itself.
+ 			 */
+-			if (des_cipher((u_char *) keybuf, (u_char *) keybuf,
++			if (des_cipher((char *) keybuf, (char *) keybuf,
+ 			    0, 1, data))
+ 				return(NULL);
+ 			/*
+@@ -671,7 +671,7 @@ _crypt_extended_r(const char *key, const
+ 			while (q - (u_char *) keybuf < sizeof(keybuf) && *key)
+ 				*q++ ^= *key++ << 1;
+ 
+-			if (des_setkey((u_char *) keybuf, data))
++			if (des_setkey((char *) keybuf, data))
+ 				return(NULL);
+ 		}
+ 		memcpy(data->output, setting, 9);
