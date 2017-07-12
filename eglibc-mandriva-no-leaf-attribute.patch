@@ -1,6 +1,6 @@
---- glibc-2.15-a316c1f/misc/sys/cdefs.h.orig	2012-02-11 15:42:05.510993089 -0200
-+++ glibc-2.15-a316c1f/misc/sys/cdefs.h	2012-02-11 15:42:48.358183501 -0200
-@@ -38,30 +38,20 @@
+--- glibc-2.25.51/misc/sys/cdefs.h.0121~	2017-07-11 18:52:05.764780368 +0200
++++ glibc-2.25.51/misc/sys/cdefs.h	2017-07-11 18:53:37.678607256 +0200
+@@ -36,31 +36,21 @@
  
  #ifdef __GNUC__
  
@@ -25,12 +25,13 @@
  #  define __THROWNL	__attribute__ ((__nothrow__))
 -#  define __NTH(fct)	__attribute__ ((__nothrow__ __LEAF)) fct
 +#  define __NTH(fct)	__attribute__ ((__nothrow__)) fct
+ #  define __NTHNL(fct)  __attribute__ ((__nothrow__)) fct
  # else
  #  if defined __cplusplus && __GNUC_PREREQ (2,8)
  #   define __THROW	throw ()
  #   define __THROWNL	throw ()
 -#   define __NTH(fct)	__LEAF_ATTR fct throw ()
 +#   define __NTH(fct)	fct throw ()
+ #   define __NTHNL(fct) fct throw ()
  #  else
  #   define __THROW
- #   define __THROWNL

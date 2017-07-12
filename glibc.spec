@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.25
+%define ver		2.25.90
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -187,26 +187,21 @@ Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-pp
 Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
 Patch37:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-workaround-nzcv-clobber-in-tlsdesc.patch
 Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
-Patch39:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-bug-regex-gcc5.patch
 Patch40:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-c-utf8-locale.patch
 Patch41:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
 # We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
 # Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
-Patch43:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-dns-host-gcc5.patch
 Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__libc_multiple_libcs.patch
 Patch45:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-elf-ORIGIN.patch
 Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
 Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
-Patch49:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-ld-ctype-gcc5.patch
 Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
-Patch51:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-res-hconf-gcc5.patch
 Patch52:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1009145.patch
 Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416.patch
 #Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
 #Patch57:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
 #Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
-Patch60:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1351108-update-to-unicode-9.0.0.patch
 Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
 Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.patch
 Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
@@ -228,7 +223,6 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch108:	eglibc-mandriva-i386-hwcapinfo.patch
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -236,7 +230,6 @@ Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch113:	eglibc-mandriva-biarch-utils.patch
 Patch114:	eglibc-mandriva-multiarch.patch
 Patch115:	glibc-2.20-i586-hptiming.patch
-Patch116:	eglibc-mandriva-i586-if-no-cmov.patch
 Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
@@ -251,7 +244,6 @@ Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 #Patch127:	nptl-getrlimit-compile.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
-Patch128:	glibc-2.17-gold.patch
 Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1162810
 Patch130:	glibc-dso_deps.patch
@@ -512,6 +504,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Tajik", "tg", ["tg_TJ"])}
 %{python:pkg("Thai", "th", ["th_TH"])}
 %{python:pkg("Tharu/Tharuhati", "the", ["the_NP"])}
+%{python:pkg("Tok Pisin", "tpi", ["tpi_PG"])}
 %{python:pkg("Turkmen", "tk", ["tk_TM"])}
 %{python:pkg("Pilipino", "tl", ["r:ph", "fil_PH", "tl_PH"])}
 %{python:pkg("Tswana", "tn", ["tn_ZA"])}
@@ -752,9 +745,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir}/libmcheck.a
 %optional %{_libdir}/libmvec.a
 %{_libdir}/libpthread_nonshared.a
-#%if "%{name}" == "glibc"
-%{_libdir}/librpcsvc.a
-#%endif
 %if %{build_biarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
@@ -763,9 +753,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir32}/libieee.a
 %{_libdir32}/libmcheck.a
 %{_libdir32}/libpthread_nonshared.a
-#%if "%{name}" == "glibc"
-%{_libdir32}/librpcsvc.a
-#%endif
 %if %isarch mips mipsel
 %exclude %{_slibdir32}/ld*-[.0-9]*.so
 %exclude %{_slibdir32}/lib*-[.0-9]*.so
@@ -780,7 +767,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdirn32}/libieee.a
 %{_libdirn32}/libmcheck.a
 %{_libdirn32}/libpthread_nonshared.a
-%{_libdirn32}/librpcsvc.a
 %exclude %{_slibdir}/ld*-[.0-9]*.so
 %exclude %{_slibdir}/lib*-[.0-9]*.so
 %exclude %{_slibdir}/libSegFault.so
@@ -1460,9 +1446,6 @@ for i in *.a; do
   fi
 done
 popd
-
-# rquota.x and rquota.h are now provided by quota
-rm %{buildroot}%{_includedir}/rpcsvc/rquota.[hx]
 
 %if %{with i18ndata}
     install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/

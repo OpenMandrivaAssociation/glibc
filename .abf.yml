@@ -1,4 +1,4 @@
 sources:
   glibc-manpages.tar.bz2: ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
   crypt_blowfish-1.3.tar.gz: 461ba876ebacd5f7dc95f1eb3c5286d6e0983ae0
-  glibc-2.25.tar.xz: 5fff5a94ef4470bf48fe1b79093185f19f5c827a
+  glibc-2.25.90.tar.xz: c6eade731025d847344bfe88f76a9b6ee29fc13f

@@ -1,7 +1,6 @@
-diff -Nrup a/sysdeps/unix/sysv/linux/tcsetattr.c b/sysdeps/unix/sysv/linux/tcsetattr.c
---- a/sysdeps/unix/sysv/linux/tcsetattr.c	2012-06-05 07:42:49.000000000 -0600
-+++ b/sysdeps/unix/sysv/linux/tcsetattr.c	2012-06-07 12:15:21.831318623 -0600
-@@ -48,6 +48,7 @@ tcsetattr (fd, optional_actions, termios
+--- glibc-2.25.51/sysdeps/unix/sysv/linux/tcsetattr.c.0025~	2017-07-11 16:44:14.000000000 +0200
++++ glibc-2.25.51/sysdeps/unix/sysv/linux/tcsetattr.c	2017-07-11 18:32:38.167537430 +0200
+@@ -45,6 +45,7 @@ __tcsetattr (int fd, int optional_action
  {
    struct __kernel_termios k_termios;
    unsigned long int cmd;
@@ -9,7 +8,7 @@ diff -Nrup a/sysdeps/unix/sysv/linux/tcsetattr.c b/sysdeps/unix/sysv/linux/tcset
  
    switch (optional_actions)
      {
-@@ -79,6 +80,35 @@ tcsetattr (fd, optional_actions, termios
+@@ -75,7 +76,36 @@ __tcsetattr (int fd, int optional_action
    memcpy (&k_termios.c_cc[0], &termios_p->c_cc[0],
  	  __KERNEL_NCCS * sizeof (cc_t));
  
@@ -45,4 +44,5 @@ diff -Nrup a/sysdeps/unix/sysv/linux/tcsetattr.c b/sysdeps/unix/sysv/linux/tcset
 +
 +  return retval;
  }
+ weak_alias (__tcsetattr, tcsetattr)
  libc_hidden_def (tcsetattr)
