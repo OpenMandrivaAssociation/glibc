@@ -1,0 +1,33 @@
+--- glibc-2.25.90/sysdeps/ia64/bits/floatn.h.omv~	2017-07-12 03:23:25.189332383 +0200
++++ glibc-2.25.90/sysdeps/ia64/bits/floatn.h	2017-07-12 03:23:32.764147836 +0200
+@@ -67,7 +67,7 @@ typedef _Complex float __cfloat128 __att
+ #if __HAVE_FLOAT128
+ 
+ /* The type _Float128 exists only since GCC 7.0.  */
+-# if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++# if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ typedef __float128 _Float128;
+ # endif
+ 
+--- glibc-2.25.90/sysdeps/powerpc/bits/floatn.h.omv~	2017-07-12 03:23:39.631980500 +0200
++++ glibc-2.25.90/sysdeps/powerpc/bits/floatn.h	2017-07-12 03:23:45.159845805 +0200
+@@ -66,7 +66,7 @@ typedef _Complex float __cfloat128 __att
+ #if __HAVE_FLOAT128
+ 
+ /* The type _Float128 exist for powerpc only since GCC 7.0.  */
+-# if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++# if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ typedef __float128 _Float128;
+ # endif
+ 
+--- glibc-2.25.90/sysdeps/x86/bits/floatn.h.omv~	2017-07-12 03:22:51.983141224 +0200
++++ glibc-2.25.90/sysdeps/x86/bits/floatn.h	2017-07-12 03:23:20.802439256 +0200
+@@ -69,7 +69,7 @@ typedef _Complex float __cfloat128 __att
+ #if __HAVE_FLOAT128
+ 
+ /* The type _Float128 exists only since GCC 7.0.  */
+-# if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++# if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ typedef __float128 _Float128;
+ # endif
+ 

@@ -134,9 +134,10 @@ Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.t
 %else
 Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
+%if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	2
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -223,6 +224,7 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
+Patch108:	glibc-2.25.90-Float128-clang.patch
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -234,7 +236,7 @@ Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch120:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
-Patch121:	eglibc-mandriva-no-leaf-attribute.patch
+#Patch121:	eglibc-mandriva-no-leaf-attribute.patch
 Patch122:	eglibc-mandriva-mdv-avx-owl-crypt.patch
 Patch123:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
 Patch124:	eglibc-mandriva-avx-relocate_fcrypt.patch
