@@ -30,9 +30,9 @@
 +# shadow: files nis
 +# group:  files nis
 +
-+passwd:		compat
++passwd:		files compat
 +shadow:		files nis
-+group:		compat
++group:		files compat
 +
 +hosts:  	files nis dns wins myhostname
 +networks:	files
