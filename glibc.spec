@@ -364,6 +364,7 @@ LANG variable to their preferred language in their
 # Locale specifc packages
 %{python:pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
 %{python:pkg("Afrikaans", "af", ["af_ZA"])}
+%{python:pkg("Aguaruna", "agr", ["agr_PE"])}
 %{python:pkg("Amharic", "am", ["am_ET", "byn_ER", "gez_ER", "gez_ET", "om_ET", "om_KE", "sid_ET", "ti_ER", "ti_ET", "tig_ER", "wal_ET"])}
 %{python:pkg("Akan", "ak", ["ak_GH"])}
 %{python:pkg("Angika", "anp", ["anp_IN"])}
@@ -415,6 +416,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Hausa", "ha", ["ha_NG"])}
 %{python:pkg("Hebrew", "he", ["he_IL", "iw_IL"])}
 %{python:pkg("Hindi", "hi", ["bho_IN", "brx_IN", "hi_IN", "ur_IN"])}
+%{python:pkg("Fiji Hindi", "hif", ["hif_FJ"])}
 %{python:pkg("Chhattisgarhi", "hne", ["hne_IN"])}
 %{python:pkg("Croatian", "hr", ["hr_HR"])}
 %{python:pkg("Upper Sorbian", "hsb", ["hsb_DE"])}
@@ -492,6 +494,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Sinhala", "si", ["si_LK"])}
 %{python:pkg("Slovak", "sk", ["sk_SK"])}
 %{python:pkg("Slovenian", "sl", ["sl_SI"])}
+%{python:pkg("Samoan", "sm", ["sm_WS"])}
 %{python:pkg("Serbian", "sr", ["sr_ME", "sr_RS"])}
 %{python:pkg("Somali", "so", ["so_DJ", "so_ET", "so_KE", "so_SO"])}
 %{python:pkg("Albanian", "sq", ["sq_AL", "sq_MK"])}
@@ -510,6 +513,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Turkmen", "tk", ["tk_TM"])}
 %{python:pkg("Pilipino", "tl", ["r:ph", "fil_PH", "tl_PH"])}
 %{python:pkg("Tswana", "tn", ["tn_ZA"])}
+%{python:pkg("Tonga", "to", ["to_TO"])}
 %{python:pkg("Turkish", "tr", ["tr_CY", "tr_TR"])}
 %{python:pkg("Tsonga", "ts", ["ts_ZA"])}
 %{python:pkg("Tatar", "tt", ["tt_RU"])}
