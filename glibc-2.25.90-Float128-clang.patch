@@ -31,3 +31,23 @@
  typedef __float128 _Float128;
  # endif
  
+--- glibc-2.25.90/math/complex.h.omv~	2017-07-31 11:26:36.430324514 +0200
++++ glibc-2.25.90/math/complex.h	2017-07-31 11:27:22.665978242 +0200
+@@ -59,7 +59,7 @@ __BEGIN_DECLS
+ # define CMPLXL(x, y) __builtin_complex ((long double) (x), (long double) (y))
+ #endif
+ 
+-#if __HAVE_FLOAT128 && __GLIBC_USE (IEC_60559_TYPES_EXT)
++#if __HAVE_FLOAT128 && __GLIBC_USE (IEC_60559_TYPES_EXT) && !defined(__clang__)
+ # define CMPLXF128(x, y) __builtin_complex ((_Float128) (x), (_Float128) (y))
+ #endif
+ 
+@@ -93,7 +93,7 @@ __BEGIN_DECLS
+ #undef	__MATH_PRECNAME
+ 
+ #if (__HAVE_DISTINCT_FLOAT128 || (__HAVE_FLOAT128 && !defined _LIBC)) \
+-     && __GLIBC_USE (IEC_60559_TYPES_EXT)
++     && __GLIBC_USE (IEC_60559_TYPES_EXT) && !defined(__clang__)
+ # ifndef _Mfloat128_
+ #  define _Mfloat128_		_Float128
+ # endif

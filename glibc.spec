@@ -137,7 +137,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 %if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -372,12 +372,13 @@ LANG variable to their preferred language in their
 %{python:pkg("Assamese", "as", ["as_IN"])}
 %{python:pkg("Asturian", "ast", ["ast_ES"])}
 %{python:pkg("Aymara", "ayc", ["ayc_PE"])}
-%{python:pkg("Azeri", "az", ["az_AZ"])}
+%{python:pkg("Azeri", "az", ["az_AZ", "az_IR"])}
 %{python:pkg("Belarusian", "be", ["be_BY"])}
 %{python:pkg("Bemba", "bem", ["bem_ZM"])}
 %{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
 %{python:pkg("Bulgarian", "bg", ["bg_BG"])}
 %{python:pkg("Bhili", "bhb", ["bhb_IN"])}
+%{python:pkg("Bislama", "bi", ["bi_VU"])}
 %{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
 %{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
 %{python:pkg("Breton", "br", ["br_FR"])}
@@ -451,7 +452,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Lithuanian", "lt", ["lt_LT"])}
 %{python:pkg("Latvian", "lv", ["lv_LV"])}
 %{python:pkg("Magahi", "mag", ["mag_IN"])}
-%{python:pkg("Maithili", "mai", ["mai_IN"])}
+%{python:pkg("Maithili", "mai", ["mai_IN", "mai_NP"])}
 %{python:pkg("Malagasy", "mg", ["mg_MG"])}
 %{python:pkg("Mari", "mhr", ["mhr_RU"])}
 %{python:pkg("Maori", "mi", ["mi_NZ"])}
