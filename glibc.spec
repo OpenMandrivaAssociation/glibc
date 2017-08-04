@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.25.90
+%define ver		2.26
 %define linaro		%{nil}
 
 %define	oname		glibc
