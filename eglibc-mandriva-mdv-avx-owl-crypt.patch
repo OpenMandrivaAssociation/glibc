@@ -29,9 +29,7 @@
  /*
 --- glibc-2.25/crypt/Makefile.0122~	2017-02-05 16:28:43.000000000 +0100
 +++ glibc-2.25/crypt/Makefile	2017-02-06 21:02:22.539522044 +0100
-@@ -22,13 +22,13 @@ subdir	:= crypt
- 
- include ../Makeconfig
+@@ -24,11 +24,11 @@ subdir	:= crypt
  
 -headers := crypt.h
 +headers := crypt.h gnu-crypt.h ow-crypt.h

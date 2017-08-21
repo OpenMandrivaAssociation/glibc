@@ -210,6 +210,19 @@ Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
 Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh952799.patch
 
+#-----------------------------------------------------------------------
+# Clear Linux patches
+Patch80:	fma.patch
+Patch81:	fma-expf.patch
+Patch82:	fma-expf-fix.patch
+Patch83:	alternate_trim.patch
+Patch84:	large-page-huge-page.patch
+Patch85:	ldconfig-format-new.patch
+Patch86:	madvise-bss.patch
+Patch87:	malloc-assert-3.patch
+Patch88:	mathlto.patch
+Patch89:	use_madv_free.patch
+
 #
 # Patches from upstream
 #
