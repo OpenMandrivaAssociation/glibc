@@ -198,7 +198,6 @@ Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysc
 Patch52:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1009145.patch
 Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416.patch
 #Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
-#Patch57:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
 #Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
 Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
