@@ -137,7 +137,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 %if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -146,8 +146,6 @@ Url:		http://www.gnu.org/software/libc/
 Source2:	glibc_post_upgrade.c
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
-Source6:	nscd.service
-Source7:	nscd.socket
 Source10:	libc-lock.h
 
 # Locales
@@ -244,7 +242,8 @@ Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch113:	eglibc-mandriva-biarch-utils.patch
 Patch114:	eglibc-mandriva-multiarch.patch
-Patch115:	glibc-2.20-i586-hptiming.patch
+Patch115:	eglibc-mandriva-i386-hwcapinfo.patch
+Patch116:	glibc-2.20-i586-hptiming.patch
 Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
@@ -1399,8 +1398,8 @@ install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
     install -m755 -d %{buildroot}%{_sysconfdir}/sysconfig
     touch %{buildroot}%{_sysconfdir}/sysconfig/nscd
     install -m755 -d %{buildroot}%{_sysconfdir}/netgroup
-    install -m644 %{SOURCE6} -D %{buildroot}%{_unitdir}/nscd.service
-    install -m644 %{SOURCE7} -D %{buildroot}%{_unitdir}/nscd.socket
+    mkdir -p %{buildroot}%{_unitdir}
+    install -m 644 nscd/nscd.service nscd/nscd.socket %{buildroot}%{_unitdir}
     install -m644 nscd/nscd.tmpfiles -D %{buildroot}%{_tmpfilesdir}/nscd.conf
     install -m755 -d %{buildroot}%{_var}/db/nscd
     touch %{buildroot}%{_var}/db/nscd/{passwd,group,hosts,services}
