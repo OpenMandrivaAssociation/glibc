@@ -241,8 +241,6 @@ Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch113:	eglibc-mandriva-biarch-utils.patch
 Patch114:	eglibc-mandriva-multiarch.patch
-Patch115:	eglibc-mandriva-i386-hwcapinfo.patch
-Patch116:	glibc-2.20-i586-hptiming.patch
 Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
