@@ -15,12 +15,27 @@
 +#
 +# Legal entries are:
 +#
-+#       compat                  Use compatibility setup
-+#       nisplus or nis+         Use NIS+ (NIS version 3)
-+#       nis or yp               Use NIS (NIS version 2), also called YP
++#       compat                  Use compatibility setup for NIS
++#       db                      Use the local database (.db) files
 +#       dns                     Use DNS (Domain Name Service)
 +#       files                   Use the local files
-+#       db                      Use the local database (.db) files
++#       hesiod                  Use Hesiod for user lookups
++#       ldap                    Use LDAP for user lookups
++#       mdns                    Use Multicast DNS (aka Zeroconf/Rendezvous) for host lookups
++#       mdns_minimal            Like mdns, but only resolve *.local
++#       mdns4                   Like mdns, but only for IPv4
++#       mdns6                   Like mdns, but only for IPv6
++#       mdns4_minimal           Like mdns4, but only resolve *.local
++#       mdns6_minimal           Like mdns6, but only resolve *.local
++#       myhostname              Resolves local name
++#       nis or yp               Use NIS (NIS version 2), also called YP
++#       nisplus or nis+         Use NIS+ (NIS version 3)
++#       pgsql                   Use NetBIOS for host lookups
++#       sss                     Use SSSD (System Security Services Daemon)
++#       tcb                     Use TCB for host lookups
++#       tinycdb                 Use a constant database for user lookups
++#       wins                    Use NetBIOS for host lookups
++#       winbind                 Uses a Windows or Samba domain controller for host lookups
 +#       [NOTFOUND=return]       Stop searching if not found so far
 +#
 +# For more information, please read the nsswitch.conf.5 manual page.
@@ -30,11 +45,11 @@
 +# shadow: files nis
 +# group:  files nis
 +
-+passwd:		files compat
++passwd:		files compat winbind
 +shadow:		files nis
-+group:		files compat
++group:		files compat winbind
 +
-+hosts:  	files nis dns wins myhostname
++hosts:  	files nis dns wins myhostname mdns4_minimal
 +networks:	files
 +
 +services:	files
