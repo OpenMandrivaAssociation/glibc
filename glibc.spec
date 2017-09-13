@@ -350,6 +350,15 @@ Linux system will not function.
 
 %if "%{name}" == "glibc"
 %post -p %{_sbindir}/glibc_post_upgrade
+export LC_ALL=C
+if [ "$1" -gt 1 ]; then
+	if [ -f /etc/nsswitch.conf ] ; then
+		grep -v -E -q '^(passwd|group):.* files' /etc/nsswitch.conf &&
+		sed -i.bak -r -e 's/^(passwd:.*) compat/^(passwd:.*) files compat/;
+		s/^(group:.*) compat/^(group:.*) compat files/;' /etc/nsswitch.conf >/dev/null 2>&1 || :
+	fi
+fi
+%endif
 %endif
 
 %if %{with locales}
