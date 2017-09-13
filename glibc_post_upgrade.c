@@ -165,10 +165,8 @@ main (void)
 		    "--nostdlib", iconv_dir);
     }
 
-  /* Check if systemctl for further systemd deamon restart*/
-  if (access ("/bin/systemctl", X_OK)
-      || ((!!access ("/dev/initctl", F_OK))
-	  ^ !access ("/bin/systemctl", X_OK)))
+  /* Check if systemctl is available for further systemd deamon restart*/
+  if (access ("/bin/systemctl", X_OK))
     _exit (0);
 
   /* Check if we are not inside of some chroot, because we'd just
@@ -182,19 +180,24 @@ main (void)
 
   /* Here's another well known way to detect chroot, at least on an
      ext and xfs filesystems and assuming nothing mounted on the chroot's
-     root. */
+     root. 
+      # (tpg) Possible 2017 solutions
+      # 1. check if inode for "/" is in 0 between 4096 range,
+      #    as this may get into account almost all firesystems?
+      # 2. check if /proc/1/cgroup output does contain word docker or lxc
+      #
   if (stat ("/", &statbuf) != 0
       || (statbuf.st_ino != 2
 	  && statbuf.st_ino != 128))
-    _exit (0);
+    _exit (0); */
 
   if (check_elf ("/proc/1/exe"))
     verbose_exec (116, "/bin/systemctl", "/bin/systemctl", "daemon-reexec");
 
   /* Check if we can safely condrestart sshd.  */
-  if (access ("/sbin/ssystemctl", X_OK) == 0
+  if (access ("/bin/systemctl", X_OK) == 0
       && access ("/usr/sbin/sshd", X_OK) == 0
-      && access ("/bin/sh", X_OK) == 0)
+      && access ("/bin/sh", F_OK) == 0)
     {
       if (check_elf ("/usr/sbin/sshd"))
 	verbose_exec (-121, "/bin/systemctl", "/bin/systemctl", "-q", "try-restart", "sshd.service");
