@@ -153,8 +153,8 @@ main (void)
 #ifndef ICONVCONFIG
 #define ICONVCONFIG "/usr/sbin/iconvconfig"
 #endif
-      const char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
-      const char *iconv_dir = GCONV_MODULES_DIR;
+	  char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
+	  char *iconv_dir = GCONV_MODULES_DIR;
       if (is_ia64 ())
 	{
 	  iconv_cache = "/emul/ia32-linux"GCONV_MODULES_DIR"/gconv-modules.cache";
