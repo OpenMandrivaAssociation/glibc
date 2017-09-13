@@ -137,7 +137,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 %if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -312,7 +312,7 @@ Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 # currently using 3.0.35 kernel with wandboard
 %define		enablekernel 3.0.35
 %else
-%define		enablekernel 3.4.0
+%define		enablekernel 3.18.0
 %endif
 Conflicts:	kernel < %{enablekernel}
 
@@ -350,15 +350,6 @@ Linux system will not function.
 
 %if "%{name}" == "glibc"
 %post -p %{_sbindir}/glibc_post_upgrade
-export LC_ALL=C
-if [ "$1" -gt 1 ]; then
-	if [ -f /etc/nsswitch.conf ] ; then
-		grep -v -E -q '^(passwd|group):.* files' /etc/nsswitch.conf &&
-		sed -i.bak -r -e 's/^(passwd:.*) compat/^(passwd:.*) files compat/;
-		s/^(group:.*) compat/^(group:.*) compat files/;' /etc/nsswitch.conf >/dev/null 2>&1 || :
-	fi
-fi
-%endif
 %endif
 
 %if %{with locales}
@@ -561,7 +552,8 @@ LANG variable to their preferred language in their
 %if %{with timezone}
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/localtime
 %endif
-%verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/nsswitch.conf
+# (tpg) please do not set (noreplace) here as after update system may end up in broken state
+%config %{_sysconfdir}/nsswitch.conf
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
