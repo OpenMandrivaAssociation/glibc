@@ -80,7 +80,7 @@
 
 # Allow make check to fail only when running kernels where we know
 # tests must pass (no missing features or bugs in the kernel)
-%define check_min_kver 2.6.21
+%define check_min_kver 3.18
 
 # Define to build a biarch package
 %define build_biarch	0
@@ -138,7 +138,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	6
+Release:	7
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -207,6 +207,7 @@ Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
 Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh952799.patch
+Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches

@@ -1,0 +1,164 @@
+commit 9f9503b56a8c7566c91d486a67be5d41792a87ca
+Author: Florian Weimer <fweimer@redhat.com>
+Date:   Wed Jul 13 14:06:00 2016 +0200
+
+    sln: Install as a hard link to ldconfig
+    
+    Implementing and sln and ldconfig with the same binary saves
+    around 850 KiB from a glibc installation.
+    
+    The sln program is implicitly tested during the build, so no test
+    case is needed.
+
+Index: b/elf/Makefile
+===================================================================
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -97,12 +97,8 @@ install-others	= $(inst_rtlddir)/$(rtld-
+ install-bin-script = ldd
+ endif
+ 
+-others		= sprof sln
++others		= sprof
+ install-bin	= sprof
+-others-static   = sln
+-install-rootsbin = sln
+-sln-modules	:= static-stubs
+-extra-objs	+= $(sln-modules:=.o)
+ 
+ ifeq (yes,$(use-ldconfig))
+ ifeq (yes,$(build-shared))
+@@ -110,9 +106,17 @@ others-static	+= ldconfig
+ others		+= ldconfig
+ install-rootsbin += ldconfig
+ 
+-ldconfig-modules := cache readlib xmalloc xstrdup chroot_canon static-stubs
++ldconfig-modules := cache readlib xmalloc xstrdup chroot_canon static-stubs sln
+ extra-objs	+= $(ldconfig-modules:=.o)
+ others-extras   = $(ldconfig-modules)
++
++# Install sln as a hard link to ldconfig.
++install-others-programs += $(inst_rootsbindir)/sln
++others: $(objpfx)sln
++$(objpfx)sln: $(objpfx)ldconfig
++	ln -f $< $@
++$(inst_rootsbindir)/sln: $(inst_rootsbindir)/ldconfig
++	ln -f $< $@
+ endif
+ endif
+ 
+@@ -548,8 +552,6 @@ $(objpfx)ldd: ldd.bash.in $(common-objpf
+ 
+ $(objpfx)sprof: $(libdl)
+ 
+-$(objpfx)sln: $(sln-modules:%=$(objpfx)%.o)
+-
+ $(objpfx)ldconfig: $(ldconfig-modules:%=$(objpfx)%.o)
+ 
+ SYSCONF-FLAGS := -D'SYSCONFDIR="$(sysconfdir)"'
+Index: b/elf/ldconfig.c
+===================================================================
+--- a/elf/ldconfig.c
++++ b/elf/ldconfig.c
+@@ -44,6 +44,8 @@
+ 
+ #include <dl-procinfo.h>
+ 
++#include "sln.h"
++
+ #ifdef _DL_FIRST_PLATFORM
+ # define _DL_FIRST_EXTRA (_DL_FIRST_PLATFORM + _DL_PLATFORMS_COUNT)
+ #else
+@@ -1285,6 +1287,9 @@ main (int argc, char **argv)
+   /* Set the text message domain.  */
+   textdomain (_libc_intl_domainname);
+ 
++  if (run_sln (argv[0]))
++    return sln_main (argc, argv);
++
+   /* Parse and process arguments.  */
+   int remaining;
+   argp_parse (&argp, argc, argv, 0, &remaining, NULL);
+Index: b/elf/sln.c
+===================================================================
+--- a/elf/sln.c
++++ b/elf/sln.c
+@@ -1,4 +1,4 @@
+-/* `sln' program to create symbolic links between files.
++/* sln helper to create symbolic links between files, invoked from ldconfig.
+    Copyright (C) 1998-2017 Free Software Foundation, Inc.
+    This file is part of the GNU C Library.
+ 
+@@ -31,21 +31,29 @@
+ 
+ #include "../version.h"
+ 
+-#define PACKAGE _libc_intl_domainname
++#include "sln.h"
+ 
+ static int makesymlink (const char *src, const char *dest);
+ static int makesymlinks (const char *file);
+ static void usage (void);
+ 
+-int
+-main (int argc, char **argv)
++/* Check if we have to run sln.  */
++bool
++run_sln (const char *argv0)
+ {
+-  /* Set locale via LC_ALL.  */
+-  setlocale (LC_ALL, "");
+-
+-  /* Set the text message domain.  */
+-  textdomain (PACKAGE);
++  const char *slash = strrchr (argv0, '/');
++  const char *progname;
++  if (slash == NULL)
++    progname = argv0;
++  else
++    progname = slash + 1;
++  return strcmp (progname, "sln") == 0;
++}
+ 
++/* Invoked from ldconfig.  */
++int
++sln_main (int argc, char **argv)
++{
+   switch (argc)
+     {
+     case 2:
+Index: b/elf/sln.h
+===================================================================
+--- /dev/null
++++ b/elf/sln.h
+@@ -0,0 +1,30 @@
++/* Interface of the sln command-line tool.
++   Copyright (C) 2016 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <http://www.gnu.org/licenses/>.  */
++
++#ifndef SLN_H
++#define SLN_H
++
++#include <stdbool.h>
++
++/* Return true if main should invoke sln_main.  */
++bool run_sln (const char *argv0);
++
++/* Main routine of the sln command.  */
++int sln_main (int argc, char **argv);
++
++#endif  /* SLN_H */
