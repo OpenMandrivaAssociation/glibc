@@ -153,8 +153,8 @@ main (void)
 #ifndef ICONVCONFIG
 #define ICONVCONFIG "/usr/sbin/iconvconfig"
 #endif
-      const char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
-      const char *iconv_dir = GCONV_MODULES_DIR;
+	  char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
+	  char *iconv_dir = GCONV_MODULES_DIR;
       if (is_ia64 ())
 	{
 	  iconv_cache = "/emul/ia32-linux"GCONV_MODULES_DIR"/gconv-modules.cache";
@@ -165,11 +165,8 @@ main (void)
 		    "--nostdlib", iconv_dir);
     }
 
-  /* Check if telinit is available and either SysVInit fifo,
-     or upstart telinit.  */
-  if (access ("/sbin/telinit", X_OK)
-      || ((!!access ("/dev/initctl", F_OK))
-	  ^ !access ("/sbin/initctl", X_OK)))
+  /* Check if systemctl is available for further systemd deamon restart*/
+  if (access ("/bin/systemctl", X_OK))
     _exit (0);
 
   /* Check if we are not inside of some chroot, because we'd just
@@ -183,23 +180,27 @@ main (void)
 
   /* Here's another well known way to detect chroot, at least on an
      ext and xfs filesystems and assuming nothing mounted on the chroot's
-     root. */
+     root. 
+      # (tpg) Possible 2017 solutions
+      # 1. check if inode for "/" is in 0 between 4096 range,
+      #    as this may get into account almost all firesystems?
+      # 2. check if /proc/1/cgroup output does contain word docker or lxc
+      #
   if (stat ("/", &statbuf) != 0
       || (statbuf.st_ino != 2
 	  && statbuf.st_ino != 128))
-    _exit (0);
+    _exit (0); */
 
   if (check_elf ("/proc/1/exe"))
-    verbose_exec (116, "/sbin/telinit", "/sbin/telinit", "u");
+    verbose_exec (116, "/bin/systemctl", "/bin/systemctl", "daemon-reexec");
 
   /* Check if we can safely condrestart sshd.  */
-  if (access ("/sbin/service", X_OK) == 0
+  if (access ("/bin/systemctl", X_OK) == 0
       && access ("/usr/sbin/sshd", X_OK) == 0
-      && access ("/etc/rc.d/init.d/sshd", X_OK) == 0
-      && access ("/bin/bash", X_OK) == 0)
+      && access ("/bin/sh", F_OK) == 0)
     {
       if (check_elf ("/usr/sbin/sshd"))
-	verbose_exec (-121, "/sbin/service", "/sbin/service", "sshd", "condrestart");
+	verbose_exec (-121, "/bin/systemctl", "/bin/systemctl", "-q", "try-restart", "sshd.service");
     }
 
   _exit(0);
