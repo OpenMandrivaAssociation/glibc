@@ -49,7 +49,7 @@
 +shadow:		files nis
 +group:		files compat winbind
 +
-+hosts:  	files nis dns wins myhostname mdns4_minimal
++hosts:  	files mymachines resolve [!UNAVAIL=return] dns myhostname nis wins mdns4_minimal
 +networks:	files
 +
 +services:	files
