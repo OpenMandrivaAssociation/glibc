@@ -207,7 +207,8 @@ Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
 Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh952799.patch
-Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
+# (tpg) rediff it later
+#Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
