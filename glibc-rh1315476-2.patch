@@ -3,17 +3,16 @@ Author: Florian Weimer <fweimer@redhat.com>
 Date:   Wed Jul 13 14:06:00 2016 +0200
 
     sln: Install as a hard link to ldconfig
-
+    
     Implementing and sln and ldconfig with the same binary saves
     around 850 KiB from a glibc installation.
-
+    
     The sln program is implicitly tested during the build, so no test
     case is needed.
 
-
 diff -Naur glibc-2.26/elf/Makefile glibc-2.26.tpg/elf/Makefile
 --- glibc-2.26/elf/Makefile	2017-08-02 12:57:16.000000000 +0000
-+++ glibc-2.26.tpg/elf/Makefile	2017-10-17 16:57:11.471730760 +0000
++++ glibc-2.26.tpg/elf/Makefile	2017-10-17 20:26:18.045173351 +0000
 @@ -96,12 +96,8 @@
  install-bin-script = ldd
  endif
@@ -28,7 +27,7 @@ diff -Naur glibc-2.26/elf/Makefile glibc-2.26.tpg/elf/Makefile
  
  ifeq (yes,$(use-ldconfig))
  ifeq (yes,$(build-shared))
-@@ -109,8 +105,17 @@
+@@ -109,8 +105,16 @@
  others		+= ldconfig
  install-rootsbin += ldconfig
  
@@ -46,7 +45,7 @@ diff -Naur glibc-2.26/elf/Makefile glibc-2.26.tpg/elf/Makefile
  endif
  endif
  
-@@ -541,8 +546,6 @@
+@@ -541,8 +545,6 @@
  
  $(objpfx)sprof: $(libdl)
  
@@ -56,8 +55,8 @@ diff -Naur glibc-2.26/elf/Makefile glibc-2.26.tpg/elf/Makefile
  
  SYSCONF-FLAGS := -D'SYSCONFDIR="$(sysconfdir)"'
 diff -Naur glibc-2.26/elf/ldconfig.c glibc-2.26.tpg/elf/ldconfig.c
---- glibc-2.26/elf/ldconfig.c	2017-10-17 16:52:59.885747000 +0000
-+++ glibc-2.26.tpg/elf/ldconfig.c	2017-10-17 16:57:58.506988148 +0000
+--- glibc-2.26/elf/ldconfig.c	2017-10-17 20:22:37.869322000 +0000
++++ glibc-2.26.tpg/elf/ldconfig.c	2017-10-17 20:25:33.551878785 +0000
 @@ -44,6 +44,8 @@
  
  #include <dl-procinfo.h>
@@ -79,15 +78,14 @@ diff -Naur glibc-2.26/elf/ldconfig.c glibc-2.26.tpg/elf/ldconfig.c
    argp_parse (&argp, argc, argv, 0, &remaining, NULL);
 diff -Naur glibc-2.26/elf/sln.c glibc-2.26.tpg/elf/sln.c
 --- glibc-2.26/elf/sln.c	2017-08-02 12:57:16.000000000 +0000
-+++ glibc-2.26.tpg/elf/sln.c	2017-10-17 17:00:15.824334466 +0000
-@@ -1,4 +1,5 @@
++++ glibc-2.26.tpg/elf/sln.c	2017-10-17 20:25:33.551878785 +0000
+@@ -1,4 +1,4 @@
 -/* `sln' program to create symbolic links between files.
 +/* sln helper to create symbolic links between files, invoked from ldconfig.
-+
     Copyright (C) 1998-2017 Free Software Foundation, Inc.
     This file is part of the GNU C Library.
  
-@@ -31,20 +32,29 @@
+@@ -31,21 +31,29 @@
  
  #include "../version.h"
  
@@ -106,6 +104,9 @@ diff -Naur glibc-2.26/elf/sln.c glibc-2.26.tpg/elf/sln.c
  {
 -  /* Set locale via LC_ALL.  */
 -  setlocale (LC_ALL, "");
+-
+-  /* Set the text message domain.  */
+-  textdomain (PACKAGE);
 +  const char *slash = strrchr (argv0, '/');
 +  const char *progname;
 +  if (slash == NULL)
@@ -115,18 +116,16 @@ diff -Naur glibc-2.26/elf/sln.c glibc-2.26.tpg/elf/sln.c
 +  return strcmp (progname, "sln") == 0;
 +}
  
--  /* Set the text message domain.  */
--  textdomain (PACKAGE);
 +/* Invoked from ldconfig.  */
 +int
 +sln_main (int argc, char **argv)
 +{
- 
    switch (argc)
      {
+     case 2:
 diff -Naur glibc-2.26/elf/sln.h glibc-2.26.tpg/elf/sln.h
 --- glibc-2.26/elf/sln.h	1970-01-01 00:00:00.000000000 +0000
-+++ glibc-2.26.tpg/elf/sln.h	2017-10-17 17:00:49.924339352 +0000
++++ glibc-2.26.tpg/elf/sln.h	2017-10-17 20:25:33.551878785 +0000
 @@ -0,0 +1,30 @@
 +/* Interface of the sln command-line tool.
 +   Copyright (C) 2016 Free Software Foundation, Inc.
