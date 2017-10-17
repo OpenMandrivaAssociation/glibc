@@ -45,9 +45,9 @@
 +# shadow: files nis
 +# group:  files nis
 +
-+passwd:		files compat winbind
++passwd:		files compat winbind mymachines systemd
 +shadow:		files nis
-+group:		files compat winbind
++group:		files compat winbind mymachines systemd
 +
 +hosts:  	files mymachines resolve [!UNAVAIL=return] dns myhostname nis wins mdns4_minimal
 +networks:	files
