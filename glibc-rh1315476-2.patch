@@ -3,10 +3,10 @@ Author: Florian Weimer <fweimer@redhat.com>
 Date:   Wed Jul 13 14:06:00 2016 +0200
 
     sln: Install as a hard link to ldconfig
-    
+
     Implementing and sln and ldconfig with the same binary saves
     around 850 KiB from a glibc installation.
-    
+
     The sln program is implicitly tested during the build, so no test
     case is needed.
 
@@ -40,10 +40,9 @@ diff -Naur glibc-2.26/elf/Makefile glibc-2.26.tpg/elf/Makefile
 +install-others-programs += $(inst_rootsbindir)/sln
 +others: $(objpfx)sln
 +$(objpfx)sln: $(objpfx)ldconfig
-+       ln -f $< $@
++	ln -f $< $@
 +$(inst_rootsbindir)/sln: $(inst_rootsbindir)/ldconfig
-+       ln -f $< $@
-+
++	ln -f $< $@
  endif
  endif
  
