@@ -1496,7 +1496,7 @@ install -m 644 COPYING COPYING.LIB README NEWS INSTALL BUGS		\
     CONFORMANCE hesiod/README.hesiod					\
     ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
-xz -9 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
+xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
