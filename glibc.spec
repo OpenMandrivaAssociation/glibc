@@ -148,6 +148,8 @@ Source2:	glibc_post_upgrade.c
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 Source10:	libc-lock.h
+# (tpg) our NSS config
+Source11:	nsswitch.conf
 
 # Locales
 Source20:	Makefile.locales
@@ -1390,7 +1392,7 @@ mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 %endif
 
 %if "%{name}" == "glibc"
-install -m 644 mandriva/nsswitch.conf %{buildroot}%{_sysconfdir}/nsswitch.conf
+install -m 644 %{SOURCE11} %{buildroot}%{_sysconfdir}/nsswitch.conf
 %endif
 
 # This is for ncsd - in glibc 2.2
@@ -1495,7 +1497,7 @@ install -m 644 COPYING COPYING.LIB README NEWS INSTALL BUGS		\
     CONFORMANCE hesiod/README.hesiod					\
     ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
-xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
+xz -9 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
