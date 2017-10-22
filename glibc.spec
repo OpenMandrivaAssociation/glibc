@@ -138,7 +138,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	8
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -223,6 +223,8 @@ Patch86:	madvise-bss.patch
 Patch87:	malloc-assert-3.patch
 Patch88:	mathlto.patch
 Patch89:	use_madv_free.patch
+Patch90:	exp.patch
+Patch91:	malloc-relaxed.patch
 
 #
 # Patches from upstream
