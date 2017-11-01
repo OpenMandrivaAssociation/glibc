@@ -138,7 +138,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	10
+Release:	11
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1396,7 +1396,7 @@ mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 install -m 644 %{SOURCE11} %{buildroot}%{_sysconfdir}/nsswitch.conf
 %endif
 
-# This is for ncsd - in glibc 2.2
+# This is for nscd - in glibc 2.2
 %if %{with nscd}
     install -m644 nscd/nscd.conf -D %{buildroot}%{_sysconfdir}/nscd.conf
     install -m755 -d %{buildroot}%{_sysconfdir}/sysconfig
