@@ -1168,9 +1168,7 @@ function BuildGlibc() {
     --localedir=%{_localedir} \
     --enable-add-ons=$AddOns \
     --disable-profile \
-    --disable-debug \
     --enable-static \
-    --without-gd \
 %if %{with selinux}
     --with-selinux \
 %else
