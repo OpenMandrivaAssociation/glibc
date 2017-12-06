@@ -138,7 +138,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	11
+Release:	12
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -225,6 +225,7 @@ Patch88:	mathlto.patch
 Patch89:	use_madv_free.patch
 Patch90:	exp.patch
 Patch91:	malloc-relaxed.patch
+Patch92:	ldconfig-Os.patch
 
 #
 # Patches from upstream
@@ -680,7 +681,7 @@ contains the most important sets of shared libraries: the standard C
 library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
-%files -n	%{multilibc}
+%files -n %{multilibc}
 %{_slibdir32}/ld-%{fullver}.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
@@ -1178,6 +1179,8 @@ function BuildGlibc() {
 %endif
     --enable-bind-now \
     --enable-lock-elision \
+    --enable-tunables \
+    --enable-stack-protector=strong \
     $ExtraFlags \
     $MultiArchFlags \
     --enable-kernel=%{enablekernel} \

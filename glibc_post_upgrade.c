@@ -146,7 +146,7 @@ main (void)
      before running one of the lib's %post scriptlet.  /sbin/ldconfig will
      then be run by the other arch's %post.  */
   if (! access ("/sbin/ldconfig", X_OK))
-    verbose_exec (110, "/sbin/ldconfig", "/sbin/ldconfig");
+    verbose_exec (110, "/sbin/ldconfig", "/sbin/ldconfig", "-X");
 
   if (! utimes (GCONV_MODULES_DIR "/gconv-modules.cache", NULL))
     {
