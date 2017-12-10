@@ -1,0 +1,86 @@
+--- glibc-2.26/math/math.h.omv~	2017-12-10 16:51:25.841126865 +0100
++++ glibc-2.26/math/math.h	2017-12-10 16:51:30.464431597 +0100
+@@ -101,8 +101,8 @@ typedef _Float64 double_t;
+ typedef _Float64x float_t;
+ typedef _Float64x double_t;
+ # elif __GLIBC_FLT_EVAL_METHOD == 128
+-typedef _Float128 float_t;
+-typedef _Float128 double_t;
++typedef __float128 float_t;
++typedef __float128 double_t;
+ # elif __GLIBC_FLT_EVAL_METHOD == 129
+ typedef _Float128x float_t;
+ typedef _Float128x double_t;
+@@ -297,12 +297,12 @@ extern long double __REDIRECT_NTH (nextt
+ 
+ #endif	/* Use ISO C99.  */
+ 
+-/* Include the file of declarations again, this time using `_Float128'
++/* Include the file of declarations again, this time using `__float128'
+    instead of `double' and appending f128 to each function name.  */
+ 
+ #if __HAVE_DISTINCT_FLOAT128 || (__HAVE_FLOAT128 && !defined _LIBC)
+ # ifndef _Mfloat128_
+-#  define _Mfloat128_		_Float128
++#  define _Mfloat128_		__float128
+ # endif
+ # define _Mdouble_		_Mfloat128_
+ # define __MATH_PRECNAME(name,r) name##f128##r
+@@ -350,7 +350,7 @@ extern int signgam;
+ 	       float: FUNC ## f ARGS,		\
+ 	       default: FUNC ARGS,		\
+ 	       long double: FUNC ## l ARGS,	\
+-	       _Float128: FUNC ## f128 ARGS)
++	       __float128: FUNC ## f128 ARGS)
+ # else
+ #  define __MATH_TG(TG_ARG, FUNC, ARGS)					\
+      __builtin_choose_expr						\
+@@ -401,8 +401,8 @@ enum
+    the __SUPPORT_SNAN__ check may be skipped for those versions.  */
+ 
+ /* Return number of classification appropriate for X.  */
+-# if __GNUC_PREREQ (4,4) && !defined __SUPPORT_SNAN__			      \
+-     && !defined __OPTIMIZE_SIZE__
++# if 1 || (__GNUC_PREREQ (4,4) && !defined __SUPPORT_SNAN__  \
++     && !defined __OPTIMIZE_SIZE__)
+ #  define fpclassify(x) __builtin_fpclassify (FP_NAN, FP_INFINITE,	      \
+      FP_NORMAL, FP_SUBNORMAL, FP_ZERO, x)
+ # else
+@@ -445,7 +445,7 @@ enum
+      && !defined __SUPPORT_SNAN__
+    /* __builtin_isinf_sign is broken for float128 only before GCC 7.0.  */
+ #  define isinf(x) \
+-    (__builtin_types_compatible_p (__typeof (x), _Float128) \
++    (__builtin_types_compatible_p (__typeof (x), __float128) \
+      ? __isinff128 (x) : __builtin_isinf_sign (x))
+ # elif __GNUC_PREREQ (4,4) && !defined __SUPPORT_SNAN__
+ #  define isinf(x) __builtin_isinf_sign (x)
+@@ -696,7 +696,7 @@ extern int matherr (struct exception *__
+ /* Include bits/math-finite.h for float128.  */
+ # if (__HAVE_DISTINCT_FLOAT128 || (__HAVE_FLOAT128 && !defined _LIBC)) \
+       && __GLIBC_USE (IEC_60559_TYPES_EXT)
+-#  define _Mdouble_ _Float128
++#  define _Mdouble_ __float128
+ #  define __MATH_DECLARING_DOUBLE 0
+ #  define __MATH_DECLARING_LDOUBLE 0
+ #  define __MATH_DECLARING_FLOATN 1
+--- glibc-2.25.90/math/complex.h.omv~	2017-07-31 11:26:36.430324514 +0200
++++ glibc-2.25.90/math/complex.h	2017-07-31 11:27:22.665978242 +0200
+@@ -59,7 +59,7 @@ __BEGIN_DECLS
+ # define CMPLXL(x, y) __builtin_complex ((long double) (x), (long double) (y))
+ #endif
+ 
+-#if __HAVE_FLOAT128 && __GLIBC_USE (IEC_60559_TYPES_EXT)
++#if __HAVE_FLOAT128 && __GLIBC_USE (IEC_60559_TYPES_EXT) && !defined(__clang__)
+ # define CMPLXF128(x, y) __builtin_complex ((_Float128) (x), (_Float128) (y))
+ #endif
+ 
+@@ -93,7 +93,7 @@ __BEGIN_DECLS
+ #undef	__MATH_PRECNAME
+ 
+ #if (__HAVE_DISTINCT_FLOAT128 || (__HAVE_FLOAT128 && !defined _LIBC)) \
+-     && __GLIBC_USE (IEC_60559_TYPES_EXT)
++     && __GLIBC_USE (IEC_60559_TYPES_EXT) && !defined(__clang__)
+ # ifndef _Mfloat128_
+ #  define _Mfloat128_		_Float128
+ # endif

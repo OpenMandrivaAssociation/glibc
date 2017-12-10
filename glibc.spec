@@ -138,7 +138,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	12
+Release:	13
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -241,7 +241,7 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch108:	glibc-2.25.90-Float128-clang.patch
+Patch108:	glibc-2.26-float128-clang-6.0.patch
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
