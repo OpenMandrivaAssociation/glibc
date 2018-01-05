@@ -223,7 +223,7 @@ Patch87:	malloc-assert-3.patch
 Patch92:	ldconfig-Os.patch
 Patch93:	math-2.27.patch
 Patch94:	exp2.patch
-Patch95:	mathlto.patch
+#Patch95:	mathlto.patch
 Patch96:	malloc-relaxed.patch
 #Patch97:	0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
 Patch98:	0002-x86-64-Add-sinf-with-FMA.patch
