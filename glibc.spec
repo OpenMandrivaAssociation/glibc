@@ -767,7 +767,6 @@ The glibc-docs package contains docs for %{name}.
 # Exists for some, but not all arches
 %optional %{_libdir}/libmvec_nonshared.a
 %{_libdir}/libg.a
-%{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
 %optional %{_libdir}/libmvec.a
 %{_libdir}/libpthread_nonshared.a
@@ -776,7 +775,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir32}/*.so
 %{_libdir32}/libc_nonshared.a
 %{_libdir32}/libg.a
-%{_libdir32}/libieee.a
 %{_libdir32}/libmcheck.a
 %{_libdir32}/libpthread_nonshared.a
 %if %isarch mips mipsel
@@ -790,7 +788,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdirn32}/*.so
 %{_libdirn32}/libc_nonshared.a
 %{_libdirn32}/libg.a
-%{_libdirn32}/libieee.a
 %{_libdirn32}/libmcheck.a
 %{_libdirn32}/libpthread_nonshared.a
 %exclude %{_slibdir}/ld*-[.0-9]*.so
