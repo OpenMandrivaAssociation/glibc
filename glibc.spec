@@ -94,7 +94,8 @@
 %bcond_without	nscd
 %bcond_without	i18ndata
 %bcond_with	timezone
-%bcond_without	nsscrypt
+# (tpg) this is not needed
+%bcond_with	nsscrypt
 %bcond_without	locales
 
 
@@ -138,7 +139,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	12
+Release:	15
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -213,19 +214,19 @@ Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
-Patch80:	fma.patch
-Patch81:	fma-expf.patch
-Patch82:	fma-expf-fix.patch
 Patch83:	alternate_trim.patch
 Patch84:	large-page-huge-page.patch
 Patch85:	ldconfig-format-new.patch
 Patch86:	madvise-bss.patch
 Patch87:	malloc-assert-3.patch
-Patch88:	mathlto.patch
-Patch89:	use_madv_free.patch
-Patch90:	exp.patch
-Patch91:	malloc-relaxed.patch
+#Patch89:	use_madv_free.patch
 Patch92:	ldconfig-Os.patch
+Patch93:	math-2.27.patch
+Patch94:	exp2.patch
+#Patch95:	mathlto.patch
+Patch96:	malloc-relaxed.patch
+#Patch97:	0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
+Patch98:	0002-x86-64-Add-sinf-with-FMA.patch
 
 #
 # Patches from upstream
@@ -241,7 +242,7 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch108:	glibc-2.25.90-Float128-clang.patch
+Patch108:	glibc-2.26-float128-clang-6.0.patch
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -668,6 +669,7 @@ Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
 Requires(post):	%{name}
 Requires(post):	bash
+Requires(post):	readline
 
 %post -n %{multilibc}
 %{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
@@ -765,7 +767,6 @@ The glibc-docs package contains docs for %{name}.
 # Exists for some, but not all arches
 %optional %{_libdir}/libmvec_nonshared.a
 %{_libdir}/libg.a
-%{_libdir}/libieee.a
 %{_libdir}/libmcheck.a
 %optional %{_libdir}/libmvec.a
 %{_libdir}/libpthread_nonshared.a
@@ -774,7 +775,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir32}/*.so
 %{_libdir32}/libc_nonshared.a
 %{_libdir32}/libg.a
-%{_libdir32}/libieee.a
 %{_libdir32}/libmcheck.a
 %{_libdir32}/libpthread_nonshared.a
 %if %isarch mips mipsel
@@ -788,7 +788,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdirn32}/*.so
 %{_libdirn32}/libc_nonshared.a
 %{_libdirn32}/libg.a
-%{_libdirn32}/libieee.a
 %{_libdirn32}/libmcheck.a
 %{_libdirn32}/libpthread_nonshared.a
 %exclude %{_slibdir}/ld*-[.0-9]*.so
@@ -981,6 +980,10 @@ chmod 0644 crypt_blowfish-%{crypt_bf_ver}/*.[chS]
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %apply_patches
+
+# (tpg) not needed with new FMA patches
+rm sysdeps/x86_64/fpu/s_sinf.S
+rm sysdeps/x86_64/fpu/s_cosf.S
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
