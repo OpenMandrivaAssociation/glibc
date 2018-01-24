@@ -1,0 +1,11 @@
+--- glibc-2.26/misc/sys/cdefs.h.omv~	2018-01-24 11:32:15.276543892 +0100
++++ glibc-2.26/misc/sys/cdefs.h	2018-01-24 11:32:47.208618287 +0100
+@@ -38,7 +38,7 @@
+ 
+ /* All functions, except those with callbacks or those that
+    synchronize memory, are leaf functions.  */
+-# if __GNUC_PREREQ (4, 6) && !defined _LIBC
++# if __GNUC_PREREQ (4, 6) && !defined _LIBC && (!defined(__clang__) || __has_attribute(leaf))
+ #  define __LEAF , __leaf__
+ #  define __LEAF_ATTR __attribute__ ((__leaf__))
+ # else
