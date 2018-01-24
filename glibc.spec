@@ -245,7 +245,7 @@ Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
 %if %{mdvver} > 3000000
 Patch108:	glibc-2.26-float128-clang-6.0.patch
 %else
-Patch108:	glibc-2.25.90-Float128-clang.patch
+Patch99:	glibc-2.25.90-Float128-clang.patch
 %endif
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
