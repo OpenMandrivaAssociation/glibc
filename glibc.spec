@@ -1565,6 +1565,7 @@ export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRAR
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
+%ifarch %{armx}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
@@ -1575,6 +1576,7 @@ do
 	# don't use en_DK because of LC_MONETARY
 	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
 done
+%endif
 
 # Build regular locales
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
