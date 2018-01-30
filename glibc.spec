@@ -1565,7 +1565,7 @@ export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRAR
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
-%ifarch %{armx}
+%ifnarch %{armx}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
