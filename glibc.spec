@@ -88,16 +88,17 @@
 %define build_biarch	1
 %endif
 
-
-
 %if !%{build_cross}
 %bcond_without	nscd
 %bcond_without	i18ndata
 %bcond_with	timezone
 # (tpg) this is not needed
 %bcond_with	nsscrypt
+%ifnarch %{armx}
 %bcond_without	locales
-
+%else
+%bcond_with	locales
+%endif
 
 %if %isarch %{ix86} x86_64
 %bcond_without	systap
@@ -1565,7 +1566,6 @@ export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRAR
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
-%ifnarch %{armx}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
@@ -1576,7 +1576,6 @@ do
 	# don't use en_DK because of LC_MONETARY
 	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
 done
-%endif
 
 # Build regular locales
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
