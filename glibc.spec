@@ -94,7 +94,7 @@
 %bcond_with	timezone
 # (tpg) this is not needed
 %bcond_with	nsscrypt
-%ifnarch %{armx}
+%ifnarch armv7hl
 %bcond_without	locales
 %else
 %bcond_with	locales
