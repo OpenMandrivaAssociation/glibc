@@ -15,7 +15,7 @@ $(INSTALL-SUPPORTED-LOCALES): install-locales-dir
 	locale=`echo $$locale | sed -e 's,/[^/]*,,'`; \
 	input=`echo $$locale | sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/'`; \
 	echo "localedef -i $$input -c -f $$charset" \
-	     "$(DESTDIR)/usr/share/locale/$$locale"; \
+		"$(DESTDIR)/usr/share/locale/$$locale"; \
 	localedef -i $$input -c -f $$charset \
-		     $(DESTDIR)/usr/share/locale/$$locale; \
+		$(DESTDIR)/usr/share/locale/$$locale; \
 

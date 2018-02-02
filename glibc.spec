@@ -94,10 +94,7 @@
 %bcond_with	timezone
 # (tpg) this is not needed
 %bcond_with	nsscrypt
-%ifnarch armv7hl
 %bcond_without	locales
-%else
-%bcond_with	locales
 %endif
 
 %if %isarch %{ix86} x86_64
@@ -140,7 +137,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	17
+Release:	18
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -363,7 +360,8 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %if "%{name}" == "glibc"
-%post -p %{_sbindir}/glibc_post_upgrade
+%post -p <lua>
+os.execute("/usr/sbin/glibc_post_upgrade")
 %endif
 
 %if %{with locales}
@@ -372,7 +370,7 @@ Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
 Obsoletes:	locales < 6:2.19-13
-Requires(post,preun):	bash grep sed coreutils glibc rpm
+Requires(post,preun):	/bin/sh grep sed coreutils glibc rpm
 
 %description -n locales
 These are the base files for language localization.
@@ -674,7 +672,7 @@ Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
 Requires(post):	%{name}
-Requires(post):	bash
+Requires(post):	/bin/sh
 Requires(post):	readline
 
 %post -n %{multilibc}
@@ -1566,6 +1564,7 @@ export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRAR
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
+%ifnarch %{armx}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
@@ -1581,6 +1580,7 @@ done
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
 # archive.
 SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
+%endif
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
