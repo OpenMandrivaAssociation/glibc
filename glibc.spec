@@ -95,7 +95,6 @@
 # (tpg) this is not needed
 %bcond_with	nsscrypt
 %bcond_without	locales
-%endif
 
 %if %isarch %{ix86} x86_64
 %bcond_without	systap
