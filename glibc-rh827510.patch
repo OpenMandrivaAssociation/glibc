@@ -16,7 +16,7 @@ index e3fa187..9fd9216 100644
 -  file->decided = 1;
    file->data = NULL;
  
-   fd = open_not_cancel_2 (file->filename, O_RDONLY | O_CLOEXEC);
+   fd = __open_nocancel (file->filename, O_RDONLY | O_CLOEXEC);
 @@ -278,6 +277,7 @@ _nl_load_locale (struct loaded_l10nfile *file, int category)
    newdata->alloc = alloc;
  

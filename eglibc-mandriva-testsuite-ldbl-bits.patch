@@ -1,6 +1,6 @@
---- glibc-2.20/stdlib/Makefile.ldbl~	2014-09-08 21:30:48.771678525 +0200
-+++ glibc-2.20/stdlib/Makefile	2014-09-08 21:34:51.842639720 +0200
-@@ -125,9 +125,16 @@ test-canon-ARGS = --test-dir=${common-ob
+--- glibc-2.27/stdlib/Makefile.0118~	2018-02-02 20:31:07.402589690 +0100
++++ glibc-2.27/stdlib/Makefile	2018-02-02 20:31:53.077710331 +0100
+@@ -190,9 +190,16 @@ test-canon-ARGS = --test-dir=${common-ob
  
  bug-fmtmsg1-ENV = SEV_LEVEL=foo,11,newsev
  
@@ -12,7 +12,7 @@
 +
  $(objpfx)isomac.out: $(objpfx)isomac
  	$(dir $<)$(notdir $<) '$(CC)'  \
- 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $<.out; \
+ 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $@; \
 +	'$(isomac-includes)' > $<.out \
  	$(evaluate-test)
  
