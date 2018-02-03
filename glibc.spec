@@ -263,6 +263,7 @@ Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 #Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 Patch132:	glibc-2.25-fix-warnings.patch
 Patch133:	glibc-2.25-force-use-ld-bfd.patch
+Patch134:	glibc-2.27-clang-_Float.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
 

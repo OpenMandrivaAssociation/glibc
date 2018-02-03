@@ -1,0 +1,36 @@
+--- glibc-2.27/bits/floatn-common.h.omv~	2018-02-03 00:59:35.295412323 +0100
++++ glibc-2.27/bits/floatn-common.h	2018-02-03 01:00:21.691577990 +0100
+@@ -28,6 +28,7 @@
+    where the same definitions, or definitions based only on the macros
+    in bits/floatn.h, are appropriate for all glibc configurations.  */
+ 
++#ifndef __clang__ /* FIXME reinvestigate with clang 7 */
+ /* Defined to 1 if the current compiler invocation provides a
+    floating-point type with the right format for this type, and this
+    glibc includes corresponding *fN or *fNx interfaces for it.  */
+@@ -36,6 +37,7 @@
+ #define __HAVE_FLOAT64 1
+ #define __HAVE_FLOAT32X 1
+ #define __HAVE_FLOAT128X 0
++#endif
+ 
+ /* Defined to 1 if the corresponding __HAVE_<type> macro is 1 and the
+    type is the first with its format in the sequence of (the default
+--- glibc-2.27/sysdeps/x86/bits/floatn.h.omv~	2018-02-03 01:00:55.046697566 +0100
++++ glibc-2.27/sysdeps/x86/bits/floatn.h	2018-02-03 01:01:56.562919050 +0100
+@@ -42,6 +42,7 @@
+ # define __HAVE_DISTINCT_FLOAT128 0
+ #endif
+ 
++#ifndef __clang__ /* FIXME reinvestigate with clang 7 */
+ /* Defined to 1 if the current compiler invocation provides a
+    floating-point type with the right format for _Float64x, and this
+    glibc includes corresponding *f64x interfaces for it.  */
+@@ -52,6 +53,7 @@
+    the format of _Float128, which must be different from that of long
+    double.  */
+ #define __HAVE_FLOAT64X_LONG_DOUBLE 1
++#endif
+ 
+ #ifndef __ASSEMBLER__
+ 
