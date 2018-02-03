@@ -275,6 +275,7 @@ BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
+BuildRequires:  bison
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
