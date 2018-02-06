@@ -356,10 +356,10 @@ Linux system will not function.
 os.execute("/usr/sbin/glibc_post_upgrade")
 %endif
 
-%triggerposttransin -p <lua> -P 2000000 -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+%triggerposttransin -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
 os.execute("/sbin/ldconfig -X")
 
-%triggerposttransun -p <lua> -P 2000000 -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+%triggerposttransun -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
 os.execute("/sbin/ldconfig -X")
 
 %if %{with locales}
@@ -1555,7 +1555,6 @@ export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRAR
 %endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
-%ifnarch %{armx}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
@@ -1571,7 +1570,7 @@ done
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
 # archive.
 SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
-%endif
+
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
