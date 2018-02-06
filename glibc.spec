@@ -136,7 +136,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -355,6 +355,12 @@ Linux system will not function.
 %post -p <lua>
 os.execute("/usr/sbin/glibc_post_upgrade")
 %endif
+
+%triggerposttransin -p <lua> -P 2000000 -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+os.execute("/sbin/ldconfig -X")
+
+%triggerposttransun -p <lua> -P 2000000 -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+os.execute("/sbin/ldconfig -X")
 
 %if %{with locales}
 %package -n locales
@@ -645,7 +651,6 @@ LANG variable to their preferred language in their
 %ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
-%{_var}/lib/rpm/filetriggers/ldconfig.*
 %{_var}/db/Makefile
 %else
 %if %isarch mips mipsel
@@ -1425,25 +1430,17 @@ install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man
 # needed to get a ldd which understands o32, n32, 64
 install -m755 build-%{_target_cpu}-linux/elf/ldd %{buildroot}%{_bindir}/ldd
 %endif
-echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
-chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
-mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
 # ldconfig cache
 mkdir -p %{buildroot}%{_var}/cache/ldconfig
-touch %{buildroot}%{_var}/cache/ldconfig/aux-cache
+truncate -s 0 %{buildroot}%{_var}/cache/ldconfig/aux-cache
+# Note: This has to happen before creating /etc/ld.so.conf.
+# ldconfig is statically linked, so we can use the new version.
+%{buildroot}/sbin/ldconfig -N -r %{buildroot}
 
-# automatic ldconfig cache update on rpm installs/removals
-# (see http://wiki.mandriva.com/en/Rpm_filetriggers)
-install -d %{buildroot}%{_var}/lib/rpm/filetriggers
-cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
-^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-EOF
-cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
-#!/bin/sh
-ldconfig -X
-EOF
-chmod 755 %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script
+echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
+chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
+mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
 # gconv-modules.cache
 touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
