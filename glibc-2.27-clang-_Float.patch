@@ -34,3 +34,18 @@
  
  #ifndef __ASSEMBLER__
  
+--- glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h.omv~	2018-02-07 23:36:43.126763941 +0000
++++ glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h	2018-02-07 23:37:32.208855464 +0000
+@@ -26,7 +26,11 @@
+    floating-point type with the IEEE 754 binary128 format, and this
+    glibc includes corresponding *f128 interfaces for it.  */
+ #ifndef __NO_LONG_DOUBLE_MATH
+-# define __HAVE_FLOAT128 1
++# if defined(__clang__)
++#  define __HAVE_FLOAT128 0
++# else
++#  define __HAVE_FLOAT128 1
++# endif
+ #else
+ /* glibc does not support _Float128 for platforms where long double is
+    normally binary128 when building with long double as binary64.
