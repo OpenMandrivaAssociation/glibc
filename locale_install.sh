@@ -28,7 +28,7 @@ fi
 
 # the list of languages that rpm installs their translations
 if [ -r /etc/rpm/macros ]; then
-	RPM_INSTALL_LANG="`grep '^%_install_langs' /etc/rpm/macros | cut -d' ' -f2-`"
+	RPM_INSTALL_LANG="$(grep '^%_install_langs' /etc/rpm/macros | cut -d' ' -f2-)"
 fi
 [ -z "$RPM_INSTALL_LANG" ] && RPM_INSTALL_LANG=C
 OLD_RPM_INSTALL_LANG="$RPM_INSTALL_LANG"
@@ -49,9 +49,9 @@ for i in "$@"; do
 	langs="$i"
 	for j in /usr/share/locale/$i.*; do
 		[ -d "$j" ] || continue
-		lng=`basename $j`
+		lng="$(basename $j)"
 		# sanity check
-		echo $lng | grep -q $i || continue
+		echo "$lng" | grep -q "$i" || continue
 		langs="$langs $lng"
 	done
 	for k in $langs; do
@@ -80,13 +80,13 @@ for i in "$@"; do
 	# make the installed locale known to rpm (so translations in that
 	# language are installed), and the menu system
 	if [ "$RPM_INSTALL_LANG" != "all" ]; then
-		RPM_INSTALL_LANG=`echo $i:$RPM_INSTALL_LANG |tr ':' '\n' |sort |tr '\n' ':' |sed -e 's,:$,,'`
+		RPM_INSTALL_LANG="$(echo "$i":$RPM_INSTALL_LANG |tr ':' '\n' |sort |tr '\n' ':' |sed -e 's,:$,,')"
 	fi
 done
 
 if [ "$OLD_RPM_INSTALL_LANG" != "$RPM_INSTALL_LANG" ]; then
 	# update /etc/rpm/macros file
 	if [ -w /etc/rpm/macros ]; then
-		sed -i -e "s/^%_install_langs .*/%_install_langs $RPM_INSTALL_LANGS/" /etc/rpm/macros
+		sed -i -e "s/^%_install_langs .*/%_install_langs ${RPM_INSTALL_LANG}/" /etc/rpm/macros
 	fi
 fi

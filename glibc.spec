@@ -136,7 +136,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -368,7 +368,13 @@ Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
 Obsoletes:	locales < 6:2.19-13
-Requires(post,preun):	/bin/sh grep sed coreutils glibc rpm
+Requires(post,preun):	/bin/sh
+Requires(post,preun):	grep
+Requires(post,preun):	sed
+Requires(post,preun):	coreutils
+Requires(post,preun):	util-linux
+Requires(post,preun):	glibc
+Requires(post,preun):	rpm
 
 %description -n locales
 These are the base files for language localization.
@@ -677,14 +683,12 @@ LANG variable to their preferred language in their
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
-Requires(post):	%{name}
-Requires(post):	/bin/sh
-Requires(post):	readline
+Requires:	%{name} = %{EVRD}
 
-%post -n %{multilibc}
-%{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
+%triggerposttransin -p <lua> -- /usr/lib/gconv/*.so
+os.execute("/usr/sbin/iconvconfig /usr/lib/gconv -o /usr/lib/gconv/gconv-modules.cache")
 
-%description -n	%{multilibc}
+%description -n %{multilibc}
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
 memory, as well as to make upgrading easier, common system code is
@@ -859,7 +863,7 @@ library.
 ########################################################################
 %if %{with nscd}
 #-----------------------------------------------------------------------
-%package -n	nscd
+%package -n nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
@@ -869,7 +873,7 @@ Requires(preun):rpm-helper
 Requires(post):	rpm-helper
 Requires(postun):rpm-helper
 
-%description -n	nscd
+%description -n nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
@@ -880,7 +884,7 @@ performance with NIS+, and may help with DNS as well.
 nscd -i passwd -i group || :
 %systemd_post nscd.socket nscd.service
 
-%files -n 	nscd
+%files -n nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %dir %attr(0755,root,root) /run/nscd
 %dir %attr(0755,root,root) %{_var}/db/nscd
