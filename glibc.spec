@@ -4,7 +4,7 @@
 %define _libdir32	%{_prefix}/lib
 %define _libdirn32	%{_prefix}/lib32
 
-%define ver		2.26
+%define ver		2.27
 %define linaro		%{nil}
 
 %define	oname		glibc
@@ -88,8 +88,6 @@
 %define build_biarch	1
 %endif
 
-
-
 %if !%{build_cross}
 %bcond_without	nscd
 %bcond_without	i18ndata
@@ -97,7 +95,6 @@
 # (tpg) this is not needed
 %bcond_with	nsscrypt
 %bcond_without	locales
-
 
 %if %isarch %{ix86} x86_64
 %bcond_without	systap
@@ -139,7 +136,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	16
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -174,7 +171,6 @@ Source1005:	locales-softlink.pl
 # fedora patches
 Patch21:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-i386-tls-direct-seg-refs.patch
 Patch23:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-include-bits-ldbl.patch
-Patch24:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ldd.patch
 Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
 Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedata-rh61908.patch
@@ -188,14 +184,12 @@ Patch33:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ni
 Patch34:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nptl-linklibc.patch
 Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
 Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
-Patch37:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-workaround-nzcv-clobber-in-tlsdesc.patch
 Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
 Patch40:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-c-utf8-locale.patch
 Patch41:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
 # We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
 # Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
 Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__libc_multiple_libcs.patch
-Patch45:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-elf-ORIGIN.patch
 Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
 Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
 Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
@@ -209,24 +203,21 @@ Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.
 Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
-Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh952799.patch
-Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315476-2.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
-Patch83:	alternate_trim.patch
-Patch84:	large-page-huge-page.patch
-Patch85:	ldconfig-format-new.patch
-Patch86:	madvise-bss.patch
-Patch87:	malloc-assert-3.patch
-#Patch89:	use_madv_free.patch
-Patch92:	ldconfig-Os.patch
-Patch93:	math-2.27.patch
-Patch94:	exp2.patch
-#Patch95:	mathlto.patch
-Patch96:	malloc-relaxed.patch
-#Patch97:	0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
-Patch98:	0002-x86-64-Add-sinf-with-FMA.patch
+# FIXME may want to re-enable 83, 87 when and if Clear Linux ports them
+#Patch83:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/alternate_trim.patch
+Patch84:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
+
+Patch85:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
+Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/madvise-bss.patch
+#Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc-assert-3.patch
+#Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
+Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+Patch94:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/exp2.patch
+#Patch95:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
+#Patch97:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
 
 #
 # Patches from upstream
@@ -243,7 +234,7 @@ Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
 %if %{mdvver} > 3000000
-Patch108:	glibc-2.26-float128-clang-6.0.patch
+#Patch108:	glibc-2.26-float128-clang-6.0.patch
 %else
 Patch99:	glibc-2.25.90-Float128-clang.patch
 %endif
@@ -252,7 +243,7 @@ Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch113:	eglibc-mandriva-biarch-utils.patch
-Patch114:	eglibc-mandriva-multiarch.patch
+Patch115:	glibc-2.26-no-attribute-leaf-for-clang.patch
 Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
@@ -268,12 +259,11 @@ Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1162810
-Patch130:	glibc-dso_deps.patch
 # http://thread.gmane.org/gmane.linux.kernel/1790211
 #Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 Patch132:	glibc-2.25-fix-warnings.patch
 Patch133:	glibc-2.25-force-use-ld-bfd.patch
+Patch134:	glibc-2.27-clang-_Float.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
 
@@ -285,6 +275,7 @@ BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
+BuildRequires:  bison
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -361,8 +352,15 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %if "%{name}" == "glibc"
-%post -p %{_sbindir}/glibc_post_upgrade
+%post -p <lua>
+os.execute("/usr/sbin/glibc_post_upgrade")
 %endif
+
+%triggerposttransin -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+os.execute("/sbin/ldconfig -X")
+
+%triggerposttransun -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
+os.execute("/sbin/ldconfig -X")
 
 %if %{with locales}
 %package -n locales
@@ -370,7 +368,13 @@ Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
 Obsoletes:	locales < 6:2.19-13
-Requires(post,preun):	bash grep sed coreutils glibc rpm
+Requires(post,preun):	/bin/sh
+Requires(post,preun):	grep
+Requires(post,preun):	sed
+Requires(post,preun):	coreutils
+Requires(post,preun):	util-linux
+Requires(post,preun):	glibc
+Requires(post,preun):	rpm
 
 %description -n locales
 These are the base files for language localization.
@@ -383,6 +387,8 @@ LANG variable to their preferred language in their
 %{python:from localepkg import pkg}
 
 # Locale specifc packages
+# To look up a language name from a newly appearing code,
+# Try http://scriptsource.org/cms/scripts/page.php?item_id=language_detail&key=XXX (where XXX is the new code without country suffix)
 %{python:pkg("Afar", "aa", ["aa_DJ", "aa_ER", "aa_ET"])}
 %{python:pkg("Afrikaans", "af", ["af_ZA"])}
 %{python:pkg("Aguaruna", "agr", ["agr_PE"])}
@@ -399,6 +405,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Berber", "ber", ["ber_DZ", "ber_MA"])}
 %{python:pkg("Bulgarian", "bg", ["bg_BG"])}
 %{python:pkg("Bhili", "bhb", ["bhb_IN"])}
+%{python:pkg("Bhojpuri", "bho", ["bho_NP"])}
 %{python:pkg("Bislama", "bi", ["bi_VU"])}
 %{python:pkg("Bengali", "bn", ["bn_BD", "bn_IN"])}
 %{python:pkg("Tibetan", "bo", ["bo_CN", "bo_IN"])}
@@ -417,7 +424,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Dhivehi", "dv", ["dv_MV"])}
 %{python:pkg("Dzongkha", "dz", ["dz_BT"])}
 %{python:pkg("Greek", "el", ["r:gr", "el_CY", "el_GR"])}
-%{python:pkg("English", "en", ["C", "en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IL", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
+%{python:pkg("English", "en", ["C", "en_AG", "en_AU", "en_BW", "en_CA", "en_DK", "en_GB", "en_HK", "en_IE", "en_IL", "en_IN", "en_NG", "en_NZ", "en_PH", "en_SC", "en_SG", "en_US", "en_ZA", "en_ZM", "en_ZW"])}
 %{python:pkg("Esperanto", "eo", ["eo", "eo_XX"])}
 # Potentially unhandled: es@tradicional?, an = Aragonese
 %{python:pkg("Spanish", "es", ["an_ES", "es_AR", "es_BO", "es_CL", "es_CO", "es_CR", "es_CU", "es_DO", "es_EC", "es_ES", "es_GT", "es_HN", "es_MX", "es_NI", "es_PA", "es_PE", "es_PR", "es_PY", "es_SV", "es_US", "es_UY", "es_VE"])}
@@ -454,6 +461,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Inuktitut", "iu", ["iu_CA"])}
 %{python:pkg("Japanese", "ja", ["ja", "ja_JP"])}
 %{python:pkg("Georgian", "ka", ["ka_GE"])}
+%{python:pkg("Kabyle", "kab", ["kab_DZ"])}
 %{python:pkg("Kazakh", "kk", ["kk_KZ"])}
 %{python:pkg("Greenlandic", "kl", ["kl_GL"])}
 %{python:pkg("Khmer", "km", ["km_KH"])}
@@ -474,9 +482,12 @@ LANG variable to their preferred language in their
 %{python:pkg("Latvian", "lv", ["lv_LV"])}
 %{python:pkg("Magahi", "mag", ["mag_IN"])}
 %{python:pkg("Maithili", "mai", ["mai_IN", "mai_NP"])}
+%{python:pkg("Mauritian Creole", "mfe", ["mfe_MU"])}
 %{python:pkg("Malagasy", "mg", ["mg_MG"])}
 %{python:pkg("Mari", "mhr", ["mhr_RU"])}
 %{python:pkg("Maori", "mi", ["mi_NZ"])}
+%{python:pkg("Miskito", "miq", ["miq_NI"])}
+%{python:pkg("Karbi", "mjw", ["mjw_IN"])}
 %{python:pkg("Macedonian", "mk", ["mk_MK"])}
 %{python:pkg("Malayalam", "ml", ["ml_IN"])}
 %{python:pkg("Mongolian", "mn", ["mn_MN"])}
@@ -512,6 +523,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Sindhi", "sd", ["sd_IN"])}
 %{python:pkg("Saami", "se", ["se_NO"])}
 %{python:pkg("Samogitian", "sgs", ["sgs_LT"])}
+%{python:pkg("Shan", "shn", ["shn_MM"])}
 %{python:pkg("Secwepemctsin", "shs", ["shs_CA"])}
 %{python:pkg("Sinhala", "si", ["si_LK"])}
 %{python:pkg("Slovak", "sk", ["sk_SK"])}
@@ -554,6 +566,7 @@ LANG variable to their preferred language in their
 %{python:pkg("Yiddish", "yi", ["yi_US"])}
 %{python:pkg("Yoruba", "yo", ["yo_NG"])}
 %{python:pkg("Yue Chinese (Cantonese)", "yue", ["yue_HK"])}
+%{python:pkg("Yau", "yuw", ["yuw_PG"])}
 %{python:pkg("Chinese", "zh", ["zh_CN", "zh_HK", "zh_SG", "zh_TW", "cmn_TW", "hak_TW", "lzh_TW", "nan_TW"])}
 %{python:pkg("Zulu", "zu", ["zu_ZA"])}
 
@@ -644,7 +657,6 @@ LANG variable to their preferred language in their
 %ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
-%{_var}/lib/rpm/filetriggers/ldconfig.*
 %{_var}/db/Makefile
 %else
 %if %isarch mips mipsel
@@ -671,14 +683,12 @@ LANG variable to their preferred language in their
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
-Requires(post):	%{name}
-Requires(post):	bash
-Requires(post):	readline
+Requires:	%{name} = %{EVRD}
 
-%post -n %{multilibc}
-%{_sbindir}/iconvconfig %{_libdir32}/gconv -o %{_libdir32}/gconv/gconv-modules.cache
+%triggerposttransin -p <lua> -- /usr/lib/gconv/*.so
+os.execute("/usr/sbin/iconvconfig /usr/lib/gconv -o /usr/lib/gconv/gconv-modules.cache")
 
-%description -n	%{multilibc}
+%description -n %{multilibc}
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
 memory, as well as to make upgrading easier, common system code is
@@ -821,7 +831,6 @@ library.
 %{_libdir}/libm.a
 # Versioned libm.a seems to be generated only on x86_64
 %optional %{_libdir}/libm-%{version}.a
-%{_libdir}/libnsl.a
 %{_libdir}/libpthread.a
 %{_libdir}/libresolv.a
 %{_libdir}/librt.a
@@ -833,7 +842,6 @@ library.
 %{_libdir32}/libcrypt.a
 %{_libdir32}/libdl.a
 %{_libdir32}/libm.a
-%{_libdir32}/libnsl.a
 %{_libdir32}/libpthread.a
 %{_libdir32}/libresolv.a
 %{_libdir32}/librt.a
@@ -845,7 +853,6 @@ library.
 %{_libdirn32}/libcrypt.a
 %{_libdirn32}/libdl.a
 %{_libdirn32}/libm.a
-%{_libdirn32}/libnsl.a
 %{_libdirn32}/libpthread.a
 %{_libdirn32}/libresolv.a
 %{_libdirn32}/librt.a
@@ -856,7 +863,7 @@ library.
 ########################################################################
 %if %{with nscd}
 #-----------------------------------------------------------------------
-%package -n	nscd
+%package -n nscd
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
@@ -866,7 +873,7 @@ Requires(preun):rpm-helper
 Requires(post):	rpm-helper
 Requires(postun):rpm-helper
 
-%description -n	nscd
+%description -n nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
@@ -877,7 +884,7 @@ performance with NIS+, and may help with DNS as well.
 nscd -i passwd -i group || :
 %systemd_post nscd.socket nscd.service
 
-%files -n 	nscd
+%files -n nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
 %dir %attr(0755,root,root) /run/nscd
 %dir %attr(0755,root,root) %{_var}/db/nscd
@@ -984,10 +991,6 @@ chmod 0644 crypt_blowfish-%{crypt_bf_ver}/*.[chS]
 cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %apply_patches
-
-# (tpg) not needed with new FMA patches
-rm sysdeps/x86_64/fpu/s_sinf.S
-rm sysdeps/x86_64/fpu/s_cosf.S
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
@@ -1431,25 +1434,17 @@ install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man
 # needed to get a ldd which understands o32, n32, 64
 install -m755 build-%{_target_cpu}-linux/elf/ldd %{buildroot}%{_bindir}/ldd
 %endif
-echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
-chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
-mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
 # ldconfig cache
 mkdir -p %{buildroot}%{_var}/cache/ldconfig
-touch %{buildroot}%{_var}/cache/ldconfig/aux-cache
+truncate -s 0 %{buildroot}%{_var}/cache/ldconfig/aux-cache
+# Note: This has to happen before creating /etc/ld.so.conf.
+# ldconfig is statically linked, so we can use the new version.
+%{buildroot}/sbin/ldconfig -N -r %{buildroot}
 
-# automatic ldconfig cache update on rpm installs/removals
-# (see http://wiki.mandriva.com/en/Rpm_filetriggers)
-install -d %{buildroot}%{_var}/lib/rpm/filetriggers
-cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.filter << EOF
-^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-EOF
-cat > %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script << EOF
-#!/bin/sh
-ldconfig -X
-EOF
-chmod 755 %{buildroot}%{_var}/lib/rpm/filetriggers/ldconfig.script
+echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
+chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
+mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
 # gconv-modules.cache
 touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
@@ -1504,11 +1499,11 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
 	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
     popd
-install -m 644 COPYING COPYING.LIB README NEWS INSTALL BUGS		\
-    CONFORMANCE hesiod/README.hesiod					\
-    ChangeLog* crypt/README.ufc-crypt nis/nss posix/gai.conf		\
+install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
+    hesiod/README.hesiod						\
+    ChangeLog crypt/README.ufc-crypt nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
-xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog*
+xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
 install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
@@ -1579,6 +1574,7 @@ done
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
 # archive.
 SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
+
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
