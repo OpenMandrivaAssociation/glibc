@@ -216,8 +216,6 @@ Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/madvise-
 #Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 Patch94:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/exp2.patch
-#Patch95:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
-#Patch97:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
 
 #
 # Patches from upstream
@@ -233,11 +231,6 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-%if %{mdvver} > 3000000
-#Patch108:	glibc-2.26-float128-clang-6.0.patch
-%else
-Patch99:	glibc-2.25.90-Float128-clang.patch
-%endif
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -275,7 +268,7 @@ BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
-BuildRequires:  bison
+BuildRequires:	bison
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -323,16 +316,13 @@ Conflicts:	kernel < %{enablekernel}
 %define _filter_GLIBC_PRIVATE 1
 
 %if !%{build_cross}
-
-Obsoletes:	ld.so
-Provides:	ld.so
+%rename		ld.so
 %ifarch %{mips} %{mipsel}
 Provides:	ld.so.1
 %endif
-
 %rename		ldconfig
-%define		nssfilesmajor   2
-%define		libnssfiles     %mklibname nss_files %{nssfilesmajor}
+%define		nssfilesmajor 2
+%define		libnssfiles %mklibname nss_files %{nssfilesmajor}
 %rename		%{libnssfiles}
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
