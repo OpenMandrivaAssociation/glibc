@@ -43,6 +43,15 @@
  /* Add a typedef for older GCC compilers which don't natively support
     _Complex _Float128.  */
  typedef _Complex float __cfloat128 __attribute__ ((__mode__ (__TC__)));
+@@ -82,7 +82,7 @@
+ # if __HAVE_FLOAT128
+
+ /* The type _Float128 exists only since GCC 7.0.  */
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || (defined __clang__ && __clang_major__ < 6)
+ typedef __float128 _Float128;
+ #  endif
+
 --- glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h.omv~	2018-02-07 23:36:43.126763941 +0000
 +++ glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h	2018-02-07 23:37:32.208855464 +0000
 @@ -26,7 +26,11 @@
