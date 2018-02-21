@@ -136,7 +136,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -206,16 +206,14 @@ Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
-# FIXME may want to re-enable 83, 87 when and if Clear Linux ports them
-#Patch83:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/alternate_trim.patch
-Patch84:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
-
-Patch85:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
-Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/madvise-bss.patch
-#Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc-assert-3.patch
-#Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
-Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
-Patch94:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/exp2.patch
+Patch83:	https://github.com/clearlinux-pkgs/glibc/blob/master/alternate_trim.patch
+Patch84:	https://github.com/clearlinux-pkgs/glibc/blob/master/madvise-bss.patch
+Patch85:	https://github.com/clearlinux-pkgs/glibc/blob/master/spinaphore.patch
+Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
+Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
+Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
+Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
+Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 
 #
 # Patches from upstream
@@ -231,6 +229,11 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
+%if %{mdvver} > 3000000
+#Patch108:	glibc-2.26-float128-clang-6.0.patch
+%else
+#Patch99:	glibc-2.25.90-Float128-clang.patch
+%endif
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
