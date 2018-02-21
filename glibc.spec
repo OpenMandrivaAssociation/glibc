@@ -271,7 +271,7 @@ BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
-BuildRequires:  bison
+BuildRequires:	bison
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -319,16 +319,13 @@ Conflicts:	kernel < %{enablekernel}
 %define _filter_GLIBC_PRIVATE 1
 
 %if !%{build_cross}
-
-Obsoletes:	ld.so
-Provides:	ld.so
+%rename		ld.so
 %ifarch %{mips} %{mipsel}
 Provides:	ld.so.1
 %endif
-
 %rename		ldconfig
-%define		nssfilesmajor   2
-%define		libnssfiles     %mklibname nss_files %{nssfilesmajor}
+%define		nssfilesmajor 2
+%define		libnssfiles %mklibname nss_files %{nssfilesmajor}
 %rename		%{libnssfiles}
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
