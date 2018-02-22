@@ -1039,6 +1039,8 @@ function BuildGlibc() {
 %endif
 %ifarch %{ix86}
 	BuildFlags="-march=i686 -mtune=generic"
+	BuildAltArch="yes"
+	BuildCompFlags="-m32"	
 %endif
       ;;
     x86_64)
