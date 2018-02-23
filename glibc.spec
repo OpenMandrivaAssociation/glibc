@@ -229,11 +229,6 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-%if %{mdvver} > 3000000
-#Patch108:	glibc-2.26-float128-clang-6.0.patch
-%else
-#Patch99:	glibc-2.25.90-Float128-clang.patch
-%endif
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -1023,24 +1018,22 @@ export PATH=$PWD/bin:$PATH
 function BuildGlibc() {
   arch="$1"
   shift 1
+  
+# (tpg) workaround to fix glibc segfaults on i586
+  [ "${arch}" = 'i586' ] && arch="i686"
 
   # Select optimization flags and compiler to use
   BuildAltArch="no"
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="`rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##'`"
+  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##')"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
 	BuildFlags="-march=pentium4 -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
-%endif
-%ifarch %{ix86}
-	BuildFlags="-march=i686 -mtune=generic"
-	BuildAltArch="yes"
-	BuildCompFlags="-m32"	
 %endif
       ;;
     x86_64)
