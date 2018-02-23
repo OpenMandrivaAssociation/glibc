@@ -59,7 +59,13 @@
 %define _includedir	%{_prefix}/include
 %else
 %global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
+# (tpg) workaround to fix glibc segfaults on i586
+%ifarch %{i586}
+%global	target_cpu	i686
+%else
 %global	target_cpu	%{_target_cpu}
+%endif
+
 %global	target_platform	%{_target_platform}
 %global	target_arch	%{_arch}
 %define cross_prefix	%{nil}
@@ -1018,9 +1024,6 @@ export PATH=$PWD/bin:$PATH
 function BuildGlibc() {
   arch="$1"
   shift 1
-  
-# (tpg) workaround to fix glibc segfaults on i586
-  [ "${arch}" = 'i586' ] && arch="i686"
 
   # Select optimization flags and compiler to use
   BuildAltArch="no"
