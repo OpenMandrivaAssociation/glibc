@@ -24,7 +24,7 @@
 
 %define _disable_rebuild_configure 1
 %define _disable_lto 1
-%define	_disable_ld_no_undefined	1
+%define	_disable_ld_no_undefined 1
 
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
@@ -59,7 +59,13 @@
 %define _includedir	%{_prefix}/include
 %else
 %global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
+# (tpg) workaround to fix glibc segfaults on i586
+%ifarch %{i586}
+%global	target_cpu	i686
+%else
 %global	target_cpu	%{_target_cpu}
+%endif
+
 %global	target_platform	%{_target_platform}
 %global	target_arch	%{_arch}
 %define cross_prefix	%{nil}
@@ -136,7 +142,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -229,11 +235,6 @@ Patch104:	eglibc-mandriva-nsswitch.conf.patch
 Patch105:	eglibc-mandriva-xterm-xvt.patch
 Patch106:	eglibc-mandriva-nscd-enable.patch
 Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-%if %{mdvver} > 3000000
-#Patch108:	glibc-2.26-float128-clang-6.0.patch
-%else
-#Patch99:	glibc-2.25.90-Float128-clang.patch
-%endif
 Patch109:	eglibc-mandriva-nscd-init-should-start.patch
 Patch110:	eglibc-mandriva-timezone.patch
 Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
@@ -347,13 +348,13 @@ Linux system will not function.
 %if "%{name}" == "glibc"
 %post -p <lua>
 os.execute("/usr/sbin/glibc_post_upgrade")
+
+%triggerposttransin -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+os.execute("/sbin/ldconfig -X")
+
+%triggerposttransun -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+os.execute("/sbin/ldconfig -X")
 %endif
-
-%triggerposttransin -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-os.execute("/sbin/ldconfig -X")
-
-%triggerposttransun -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-os.execute("/sbin/ldconfig -X")
 
 %if %{with locales}
 %package -n locales
@@ -1029,16 +1030,13 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="`rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##'`"
+  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##')"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
 	BuildFlags="-march=pentium4 -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
-%endif
-%ifarch %{ix86}
-	BuildFlags="-march=i686 -mtune=generic"
 %endif
       ;;
     x86_64)
