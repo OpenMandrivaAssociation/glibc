@@ -24,7 +24,7 @@
 
 %define _disable_rebuild_configure 1
 %define _disable_lto 1
-%define	_disable_ld_no_undefined	1
+%define	_disable_ld_no_undefined 1
 
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
@@ -136,7 +136,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -347,13 +347,13 @@ Linux system will not function.
 %if "%{name}" == "glibc"
 %post -p <lua>
 os.execute("/usr/sbin/glibc_post_upgrade")
+
+%triggerposttransin -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+os.execute("/sbin/ldconfig -X")
+
+%triggerposttransun -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+os.execute("/sbin/ldconfig -X")
 %endif
-
-%triggerposttransin -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-os.execute("/sbin/ldconfig -X")
-
-%triggerposttransun -p <lua> -- ^.((/lib|/usr/lib)(64)?/[^/]*\.so\.|/etc/ld.so.conf.d/[^/]*\.conf)
-os.execute("/sbin/ldconfig -X")
 
 %if %{with locales}
 %package -n locales
