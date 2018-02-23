@@ -31,6 +31,10 @@
 %define	build_cross		0
 %{expand: %{?cross:		%%global build_cross 1}}
 
+%ifarch i586
+%define _arch i686
+%endif
+
 %if %{build_cross}
 %define	_srcrpmfilename	%{oname}-%{fullver}-%{release}.src.rpm
 %define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
@@ -598,7 +602,6 @@ LANG variable to their preferred language in their
 %{_slibdir}/ld-%{fullver}.so
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
-%{_slibdir}/i686
 %endif
 %if %isarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
@@ -1038,7 +1041,7 @@ function BuildGlibc() {
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="-march=i686 -mtune=generic"
+	BuildFlags="-march=i686 -fasynchronous-unwind-tables -fomit-frame-pointer -mmmx -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"	
 %endif
@@ -1097,7 +1100,7 @@ function BuildGlibc() {
   BuildFlags="$BuildFlags -fno-lto"
   %endif
 
-  if [ "$arch" = "i686" ]; then
+  if [ "$arch" = "i586" -o "$arch" = "i686" ]; then
     # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
     BuildCC="$BuildCC -fomit-frame-pointer"
     BuildCXX="$BuildCXX -fomit-frame-pointer"
