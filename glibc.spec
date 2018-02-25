@@ -1213,7 +1213,7 @@ function BuildGlibc() {
   echo "$BuildJobs -d build-$arch-linux $check_flags" >> %{checklist}
 
   case $arch in
-  i686)		base_arch=i586;;
+  i[56]86)	base_arch=i686;;
   *)		base_arch=none;;
   esac
 
