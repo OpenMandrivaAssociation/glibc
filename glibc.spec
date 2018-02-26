@@ -31,11 +31,6 @@
 %define	build_cross		0
 %{expand: %{?cross:		%%global build_cross 1}}
 
-%ifarch i586
-%define _arch i686
-%define _target_platform i686-pc-linux-gnu
-%endif
-
 %if %{build_cross}
 %define	_srcrpmfilename	%{oname}-%{fullver}-%{release}.src.rpm
 %define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
@@ -64,12 +59,7 @@
 %define _includedir	%{_prefix}/include
 %else
 %global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
-# (tpg) workaround to fix glibc segfaults on i586
-%ifarch %{i586}
-%global	target_cpu	i686
-%else
 %global	target_cpu	%{_target_cpu}
-%endif
 
 %global	target_platform	%{_target_platform}
 %global	target_arch	%{_arch}
@@ -1251,9 +1241,10 @@ BuildGlibc %{target_cpu}
     # Build i686 libraries if not already building for i686
     case %{target_cpu} in
     i686)
+	BuildGlibc i686
 	;;
     i[3-5]86)
-	BuildGlibc i686
+	BuildGlibc i586
 	;;
     esac
 %endif
