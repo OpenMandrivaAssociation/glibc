@@ -1030,9 +1030,7 @@ function BuildGlibc() {
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="-march=i686 -fasynchronous-unwind-tables -fomit-frame-pointer -mmmx -mtune=generic"
-	BuildAltArch="yes"
-	BuildCompFlags="-m32"	
+	BuildFlags="-march=i686 -sse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
 %endif
       ;;
     x86_64)
@@ -1260,6 +1258,7 @@ gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{ta
 #-----------------------------------------------------------------------
 
 %if !%{build_cross}
+%ifnarch %{i686}
 %check
 # ...
 export PATH=$PWD/bin:$PATH
@@ -1269,6 +1268,7 @@ export TIMEOUTFACTOR=16
 while read arglist; do
     sh %{SOURCE5} $arglist || exit 1
 done < %{checklist}
+%endif
 %endif
 
 #-----------------------------------------------------------------------
