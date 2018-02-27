@@ -161,7 +161,7 @@ Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glib
 
 Source100:	%{oname}.rpmlintrc
 
-Source1000:	localepkg.py
+Source1000:	localepkg.sh
 Source1001:	locale_install.sh
 Source1002:	locale_uninstall.sh
 Source1003:	locales.sysconfig
@@ -375,186 +375,186 @@ LANG variable to their preferred language in their
 # Locale specifc packages
 # To look up a language name from a newly appearing code,
 # Try http://scriptsource.org/cms/scripts/page.php?item_id=language_detail&key=XXX (where XXX is the new code without country suffix)
-%(python %{S:1000} "Afar" "aa" "aa_DJ" "aa_ER" "aa_ET")
-%(python %{S:1000} "Afrikaans" "af" "af_ZA")
-%(python %{S:1000} "Aguaruna" "agr" "agr_PE")
-%(python %{S:1000} "Amharic" "am" "am_ET" "byn_ER" "gez_ER" "gez_ET" "om_ET" "om_KE" "sid_ET" "ti_ER" "ti_ET" "tig_ER" "wal_ET")
-%(python %{S:1000} "Akan" "ak" "ak_GH")
-%(python %{S:1000} "Angika" "anp" "anp_IN")
-%(python %{S:1000} "Arabic" "ar" "ar_AE" "ar_BH" "ar_DZ" "ar_EG" "ar_IN" "ar_IQ" "ar_JO" "ar_KW" "ar_LB" "ar_LY" "ar_MA" "ar_OM" "ar_QA" "ar_SA" "ar_SD" "ar_SS" "ar_SY" "ar_TN" "ar_YE")
-%(python %{S:1000} "Assamese" "as" "as_IN")
-%(python %{S:1000} "Asturian" "ast" "ast_ES")
-%(python %{S:1000} "Aymara" "ayc" "ayc_PE")
-%(python %{S:1000} "Azeri" "az" "az_AZ" "az_IR")
-%(python %{S:1000} "Belarusian" "be" "be_BY")
-%(python %{S:1000} "Bemba" "bem" "bem_ZM")
-%(python %{S:1000} "Berber" "ber" "ber_DZ" "ber_MA")
-%(python %{S:1000} "Bulgarian" "bg" "bg_BG")
-%(python %{S:1000} "Bhili" "bhb" "bhb_IN")
-%(python %{S:1000} "Bhojpuri" "bho" "bho_NP")
-%(python %{S:1000} "Bislama" "bi" "bi_VU")
-%(python %{S:1000} "Bengali" "bn" "bn_BD" "bn_IN")
-%(python %{S:1000} "Tibetan" "bo" "bo_CN" "bo_IN")
-%(python %{S:1000} "Breton" "br" "br_FR")
-%(python %{S:1000} "Bosnian" "bs" "bs_BA")
-%(python %{S:1000} "Catalan" "ca" "ca_AD" "ca_ES" "ca_FR" "ca_IT")
-%(python %{S:1000} "Chechen" "ce" "ce_RU")
-%(python %{S:1000} "Cherokee" "chr" "chr_US")
-%(python %{S:1000} "Crimean Tatar" "crh" "crh_UA")
-%(python %{S:1000} "Czech" "cs" "cs_CZ")
-%(python %{S:1000} "Chuvash" "cv" "cv_RU")
-%(python %{S:1000} "Welsh" "cy" "cy_GB")
-%(python %{S:1000} "Danish" "da" "da_DK")
-%(python %{S:1000} "German" "de" "de_AT" "de_BE" "de_CH" "de_DE" "de_LU" "de_IT" "de_LI")
-%(python %{S:1000} "Dogri" "doi" "doi_IN")
-%(python %{S:1000} "Dhivehi" "dv" "dv_MV")
-%(python %{S:1000} "Dzongkha" "dz" "dz_BT")
-%(python %{S:1000} "Greek" "el" "r:gr" "el_CY" "el_GR")
-%(python %{S:1000} "English" "en" "C" "en_AG" "en_AU" "en_BW" "en_CA" "en_DK" "en_GB" "en_HK" "en_IE" "en_IL" "en_IN" "en_NG" "en_NZ" "en_PH" "en_SC" "en_SG" "en_US" "en_ZA" "en_ZM" "en_ZW")
-%(python %{S:1000} "Esperanto" "eo" "eo" "eo_XX")
+%{expand:%(sh %{S:1000} "Afar" "aa" "aa_DJ" "aa_ER" "aa_ET")}
+%{expand:%(sh %{S:1000} "Afrikaans" "af" "af_ZA")}
+%{expand:%(sh %{S:1000} "Aguaruna" "agr" "agr_PE")}
+%{expand:%(sh %{S:1000} "Amharic" "am" "am_ET" "byn_ER" "gez_ER" "gez_ET" "om_ET" "om_KE" "sid_ET" "ti_ER" "ti_ET" "tig_ER" "wal_ET")}
+%{expand:%(sh %{S:1000} "Akan" "ak" "ak_GH")}
+%{expand:%(sh %{S:1000} "Angika" "anp" "anp_IN")}
+%{expand:%(sh %{S:1000} "Arabic" "ar" "ar_AE" "ar_BH" "ar_DZ" "ar_EG" "ar_IN" "ar_IQ" "ar_JO" "ar_KW" "ar_LB" "ar_LY" "ar_MA" "ar_OM" "ar_QA" "ar_SA" "ar_SD" "ar_SS" "ar_SY" "ar_TN" "ar_YE")}
+%{expand:%(sh %{S:1000} "Assamese" "as" "as_IN")}
+%{expand:%(sh %{S:1000} "Asturian" "ast" "ast_ES")}
+%{expand:%(sh %{S:1000} "Aymara" "ayc" "ayc_PE")}
+%{expand:%(sh %{S:1000} "Azeri" "az" "az_AZ" "az_IR")}
+%{expand:%(sh %{S:1000} "Belarusian" "be" "be_BY")}
+%{expand:%(sh %{S:1000} "Bemba" "bem" "bem_ZM")}
+%{expand:%(sh %{S:1000} "Berber" "ber" "ber_DZ" "ber_MA")}
+%{expand:%(sh %{S:1000} "Bulgarian" "bg" "bg_BG")}
+%{expand:%(sh %{S:1000} "Bhili" "bhb" "bhb_IN")}
+%{expand:%(sh %{S:1000} "Bhojpuri" "bho" "bho_NP")}
+%{expand:%(sh %{S:1000} "Bislama" "bi" "bi_VU")}
+%{expand:%(sh %{S:1000} "Bengali" "bn" "bn_BD" "bn_IN")}
+%{expand:%(sh %{S:1000} "Tibetan" "bo" "bo_CN" "bo_IN")}
+%{expand:%(sh %{S:1000} "Breton" "br" "br_FR")}
+%{expand:%(sh %{S:1000} "Bosnian" "bs" "bs_BA")}
+%{expand:%(sh %{S:1000} "Catalan" "ca" "ca_AD" "ca_ES" "ca_FR" "ca_IT")}
+%{expand:%(sh %{S:1000} "Chechen" "ce" "ce_RU")}
+%{expand:%(sh %{S:1000} "Cherokee" "chr" "chr_US")}
+%{expand:%(sh %{S:1000} "Crimean Tatar" "crh" "crh_UA")}
+%{expand:%(sh %{S:1000} "Czech" "cs" "cs_CZ")}
+%{expand:%(sh %{S:1000} "Chuvash" "cv" "cv_RU")}
+%{expand:%(sh %{S:1000} "Welsh" "cy" "cy_GB")}
+%{expand:%(sh %{S:1000} "Danish" "da" "da_DK")}
+%{expand:%(sh %{S:1000} "German" "de" "de_AT" "de_BE" "de_CH" "de_DE" "de_LU" "de_IT" "de_LI")}
+%{expand:%(sh %{S:1000} "Dogri" "doi" "doi_IN")}
+%{expand:%(sh %{S:1000} "Dhivehi" "dv" "dv_MV")}
+%{expand:%(sh %{S:1000} "Dzongkha" "dz" "dz_BT")}
+%{expand:%(sh %{S:1000} "Greek" "el" "r:gr" "el_CY" "el_GR")}
+%{expand:%(sh %{S:1000} "English" "en" "C" "en_AG" "en_AU" "en_BW" "en_CA" "en_DK" "en_GB" "en_HK" "en_IE" "en_IL" "en_IN" "en_NG" "en_NZ" "en_PH" "en_SC" "en_SG" "en_US" "en_ZA" "en_ZM" "en_ZW")}
+%{expand:%(sh %{S:1000} "Esperanto" "eo" "eo" "eo_XX")}
 # Potentially unhandled: es@tradicional? an = Aragonese
-%(python %{S:1000} "Spanish" "es" "an_ES" "es_AR" "es_BO" "es_CL" "es_CO" "es_CR" "es_CU" "es_DO" "es_EC" "es_ES" "es_GT" "es_HN" "es_MX" "es_NI" "es_PA" "es_PE" "es_PR" "es_PY" "es_SV" "es_US" "es_UY" "es_VE")
-%(python %{S:1000} "Estonian" "et" "et_EE")
-%(python %{S:1000} "Basque" "eu" "eu_ES")
-%(python %{S:1000} "Farsi" "fa" "fa_IR")
-%(python %{S:1000} "Finnish" "fi" "fi_FI")
-%(python %{S:1000} "Fulah" "ff" "ff_SN")
-%(python %{S:1000} "Faroese" "fo" "fo_FO")
-%(python %{S:1000} "French" "fr" "fr_BE" "fr_CA" "fr_CH" "fr_FR" "fr_LU")
-%(python %{S:1000} "Friulan" "fur" "fur_IT")
-%(python %{S:1000} "Frisian" "fy" "fy_DE" "fy_NL")
-%(python %{S:1000} "Irish" "ga" "ga_IE")
-%(python %{S:1000} "Scottish Gaelic" "gd" "gd_GB")
-%(python %{S:1000} "Galician" "gl" "gl_ES")
-%(python %{S:1000} "Gujarati" "gu" "gu_IN")
-%(python %{S:1000} "Manx Gaelic" "gv" "gv_GB")
-%(python %{S:1000} "Hausa" "ha" "ha_NG")
-%(python %{S:1000} "Hebrew" "he" "he_IL" "iw_IL")
-%(python %{S:1000} "Hindi" "hi" "bho_IN" "brx_IN" "hi_IN" "ur_IN")
-%(python %{S:1000} "Fiji Hindi" "hif" "hif_FJ")
-%(python %{S:1000} "Chhattisgarhi" "hne" "hne_IN")
-%(python %{S:1000} "Croatian" "hr" "hr_HR")
-%(python %{S:1000} "Upper Sorbian" "hsb" "hsb_DE")
-%(python %{S:1000} "Breyol" "ht" "ht_HT")
-%(python %{S:1000} "Hungarian" "hu" "hu_HU")
-%(python %{S:1000} "Armenian" "hy" "hy_AM")
-%(python %{S:1000} "Interlingua" "ia" "ia_FR")
-%(python %{S:1000} "Indonesian" "id" "id_ID")
-%(python %{S:1000} "Igbo" "ig" "ig_NG")
-%(python %{S:1000} "Inupiaq" "ik" "ik_CA")
-%(python %{S:1000} "Icelandic" "is" "is_IS")
-%(python %{S:1000} "Italian" "it" "it_CH" "it_IT")
-%(python %{S:1000} "Inuktitut" "iu" "iu_CA")
-%(python %{S:1000} "Japanese" "ja" "ja" "ja_JP")
-%(python %{S:1000} "Georgian" "ka" "ka_GE")
-%(python %{S:1000} "Kabyle" "kab" "kab_DZ")
-%(python %{S:1000} "Kazakh" "kk" "kk_KZ")
-%(python %{S:1000} "Greenlandic" "kl" "kl_GL")
-%(python %{S:1000} "Khmer" "km" "km_KH")
-%(python %{S:1000} "Kannada" "kn" "kn_IN")
-%(python %{S:1000} "Korean" "ko" "ko_KR")
-%(python %{S:1000} "Konkani" "kok" "kok_IN")
-%(python %{S:1000} "Kashmiri" "ks" "ks_IN")
-%(python %{S:1000} "Kurdish" "ku" "ku_TR")
-%(python %{S:1000} "Cornish" "kw" "kw_GB")
-%(python %{S:1000} "Kyrgyz" "ky" "ky_KG")
-%(python %{S:1000} "Luxembourgish" "lb" "lb_LU")
-%(python %{S:1000} "Luganda" "lg" "lg_UG")
-%(python %{S:1000} "Limburguish" "li" "li_BE" "li_NL")
-%(python %{S:1000} "Ligurian" "lij" "lij_IT")
-%(python %{S:1000} "Lingala" "ln" "ln_CD")
-%(python %{S:1000} "Laotian" "lo" "lo_LA")
-%(python %{S:1000} "Lithuanian" "lt" "lt_LT")
-%(python %{S:1000} "Latvian" "lv" "lv_LV")
-%(python %{S:1000} "Magahi" "mag" "mag_IN")
-%(python %{S:1000} "Maithili" "mai" "mai_IN" "mai_NP")
-%(python %{S:1000} "Mauritian Creole" "mfe" "mfe_MU")
-%(python %{S:1000} "Malagasy" "mg" "mg_MG")
-%(python %{S:1000} "Mari" "mhr" "mhr_RU")
-%(python %{S:1000} "Maori" "mi" "mi_NZ")
-%(python %{S:1000} "Miskito" "miq" "miq_NI")
-%(python %{S:1000} "Karbi" "mjw" "mjw_IN")
-%(python %{S:1000} "Macedonian" "mk" "mk_MK")
-%(python %{S:1000} "Malayalam" "ml" "ml_IN")
-%(python %{S:1000} "Mongolian" "mn" "mn_MN")
-%(python %{S:1000} "Manipuri" "mni" "mni_IN")
-%(python %{S:1000} "Marathi" "mr" "mr_IN")
-%(python %{S:1000} "Malay" "ms" "ms_MY")
-%(python %{S:1000} "Maltese" "mt" "mt_MT")
-%(python %{S:1000} "Burmese" "my" "my_MM")
-%(python %{S:1000} "Lower Saxon" "nds" "nds_DE" "nds_NL")
-%(python %{S:1000} "Nepali" "ne" "ne_NP")
-%(python %{S:1000} "Nahuatl" "nhn" "nhn_MX")
-%(python %{S:1000} "Niuean" "niu" "niu_NU" "niu_NZ")
-%(python %{S:1000} "Dutch" "nl" "nl_AW" "nl_BE" "nl_NL")
-%(python %{S:1000} "Norwegian" "no" "r:nb" "r:nn" "nb_NO" "nn_NO")
-%(python %{S:1000} "Ndebele" "nr" "nr_ZA")
-%(python %{S:1000} "Northern Sotho" "nso" "nso_ZA")
-%(python %{S:1000} "Occitan" "oc" "oc_FR")
-%(python %{S:1000} "Oriya" "or" "or_IN")
-%(python %{S:1000} "Ossetian" "os" "os_RU")
-%(python %{S:1000} "Punjabi" "pa" "pa_IN" "pa_PK")
-%(python %{S:1000} "Papiamento" "pap" "r:pp" "pap_AN" "pap_AW" "pap_CW")
-%(python %{S:1000} "Polish" "pl" "csb_PL" "pl_PL")
-%(python %{S:1000} "Pashto" "ps" "ps_AF")
-%(python %{S:1000} "Portuguese" "pt" "pt_BR" "pt_PT")
-%(python %{S:1000} "Quechua" "quz" "quz_PE")
-%(python %{S:1000} "Rajasthani" "raj" "raj_IN")
-%(python %{S:1000} "Romanian" "ro" "ro_RO")
-%(python %{S:1000} "Russian" "ru" "ru_RU" "ru_UA")
-%(python %{S:1000} "Kinyarwanda" "rw" "rw_RW")
-%(python %{S:1000} "Sanskrit" "sa" "sa_IN")
-%(python %{S:1000} "Santali" "sat" "sat_IN")
-%(python %{S:1000} "Sardinian" "sc" "sc_IT")
-%(python %{S:1000} "Sindhi" "sd" "sd_IN")
-%(python %{S:1000} "Saami" "se" "se_NO")
-%(python %{S:1000} "Samogitian" "sgs" "sgs_LT")
-%(python %{S:1000} "Shan" "shn" "shn_MM")
-%(python %{S:1000} "Secwepemctsin" "shs" "shs_CA")
-%(python %{S:1000} "Sinhala" "si" "si_LK")
-%(python %{S:1000} "Slovak" "sk" "sk_SK")
-%(python %{S:1000} "Slovenian" "sl" "sl_SI")
-%(python %{S:1000} "Samoan" "sm" "sm_WS")
-%(python %{S:1000} "Serbian" "sr" "sr_ME" "sr_RS")
-%(python %{S:1000} "Somali" "so" "so_DJ" "so_ET" "so_KE" "so_SO")
-%(python %{S:1000} "Albanian" "sq" "sq_AL" "sq_MK")
-%(python %{S:1000} "Swati" "ss" "ss_ZA")
-%(python %{S:1000} "Sotho" "st" "st_ZA")
-%(python %{S:1000} "Swedish" "sv" "sv_FI" "sv_SE")
+%{expand:%(sh %{S:1000} "Spanish" "es" "an_ES" "es_AR" "es_BO" "es_CL" "es_CO" "es_CR" "es_CU" "es_DO" "es_EC" "es_ES" "es_GT" "es_HN" "es_MX" "es_NI" "es_PA" "es_PE" "es_PR" "es_PY" "es_SV" "es_US" "es_UY" "es_VE")}
+%{expand:%(sh %{S:1000} "Estonian" "et" "et_EE")}
+%{expand:%(sh %{S:1000} "Basque" "eu" "eu_ES")}
+%{expand:%(sh %{S:1000} "Farsi" "fa" "fa_IR")}
+%{expand:%(sh %{S:1000} "Finnish" "fi" "fi_FI")}
+%{expand:%(sh %{S:1000} "Fulah" "ff" "ff_SN")}
+%{expand:%(sh %{S:1000} "Faroese" "fo" "fo_FO")}
+%{expand:%(sh %{S:1000} "French" "fr" "fr_BE" "fr_CA" "fr_CH" "fr_FR" "fr_LU")}
+%{expand:%(sh %{S:1000} "Friulan" "fur" "fur_IT")}
+%{expand:%(sh %{S:1000} "Frisian" "fy" "fy_DE" "fy_NL")}
+%{expand:%(sh %{S:1000} "Irish" "ga" "ga_IE")}
+%{expand:%(sh %{S:1000} "Scottish Gaelic" "gd" "gd_GB")}
+%{expand:%(sh %{S:1000} "Galician" "gl" "gl_ES")}
+%{expand:%(sh %{S:1000} "Gujarati" "gu" "gu_IN")}
+%{expand:%(sh %{S:1000} "Manx Gaelic" "gv" "gv_GB")}
+%{expand:%(sh %{S:1000} "Hausa" "ha" "ha_NG")}
+%{expand:%(sh %{S:1000} "Hebrew" "he" "he_IL" "iw_IL")}
+%{expand:%(sh %{S:1000} "Hindi" "hi" "bho_IN" "brx_IN" "hi_IN" "ur_IN")}
+%{expand:%(sh %{S:1000} "Fiji Hindi" "hif" "hif_FJ")}
+%{expand:%(sh %{S:1000} "Chhattisgarhi" "hne" "hne_IN")}
+%{expand:%(sh %{S:1000} "Croatian" "hr" "hr_HR")}
+%{expand:%(sh %{S:1000} "Upper Sorbian" "hsb" "hsb_DE")}
+%{expand:%(sh %{S:1000} "Breyol" "ht" "ht_HT")}
+%{expand:%(sh %{S:1000} "Hungarian" "hu" "hu_HU")}
+%{expand:%(sh %{S:1000} "Armenian" "hy" "hy_AM")}
+%{expand:%(sh %{S:1000} "Interlingua" "ia" "ia_FR")}
+%{expand:%(sh %{S:1000} "Indonesian" "id" "id_ID")}
+%{expand:%(sh %{S:1000} "Igbo" "ig" "ig_NG")}
+%{expand:%(sh %{S:1000} "Inupiaq" "ik" "ik_CA")}
+%{expand:%(sh %{S:1000} "Icelandic" "is" "is_IS")}
+%{expand:%(sh %{S:1000} "Italian" "it" "it_CH" "it_IT")}
+%{expand:%(sh %{S:1000} "Inuktitut" "iu" "iu_CA")}
+%{expand:%(sh %{S:1000} "Japanese" "ja" "ja" "ja_JP")}
+%{expand:%(sh %{S:1000} "Georgian" "ka" "ka_GE")}
+%{expand:%(sh %{S:1000} "Kabyle" "kab" "kab_DZ")}
+%{expand:%(sh %{S:1000} "Kazakh" "kk" "kk_KZ")}
+%{expand:%(sh %{S:1000} "Greenlandic" "kl" "kl_GL")}
+%{expand:%(sh %{S:1000} "Khmer" "km" "km_KH")}
+%{expand:%(sh %{S:1000} "Kannada" "kn" "kn_IN")}
+%{expand:%(sh %{S:1000} "Korean" "ko" "ko_KR")}
+%{expand:%(sh %{S:1000} "Konkani" "kok" "kok_IN")}
+%{expand:%(sh %{S:1000} "Kashmiri" "ks" "ks_IN")}
+%{expand:%(sh %{S:1000} "Kurdish" "ku" "ku_TR")}
+%{expand:%(sh %{S:1000} "Cornish" "kw" "kw_GB")}
+%{expand:%(sh %{S:1000} "Kyrgyz" "ky" "ky_KG")}
+%{expand:%(sh %{S:1000} "Luxembourgish" "lb" "lb_LU")}
+%{expand:%(sh %{S:1000} "Luganda" "lg" "lg_UG")}
+%{expand:%(sh %{S:1000} "Limburguish" "li" "li_BE" "li_NL")}
+%{expand:%(sh %{S:1000} "Ligurian" "lij" "lij_IT")}
+%{expand:%(sh %{S:1000} "Lingala" "ln" "ln_CD")}
+%{expand:%(sh %{S:1000} "Laotian" "lo" "lo_LA")}
+%{expand:%(sh %{S:1000} "Lithuanian" "lt" "lt_LT")}
+%{expand:%(sh %{S:1000} "Latvian" "lv" "lv_LV")}
+%{expand:%(sh %{S:1000} "Magahi" "mag" "mag_IN")}
+%{expand:%(sh %{S:1000} "Maithili" "mai" "mai_IN" "mai_NP")}
+%{expand:%(sh %{S:1000} "Mauritian Creole" "mfe" "mfe_MU")}
+%{expand:%(sh %{S:1000} "Malagasy" "mg" "mg_MG")}
+%{expand:%(sh %{S:1000} "Mari" "mhr" "mhr_RU")}
+%{expand:%(sh %{S:1000} "Maori" "mi" "mi_NZ")}
+%{expand:%(sh %{S:1000} "Miskito" "miq" "miq_NI")}
+%{expand:%(sh %{S:1000} "Karbi" "mjw" "mjw_IN")}
+%{expand:%(sh %{S:1000} "Macedonian" "mk" "mk_MK")}
+%{expand:%(sh %{S:1000} "Malayalam" "ml" "ml_IN")}
+%{expand:%(sh %{S:1000} "Mongolian" "mn" "mn_MN")}
+%{expand:%(sh %{S:1000} "Manipuri" "mni" "mni_IN")}
+%{expand:%(sh %{S:1000} "Marathi" "mr" "mr_IN")}
+%{expand:%(sh %{S:1000} "Malay" "ms" "ms_MY")}
+%{expand:%(sh %{S:1000} "Maltese" "mt" "mt_MT")}
+%{expand:%(sh %{S:1000} "Burmese" "my" "my_MM")}
+%{expand:%(sh %{S:1000} "Lower Saxon" "nds" "nds_DE" "nds_NL")}
+%{expand:%(sh %{S:1000} "Nepali" "ne" "ne_NP")}
+%{expand:%(sh %{S:1000} "Nahuatl" "nhn" "nhn_MX")}
+%{expand:%(sh %{S:1000} "Niuean" "niu" "niu_NU" "niu_NZ")}
+%{expand:%(sh %{S:1000} "Dutch" "nl" "nl_AW" "nl_BE" "nl_NL")}
+%{expand:%(sh %{S:1000} "Norwegian" "no" "r:nb" "r:nn" "nb_NO" "nn_NO")}
+%{expand:%(sh %{S:1000} "Ndebele" "nr" "nr_ZA")}
+%{expand:%(sh %{S:1000} "Northern Sotho" "nso" "nso_ZA")}
+%{expand:%(sh %{S:1000} "Occitan" "oc" "oc_FR")}
+%{expand:%(sh %{S:1000} "Oriya" "or" "or_IN")}
+%{expand:%(sh %{S:1000} "Ossetian" "os" "os_RU")}
+%{expand:%(sh %{S:1000} "Punjabi" "pa" "pa_IN" "pa_PK")}
+%{expand:%(sh %{S:1000} "Papiamento" "pap" "r:pp" "pap_AN" "pap_AW" "pap_CW")}
+%{expand:%(sh %{S:1000} "Polish" "pl" "csb_PL" "pl_PL")}
+%{expand:%(sh %{S:1000} "Pashto" "ps" "ps_AF")}
+%{expand:%(sh %{S:1000} "Portuguese" "pt" "pt_BR" "pt_PT")}
+%{expand:%(sh %{S:1000} "Quechua" "quz" "quz_PE")}
+%{expand:%(sh %{S:1000} "Rajasthani" "raj" "raj_IN")}
+%{expand:%(sh %{S:1000} "Romanian" "ro" "ro_RO")}
+%{expand:%(sh %{S:1000} "Russian" "ru" "ru_RU" "ru_UA")}
+%{expand:%(sh %{S:1000} "Kinyarwanda" "rw" "rw_RW")}
+%{expand:%(sh %{S:1000} "Sanskrit" "sa" "sa_IN")}
+%{expand:%(sh %{S:1000} "Santali" "sat" "sat_IN")}
+%{expand:%(sh %{S:1000} "Sardinian" "sc" "sc_IT")}
+%{expand:%(sh %{S:1000} "Sindhi" "sd" "sd_IN")}
+%{expand:%(sh %{S:1000} "Saami" "se" "se_NO")}
+%{expand:%(sh %{S:1000} "Samogitian" "sgs" "sgs_LT")}
+%{expand:%(sh %{S:1000} "Shan" "shn" "shn_MM")}
+%{expand:%(sh %{S:1000} "Secwepemctsin" "shs" "shs_CA")}
+%{expand:%(sh %{S:1000} "Sinhala" "si" "si_LK")}
+%{expand:%(sh %{S:1000} "Slovak" "sk" "sk_SK")}
+%{expand:%(sh %{S:1000} "Slovenian" "sl" "sl_SI")}
+%{expand:%(sh %{S:1000} "Samoan" "sm" "sm_WS")}
+%{expand:%(sh %{S:1000} "Serbian" "sr" "sr_ME" "sr_RS")}
+%{expand:%(sh %{S:1000} "Somali" "so" "so_DJ" "so_ET" "so_KE" "so_SO")}
+%{expand:%(sh %{S:1000} "Albanian" "sq" "sq_AL" "sq_MK")}
+%{expand:%(sh %{S:1000} "Swati" "ss" "ss_ZA")}
+%{expand:%(sh %{S:1000} "Sotho" "st" "st_ZA")}
+%{expand:%(sh %{S:1000} "Swedish" "sv" "sv_FI" "sv_SE")}
 # sw_XX?
-%(python %{S:1000} "Swahili" "sw" "sw_KE" "sw_TZ")
-%(python %{S:1000} "Silesian" "szl" "szl_PL")
-%(python %{S:1000} "Tamil" "ta" "ta_IN" "ta_LK")
-%(python %{S:1000} "Telugu" "te" "te_IN")
-%(python %{S:1000} "Tajik" "tg" "tg_TJ")
-%(python %{S:1000} "Thai" "th" "th_TH")
-%(python %{S:1000} "Tharu/Tharuhati" "the" "the_NP")
-%(python %{S:1000} "Tok Pisin" "tpi" "tpi_PG")
-%(python %{S:1000} "Turkmen" "tk" "tk_TM")
-%(python %{S:1000} "Pilipino" "tl" "r:ph" "fil_PH" "tl_PH")
-%(python %{S:1000} "Tswana" "tn" "tn_ZA")
-%(python %{S:1000} "Tonga" "to" "to_TO")
-%(python %{S:1000} "Turkish" "tr" "tr_CY" "tr_TR")
-%(python %{S:1000} "Tsonga" "ts" "ts_ZA")
-%(python %{S:1000} "Tatar" "tt" "tt_RU")
-%(python %{S:1000} "Tulu" "tcy" "tcy_IN")
-%(python %{S:1000} "Uyghur" "ug" "ug_CN")
-%(python %{S:1000} "Unami" "unm" "unm_US")
-%(python %{S:1000} "Ukrainian" "uk" "uk_UA")
-%(python %{S:1000} "Urdu" "ur" "ur_PK")
-%(python %{S:1000} "Uzbek" "uz" "uz_UZ")
-%(python %{S:1000} "Venda" "ve" "ve_ZA")
-%(python %{S:1000} "Vietnamese" "vi" "vi_VN")
-%(python %{S:1000} "Walloon" "wa" "wa_BE")
-%(python %{S:1000} "Walser" "wae" "wae_CH")
-%(python %{S:1000} "Wolof" "wo" "wo_SN")
-%(python %{S:1000} "Xhosa" "xh" "xh_ZA")
-%(python %{S:1000} "Yiddish" "yi" "yi_US")
-%(python %{S:1000} "Yoruba" "yo" "yo_NG")
-%(python %{S:1000} "Yue Chinese (Cantonese)" "yue" "yue_HK")
-%(python %{S:1000} "Yau" "yuw" "yuw_PG")
-%(python %{S:1000} "Chinese" "zh" "zh_CN" "zh_HK" "zh_SG" "zh_TW" "cmn_TW" "hak_TW" "lzh_TW" "nan_TW")
-%(python %{S:1000} "Zulu" "zu" "zu_ZA")
+%{expand:%(sh %{S:1000} "Swahili" "sw" "sw_KE" "sw_TZ")}
+%{expand:%(sh %{S:1000} "Silesian" "szl" "szl_PL")}
+%{expand:%(sh %{S:1000} "Tamil" "ta" "ta_IN" "ta_LK")}
+%{expand:%(sh %{S:1000} "Telugu" "te" "te_IN")}
+%{expand:%(sh %{S:1000} "Tajik" "tg" "tg_TJ")}
+%{expand:%(sh %{S:1000} "Thai" "th" "th_TH")}
+%{expand:%(sh %{S:1000} "Tharu/Tharuhati" "the" "the_NP")}
+%{expand:%(sh %{S:1000} "Tok Pisin" "tpi" "tpi_PG")}
+%{expand:%(sh %{S:1000} "Turkmen" "tk" "tk_TM")}
+%{expand:%(sh %{S:1000} "Pilipino" "tl" "r:ph" "fil_PH" "tl_PH")}
+%{expand:%(sh %{S:1000} "Tswana" "tn" "tn_ZA")}
+%{expand:%(sh %{S:1000} "Tonga" "to" "to_TO")}
+%{expand:%(sh %{S:1000} "Turkish" "tr" "tr_CY" "tr_TR")}
+%{expand:%(sh %{S:1000} "Tsonga" "ts" "ts_ZA")}
+%{expand:%(sh %{S:1000} "Tatar" "tt" "tt_RU")}
+%{expand:%(sh %{S:1000} "Tulu" "tcy" "tcy_IN")}
+%{expand:%(sh %{S:1000} "Uyghur" "ug" "ug_CN")}
+%{expand:%(sh %{S:1000} "Unami" "unm" "unm_US")}
+%{expand:%(sh %{S:1000} "Ukrainian" "uk" "uk_UA")}
+%{expand:%(sh %{S:1000} "Urdu" "ur" "ur_PK")}
+%{expand:%(sh %{S:1000} "Uzbek" "uz" "uz_UZ")}
+%{expand:%(sh %{S:1000} "Venda" "ve" "ve_ZA")}
+%{expand:%(sh %{S:1000} "Vietnamese" "vi" "vi_VN")}
+%{expand:%(sh %{S:1000} "Walloon" "wa" "wa_BE")}
+%{expand:%(sh %{S:1000} "Walser" "wae" "wae_CH")}
+%{expand:%(sh %{S:1000} "Wolof" "wo" "wo_SN")}
+%{expand:%(sh %{S:1000} "Xhosa" "xh" "xh_ZA")}
+%{expand:%(sh %{S:1000} "Yiddish" "yi" "yi_US")}
+%{expand:%(sh %{S:1000} "Yoruba" "yo" "yo_NG")}
+%{expand:%(sh %{S:1000} "Yue Chinese (Cantonese)" "yue" "yue_HK")}
+%{expand:%(sh %{S:1000} "Yau" "yuw" "yuw_PG")}
+%{expand:%(sh %{S:1000} "Chinese" "zh" "zh_CN" "zh_HK" "zh_SG" "zh_TW" "cmn_TW" "hak_TW" "lzh_TW" "nan_TW")}
+%{expand:%(sh %{S:1000} "Zulu" "zu" "zu_ZA")}
 
 %endif
 
@@ -1030,7 +1030,7 @@ function BuildGlibc() {
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="-march=i686 -sse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
+	BuildFlags="-march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
 %endif
       ;;
     x86_64)
