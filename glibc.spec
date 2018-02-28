@@ -1258,7 +1258,7 @@ gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{ta
 #-----------------------------------------------------------------------
 
 %if !%{build_cross}
-%ifnarch %{target_cpu}
+%if "%{target_cpu}" != "i686"
 %check
 # ...
 export PATH=$PWD/bin:$PATH
