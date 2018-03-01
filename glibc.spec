@@ -1370,6 +1370,9 @@ function InstallGlibc() {
 %if %isarch %{ix86}
 case %{target_cpu} in
 i[3-5]86)
+  InstallGlibc build-i586-linux i686
+  ;;
+i686)
   InstallGlibc build-i686-linux i686
   ;;
 esac
