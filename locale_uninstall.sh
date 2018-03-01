@@ -3,7 +3,7 @@
 # this script is to be called when a locale is removed from the sistem;
 # so translations in the language(s) of the locale are no longer installed
 
-if [ "$1" == "ENCODINGS" ]; then
+if [ "$1" = 'ENCODINGS' ]; then
 	# remove encoding files used by locales
 	ENCODINGS="CP1251 ISO-8859-1 ISO-8859-13 ISO-8859-14 ISO-8859-15 \
 		ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 ISO-8859-7 \
