@@ -1158,7 +1158,7 @@ function BuildGlibc() {
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error -O3" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
