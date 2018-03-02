@@ -1366,10 +1366,10 @@ function InstallGlibc() {
 }
 
 # Install arch-specific optimized libraries
-%if %isarch %{ix86}
+%if %isarch %{i586}
 case %{target_cpu} in
 i[3-5]86)
-  InstallGlibc build-i586-linux i686
+  InstallGlibc build-i686-linux i686
   ;;
 esac
 %endif
