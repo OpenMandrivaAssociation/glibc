@@ -26,6 +26,9 @@
 %define _disable_lto 1
 %define	_disable_ld_no_undefined 1
 
+# (tpg) optimize it a bit
+%global optflags %{optflags} -O3
+
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
 %define	build_cross		0
@@ -137,7 +140,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	6
+Release:	7
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1082,7 +1085,7 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
+  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags}"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
