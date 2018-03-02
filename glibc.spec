@@ -1236,10 +1236,9 @@ BuildGlibc %{target_cpu}
     # Build i686 libraries if not already building for i686
     case %{target_cpu} in
     i686)
-	BuildGlibc i686
 	;;
     i[3-5]86)
-	BuildGlibc i586
+	BuildGlibc i686
 	;;
     esac
 %endif
@@ -1371,9 +1370,6 @@ function InstallGlibc() {
 case %{target_cpu} in
 i[3-5]86)
   InstallGlibc build-i586-linux i686
-  ;;
-i686)
-  InstallGlibc build-i686-linux i686
   ;;
 esac
 %endif
