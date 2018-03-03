@@ -1029,31 +1029,31 @@ function BuildGlibc() {
   case $arch in
     i[3-6]86)
 %ifarch x86_64
-	BuildFlags="-march=pentium4 -mtune=generic"
+	BuildFlags="$BuildFlags -march=pentium4 -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="-march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
+	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
 %endif
       ;;
     x86_64)
-      BuildFlags="-mtune=generic"
+      BuildFlags="$BuildFlags -mtune=generic"
       ;;
     mips|mipsel)
       BuildCompFlags="$BuildFlags"
       ;;
     mips32|mips32el)
-      BuildFlags="-march=mips3 -mabi=n32"
-      BuildCompFlags="-march=mips3 -mabi=n32"
+      BuildFlags="$BuildFlags -march=mips3 -mabi=n32"
+      BuildCompFlags="$BuildFlags -march=mips3 -mabi=n32"
       ;;
     mips64|mips64el)
-      BuildFlags="-march=mips3 -mabi=64"
-      BuildCompFlags="-march=mips3 -mabi=64"
+      BuildFlags="$BuildFlags -march=mips3 -mabi=64"
+      BuildCompFlags="$BuildFlags -march=mips3 -mabi=64"
       ;;
     armv5t*)
-      BuildFlags="-march=armv5t"
-      BuildCompFlags="-march=armv5t"
+      BuildFlags="$BuildFlags -march=armv5t"
+      BuildCompFlags="$BuildFlags -march=armv5t"
       ;;
     # to check
     armv7*)
