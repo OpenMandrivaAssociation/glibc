@@ -26,6 +26,9 @@
 %define _disable_lto 1
 %define	_disable_ld_no_undefined 1
 
+# (tpg) optimize it a bit
+%global optflags %{optflags} -O3
+
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
 %define	build_cross		0
@@ -137,7 +140,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	6
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -214,7 +217,8 @@ Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-pa
 Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
 Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
-Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+# (tpg) CLR disabled this patch
+#Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 
 #
 # Patches from upstream
@@ -258,7 +262,6 @@ Patch133:	glibc-2.25-force-use-ld-bfd.patch
 Patch134:	glibc-2.27-clang-_Float.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
-
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils
 BuildRequires:	%{cross_prefix}gcc
@@ -1021,35 +1024,35 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##')"
+  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
-	BuildFlags="-march=pentium4 -mtune=generic"
+	BuildFlags="$BuildFlags -march=pentium4 -mtune=generic"
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="-march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
+	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
 %endif
       ;;
     x86_64)
-      BuildFlags="-mtune=generic"
+      BuildFlags="$BuildFlags -mtune=generic"
       ;;
     mips|mipsel)
       BuildCompFlags="$BuildFlags"
       ;;
     mips32|mips32el)
-      BuildFlags="-march=mips3 -mabi=n32"
-      BuildCompFlags="-march=mips3 -mabi=n32"
+      BuildFlags="$BuildFlags -march=mips3 -mabi=n32"
+      BuildCompFlags="$BuildFlags -march=mips3 -mabi=n32"
       ;;
     mips64|mips64el)
-      BuildFlags="-march=mips3 -mabi=64"
-      BuildCompFlags="-march=mips3 -mabi=64"
+      BuildFlags="$BuildFlags -march=mips3 -mabi=64"
+      BuildCompFlags="$BuildFlags -march=mips3 -mabi=64"
       ;;
     armv5t*)
-      BuildFlags="-march=armv5t"
-      BuildCompFlags="-march=armv5t"
+      BuildFlags="$BuildFlags -march=armv5t"
+      BuildCompFlags="$BuildFlags -march=armv5t"
       ;;
     # to check
     armv7*)
@@ -1082,7 +1085,8 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
+# (tpg) build with -O3
+  BuildFlags="$BuildFlags -DNDEBUG=1 %(echo %{__common_cflags_with_ssp} |sed -e 's#-O[s2]#-O3#g')"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
@@ -1152,7 +1156,7 @@ function BuildGlibc() {
   rm -f test.o
   # Force a separate object dir
   mkdir -p build-$arch-linux
-  pushd  build-$arch-linux
+  cd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
@@ -1184,8 +1188,10 @@ function BuildGlibc() {
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
-  make -r all subdir_stubs
-  popd
+
+  # FIXME use %%make if the Makefiles ever get fixed for parallel build
+  %make -j1 -d -r all subdir_stubs
+  cd -
 
   check_flags="-k"
 
@@ -1349,7 +1355,7 @@ function InstallGlibc() {
 
   [[ -z "$LibDir" ]] && LibDir="%{_slibdir}"
 
-  pushd $BuildDir
+  cd $BuildDir
   mkdir -p %{buildroot}$LibDir/$SubDir/
   install -m755 libc.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc-*.so`
   ln -sf `basename %{buildroot}$LibDir/libc-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc.so.*`
@@ -1361,7 +1367,7 @@ function InstallGlibc() {
   ln -sf `basename %{buildroot}$LibDir/libthread_db-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db.so.*`
   install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
   ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
-  popd
+  cd -
 
 }
 
@@ -1454,7 +1460,7 @@ if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
 fi
 
 # Strip debugging info from all static libraries
-pushd %{buildroot}%{_slibdir}
+cd %{buildroot}%{_slibdir}
 for i in *.a; do
   if [ -f "$i" ]; then
     case "$i" in
@@ -1463,7 +1469,7 @@ for i in *.a; do
     esac
   fi
 done
-popd
+cd -
 
 %if %{with i18ndata}
     install -m644 localedata/SUPPORTED %{buildroot}%{_datadir}/i18n/
@@ -1479,7 +1485,7 @@ rm -r %{buildroot}%{_includedir}/netatalk/
 
 # Documentation
 install -m 755 -d %{buildroot}%{_docdir}/glibc
-    pushd build-%{target_cpu}-linux
+    cd build-%{target_cpu}-linux
 %if %{with doc}
 	make html
 	cp -fpar manual/libc %{buildroot}%{_docdir}/glibc/html
@@ -1488,7 +1494,7 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
 	make pdf
 	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
-    popd
+    cd -
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
     hesiod/README.hesiod						\
     ChangeLog crypt/README.ufc-crypt nis/nss posix/gai.conf		\
@@ -1573,11 +1579,11 @@ install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 # Hardlink identical locales
 perl %{SOURCE1004} %{buildroot}%{_datadir}/locale
 # Symlink identical files
-pushd %{buildroot}%{_datadir}/locale
+cd %{buildroot}%{_datadir}/locale
 for i in ??_??* ???_??*; do
 	LC_ALL=C perl %{SOURCE1005} $i
 done
-popd
+cd -
 
 # Needed for/used by locale-archive
 mkdir -p %{buildroot}%{_prefix}/lib/locale
