@@ -24,7 +24,7 @@ EOF
 		isonames="$isonames $i"
 	fi
 done
-isonames="$(echo $isonames |cut -b1-)"
+isonames="$(echo $isonames)" # Get rid of leading whitespace
 
 cat <<EOF
 
