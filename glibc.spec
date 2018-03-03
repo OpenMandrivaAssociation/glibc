@@ -140,7 +140,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	8
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1025,7 +1025,7 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##')"
+  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##' -e 's#-Os#-O3#')"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
