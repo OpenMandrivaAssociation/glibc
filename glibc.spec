@@ -217,7 +217,8 @@ Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-pa
 Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
 Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
-Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+# (tpg) CLR disabled this patch
+#Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 
 #
 # Patches from upstream
@@ -1085,7 +1086,7 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
-  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags}"
+  BuildFlags="$BuildFlags -DNDEBUG=1 %{__common_cflags} -O3"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
@@ -1158,7 +1159,7 @@ function BuildGlibc() {
   pushd  build-$arch-linux
   [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error -O3" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
@@ -1187,7 +1188,8 @@ function BuildGlibc() {
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
-  make -r all subdir_stubs
+
+  %make -r all subdir_stubs
   popd
 
   check_flags="-k"
