@@ -1,5 +1,5 @@
---- glibc-2.27/bits/floatn-common.h.omv~	2018-02-03 00:59:35.295412323 +0100
-+++ glibc-2.27/bits/floatn-common.h	2018-02-03 01:00:21.691577990 +0100
+--- glibc-2.27/bits/floatn-common.h.0134~	2018-02-01 17:17:18.000000000 +0100
++++ glibc-2.27/bits/floatn-common.h	2018-03-03 02:32:16.924822310 +0100
 @@ -28,6 +28,7 @@
     where the same definitions, or definitions based only on the macros
     in bits/floatn.h, are appropriate for all glibc configurations.  */
@@ -16,8 +16,35 @@
  
  /* Defined to 1 if the corresponding __HAVE_<type> macro is 1 and the
     type is the first with its format in the sequence of (the default
---- glibc-2.27/sysdeps/x86/bits/floatn.h.omv~	2018-02-03 01:00:55.046697566 +0100
-+++ glibc-2.27/sysdeps/x86/bits/floatn.h	2018-02-03 01:01:56.562919050 +0100
+--- glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h.0134~	2018-02-01 17:17:18.000000000 +0100
++++ glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h	2018-03-03 02:32:16.924822310 +0100
+@@ -26,7 +26,11 @@
+    floating-point type with the IEEE 754 binary128 format, and this
+    glibc includes corresponding *f128 interfaces for it.  */
+ #ifndef __NO_LONG_DOUBLE_MATH
+-# define __HAVE_FLOAT128 1
++# if defined(__clang__)
++#  define __HAVE_FLOAT128 0
++# else
++#  define __HAVE_FLOAT128 1
++# endif
+ #else
+ /* glibc does not support _Float128 for platforms where long double is
+    normally binary128 when building with long double as binary64.
+--- glibc-2.27/sysdeps/x86/bits/floatn.h.0134~	2018-02-01 17:17:18.000000000 +0100
++++ glibc-2.27/sysdeps/x86/bits/floatn.h	2018-03-03 02:34:50.472771373 +0100
+@@ -26,9 +26,9 @@
+    glibc includes corresponding *f128 interfaces for it.  The required
+    libgcc support was added some time after the basic compiler
+    support, for x86_64 and x86.  */
+-#if (defined __x86_64__							\
++#if (!defined(__clang__) && (defined __x86_64__				\
+      ? __GNUC_PREREQ (4, 3)						\
+-     : (defined __GNU__ ? __GNUC_PREREQ (4, 5) : __GNUC_PREREQ (4, 4)))
++     : (defined __GNU__ ? __GNUC_PREREQ (4, 5) : __GNUC_PREREQ (4, 4))))
+ # define __HAVE_FLOAT128 1
+ #else
+ # define __HAVE_FLOAT128 0
 @@ -42,6 +42,7 @@
  # define __HAVE_DISTINCT_FLOAT128 0
  #endif
@@ -34,8 +61,8 @@
  
  #ifndef __ASSEMBLER__
  
-@@ -68,7 +68,7 @@
-
+@@ -68,7 +70,7 @@
+ 
  /* Defined to a complex binary128 type if __HAVE_FLOAT128 is 1.  */
  # if __HAVE_FLOAT128
 -#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
@@ -43,27 +70,12 @@
  /* Add a typedef for older GCC compilers which don't natively support
     _Complex _Float128.  */
  typedef _Complex float __cfloat128 __attribute__ ((__mode__ (__TC__)));
-@@ -82,7 +82,7 @@
+@@ -82,7 +84,7 @@ typedef _Complex float __cfloat128 __att
  # if __HAVE_FLOAT128
-
+ 
  /* The type _Float128 exists only since GCC 7.0.  */
 -#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
-+#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || (defined __clang__ && __clang_major__ < 6)
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
  typedef __float128 _Float128;
  #  endif
-
---- glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h.omv~	2018-02-07 23:36:43.126763941 +0000
-+++ glibc-2.27/sysdeps/ieee754/ldbl-128/bits/floatn.h	2018-02-07 23:37:32.208855464 +0000
-@@ -26,7 +26,11 @@
-    floating-point type with the IEEE 754 binary128 format, and this
-    glibc includes corresponding *f128 interfaces for it.  */
- #ifndef __NO_LONG_DOUBLE_MATH
--# define __HAVE_FLOAT128 1
-+# if defined(__clang__)
-+#  define __HAVE_FLOAT128 0
-+# else
-+#  define __HAVE_FLOAT128 1
-+# endif
- #else
- /* glibc does not support _Float128 for platforms where long double is
-    normally binary128 when building with long double as binary64.
+ 
