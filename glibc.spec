@@ -27,7 +27,7 @@
 %define	_disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
-%global optflags %{optflags} -O3
+%global optflags %(echo %{optflags} |sed -e 's,-Os,-O3,g')
 
 # Define "cross" to an architecture to which glibc is to be
 # cross-compiled
