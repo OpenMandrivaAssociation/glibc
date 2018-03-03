@@ -1190,7 +1190,7 @@ function BuildGlibc() {
     --with-bugurl=%{bugurl}
 
   # FIXME use %%make if the Makefiles ever get fixed for parallel build
-  %make -j1 -d -r all subdir_stubs
+  %make -j1 -r all subdir_stubs
   cd -
 
   check_flags="-k"
