@@ -1189,7 +1189,8 @@ function BuildGlibc() {
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
 
-  %make -r all subdir_stubs
+  # FIXME use %%make if the Makefiles ever get fixed for parallel build
+  make -r all subdir_stubs
   popd
 
   check_flags="-k"
