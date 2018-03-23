@@ -140,7 +140,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	9
+Release:	10
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -347,10 +347,10 @@ Linux system will not function.
 %post -p <lua>
 os.execute("/usr/sbin/glibc_post_upgrade")
 
-%triggerposttransin -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+%transfiletriggerin -p <lua> -- /lib/ /lib64/ /usr/lib/ /usr/lib64/ /etc/ld.so.conf.d/
 os.execute("/sbin/ldconfig -X")
 
-%triggerposttransun -p <lua> -- /lib/*.so* /lib64/*.so* /usr/lib/*.so* /usr/lib64/*.so* /etc/ld.so.conf.d/*.conf
+%transfiletriggerpostun -p <lua> -- /lib/ /lib64/ /usr/lib/ /usr/lib64/ /etc/ld.so.conf.d/
 os.execute("/sbin/ldconfig -X")
 %endif
 
@@ -673,7 +673,7 @@ Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
 Requires:	%{name} = %{EVRD}
 
-%triggerposttransin -p <lua> -- /usr/lib/gconv/*.so
+%transfiletriggerin -p <lua> -- /usr/lib/gconv/
 os.execute("/usr/sbin/iconvconfig /usr/lib/gconv -o /usr/lib/gconv/gconv-modules.cache")
 
 %description -n %{multilibc}
