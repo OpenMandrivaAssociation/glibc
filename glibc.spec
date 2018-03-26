@@ -1024,7 +1024,7 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
+  BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
   case $arch in
     i[3-6]86)
 %ifarch x86_64
@@ -1550,9 +1550,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
 %global	glibcver %(rpm -q --qf "%%{VERSION}" glibc)
-%if "%{shrink:%{python:rpm.evrCompare(rpm.expandMacro("%{ver}"),rpm.expandMacro("%{glibcver}"))}}" == "0"
 export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
-%endif
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
 # make default charset pseudo-locales
