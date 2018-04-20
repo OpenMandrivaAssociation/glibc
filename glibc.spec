@@ -1,3 +1,14 @@
+%bcond_without crosscompilers
+# FIXME add riscv32-linux when glibc starts supporting it
+%global targets aarch64-linux armv7hl-linux i686-linux x86_64-linux x32-linux riscv64-linux
+%global long_targets %(
+        for i in %{targets}; do
+                CPU=$(echo $i |cut -d- -f1)
+                OS=$(echo $i |cut -d- -f2)
+                echo -n "$(rpm --target=${CPU}-${OS} -E %%{_target_platform}) "
+        done
+)
+
 # crypt blowfish support
 %define crypt_bf_ver	1.3
 
@@ -29,38 +40,6 @@
 # (tpg) optimize it a bit
 %global optflags %{optflags} -O3
 
-# Define "cross" to an architecture to which glibc is to be
-# cross-compiled
-%define	build_cross		0
-%{expand: %{?cross:		%%global build_cross 1}}
-
-%if %{build_cross}
-%define	_srcrpmfilename	%{oname}-%{fullver}-%{release}.src.rpm
-%define	_build_pkgcheck_set /usr/bin/rpmlint -T -f %{SOURCE100}
-%define	_build_pkgcheck_srpm /usr/bin/rpmlint -T -f %{SOURCE100}
-%define target_cpu	%{cross}
-%define cross_prefix	cross-%{target_cpu}-
-%global	platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_vendor}-%%{_target_os}%%{?_gnu})
-%global	target_platform	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_target_platform})
-%global	target_arch	%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_arch})
-%global	_lib		%(rpm --macros %%{_usrlibrpm}/macros:%%{_usrlibrpm}/platform/%{target_cpu}-%{_target_os}/macros --target=%{target_cpu} -E %%{_lib})
-%define _prefix		/usr/%{target_platform}
-%define cross_program_prefix	%{target_platform}-
-%define _exec_prefix	%{_prefix}
-# brain damage alert: should not be needed imho
-# overriding _prefix and _exec_prefix should be enough
-%define _bindir		%{_exec_prefix}/bin
-%define _sbindir	%{_exec_prefix}/sbin
-%define _libexecdir	%{_exec_prefix}/libexec
-%define _datadir	%{_prefix}/share
-%define _sharedstatedir	%{_prefix}/com
-%define _localstatedir	%{_prefix}/var
-%define _libdir		%{_exec_prefix}/%{_lib}
-%define _slibdir	%{_exec_prefix}/%{_lib}
-%define _slibdir32	%{_exec_prefix}/lib
-%define _slibdirn32	%{_exec_prefix}/lib32
-%define _includedir	%{_prefix}/include
-%else
 %global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
 %global	target_cpu	%{_target_cpu}
 
@@ -70,7 +49,6 @@
 %define cross_program_prefix	%{nil}
 %define _slibdir	/%{_lib}
 %define _slibdir32	/lib
-%endif
 
 # Define target (base) architecture
 %define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
@@ -92,7 +70,6 @@
 %define build_biarch	1
 %endif
 
-%if !%{build_cross}
 %bcond_without	nscd
 %bcond_without	i18ndata
 %bcond_with	timezone
@@ -111,20 +88,6 @@
 %bcond_with	pdf
 # enable utils by default
 %bcond_without	utils
-
-%else
-# Disable a few defaults when cross-compiling a glibc
-
-%bcond_with	doc
-%bcond_with	pdf
-%bcond_with	nscd
-%bcond_with	timezone
-%bcond_with	i18ndata
-%bcond_with	locales
-%bcond_with	systap
-%bcond_with	utils
-%bcond_with	nsscrypt
-%endif
 
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
@@ -293,10 +256,6 @@ Requires(post):	filesystem
 %rename		%{name}-xen
 %endif
 # The dynamic linker supports DT_GNU_HASH
-%if %{build_cross}
-Autoreq:	false
-Autoprov:	false
-%else
 Provides:	rtld(GNU_HASH)
 Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish = %{crypt_bf_ver}
@@ -304,7 +263,6 @@ Provides:	should-restart = system
 Obsoletes:	glibc-profile
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
-%endif
 # Determine minimum kernel versions (rhbz#619538)
 %if %isarch armv7hl
 # currently using 3.0.35 kernel with wandboard
@@ -317,7 +275,6 @@ Conflicts:	kernel < %{enablekernel}
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
 %define _filter_GLIBC_PRIVATE 1
 
-%if !%{build_cross}
 %rename		ld.so
 %ifarch %{mips} %{mipsel}
 Provides:	ld.so.1
@@ -328,7 +285,6 @@ Provides:	ld.so.1
 %rename		%{libnssfiles}
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
-%endif
 
 %if %{build_biarch}
 Requires:	%{multilibc} = %{EVRD}
@@ -665,7 +621,7 @@ LANG variable to their preferred language in their
 %endif
 
 ########################################################################
-%if %{build_biarch} && !%{build_cross}
+%if %{build_biarch}
 #-----------------------------------------------------------------------
 %package -n	%{multilibc}
 Summary:	The GNU libc libraries
@@ -718,14 +674,9 @@ Requires:	%{name} = %{EVRD}
 %if %{build_biarch}
 Requires:	%{multilibc} = %{EVRD}
 %endif
-%if %{build_cross}
-Autoreq:	false
-Autoprov:	false
-%else
 Autoreq:	true
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
-%endif
 Requires:	%{?cross:cross-}kernel-headers
 %if %{with pdf}
 %rename		glibc-doc-pdf
@@ -970,6 +921,31 @@ These are configuration files that describe possible time zones.
 # with timezone
 %endif
 
+%if %{with crosscompilers}
+%global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-release-source-latest)
+%(
+for i in %{long_targets}; do
+	[ "$i" = "%{_target_platform}" ] && continue
+	package=cross-${i}-libc
+	cat <<EOF
+%package -n ${package}
+Summary: Libc for crosscompiling to ${i}
+Group: Development/Other
+BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-release-headers
+BuildRequires: kernel-release-source-latest
+Recommends: cross-${i}-binutils cross-${i}-gcc
+
+%description -n ${package}
+Libc for crosscompiling to ${i}
+
+%files -n ${package}
+%{_prefix}/${i}/include/*
+%{_prefix}/${i}/lib*/*
+EOF
+done
+)
+%endif
+
 %prep
 %setup -q -n %{source_dir} -a3 -a50
 # copy freesec source
@@ -1003,11 +979,9 @@ autoconf
 #-----------------------------------------------------------------------
 %build
 # ...
-%if !%{build_cross}
 mkdir -p bin
 ln -sf %{_bindir}/ld.bfd bin/ld
 export PATH=$PWD/bin:$PATH
-%endif
 
 # Prepare test matrix in the next function
 > %{checklist}
@@ -1136,13 +1110,8 @@ function BuildGlibc() {
   %endif
 
   LIB=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_lib})
-%if %{build_cross}
-    LIBDIR=%{_exec_prefix}/${LIB}
-    SLIBDIR=%{_exec_prefix}/${LIB}
-%else
   LIBDIR=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_libdir})
   SLIBDIR=/${LIB}
-%endif
 
   # Determine library name
   glibc_cv_cc_64bit_output=no
@@ -1215,6 +1184,46 @@ function BuildGlibc() {
   return 0
 }
 
+%if %{with crosscompilers}
+for i in %{targets}; do
+        CPU=$(echo $i |cut -d- -f1)
+        OS=$(echo $i |cut -d- -f2)
+        TRIPLET="$(rpm --target=${CPU}-${OS} -E %%{_target_platform})"
+	if [ "${TRIPLET}" = "%{_target_platform}" ]; then
+		echo "===== Skipping $i cross libc (native arch) ====="
+		continue
+	fi
+	echo "===== Building %{_target_platform} -> $i ($TRIPLET) cross libc ====="
+	KARCH=$(echo $TRIPLET |cut -d- -f1)
+	case $KARCH in
+	aarch64)
+		KARCH=arm64
+		;;
+	arm*)
+		KARCH=arm
+		;;
+	i.86)
+		KARCH=x86
+		;;
+	esac
+	mkdir -p obj-${TRIPLET}
+	cd obj-${TRIPLET}
+	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
+	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
+	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
+	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g')" \
+	CC="${TRIPLET}-gcc ${CFLAGS}" \
+	../configure \
+		--prefix=%{_prefix}/${TRIPLET} \
+		--host=${TRIPLET} \
+		--target=${TRIPLET} \
+    		--with-gnu-ld=${TRIPLET}-ld.bfd \
+		--with-headers=%{_prefix}/${TRIPLET}/include
+	%make
+	cd ..
+done
+%endif
+
 # Build main glibc
 BuildGlibc %{target_cpu}
 
@@ -1262,7 +1271,6 @@ gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{ta
 
 #-----------------------------------------------------------------------
 
-%if !%{build_cross}
 %if "%{target_cpu}" != "i686"
 %check
 # ...
@@ -1274,13 +1282,25 @@ while read arglist; do
     sh %{SOURCE5} $arglist || exit 1
 done < %{checklist}
 %endif
-%endif
 
 #-----------------------------------------------------------------------
 %install
 # ...
 %if !%isarch %{mipsx}
 export PATH=$PWD/bin:$PATH
+%endif
+
+%if %{with crosscompilers}
+for i in %{long_targets}; do
+	if [ "${i}" = "%{_target_platform}" ]; then
+		echo "===== Skipping $i cross libc (native arch)"
+		continue
+	fi
+	echo "===== Installing %{_target_platform} -> $i cross libc ====="
+	cd obj-${i}
+	%make_install
+	cd ..
+done
 %endif
 
 make install_root=%{buildroot} install -C build-%{target_cpu}-linux
@@ -1304,11 +1324,7 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
     for ALT_ARCH in $ALT_ARCHES; do
 	mkdir -p %{buildroot}/$ALT_ARCH
 	%make install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH \
-	%if %{build_cross}
-		install-headers install-lib
-	%else
 		install
-	%endif
 
 	# Dispatch */lib only
 	case "$ALT_ARCH" in
@@ -1325,15 +1341,10 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 		LIB=/lib
 		;;
 	esac
-	%if !%{build_cross}
-	    mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
-	    mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
-	    [ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
-	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
-	%else
-	    mv     %{buildroot}/$ALT_ARCH%{_prefix}/lib %{buildroot}/$LIB
-	    sed -e "s!%{_slibdir}!$LIB!g" -i %{buildroot}/$LIB/libc.so
-	%endif
+	mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
+	mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
+	[ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
+	mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
 
 	rm -rf %{buildroot}/$ALT_ARCH
 	# XXX Dispatch 32-bit stubs
