@@ -1300,6 +1300,8 @@ for i in %{long_targets}; do
 	cd obj-${i}
 	%make_install
 	cd ..
+	# We don't need all the bits and pieces with a crosscompiler
+	rm -rf %{buildroot}%{_prefix}/$i/bin %{buildroot}%{_prefix}/$i/sbin %{buildroot}%{_prefix}/$i/var %{buildroot}%{_prefix}/$i/share %{buildroot}%{_prefix}/$i/etc
 done
 %endif
 
