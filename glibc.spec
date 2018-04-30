@@ -170,6 +170,8 @@ Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.
 Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
+Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1452750-allocate_once.patch
+Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1452750-libidn2.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
@@ -243,6 +245,7 @@ BuildRequires:	patch
 BuildRequires:	perl
 BuildRequires:	cap-devel
 BuildRequires:	bison
+BuildRequires:	pkgconfig(libidn2)
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
