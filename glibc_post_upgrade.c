@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <elf.h>
 
+#define LD_SO_CONF "/etc/ld.so.conf"
+#define ICONVCONFIG "/usr/sbin/iconvconfig"
+
 #define verbose_exec(failcode, path...) \
   do							\
     {							\
@@ -23,39 +26,6 @@ __attribute__((noinline)) void says (const char *str);
 __attribute__((noinline)) void sayn (long num);
 __attribute__((noinline)) void message (char *const path[]);
 __attribute__((noinline)) int check_elf (const char *name);
-
-#ifdef __i386__
-static int
-is_ia64 (void)
-{
-  unsigned int fl1, fl2;
-
-  /* See if we can use cpuid.  */
-  __asm__ ("pushfl; pushfl; popl %0; movl %0,%1; xorl %2,%0;"
-	   "pushl %0; popfl; pushfl; popl %0; popfl"
-	   : "=&r" (fl1), "=&r" (fl2)
-	   : "i" (0x00200000));
-  if (((fl1 ^ fl2) & 0x00200000) == 0)
-    return 0;
-
-  /* Host supports cpuid.  See if cpuid gives capabilities, try
-     CPUID(0).  Preserve %ebx and %ecx; cpuid insn clobbers these, we
-     don't need their CPUID values here, and %ebx may be the PIC
-     register.  */
-  __asm__ ("pushl %%ecx; pushl %%ebx; cpuid; popl %%ebx; popl %%ecx"
-	   : "=a" (fl1) : "0" (0) : "edx", "cc");
-  if (fl1 == 0)
-    return 0;
-
-  /* Invoke CPUID(1), return %edx; caller can examine bits to
-     determine what's supported.  */
-  __asm__ ("pushl %%ecx; pushl %%ebx; cpuid; popl %%ebx; popl %%ecx"
-	   : "=d" (fl2), "=a" (fl1) : "1" (1) : "cc");
-  return (fl2 & (1 << 30)) != 0;
-}
-#else
-#define is_ia64() 0
-#endif
 
 int
 main (void)
@@ -73,14 +43,23 @@ main (void)
   int i, j, fd;
   off_t base;
   ssize_t ret;
-#ifdef __i386__
-  const char *remove_dirs[] = { "/lib/tls", "/lib/i686", "/lib/tls/i486", "/lib/tls/i586", "/lib/tls/i686" };
-#else
-#ifndef LIBTLS
-#define LIBTLS "/lib/tls"
+
+  /* In order to support in-place upgrades, we must immediately remove
+     obsolete platform directories after installing a new glibc
+     version.  RPM only deletes files removed by updates near the end
+     of the transaction.  If we did not remove the obsolete platform
+     directories here, they would be preferred by the dynamic linker
+     during the execution of subsequent RPM scriptlets, likely
+     resulting in process startup failures.  */
+  const char *remove_dirs[] =
+    {
+#if defined (__i386__)
+      "/lib/i686",
+      "/lib/i686/nosegneg",
+#elif defined (__powerpc64__) && _CALL_ELF != 2
+      "/lib64/power6",
 #endif
-  const char *remove_dirs[] = { LIBTLS };
-#endif
+    };
   for (j = 0; j < sizeof (remove_dirs) / sizeof (remove_dirs[0]); ++j)
     {
       size_t rmlen = strlen (remove_dirs[j]);
@@ -150,19 +129,11 @@ main (void)
 
   if (! utimes (GCONV_MODULES_DIR "/gconv-modules.cache", NULL))
     {
-#ifndef ICONVCONFIG
-#define ICONVCONFIG "/usr/sbin/iconvconfig"
-#endif
-	  char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
-	  char *iconv_dir = GCONV_MODULES_DIR;
-      if (is_ia64 ())
-	{
-	  iconv_cache = "/emul/ia32-linux"GCONV_MODULES_DIR"/gconv-modules.cache";
-	  iconv_dir = "/emul/ia32-linux"GCONV_MODULES_DIR;
-	}
-      verbose_exec (113, ICONVCONFIG, "/usr/sbin/iconvconfig",
-		    "-o", iconv_cache,
-		    "--nostdlib", iconv_dir);
+    char *iconv_cache = GCONV_MODULES_DIR"/gconv-modules.cache";
+    char *iconv_dir = GCONV_MODULES_DIR;
+    verbose_exec (113, ICONVCONFIG, "/usr/sbin/iconvconfig",
+	    "-o", iconv_cache,
+	    "--nostdlib", iconv_dir);
     }
 
   /* Check if systemctl is available for further systemd deamon restart*/
@@ -314,8 +285,6 @@ check_elf (const char *name)
 	      ret = ehdr.e_machine == EM_386;
 #elif defined __x86_64__
 	      ret = ehdr.e_machine == EM_X86_64;
-#elif defined __ia64__
-	      ret = ehdr.e_machine == EM_IA_64;
 #elif defined __powerpc64__
 	      ret = ehdr.e_machine == EM_PPC64;
 #elif defined __powerpc__
