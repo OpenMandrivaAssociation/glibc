@@ -182,6 +182,14 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+# https://sourceware.org/ml/libc-alpha/2018-03/msg00504.html
+Patch91:	0001-sin-cos-slow-paths-avoid-slow-paths-for-small-inputs.patch
+Patch92:	0002-sin-cos-slow-paths-remove-large-range-reduction.patch
+Patch93:	0003-sin-cos-slow-paths-remove-slow-paths-from-small-rang.patch
+Patch94:	0004-sin-cos-slow-paths-remove-slow-paths-from-huge-range.patch
+Patch95:	0005-sin-cos-slow-paths-remove-unused-slowpath-functions.patch
+Patch96:	0006-sin-cos-slow-paths-refactor-duplicated-code-into-dos.patch
+Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
 
 #
 # Patches from upstream
@@ -225,6 +233,7 @@ Patch133:	glibc-2.25-force-use-ld-bfd.patch
 Patch134:	glibc-2.27-clang-_Float.patch
 # Crypt-blowfish patches
 Patch200:	crypt_blowfish-arm.patch
+
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils
 BuildRequires:	%{cross_prefix}gcc
@@ -623,7 +632,7 @@ LANG variable to their preferred language in their
 ########################################################################
 %if %{build_biarch}
 #-----------------------------------------------------------------------
-%package -n	%{multilibc}
+%package -n %{multilibc}
 Summary:	The GNU libc libraries
 Group:		System/Libraries
 Conflicts:	glibc < 6:2.14.90-13
@@ -667,7 +676,7 @@ Linux system will not function.
 %endif
 
 #-----------------------------------------------------------------------
-%package	devel
+%package devel
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Requires:	%{name} = %{EVRD}
@@ -682,7 +691,7 @@ Requires:	%{?cross:cross-}kernel-headers
 %rename		glibc-doc-pdf
 %endif
 
-%description	devel
+%description devel
 The glibc-devel package contains the header and object files necessary
 for developing programs which use the standard C libraries (which are
 used by nearly all programs).  If you are developing programs which
@@ -690,22 +699,22 @@ will use the standard C libraries, your system needs to have these
 standard header and object files available in order to create the
 executables.
 
-%package	doc
+%package doc
 Summary:	Docs for %{name}
 Group:		Development/C
 BuildArch:	noarch
 
-%description	doc
+%description doc
 The glibc-docs package contains docs for %{name}.
 
-%files		doc
+%files doc
 %doc %{_docdir}/glibc/*
 %exclude %{_docdir}/glibc/nss
 %exclude %{_docdir}/glibc/gai.conf
 %exclude %{_docdir}/glibc/COPYING
 %exclude %{_docdir}/glibc/COPYING.LIB
 
-%files		devel
+%files devel
 %if "%{name}" == "glibc"
 %{_mandir}/man3/*
 %{_infodir}/libc.info*
@@ -750,18 +759,18 @@ The glibc-docs package contains docs for %{name}.
 %endif
 
 #-----------------------------------------------------------------------
-%package	static-devel
+%package static-devel
 Summary:	Static libraries for GNU C library
 Group:		Development/C
 Requires:	%{name}-devel = %{EVRD}
 
-%description	static-devel
+%description static-devel
 The glibc-static-devel package contains the static libraries necessary
 for developing programs which use the standard C libraries. Install
 glibc-static-devel if you need to statically link your program or
 library.
 
-%files		static-devel
+%files static-devel
 %{_libdir}/libBrokenLocale.a
 %{_libdir}/libanl.a
 %{_libdir}/libc.a
@@ -850,19 +859,19 @@ nscd -i passwd -i group || :
 ########################################################################
 %if %{with utils}
 #-----------------------------------------------------------------------
-%package	utils
+%package utils
 Summary:	Development utilities from GNU C library
 Group:		Development/Other
 Requires:	%{name} = %{EVRD}
 
-%description	utils
+%description utils
 The glibc-utils package contains memusage, a memory usage profiler,
 mtrace, a memory leak tracer and xtrace, a function call tracer which
 can be helpful during program debugging.
 
 If unsure if you need this, don't install this package.
 
-%files		utils
+%files utils
 %{_bindir}/memusage
 %{_bindir}/memusagestat
 %{_bindir}/mtrace
@@ -881,16 +890,16 @@ If unsure if you need this, don't install this package.
 ########################################################################
 %if %{with i18ndata}
 #-----------------------------------------------------------------------
-%package	i18ndata
+%package i18ndata
 Summary:	Database sources for 'locale'
 Group:		System/Libraries
 %rename		glibc-localedata
 
-%description	i18ndata
+%description i18ndata
 This package contains the data needed to build the locale data files
 to use the internationalization features of the GNU libc.
 
-%files		i18ndata
+%files i18ndata
 %dir %{_datadir}/i18n
 %dir %{_datadir}/i18n/charmaps
 %{_datadir}/i18n/charmaps/*
@@ -904,15 +913,15 @@ to use the internationalization features of the GNU libc.
 ########################################################################
 %if %{with timezone}
 #-----------------------------------------------------------------------
-%package -n	timezone
+%package -n timezone
 Summary:	Time zone descriptions
 Group:		System/Base
 Obsoletes:	zoneinfo
 
-%description -n	timezone
+%description -n timezone
 These are configuration files that describe possible time zones.
 
-%files -n	timezone
+%files -n timezone
 %{_sbindir}/zdump
 %{_sbindir}/zic
 %{_mandir}/man1/zdump.1*
