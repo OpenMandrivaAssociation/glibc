@@ -19482,20 +19482,6 @@ index 0da6dcbb596f7608..2be9122469bd91c8 100644
  
  @item
  Geoffrey Keating for the port to Linux on PowerPC
-diff --git a/nscd/gai.c b/nscd/gai.c
-index 576fd0045b4abf36..24bdfee1db3791e2 100644
---- a/nscd/gai.c
-+++ b/nscd/gai.c
-@@ -42,9 +42,6 @@
- /* Support code.  */
- #include <check_pf.c>
- #include <check_native.c>
--#ifdef HAVE_LIBIDN
--# include <libidn/idn-stub.c>
--#endif
- 
- /* Some variables normally defined in libc.  */
- service_user *__nss_hosts_database attribute_hidden;
 diff --git a/resolv/Makefile b/resolv/Makefile
 index 6e70ae9f6b4a29a9..ea395ac3eb4332e1 100644
 --- a/resolv/Makefile
@@ -20318,11 +20304,57 @@ index c5e00e516a8279f7..56dc7a9e0cbe92f3 100644
        FLAG (AI_NUMERICSERV);
  #undef FLAG
        int remaining = ai->ai_flags & ~flags_printed;
-diff --git a/sysdeps/posix/getaddrinfo.c b/sysdeps/posix/getaddrinfo.c
-index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
---- a/sysdeps/posix/getaddrinfo.c
-+++ b/sysdeps/posix/getaddrinfo.c
-@@ -85,9 +85,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+diff --git a/sysdeps/unix/inet/Subdirs b/sysdeps/unix/inet/Subdirs
+index 1223e43a37e3c904..0a02dd44476aac2e 100644
+--- a/sysdeps/unix/inet/Subdirs
++++ b/sysdeps/unix/inet/Subdirs
+@@ -6,4 +6,3 @@ nis
+ nscd
+ nss
+ streams
+-libidn
+diff --git a/sysdeps/unix/inet/configure b/sysdeps/unix/inet/configure
+deleted file mode 100644
+index fd0afad16d628b87..0000000000000000
+--- a/sysdeps/unix/inet/configure
++++ /dev/null
+@@ -1,9 +0,0 @@
+-# This file is generated from configure.ac by Autoconf.  DO NOT EDIT!
+-
+-if test "$shared" = yes; then :
+-
+-  # Get this defined in config.h for main source code to test.
+-  $as_echo "#define HAVE_LIBIDN 1" >>confdefs.h
+-
+-
+-fi
+diff --git a/sysdeps/unix/inet/configure.ac b/sysdeps/unix/inet/configure.ac
+deleted file mode 100644
+index e9b3443733c676f9..0000000000000000
+--- a/sysdeps/unix/inet/configure.ac
++++ /dev/null
+@@ -1,7 +0,0 @@
+-dnl glibc configure fragment for sysdeps/unix/inet.
+-GLIBC_PROVIDES dnl See aclocal.m4 in the top level source directory.
+-
+-AS_IF([test "$shared" = yes], [
+-  # Get this defined in config.h for main source code to test.
+-  AC_DEFINE([HAVE_LIBIDN])
+-])
+diff -Naur glibc-2.27/nscd/gai.c glibc-2.27.tpg/nscd/gai.c
+--- glibc-2.27/nscd/gai.c	2018-02-01 16:17:18.000000000 +0000
++++ glibc-2.27.tpg/nscd/gai.c	2018-04-30 21:40:27.569478393 +0000
+@@ -42,6 +42,3 @@
+ /* Support code.  */
+ #include <check_pf.c>
+ #include <check_native.c>
+-#ifdef HAVE_LIBIDN
+-# include <libidn/idn-stub.c>
+-#endif
+diff -Naur glibc-2.27/sysdeps/posix/getaddrinfo.c glibc-2.27.tpg/sysdeps/posix/getaddrinfo.c
+--- glibc-2.27/sysdeps/posix/getaddrinfo.c	2018-02-01 16:17:18.000000000 +0000
++++ glibc-2.27.tpg/sysdeps/posix/getaddrinfo.c	2018-04-30 21:47:30.843418966 +0000
+@@ -85,9 +85,9 @@
  #include <scratch_buffer.h>
  #include <inet/net-internal.h>
  
@@ -20333,9 +20365,9 @@ index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
 +   flags, now ignored.  */
 +#define DEPRECATED_AI_IDN 0x300
  
- #if IS_IN (libc)
- # define feof_unlocked(fp) __feof_unlocked (fp)
-@@ -478,35 +478,15 @@ gaih_inet (const char *name, const struct gaih_service *service,
+ struct gaih_service
+   {
+@@ -474,35 +474,15 @@
        at->scopeid = 0;
        at->next = NULL;
  
@@ -20377,7 +20409,7 @@ index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
  
        if (__inet_aton (name, (struct in_addr *) at->addr) != 0)
  	{
-@@ -1032,40 +1012,17 @@ gaih_inet (const char *name, const struct gaih_service *service,
+@@ -1028,40 +1008,17 @@
  		 the passed in string.  */
  	      canon = orig_name;
  
@@ -20389,7 +20421,7 @@ index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
 -		  idn_flags |= IDNA_ALLOW_UNASSIGNED;
 -		if (req->ai_flags & AI_IDN_USE_STD3_ASCII_RULES)
 -		  idn_flags |= IDNA_USE_STD3_ASCII_RULES;
- 
+-
  		char *out;
 -		int rc = __idna_to_unicode_lzlz (canon, &out, idn_flags);
 -		if (rc != IDNA_SUCCESS)
@@ -20416,12 +20448,12 @@ index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
 -#endif
  	      {
 -#ifdef HAVE_LIBIDN
--	      make_copy:
+ 	      make_copy:
 -#endif
  		if (canonbuf != NULL)
  		  /* We already allocated the string using malloc, but
  		     the buffer is now owned by canon.  */
-@@ -2226,10 +2183,7 @@ getaddrinfo (const char *name, const char *service,
+@@ -2222,10 +2179,7 @@
  
    if (hints->ai_flags
        & ~(AI_PASSIVE|AI_CANONNAME|AI_NUMERICHOST|AI_ADDRCONFIG|AI_V4MAPPED
@@ -20433,40 +20465,3 @@ index 740bdd1ed7e7e896..c0787b4288d66d0f 100644
  	  |AI_NUMERICSERV|AI_ALL))
      return EAI_BADFLAGS;
  
-diff --git a/sysdeps/unix/inet/Subdirs b/sysdeps/unix/inet/Subdirs
-index 1223e43a37e3c904..0a02dd44476aac2e 100644
---- a/sysdeps/unix/inet/Subdirs
-+++ b/sysdeps/unix/inet/Subdirs
-@@ -6,4 +6,3 @@ nis
- nscd
- nss
- streams
--libidn
-diff --git a/sysdeps/unix/inet/configure b/sysdeps/unix/inet/configure
-deleted file mode 100644
-index fd0afad16d628b87..0000000000000000
---- a/sysdeps/unix/inet/configure
-+++ /dev/null
-@@ -1,9 +0,0 @@
--# This file is generated from configure.ac by Autoconf.  DO NOT EDIT!
--
--if test "$shared" = yes; then :
--
--  # Get this defined in config.h for main source code to test.
--  $as_echo "#define HAVE_LIBIDN 1" >>confdefs.h
--
--
--fi
-diff --git a/sysdeps/unix/inet/configure.ac b/sysdeps/unix/inet/configure.ac
-deleted file mode 100644
-index e9b3443733c676f9..0000000000000000
---- a/sysdeps/unix/inet/configure.ac
-+++ /dev/null
-@@ -1,7 +0,0 @@
--dnl glibc configure fragment for sysdeps/unix/inet.
--GLIBC_PROVIDES dnl See aclocal.m4 in the top level source directory.
--
--AS_IF([test "$shared" = yes], [
--  # Get this defined in config.h for main source code to test.
--  AC_DEFINE([HAVE_LIBIDN])
--])

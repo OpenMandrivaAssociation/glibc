@@ -223,13 +223,9 @@ Patch123:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
 Patch124:	eglibc-mandriva-avx-relocate_fcrypt.patch
 Patch125:	eglibc-mandriva-avx-increase_BF_FRAME.patch
 Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
-# Reverts a part of eglibc-fedora-uname-getrlimit.patch that breaks the build
-#Patch127:	nptl-getrlimit-compile.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
-# http://thread.gmane.org/gmane.linux.kernel/1790211
-#Patch131:	glibc-2.22-blacklist-CPUs-from-lock-elision.patch
 Patch132:	glibc-2.25-fix-warnings.patch
 Patch133:	glibc-2.25-force-use-ld-bfd.patch
 Patch134:	glibc-2.27-clang-_Float.patch
@@ -946,7 +942,6 @@ Group: Development/Other
 BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-release-headers
 BuildRequires: kernel-release-source-latest
 Recommends: cross-${i}-binutils cross-${i}-gcc
-
 %description -n ${package}
 Libc for crosscompiling to ${i}
 
