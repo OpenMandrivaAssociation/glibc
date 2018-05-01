@@ -242,6 +242,7 @@ BuildRequires:	perl
 BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
+BuildRequires:	systemd
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
