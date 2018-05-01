@@ -131,8 +131,6 @@ Source1000:	localepkg.sh
 Source1001:	locale_install.sh
 Source1002:	locale_uninstall.sh
 Source1003:	locales.sysconfig
-Source1004:	locales-hardlink.pl
-Source1005:	locales-softlink.pl
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -238,7 +236,7 @@ BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
 BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
-BuildRequires:	perl
+BuildRequires:	hardlink
 BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
@@ -1596,13 +1594,26 @@ install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
 # Hardlink identical locales
-perl %{SOURCE1004} %{buildroot}%{_datadir}/locale
+%{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
+
 # Symlink identical files
-cd %{buildroot}%{_datadir}/locale
-for i in ??_??* ???_??*; do
-	LC_ALL=C perl %{SOURCE1005} $i
+DIR="/path/to/big/files"
+
+find %{buildroot}%{_datadir}/locale -type f -exec md5sum {} \; | sort > /tmp/locales-sorted
+
+OLDSUM=""
+IFS=$'\n'
+for i in $(cat /tmp/locales-sorted); do
+ NEWSUM=$(printf '%s\n' "$i" | sed 's/ .*//')
+ NEWFILE=$(printf '%s\n' "$i" | sed 's/^[^ ]* *//')
+ if [ "$OLDSUM" == "$NEWSUM" ]; then
+  ln -s ../"$OLDFILE" "$NEWFILE"
+ else
+  OLDSUM="$NEWSUM"
+  OLDFILE="$NEWFILE"
+ fi
 done
-cd -
+
 
 # Needed for/used by locale-archive
 mkdir -p %{buildroot}%{_prefix}/lib/locale
