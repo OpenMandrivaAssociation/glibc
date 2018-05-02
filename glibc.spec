@@ -1597,23 +1597,20 @@ install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 %{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
 
 # Symlink identical files
-DIR="/path/to/big/files"
-
 find %{buildroot}%{_datadir}/locale -type f -exec md5sum {} \; | sort > /tmp/locales-sorted
-
+cd %{buildroot}%{_datadir}/locale
 OLDSUM=""
-IFS=$'\n'
 for i in $(cat /tmp/locales-sorted); do
- NEWSUM=$(printf '%s\n' "$i" | sed 's/ .*//')
- NEWFILE=$(printf '%s\n' "$i" | sed 's/^[^ ]* *//')
- if [ "$OLDSUM" == "$NEWSUM" ]; then
-  ln -s ../"$OLDFILE" "$NEWFILE"
- else
-  OLDSUM="$NEWSUM"
-  OLDFILE="$NEWFILE"
- fi
+    NEWSUM=$(printf '%s\n' "$i" | sed 's/ .*//')
+    NEWFILE=$(printf '%s\n' "$i" | sed 's/^[^ ]* *//')
+    if [ "$OLDSUM" = "$NEWSUM" ]; then
+	ln -s ../"$OLDFILE" "$NEWFILE"
+    else
+	OLDSUM="$NEWSUM"
+	OLDFILE="$NEWFILE"
+    fi
 done
-
+cd -
 
 # Needed for/used by locale-archive
 mkdir -p %{buildroot}%{_prefix}/lib/locale
