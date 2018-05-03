@@ -10,52 +10,52 @@
 )
 
 # crypt blowfish support
-%define crypt_bf_ver	1.3
+%define crypt_bf_ver 1.3
 
-%define _libdir32	%{_prefix}/lib
-%define _libdirn32	%{_prefix}/lib32
+%define _libdir32 %{_prefix}/lib
+%define _libdirn32 %{_prefix}/lib32
 
-%define ver		2.27
-%define linaro		%{nil}
+%define ver 2.27
+%define linaro %{nil}
 
-%define	oname		glibc
-%define	major		6
+%define oname glibc
+%define major 6
 %if "%{linaro}" != ""
-%define	fullver		%{ver}-%{linaro}
-%define source_dir	glibc-linaro-%{fullver}
+%define fullver %{ver}-%{linaro}
+%define source_dir glibc-linaro-%{fullver}
 %else
-%define	fullver		%{ver}
-%define	source_dir	%{oname}-%{ver}
+%define fullver %{ver}
+%define source_dir %{oname}-%{ver}
 %endif
-%define	checklist	%{_builddir}/%{source_dir}/Check.list
-%define	libc		%mklibname c %{major}
-%define	devname		%mklibname -d c
-%define	statname	%mklibname -d -s c
-%define	multilibc	libc%{major}
+%define checklist %{_builddir}/%{source_dir}/Check.list
+%define libc %mklibname c %{major}
+%define devname %mklibname -d c
+%define statname %mklibname -d -s c
+%define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
 %define _disable_lto 1
-%define	_disable_ld_no_undefined 1
+%define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
 %global optflags %{optflags} -O3
 
-%global	platform	%{_target_vendor}-%{_target_os}%{?_gnu}
-%global	target_cpu	%{_target_cpu}
+%global platform %{_target_vendor}-%{_target_os}%{?_gnu}
+%global target_cpu %{_target_cpu}
 
-%global	target_platform	%{_target_platform}
-%global	target_arch	%{_arch}
-%define cross_prefix	%{nil}
-%define cross_program_prefix	%{nil}
-%define _slibdir	/%{_lib}
-%define _slibdir32	/lib
+%global target_platform %{_target_platform}
+%global target_arch %{_arch}
+%define cross_prefix %{nil}
+%define cross_program_prefix %{nil}
+%define _slibdir /%{_lib}
+%define _slibdir32 /lib
 
 # Define target (base) architecture
-%define arch		%(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
-%define isarch()	%(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
+%define arch %(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
+%define isarch() %(case " %* " in (*" %{arch} "*) echo 1;; (*) echo 0;; esac)
 
 # Define Xen arches to build with -mno-tls-direct-seg-refs
-%define xenarches	%{ix86}
+%define xenarches %{ix86}
 
 # Define to build nscd with selinux support
 %bcond_with selinux
@@ -65,29 +65,29 @@
 %define check_min_kver 3.18
 
 # Define to build a biarch package
-%define build_biarch	0
+%define build_biarch 0
 %if %isarch x86_64 mips64 mips64el mips mipsel
-%define build_biarch	1
+%define build_biarch 1
 %endif
 
-%bcond_without	nscd
-%bcond_without	i18ndata
-%bcond_with	timezone
+%bcond_without nscd
+%bcond_without i18ndata
+%bcond_with timezone
 # (tpg) this is not needed
-%bcond_with	nsscrypt
-%bcond_without	locales
+%bcond_with nsscrypt
+%bcond_without locales
 
 %if %isarch %{ix86} x86_64
-%bcond_without	systap
+%bcond_without systap
 %else
-%bcond_with	systap
+%bcond_with systap
 %endif
 
 # build documentation by default
-%bcond_without	doc
-%bcond_with	pdf
+%bcond_without doc
+%bcond_with pdf
 # enable utils by default
-%bcond_without	utils
+%bcond_without utils
 
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
@@ -584,7 +584,6 @@ LANG variable to their preferred language in their
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-# %attr(4755,root,root) %{_prefix}/libexec/pt_chown
 %{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
@@ -815,9 +814,9 @@ Group:		System/Servers
 Conflicts:	kernel < 2.2.0
 Requires(post):	systemd
 Requires(pre):	rpm-helper
-Requires(preun):rpm-helper
+Requires(preun):	rpm-helper
 Requires(post):	rpm-helper
-Requires(postun):rpm-helper
+Requires(postun):	rpm-helper
 
 %description -n nscd
 Nscd caches name service lookups and can dramatically improve
@@ -1568,7 +1567,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %if %{with locales}
 # Build locales...
 export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
-%global	glibcver %(rpm -q --qf "%%{VERSION}" glibc)
+%global glibcver %(rpm -q --qf "%%{VERSION}" glibc)
 export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
@@ -1576,8 +1575,8 @@ export I18NPATH=%{buildroot}%{_datadir}/i18n
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
 for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
-	 ISO-8859-5 ISO-8859-7 ISO-8859-9 \
-	 ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251 
+	ISO-8859-5 ISO-8859-7 ISO-8859-9 \
+	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
 	# don't use en_DK because of LC_MONETARY
 	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
@@ -1586,7 +1585,9 @@ done
 # Build regular locales
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
 # archive.
-SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
+#SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
+
+%make install_root=%{buildroot} localedata/install-locales
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
