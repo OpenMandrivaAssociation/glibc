@@ -236,7 +236,7 @@ BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
 BuildRequires:	%{?cross:cross-}kernel-headers
 BuildRequires:	patch
-BuildRequires:	fdupes
+BuildRequires:	hardlink
 BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
@@ -1590,16 +1590,18 @@ done
 # Build regular locales
 # Don't try to use SMP make here - that would result in concurrent writes to the locale
 # archive.
-#SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
-
-make %{?_smp_mflags} install_root=%{buildroot} localedata/install-locales
+SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 # And configs
 install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
-%fdupes %{buildroot}%{_datadir}/locale
+# Hardlink identical locales
+%{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
+
+# Symlink identical files
+# TODO
 
 # Needed for/used by locale-archive
 mkdir -p %{buildroot}%{_prefix}/lib/locale
