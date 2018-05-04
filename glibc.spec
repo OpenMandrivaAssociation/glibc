@@ -231,7 +231,7 @@ Patch134:	glibc-2.27-clang-_Float.patch
 Patch200:	crypt_blowfish-arm.patch
 
 BuildRequires:	autoconf2.5
-BuildRequires:	%{cross_prefix}binutils
+BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
 BuildRequires:	%{?cross:cross-}kernel-headers
@@ -1004,6 +1004,11 @@ function BuildGlibc() {
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
   BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
+
+  # Special flag to enable annobin annotations for statically linked
+  # assembler code.
+  BuildFlags="$BuildFlags -Wa,--generate-missing-build-notes=yes"
+
   case $arch in
     i[3-6]86)
 %ifarch x86_64
@@ -1587,7 +1592,7 @@ done
 # archive.
 #SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
 
-%make install_root=%{buildroot} localedata/install-locales
+make %{?_smp_mflags} install_root=%{buildroot} localedata/install-locales
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
