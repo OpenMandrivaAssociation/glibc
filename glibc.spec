@@ -1005,10 +1005,6 @@ function BuildGlibc() {
   # cut -flto flag
   BuildFlags="$(rpm --macros %%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
 
-  # Special flag to enable annobin annotations for statically linked
-  # assembler code.
-  BuildFlags="$BuildFlags -Wa,--generate-missing-build-notes=yes"
-
   case $arch in
     i[3-6]86)
 %ifarch x86_64
@@ -1136,9 +1132,9 @@ function BuildGlibc() {
   # Force a separate object dir
   mkdir -p build-$arch-linux
   cd  build-$arch-linux
-  [[ "$BuildAltArch" = "yes" ]] && touch ".alt" || touch ".main"
+  [ "$BuildAltArch" = 'yes' ] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error -Wa,--generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
