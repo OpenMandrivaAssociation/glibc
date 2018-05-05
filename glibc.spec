@@ -1593,7 +1593,7 @@ install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
 # Hardlink identical locales
-%{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
+# %{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
 
 # Symlink identical files
 # TODO
@@ -1631,7 +1631,6 @@ rm -rf %{buildroot}%{_libdir32}/audit
 rm -rf %{buildroot}%{_libdirn32}/audit
 rm -rf %{buildroot}%{_libexecdir}/getconf
 rm -rf %{buildroot}%{_localstatedir}/db/Makefile
-
 
 # In case we are cross-compiling, don't bother to remake symlinks and
 # fool spec-helper when stripping files
