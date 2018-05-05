@@ -57,12 +57,16 @@
 # Define Xen arches to build with -mno-tls-direct-seg-refs
 %define xenarches %{ix86}
 
+# Determine minimum kernel versions (rhbz#619538)
+%if %isarch armv7hl
+# currently using 3.0.35 kernel with wandboard
+%define enablekernel 3.0.35
+%else
+%define enablekernel 4.10.0
+%endif
+
 # Define to build nscd with selinux support
 %bcond_with selinux
-
-# Allow make check to fail only when running kernels where we know
-# tests must pass (no missing features or bugs in the kernel)
-%define check_min_kver 3.18
 
 # Define to build a biarch package
 %define build_biarch 0
@@ -234,7 +238,7 @@ BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	%{?cross:cross-}kernel-headers
+BuildRequires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 BuildRequires:	patch
 BuildRequires:	hardlink
 BuildRequires:	cap-devel
@@ -270,13 +274,8 @@ Provides:	should-restart = system
 Obsoletes:	glibc-profile
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
-# Determine minimum kernel versions (rhbz#619538)
-%if %isarch armv7hl
-# currently using 3.0.35 kernel with wandboard
-%define		enablekernel 3.0.35
-%else
-%define		enablekernel 3.18.0
-%endif
+
+
 Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
@@ -683,7 +682,7 @@ Requires:	%{multilibc} = %{EVRD}
 Autoreq:	true
 Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
-Requires:	%{?cross:cross-}kernel-headers
+Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
@@ -1134,7 +1133,7 @@ function BuildGlibc() {
   cd  build-$arch-linux
   [ "$BuildAltArch" = 'yes' ] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error -Wa,--generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$arch-%{platform} \
     --host=$arch-%{platform} \
     $BuildCross \
