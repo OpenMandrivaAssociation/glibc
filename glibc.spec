@@ -263,8 +263,7 @@ Conflicts:	kernel < %{enablekernel}
 Provides:	ld.so.1
 %endif
 %rename		ldconfig
-%define		nssfilesmajor 2
-%define		libnssfiles %mklibname nss_files %{nssfilesmajor}
+%define		libnssfiles %mklibname nss_files 2
 %rename		%{libnssfiles}
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
@@ -1061,7 +1060,7 @@ function BuildGlibc() {
    # But as the alternate arch is less likely to make any use of the
    # functionality and that we might just ditch biarch packaging completely,
    # we just enable it on the main arch for now.
-%if %{with nsscrypt} || %{with systap}
+%if %{with systap}
    if [[ "$BuildAltArch" = "no" ]]; then
 %if %{with systap}
    ExtraFlags="$ExtraFlags --enable-systemtap"
