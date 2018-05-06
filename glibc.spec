@@ -9,9 +9,6 @@
         done
 )
 
-# crypt blowfish support
-%define crypt_bf_ver 1.3
-
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
@@ -77,8 +74,6 @@
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-# (tpg) this is not needed
-%bcond_with nsscrypt
 %bcond_without locales
 
 %if %isarch %{ix86} x86_64
@@ -123,14 +118,7 @@ Source11:	nsswitch.conf
 # Locales
 Source20:	Makefile.locales
 
-# Blowfish support
-Source50:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz
-Source51:	http://www.openwall.com/crypt/crypt_blowfish-%{crypt_bf_ver}.tar.gz.sign
-Source52:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.c
-Source53:	http://cvsweb.openwall.com/cgi/cvsweb.cgi/~checkout~/Owl/packages/glibc/crypt_freesec.h
-
 Source100:	%{oname}.rpmlintrc
-
 Source1000:	localepkg.sh
 Source1001:	locale_install.sh
 Source1002:	locale_uninstall.sh
@@ -220,10 +208,6 @@ Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch120:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 #Patch121:	eglibc-mandriva-no-leaf-attribute.patch
-Patch122:	eglibc-mandriva-mdv-avx-owl-crypt.patch
-Patch123:	eglibc-mandriva-mdv-owl-crypt_freesec.patch
-Patch124:	eglibc-mandriva-avx-relocate_fcrypt.patch
-Patch125:	eglibc-mandriva-avx-increase_BF_FRAME.patch
 Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
@@ -231,8 +215,6 @@ Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch132:	glibc-2.25-fix-warnings.patch
 Patch133:	glibc-2.25-force-use-ld-bfd.patch
 Patch134:	glibc-2.27-clang-_Float.patch
-# Crypt-blowfish patches
-Patch200:	crypt_blowfish-arm.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
@@ -245,6 +227,7 @@ BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
 BuildRequires:	systemd
+BuildRequires:	pkgconfig(libxcrypt)
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -258,9 +241,6 @@ BuildRequires:	gd-devel
 %if %{with systap}
 BuildRequires:	systemtap-devel
 %endif
-%if %{with nsscrypt}
-BuildRequires:	nss-devel >= 3.15.1-2
-%endif
 Requires:	filesystem
 Requires(post):	filesystem
 %if %isarch %{xenarches}
@@ -268,13 +248,10 @@ Requires(post):	filesystem
 %endif
 # The dynamic linker supports DT_GNU_HASH
 Provides:	rtld(GNU_HASH)
-Provides:	glibc-crypt_blowfish = %{crypt_bf_ver}
-Provides:	eglibc-crypt_blowfish = %{crypt_bf_ver}
 Provides:	should-restart = system
 Obsoletes:	glibc-profile
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
-
 
 Conflicts:	kernel < %{enablekernel}
 
@@ -676,12 +653,11 @@ Linux system will not function.
 Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Requires:	%{name} = %{EVRD}
+Requires:	pkgconfig(libxcrypt)
 %if %{build_biarch}
 Requires:	%{multilibc} = %{EVRD}
 %endif
 Autoreq:	true
-Provides:	glibc-crypt_blowfish-devel = %{crypt_bf_ver}
-Provides:	eglibc-crypt_blowfish-devel = %{crypt_bf_ver}
 Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
@@ -770,7 +746,6 @@ library.
 %{_libdir}/libBrokenLocale.a
 %{_libdir}/libanl.a
 %{_libdir}/libc.a
-%{_libdir}/libcrypt.a
 %{_libdir}/libdl.a
 %{_libdir}/libm.a
 # Versioned libm.a seems to be generated only on x86_64
@@ -783,7 +758,6 @@ library.
 %{_libdir32}/libBrokenLocale.a
 %{_libdir32}/libanl.a
 %{_libdir32}/libc.a
-%{_libdir32}/libcrypt.a
 %{_libdir32}/libdl.a
 %{_libdir32}/libm.a
 %{_libdir32}/libpthread.a
@@ -794,7 +768,6 @@ library.
 %{_libdirn32}/libBrokenLocale.a
 %{_libdirn32}/libanl.a
 %{_libdirn32}/libc.a
-%{_libdirn32}/libcrypt.a
 %{_libdirn32}/libdl.a
 %{_libdirn32}/libm.a
 %{_libdirn32}/libpthread.a
@@ -952,11 +925,6 @@ done
 
 %prep
 %setup -q -n %{source_dir} -a3 -a50
-# copy freesec source
-cp %{SOURCE52} %{SOURCE53} crypt/
-mv crypt/crypt.h crypt/gnu-crypt.h
-chmod 0644 crypt_blowfish-%{crypt_bf_ver}/*.[chS]
-cp -a crypt_blowfish-%{crypt_bf_ver}/*.[chS] crypt/
 
 %apply_patches
 
@@ -1095,9 +1063,6 @@ function BuildGlibc() {
    # we just enable it on the main arch for now.
 %if %{with nsscrypt} || %{with systap}
    if [[ "$BuildAltArch" = "no" ]]; then
-%if %{with nsscrypt}
-   ExtraFlags="$ExtraFlags --enable-nss-crypt"
-%endif
 %if %{with systap}
    ExtraFlags="$ExtraFlags --enable-systemtap"
 %endif
@@ -1145,6 +1110,7 @@ function BuildGlibc() {
     --enable-add-ons=$AddOns \
     --disable-profile \
     --enable-static \
+    --disable-nss-crypt \
 %if %{with selinux}
     --with-selinux \
 %else
@@ -1264,7 +1230,6 @@ BuildGlibc %{target_cpu}
 %endif
 
 %if "%{name}" == "glibc"
-make -C crypt_blowfish-%{crypt_bf_ver} man
 
 # post install wrapper
 gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{target_cpu}-linux/glibc_post_upgrade \
@@ -1438,10 +1403,6 @@ install -m 644 %{SOURCE11} %{buildroot}%{_sysconfdir}/nsswitch.conf
     touch %{buildroot}/run/nscd/{nscd.pid,socket,passwd,group,hosts,services}
 %endif
 
-# These man pages require special attention
-mkdir -p %{buildroot}%{_mandir}/man3
-install -p -m 0644 crypt_blowfish-%{crypt_bf_ver}/*.3 %{buildroot}%{_mandir}/man3/
-
 # Include ld.so.conf
 %if "%{name}" == "glibc"
 %if %isarch mips mipsel
@@ -1515,13 +1476,10 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
     cd -
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
     hesiod/README.hesiod						\
-    ChangeLog crypt/README.ufc-crypt nis/nss posix/gai.conf		\
+    ChangeLog nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
 xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
-install -m 755 -d %{buildroot}%{_docdir}/glibc/crypt_blowfish
-install -m 644 crypt_blowfish-%{crypt_bf_ver}/{README,LINKS,PERFORMANCE} \
-    %{buildroot}%{_docdir}/glibc/crypt_blowfish
 
 # Localization
 %if "%{name}" == "glibc"
