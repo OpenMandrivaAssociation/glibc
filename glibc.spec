@@ -182,6 +182,9 @@ Patch94:	0004-sin-cos-slow-paths-remove-slow-paths-from-huge-range.patch
 Patch95:	0005-sin-cos-slow-paths-remove-unused-slowpath-functions.patch
 Patch96:	0006-sin-cos-slow-paths-refactor-duplicated-code-into-dos.patch
 Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
+Patch98:	pause.patch
+Patch99:	gcc-8-fix.patch
+Patch100:	spin-smarter.patch
 
 #
 # Patches from upstream
@@ -189,32 +192,32 @@ Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
-Patch100:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
-Patch101:	eglibc-mandriva-fix-dns-with-broken-routers.patch
-Patch102:	eglibc-mandriva-nss-upgrade.patch
-Patch103:	eglibc-mandriva-share-locale.patch
-Patch104:	eglibc-mandriva-nsswitch.conf.patch
-Patch105:	eglibc-mandriva-xterm-xvt.patch
-Patch106:	eglibc-mandriva-nscd-enable.patch
-Patch107:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch109:	eglibc-mandriva-nscd-init-should-start.patch
-Patch110:	eglibc-mandriva-timezone.patch
-Patch111:	eglibc-mandriva-biarch-cpp-defines.patch
-Patch112:	eglibc-mandriva-ENOTTY-fr-translation.patch
-Patch113:	eglibc-mandriva-biarch-utils.patch
-Patch115:	glibc-2.26-no-attribute-leaf-for-clang.patch
-Patch117:	eglibc-mandriva-pt_BR-i18nfixes.patch
-Patch118:	eglibc-mandriva-testsuite-ldbl-bits.patch
-Patch119:	eglibc-mandriva-testsuite-rt-notparallel.patch
-Patch120:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
-#Patch121:	eglibc-mandriva-no-leaf-attribute.patch
-Patch126:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
+Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
+Patch1001:	eglibc-mandriva-fix-dns-with-broken-routers.patch
+Patch1002:	eglibc-mandriva-nss-upgrade.patch
+Patch1003:	eglibc-mandriva-share-locale.patch
+Patch1004:	eglibc-mandriva-nsswitch.conf.patch
+Patch1005:	eglibc-mandriva-xterm-xvt.patch
+Patch1006:	eglibc-mandriva-nscd-enable.patch
+Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
+Patch1009:	eglibc-mandriva-nscd-init-should-start.patch
+Patch1010:	eglibc-mandriva-timezone.patch
+Patch1011:	eglibc-mandriva-biarch-cpp-defines.patch
+Patch1012:	eglibc-mandriva-ENOTTY-fr-translation.patch
+Patch1013:	eglibc-mandriva-biarch-utils.patch
+Patch1015:	glibc-2.26-no-attribute-leaf-for-clang.patch
+Patch1017:	eglibc-mandriva-pt_BR-i18nfixes.patch
+Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
+Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
+Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
+#Patch1021:	eglibc-mandriva-no-leaf-attribute.patch
+Patch1026:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
-Patch129:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
-Patch132:	glibc-2.25-fix-warnings.patch
-Patch133:	glibc-2.25-force-use-ld-bfd.patch
-Patch134:	glibc-2.27-clang-_Float.patch
+Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
+Patch1032:	glibc-2.25-fix-warnings.patch
+Patch1033:	glibc-2.25-force-use-ld-bfd.patch
+Patch1034:	glibc-2.27-clang-_Float.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
