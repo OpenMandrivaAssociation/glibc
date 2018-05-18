@@ -926,7 +926,7 @@ done
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a3 -a50
+%setup -q -n %{source_dir} -a3
 
 %apply_patches
 
