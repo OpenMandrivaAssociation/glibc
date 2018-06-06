@@ -228,7 +228,7 @@ BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
 BuildRequires:	systemd
-BuildRequires:	pkgconfig(libxcrypt)
+#BuildRequires:	pkgconfig(libxcrypt)
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
