@@ -1600,7 +1600,7 @@ export DONT_SYMLINK_LIBS=1
 export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
 
 # Remove stuff we get from libxcrypt
-rm -f %{buildroot}%{_prefix}/*/libcrypt.a
+rm -f %{buildroot}%{_prefix}/*/libcrypt.a %{buildroot}%{_includedir}/crypt.h %{buildroot}/*/libcrypt.so.1
 
 unset LD_LIBRARY_PATH
 
