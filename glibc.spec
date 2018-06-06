@@ -840,8 +840,8 @@ can be helpful during program debugging.
 If unsure if you need this, don't install this package.
 
 %files utils
-%{_bindir}/memusage
-%{_bindir}/memusagestat
+#{_bindir}/memusage
+#{_bindir}/memusagestat
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
 %{_bindir}/xtrace
