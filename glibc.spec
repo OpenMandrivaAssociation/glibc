@@ -1,4 +1,8 @@
+%ifarch x86_64
 %bcond_without crosscompilers
+%else
+%bcond_with crosscompilers
+%endif
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hl-linux i686-linux x86_64-linux x32-linux riscv64-linux
 %global long_targets %(
