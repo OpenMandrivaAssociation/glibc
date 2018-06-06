@@ -211,11 +211,9 @@ Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 #Patch1021:	eglibc-mandriva-no-leaf-attribute.patch
-Patch1026:	eglibc-mandriva-mdv-wrapper_handle_sha.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
-Patch1032:	glibc-2.25-fix-warnings.patch
 Patch1033:	glibc-2.25-force-use-ld-bfd.patch
 Patch1034:	glibc-2.27-clang-_Float.patch
 
@@ -690,7 +688,6 @@ The glibc-docs package contains docs for %{name}.
 
 %files devel
 %if "%{name}" == "glibc"
-%{_mandir}/man3/*
 %{_infodir}/libc.info*
 %endif
 %{_includedir}/*
@@ -1601,6 +1598,9 @@ export DONT_SYMLINK_LIBS=1
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
+
+# Remove stuff we get from libxcrypt
+rm -f %{buildroot}%{_prefix}/*/libcrypt.a
 
 unset LD_LIBRARY_PATH
 
