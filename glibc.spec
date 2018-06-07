@@ -541,10 +541,10 @@ LANG variable to their preferred language in their
 %if %isarch x86_64
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
-%if %isarch armv7l
+%if %isarch armv7l armv8l
 %{_slibdir}/ld-linux.so.3
 %endif
-%if %isarch armv7hl armv6j
+%if %isarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
 %{_slibdir}/ld-linux-armhf.so.3
 %endif
 %if %isarch aarch64
