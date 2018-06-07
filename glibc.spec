@@ -241,7 +241,7 @@ BuildRequires:	texinfo
 BuildRequires:	texlive
 %endif
 %if %{with utils}
-BuildRequires:	gd-devel
+BuildRequires:	gd-devel pkgconfig(zlib) pkgconfig(libpng)
 %endif
 %if %{with systap}
 BuildRequires:	systemtap-devel
@@ -844,8 +844,8 @@ can be helpful during program debugging.
 If unsure if you need this, don't install this package.
 
 %files utils
-#{_bindir}/memusage
-#{_bindir}/memusagestat
+%{_bindir}/memusage
+%{_bindir}/memusagestat
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
 %{_bindir}/xtrace
@@ -1554,7 +1554,7 @@ install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
 # Hardlink identical locales
-# %{_sbindir}/hardlink -vc %{buildroot}%{_datadir}/locale
+%{_sbindir}/hardlink -vvc %{buildroot}%{_datadir}/locale
 
 # Symlink identical files
 # TODO
