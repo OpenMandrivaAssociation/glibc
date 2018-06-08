@@ -64,8 +64,13 @@
 %define enablekernel 3.0.35
 %else
 %ifarch aarch64
-# currently on Opteron server boxes
-%define enablekernel 4.4.0
+# Before increasing, please make sure all
+# boxes we support can be updated:
+# As of 2018/06/08:
+# Opteron server boxes have 4.4.x
+# Rockchip 3399 has 4.4.x
+# Gemini PDA has 3.18.x
+%define enablekernel 3.18.0
 %else
 %define enablekernel 4.10.0
 %endif
