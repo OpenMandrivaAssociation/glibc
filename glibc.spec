@@ -63,7 +63,12 @@
 # currently using 3.0.35 kernel with wandboard
 %define enablekernel 3.0.35
 %else
+%ifarch aarch64
+# currently on Opteron server boxes
+%define enablekernel 4.4.0
+%else
 %define enablekernel 4.10.0
+%endif
 %endif
 
 # Define to build nscd with selinux support
@@ -106,7 +111,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	10
+Release:	11
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
