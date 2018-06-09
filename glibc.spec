@@ -797,6 +797,8 @@ library.
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
+BuildRequires:	systemd
+BuildRequires:	rpm-helper
 Requires(post):	systemd
 Requires(pre):	rpm-helper
 Requires(preun):	rpm-helper
