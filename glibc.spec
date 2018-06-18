@@ -807,7 +807,7 @@ Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
 %pre -n nscd -p <lua>
-os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c "system user for nscd" nscd")
+os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd")
  
 %post -n nscd -p <lua>
 os.execute("nscd -i passwd -i group")
