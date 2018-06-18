@@ -116,7 +116,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	11
+Release:	12
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -800,21 +800,19 @@ Conflicts:	kernel < 2.2.0
 BuildRequires:	systemd
 BuildRequires:	rpm-helper
 Requires(post):	systemd
-Requires(pre):	rpm-helper
-Requires(preun):	rpm-helper
-Requires(post):	rpm-helper
-Requires(postun):	rpm-helper
+Requires(pre):	shadow
 
 %description -n nscd
 Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
-%pre -n nscd
-%_pre_useradd nscd / /sbin/nologin
-
-%post -n nscd
-nscd -i passwd -i group || :
-%systemd_post nscd.socket nscd.service
+%pre -n nscd -p <lua>
+os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c "system user for nscd" nscd")
+ 
+%post -n nscd -p <lua>
+os.execute("nscd -i passwd -i group")
+os.execute("/bin/systemctl preset --now nscd.socket")
+os.execute("/bin/systemctl preset --now nscd.service")
 
 %files -n nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
