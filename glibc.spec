@@ -808,7 +808,7 @@ performance with NIS+, and may help with DNS as well.
 
 %pre -n nscd -p <lua>
 user = os.execute("/usr/bin/getent passwd nscd >/dev/null 2>&1")
-if user =~ 0 then
+if user ~= 0 then
 	os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd >/dev/null 2>&1")
 end
 
