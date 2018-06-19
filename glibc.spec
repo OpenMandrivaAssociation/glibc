@@ -116,7 +116,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	12
+Release:	13
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -807,12 +807,15 @@ Nscd caches name service lookups and can dramatically improve
 performance with NIS+, and may help with DNS as well.
 
 %pre -n nscd -p <lua>
-os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd")
- 
+user = os.execute("/usr/bin/getent passwd nscd >/dev/null 2>&1")
+if user == 0 then
+	os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd >/dev/null 2>&1")
+end
+
 %post -n nscd -p <lua>
-os.execute("nscd -i passwd -i group")
-os.execute("/bin/systemctl preset --now nscd.socket")
-os.execute("/bin/systemctl preset --now nscd.service")
+os.execute("/usr/sbin/nscd -i passwd -i group >/dev/null 2>&1")
+os.execute("/bin/systemctl preset --now nscd.socket >/dev/null 2>&1")
+os.execute("/bin/systemctl preset --now nscd.service >/dev/null 2>&1")
 
 %files -n nscd
 %config(noreplace) %{_sysconfdir}/nscd.conf
