@@ -199,7 +199,8 @@ Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
 Patch98:	pause.patch
 Patch99:	gcc-8-fix.patch
 Patch100:	spin-smarter.patch
-Patch1001:	memmem.patch
+Patch1001:	strcmp-wcscmp-with-AVX2.patch
+Patch1002:	memmem.patch
 
 #
 # Patches from upstream
