@@ -116,7 +116,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	13
+Release:	14
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -199,6 +199,7 @@ Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
 Patch98:	pause.patch
 Patch99:	gcc-8-fix.patch
 Patch100:	spin-smarter.patch
+Patch1001:	memmem.patch
 
 #
 # Patches from upstream
