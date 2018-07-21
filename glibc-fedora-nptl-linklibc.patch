@@ -1,17 +1,17 @@
---- glibc-2.25.51/nptl/Makefile.0034~	2017-07-11 18:33:01.646973322 +0200
-+++ glibc-2.25.51/nptl/Makefile	2017-07-11 18:36:41.282715538 +0200
-@@ -634,15 +634,19 @@ $(addprefix $(objpfx), \
- 	$(objpfx)libpthread.so \
- 	$(objpfx)libpthread_nonshared.a
+diff -up glibc-2.27.20180720/nptl/Makefile.0034~ glibc-2.27.20180720/nptl/Makefile
+--- glibc-2.27.20180720/nptl/Makefile.0034~	2018-07-20 02:29:28.763982849 +0200
++++ glibc-2.27.20180720/nptl/Makefile	2018-07-20 02:33:04.128058315 +0200
+@@ -623,14 +623,18 @@ $(addprefix $(objpfx), \
+     $(tests) $(tests-internal) $(xtests) $(test-srcs))): \
+ 	$(objpfx)libpthread.so
  $(objpfx)tst-unload: $(libdl)
 -# $(objpfx)../libc.so is used instead of $(common-objpfx)libc.so,
 +# $(objpfx)linklibc.so is used instead of $(common-objpfx)libc.so,
  # since otherwise libpthread.so comes before libc.so when linking.
  $(addprefix $(objpfx), $(tests-reverse)): \
--  $(objpfx)../libc.so $(objpfx)libpthread.so \
-+  $(objpfx)linklibc.so $(objpfx)libpthread.so \
-   $(objpfx)libpthread_nonshared.a
+-  $(objpfx)../libc.so $(objpfx)libpthread.so
 -$(objpfx)../libc.so: $(common-objpfx)libc.so ;
++  $(objpfx)linklibc.so $(objpfx)libpthread.so
 +$(objpfx)linklibc.so: $(common-objpfx)libc.so ;
  $(addprefix $(objpfx),$(tests-static) $(xtests-static)): $(objpfx)libpthread.a
  

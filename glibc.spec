@@ -1,8 +1,4 @@
-%ifarch x86_64
 %bcond_without crosscompilers
-%else
-%bcond_with crosscompilers
-%endif
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hl-linux i686-linux x86_64-linux x32-linux riscv64-linux
 %global long_targets %(
@@ -16,7 +12,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.27
+%define ver 2.27.9000
 %define linaro %{nil}
 
 %define oname glibc
@@ -59,11 +55,11 @@
 %define xenarches %{ix86}
 
 # Determine minimum kernel versions (rhbz#619538)
-%if %isarch armv7hl
+%ifarch %{arm}
 # currently using 3.0.35 kernel with wandboard
 %define enablekernel 3.0.35
 %else
-%ifarch aarch64
+%ifarch %{aarch64}
 # Before increasing, please make sure all
 # boxes we support can be updated:
 # As of 2018/06/08:
@@ -81,16 +77,16 @@
 
 # Define to build a biarch package
 %define build_biarch 0
-%if %isarch x86_64 mips64 mips64el mips mipsel
+%if %isarch %{x86_64} mips64 mips64el mips mipsel
 %define build_biarch 1
 %endif
 
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-%bcond_without locales
+%bcond_with locales
 
-%if %isarch %{ix86} x86_64
+%if %isarch %{ix86} %{x86_64}
 %bcond_without systap
 %else
 %bcond_with systap
@@ -105,7 +101,6 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
-Epoch:		6
 %if "%{linaro}" != ""
 Version:	%{ver}_%{linaro}
 Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.tar.xz
@@ -174,8 +169,6 @@ Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.
 Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
-Patch66:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1452750-allocate_once.patch
-Patch67:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1452750-libidn2.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
@@ -189,18 +182,9 @@ Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 # https://sourceware.org/ml/libc-alpha/2018-03/msg00504.html
-Patch91:	0001-sin-cos-slow-paths-avoid-slow-paths-for-small-inputs.patch
-Patch92:	0002-sin-cos-slow-paths-remove-large-range-reduction.patch
-Patch93:	0003-sin-cos-slow-paths-remove-slow-paths-from-small-rang.patch
-Patch94:	0004-sin-cos-slow-paths-remove-slow-paths-from-huge-range.patch
-Patch95:	0005-sin-cos-slow-paths-remove-unused-slowpath-functions.patch
-Patch96:	0006-sin-cos-slow-paths-refactor-duplicated-code-into-dos.patch
-Patch97:	0007-sin-cos-slow-paths-refactor-sincos-implementation.patch
 Patch98:	pause.patch
 Patch99:	gcc-8-fix.patch
 Patch100:	spin-smarter.patch
-Patch101:	strcmp-wcscmp-with-AVX2.patch
-Patch102:	memmem.patch
 
 #
 # Patches from upstream
@@ -222,7 +206,6 @@ Patch1011:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch1012:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch1013:	eglibc-mandriva-biarch-utils.patch
 Patch1015:	glibc-2.26-no-attribute-leaf-for-clang.patch
-Patch1017:	eglibc-mandriva-pt_BR-i18nfixes.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
@@ -314,7 +297,7 @@ os.execute("/sbin/ldconfig -X")
 Summary:	Base files for localization
 Group:		System/Internationalization
 Obsoletes:	locales <= 2.18.90-2
-Obsoletes:	locales < 6:2.19-13
+Obsoletes:	locales < 2.19-13
 Requires(post,preun):	/bin/sh
 Requires(post,preun):	grep
 Requires(post,preun):	sed
@@ -538,7 +521,7 @@ LANG variable to their preferred language in their
 /sbin/sln
 %{_prefix}/libexec/getconf
 %endif
-%if %isarch x86_64
+%if %isarch %{x86_64}
 %exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/POSIX_V6_ILP32_OFFBIG
 %exclude %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFF32
@@ -550,7 +533,7 @@ LANG variable to their preferred language in their
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %endif
-%if %isarch x86_64
+%if %isarch %{x86_64}
 %{_slibdir}/ld-linux-x86-64.so.2
 %endif
 %if %isarch armv7l armv8l
@@ -624,7 +607,7 @@ LANG variable to their preferred language in their
 %package -n %{multilibc}
 Summary:	The GNU libc libraries
 Group:		System/Libraries
-Conflicts:	glibc < 6:2.14.90-13
+Conflicts:	glibc < 2.14.90-13
 Requires:	%{name} = %{EVRD}
 
 %transfiletriggerin -p <lua> -- /usr/lib/gconv/
@@ -718,14 +701,12 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir}/libg.a
 %{_libdir}/libmcheck.a
 %optional %{_libdir}/libmvec.a
-%{_libdir}/libpthread_nonshared.a
 %if %{build_biarch}
 %{_libdir32}/*.o
 %{_libdir32}/*.so
 %{_libdir32}/libc_nonshared.a
 %{_libdir32}/libg.a
 %{_libdir32}/libmcheck.a
-%{_libdir32}/libpthread_nonshared.a
 %if %isarch mips mipsel
 %exclude %{_slibdir32}/ld*-[.0-9]*.so
 %exclude %{_slibdir32}/lib*-[.0-9]*.so
@@ -738,7 +719,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdirn32}/libc_nonshared.a
 %{_libdirn32}/libg.a
 %{_libdirn32}/libmcheck.a
-%{_libdirn32}/libpthread_nonshared.a
 %exclude %{_slibdir}/ld*-[.0-9]*.so
 %exclude %{_slibdir}/lib*-[.0-9]*.so
 %exclude %{_slibdir}/libSegFault.so
@@ -992,14 +972,21 @@ function BuildGlibc() {
 
   case $arch in
     i[3-6]86)
-%ifarch x86_64
+%ifarch %{x86_64}
+%ifarch znver1
+	BuildFlags="$BuildFlags -march=znver1 -mtune=znver1"
+%else
 	BuildFlags="$BuildFlags -march=pentium4 -mtune=generic"
+%endif
 	BuildAltArch="yes"
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
 	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
 %endif
+      ;;
+    znver1)
+      BuildFlags="$BuildFlags -mtune=znver1"
       ;;
     x86_64)
       BuildFlags="$BuildFlags -mtune=generic"
@@ -1032,7 +1019,7 @@ function BuildGlibc() {
   # Choose biarch support
   MultiArchFlags=
   case $arch in
-    i686 | x86_64)
+    i686|x86_64|znver1)
       MultiArchFlags="--enable-multi-arch"
       ;;
   esac
@@ -1217,7 +1204,7 @@ done
 BuildGlibc %{target_cpu}
 
 %if %{build_biarch}
-    %if %isarch x86_64
+    %if %isarch %{x86_64}
 	BuildGlibc i686
     %endif
     %if %isarch mips
@@ -1296,7 +1283,7 @@ done
 make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 
 %if %{build_biarch} || %isarch %{mips} %{mipsel}
-    %if %isarch x86_64
+    %if %isarch %{x86_64}
 	ALT_ARCHES=i686-linux
     %endif
     %if %isarch %{mips}
@@ -1392,19 +1379,7 @@ install -m644 %{SOURCE10} -D %{buildroot}%{_includedir}/bits/libc-lock.h
 # section but with glibc that is simply not an option
 mkdir -p %{buildroot}%{_localedir}/ru_RU/LC_MESSAGES
 
-# kernel headers are located in a directory neutral to whatever target_cpu built for, so
-# let's create symlinks into the target tree
-%if "%{name}" != "glibc"
-  for path in /usr/%{target_arch}-%{_target_os}/include/*; do
-    dir=$(basename $path)
-    mkdir -p %{buildroot}%{_includedir}/$dir
-    ln -s $path/* %{buildroot}%{_includedir}/$dir
-  done
-%endif
-
-%if "%{name}" == "glibc"
 install -m 644 %{SOURCE11} %{buildroot}%{_sysconfdir}/nsswitch.conf
-%endif
 
 # This is for nscd - in glibc 2.2
 %if %{with nscd}
@@ -1571,9 +1546,6 @@ install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 # Hardlink identical locales
 %{_sbindir}/hardlink -vvc %{buildroot}%{_datadir}/locale
 
-# Remove stuff we get from libxcrypt
-rm -f %{buildroot}%{_prefix}/*/libcrypt.a %{buildroot}%{_includedir}/crypt.h %{buildroot}/*/libcrypt*
-
 # Symlink identical files
 # TODO
 
@@ -1582,38 +1554,18 @@ mkdir -p %{buildroot}%{_prefix}/lib/locale
 touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 %endif
 
-%if %isarch aarch64
+# Remove stuff we get from libxcrypt
+rm -f %{buildroot}%{_prefix}/*/libcrypt.a %{buildroot}%{_includedir}/crypt.h %{buildroot}/*/libcrypt* %{buildroot}%{_prefix}/*/libcrypt.a
+
+%ifarch %{aarch64}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
-%if %isarch x86_64
+%ifarch %{x86_64}
 # Needed for bootstrapping x32 compilers
 [ -e %{buildroot}%{_includedir}/gnu/stubs-x32.h ] || cp %{buildroot}%{_includedir}/gnu/stubs-64.h %{buildroot}%{_includedir}/gnu/stubs-x32.h
-%endif
-
-%if "%{name}" != "glibc"
-rm -rf %{buildroot}/boot
-rm -rf %{buildroot}/sbin
-rm -rf %{buildroot}/usr/share
-rm -rf %{buildroot}%{_bindir}
-rm -rf %{buildroot}%{_sbindir}
-rm -rf %{buildroot}%{_datadir}
-rm -rf %{buildroot}%{_infodir}
-rm -rf %{buildroot}%{_prefix}/etc
-rm -rf %{buildroot}%{_libdir}/gconv
-rm -rf %{buildroot}%{_libdir32}/gconv
-rm -rf %{buildroot}%{_libdirn32}/gconv
-rm -rf %{buildroot}%{_libdir}/audit
-rm -rf %{buildroot}%{_libdir32}/audit
-rm -rf %{buildroot}%{_libdirn32}/audit
-rm -rf %{buildroot}%{_libexecdir}/getconf
-rm -rf %{buildroot}%{_localstatedir}/db/Makefile
-
-# In case we are cross-compiling, don't bother to remake symlinks and
-# fool spec-helper when stripping files
-export DONT_SYMLINK_LIBS=1
 %endif
 
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
