@@ -107,9 +107,9 @@ Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.t
 %else
 Version:	%{ver}
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
-%if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
-Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
-%endif
+#if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
+#Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
+#endif
 %endif
 Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
