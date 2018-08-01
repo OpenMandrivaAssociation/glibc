@@ -12,7 +12,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.27.9000
+%define ver 2.28
 %define linaro %{nil}
 
 %define oname glibc
@@ -111,7 +111,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 %endif
 %endif
-Release:	14
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
