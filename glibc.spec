@@ -1,6 +1,6 @@
 %bcond_without crosscompilers
 # FIXME add riscv32-linux when glibc starts supporting it
-%global targets aarch64-linux armv7hl-linux i686-linux x86_64-linux x32-linux riscv64-linux
+%global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux
 %global long_targets %(
         for i in %{targets}; do
                 CPU=$(echo $i |cut -d- -f1)
