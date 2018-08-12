@@ -1,6 +1,12 @@
 %bcond_without crosscompilers
+%ifarch %{ix86}
+# FIXME add riscv32-linux when glibc starts supporting it
+# FIXME Determine why (and fix) x86_64-linux crosscompilers on x86_32 are broken
+%global targets aarch64-linux armv7hnl-linux i686-linux x32-linux riscv64-linux
+%else
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux
+%endif
 %global long_targets %(
         for i in %{targets}; do
                 CPU=$(echo $i |cut -d- -f1)
