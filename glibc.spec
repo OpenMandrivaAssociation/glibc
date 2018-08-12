@@ -901,7 +901,7 @@ These are configuration files that describe possible time zones.
 %global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-release-source-latest)
 %(
 for i in %{long_targets}; do
-	[ "$i" = "%{_target_platform}" ] && continue
+	[ "$(echo $i |sed -e 's,i.86,i386,')" = "%{_target_platform}" ] && continue
 	package=cross-${i}-libc
 	cat <<EOF
 %package -n ${package}
@@ -1173,7 +1173,7 @@ for i in %{targets}; do
         CPU=$(echo $i |cut -d- -f1)
         OS=$(echo $i |cut -d- -f2)
         TRIPLET="$(rpm --target=${CPU}-${OS} -E %%{_target_platform})"
-	if [ "${TRIPLET}" = "%{_target_platform}" ]; then
+	if [ "$(echo ${TRIPLET} |sed -e 's,i.86,i386,')" = "%{_target_platform}" ]; then
 		echo "===== Skipping $i cross libc (native arch) ====="
 		continue
 	fi
@@ -1275,7 +1275,7 @@ export PATH=$PWD/bin:$PATH
 
 %if %{with crosscompilers}
 for i in %{long_targets}; do
-	if [ "${i}" = "%{_target_platform}" ]; then
+	if [ "$(echo $i |sed -e 's,i.86,i386,')" = "%{_target_platform}" ]; then
 		echo "===== Skipping $i cross libc (native arch)"
 		continue
 	fi
