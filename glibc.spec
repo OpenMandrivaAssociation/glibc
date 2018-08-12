@@ -1103,9 +1103,17 @@ function BuildGlibc() {
   cd  build-$arch-linux
   [ "$BuildAltArch" = 'yes' ] && touch ".alt" || touch ".main"
   export libc_cv_slibdir=${SLIBDIR}
+  case $arch in
+  znver1)
+    configarch=x86_64
+    ;;
+  *)
+    configarch=$arch
+    ;;
+  esac
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
-    --target=$arch-%{platform} \
-    --host=$arch-%{platform} \
+    --target=$configarch-%{platform} \
+    --host=$configarch-%{platform} \
     $BuildCross \
     --prefix=%{_prefix} \
     --libexecdir=%{_prefix}/libexec \
