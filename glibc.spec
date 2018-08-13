@@ -1,7 +1,8 @@
 %bcond_without crosscompilers
-%ifarch %{ix86}
+%ifarch %{ix86} %{arm}
 # FIXME add riscv32-linux when glibc starts supporting it
-# FIXME Determine why (and fix) x86_64-linux crosscompilers on x86_32 are broken
+# FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
+# are broken (build failure with static assertion on offset of __private_ss)
 %global targets aarch64-linux armv7hnl-linux i686-linux x32-linux riscv64-linux
 %else
 # FIXME add riscv32-linux when glibc starts supporting it
