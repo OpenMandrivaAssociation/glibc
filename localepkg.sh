@@ -41,7 +41,7 @@ $langname language conventions.
 
 %preun -n locales-$locale
 if [ "\$1" = "0" ]; then
-	%%{_bindir}/locale_uninstall.sh $isonames
+	%{_bindir}/locale_uninstall.sh $isonames
 fi
 
 %files -n locales-$locale
