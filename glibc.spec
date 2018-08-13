@@ -90,7 +90,7 @@
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-%bcond_with locales
+%bcond_without locales
 
 %if %isarch %{ix86} %{x86_64}
 %bcond_without systap
@@ -107,6 +107,7 @@
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
+Epoch:		6
 %if "%{linaro}" != ""
 Version:	%{ver}_%{linaro}
 Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.tar.xz
@@ -129,9 +130,6 @@ Source5:	glibc-check.sh
 Source10:	libc-lock.h
 # (tpg) our NSS config
 Source11:	nsswitch.conf
-
-# Locales
-Source20:	Makefile.locales
 
 Source100:	%{oname}.rpmlintrc
 Source1000:	localepkg.sh
@@ -382,6 +380,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Chhattisgarhi" "hne" "hne_IN")}
 %{expand:%(sh %{S:1000} "Croatian" "hr" "hr_HR")}
 %{expand:%(sh %{S:1000} "Upper Sorbian" "hsb" "hsb_DE")}
+%{expand:%(sh %{S:1000} "Lower Sorbian" "dsb" "dsb_DE")}
 %{expand:%(sh %{S:1000} "Breyol" "ht" "ht_HT")}
 %{expand:%(sh %{S:1000} "Hungarian" "hu" "hu_HU")}
 %{expand:%(sh %{S:1000} "Armenian" "hy" "hy_AM")}
@@ -396,6 +395,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Georgian" "ka" "ka_GE")}
 %{expand:%(sh %{S:1000} "Kabyle" "kab" "kab_DZ")}
 %{expand:%(sh %{S:1000} "Kazakh" "kk" "kk_KZ")}
+%{expand:%(sh %{S:1000} "Sakha" "sah" "sah_RU")}
 %{expand:%(sh %{S:1000} "Greenlandic" "kl" "kl_GL")}
 %{expand:%(sh %{S:1000} "Khmer" "km" "km_KH")}
 %{expand:%(sh %{S:1000} "Kannada" "kn" "kn_IN")}
@@ -1531,9 +1531,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 %if %{with locales}
 # Build locales...
-export PATH=%{buildroot}%{_bindir}:%{buildroot}%{_sbindir}:$PATH
 %global glibcver %(rpm -q --qf "%%{VERSION}" glibc)
-export LD_LIBRARY_PATH=%{buildroot}%{_slibdir}:%{buildroot}%{_libdir}:$LD_LIBRARY_PATH
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
 # make default charset pseudo-locales
@@ -1544,13 +1542,16 @@ for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
 	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
 	# don't use en_DK because of LC_MONETARY
-	localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET || :
+	%{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
 done
 
 # Build regular locales
-# Don't try to use SMP make here - that would result in concurrent writes to the locale
-# archive.
-SUPPORTED=$I18NPATH/SUPPORTED DESTDIR=%{buildroot} make -f %{SOURCE20}
+LANGS="$(sed '1,/^SUPPORTED-LOCALES=/d;s,\\$,,;s,\n,,' %{buildroot}%{_datadir}/i18n/SUPPORTED)"
+for l in $LANGS; do
+	LNG=$(echo $l |cut -d/ -f1)
+	CS=$(echo $l |cut -d/ -f2)
+	%{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
+done
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
