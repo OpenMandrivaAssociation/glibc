@@ -16,7 +16,7 @@ EOF
 
 isonames=""
 for i in "$@"; do
-	if echo $i |grep -qE '^r:'; then
+	if echo "$i" |grep -qE '^r:'; then
 		cat <<EOF
 %rename locales-$(echo $i |cut -b3-)
 EOF
