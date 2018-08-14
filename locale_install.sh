@@ -87,6 +87,6 @@ done
 if [ "$OLD_RPM_INSTALL_LANG" != "$RPM_INSTALL_LANG" ]; then
 	# update /etc/rpm/macros file
 	if [ -w /etc/rpm/macros ]; then
-		sed -i -e "s/^%_install_langs .*/%_install_langs ${RPM_INSTALL_LANG}/" /etc/rpm/macros
+		sed -i -e "s/^%_install_langs .*/%_install_langs $RPM_INSTALL_LANG/" /etc/rpm/macros
 	fi
 fi
