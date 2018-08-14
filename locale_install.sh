@@ -47,7 +47,7 @@ esac
 
 for i in "$@"; do
 	langs="$i"
-	for j in /usr/share/locale/$i.*; do
+	for j in /usr/share/locale/"$i".*; do
 		[ -d "$j" ] || continue
 		lng="$(basename $j)"
 		# sanity check
