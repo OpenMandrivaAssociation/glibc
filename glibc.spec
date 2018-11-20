@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	6
+Release:	7
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1572,6 +1572,8 @@ touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 
 # Remove stuff we get from libxcrypt
 rm -f %{buildroot}%{_prefix}/*/libcrypt.a %{buildroot}%{_includedir}/crypt.h %{buildroot}/*/libcrypt* %{buildroot}%{_prefix}/*/libcrypt.a
+# remove broken symlink
+rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 
 %ifarch %{aarch64}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
