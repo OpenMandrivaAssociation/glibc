@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	7
+Release:	8
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -187,9 +187,10 @@ Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 # https://sourceware.org/ml/libc-alpha/2018-03/msg00504.html
-Patch98:	pause.patch
-Patch99:	gcc-8-fix.patch
-Patch100:	spin-smarter.patch
+Patch98:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
+Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
+Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
+Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
 
 #
 # Patches from upstream
