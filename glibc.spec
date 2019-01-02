@@ -932,7 +932,7 @@ done
 %prep
 %setup -q -n %{source_dir} -a3
 
-%apply_patches
+%autopatch -p1
 
 %if %{with selinux}
     # XXX kludge to build nscd with selinux support as it added -nostdinc
@@ -1151,7 +1151,7 @@ function BuildGlibc() {
     --with-bugurl=%{bugurl}
 
   # FIXME use %%make if the Makefiles ever get fixed for parallel build
-  %make -j1 -r all subdir_stubs
+  %make_build -j1 -r all subdir_stubs
   cd -
 
   check_flags="-k"
@@ -1211,7 +1211,7 @@ for i in %{targets}; do
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
 		--with-headers=%{_prefix}/${TRIPLET}/include
-	%make
+	%make_build
 	cd ..
 done
 %endif
