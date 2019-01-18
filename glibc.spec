@@ -226,7 +226,7 @@ BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
+BuildRequires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
 BuildRequires:	patch
 BuildRequires:	hardlink
 BuildRequires:	cap-devel
@@ -665,7 +665,7 @@ Requires:	pkgconfig(libxcrypt)
 Requires:	%{multilibc} = %{EVRD}
 %endif
 Autoreq:	true
-Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
+Requires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
