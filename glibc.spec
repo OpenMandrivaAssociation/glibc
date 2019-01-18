@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	9
+Release:	8
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -191,7 +191,6 @@ Patch98:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.pa
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
-Patch102:	c-utf8-locale.patch
 
 #
 # Patches from upstream
