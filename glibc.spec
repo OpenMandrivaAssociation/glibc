@@ -741,6 +741,7 @@ The glibc-docs package contains docs for %{name}.
 Summary:	Static libraries for GNU C library
 Group:		Development/C
 Requires:	%{name}-devel = %{EVRD}
+Requires:	%{_lib}xcrypt-static-devel
 
 %description static-devel
 The glibc-static-devel package contains the static libraries necessary
