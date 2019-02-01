@@ -1,0 +1,25 @@
+diff -up glibc-2.29/csu/libc-start.c.omv~ glibc-2.29/csu/libc-start.c
+diff -up glibc-2.29/csu/Makefile.omv~ glibc-2.29/csu/Makefile
+--- glibc-2.29/csu/Makefile.omv~	2019-02-01 12:56:29.350902408 +0100
++++ glibc-2.29/csu/Makefile	2019-02-01 12:56:37.276973565 +0100
+@@ -114,7 +114,7 @@ endif
+ asm-CPPFLAGS += -I$(objpfx).
+ 
+ # Enable unwinding so backtrace unwinds to __libc_start_main
+-CFLAGS-libc-start.c += -funwind-tables
++CFLAGS-libc-start.c += -funwind-tables -fno-strict-aliasing
+ 
+ include ../Rules
+ 
+diff -up glibc-2.29/setjmp/Makefile.omv~ glibc-2.29/setjmp/Makefile
+--- glibc-2.29/setjmp/Makefile.omv~	2019-02-01 12:57:17.619335768 +0100
++++ glibc-2.29/setjmp/Makefile	2019-02-01 12:57:39.538532599 +0100
+@@ -31,6 +31,8 @@ tests		:= tst-setjmp jmpbug bug269-setjm
+ 		   tst-sigsetjmp tst-setjmp-static
+ tests-static	:= tst-setjmp-static
+ 
++CFLAGS-sigjmp.c += -fno-strict-aliasing
++CFLAGS-longjmp.c += -fno-strict-aliasing
+ 
+ include ../Rules
+ 

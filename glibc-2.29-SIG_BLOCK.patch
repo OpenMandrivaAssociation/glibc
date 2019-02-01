@@ -1,0 +1,12 @@
+diff -up glibc-2.29/sysdeps/unix/sysv/linux/x86_64/getcontext.S.omv~ glibc-2.29/sysdeps/unix/sysv/linux/x86_64/getcontext.S
+--- glibc-2.29/sysdeps/unix/sysv/linux/x86_64/getcontext.S.omv~	2019-02-01 12:59:33.458555834 +0100
++++ glibc-2.29/sysdeps/unix/sysv/linux/x86_64/getcontext.S	2019-02-01 13:01:58.194856450 +0100
+@@ -19,6 +19,8 @@
+ 
+ #include <sysdep.h>
+ #include <asm/prctl.h>
++#define __ASSEMBLY__ 1
++#include <asm/signal.h> /* for SIG_BLOCK */
+ 
+ #include "ucontext_i.h"
+ 

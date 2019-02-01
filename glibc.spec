@@ -218,6 +218,9 @@ Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch1033:	glibc-2.25-force-use-ld-bfd.patch
 Patch1034:	glibc-2.27-clang-_Float.patch
+Patch1035:	glibc-2.29-aarch64-buildfix.patch
+Patch1036:	glibc-2.29-strict-aliasing.patch
+Patch1037:	glibc-2.29-SIG_BLOCK.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
