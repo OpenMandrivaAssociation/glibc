@@ -141,7 +141,6 @@ Source1003:	locales.sysconfig
 #-----------------------------------------------------------------------
 # fedora patches
 Patch21:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-i386-tls-direct-seg-refs.patch
-Patch23:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-include-bits-ldbl.patch
 Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
 Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedata-rh61908.patch
