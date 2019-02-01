@@ -19,7 +19,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.28
+%define ver 2.29
 %define linaro %{nil}
 
 %define oname glibc
@@ -75,7 +75,7 @@
 # Gemini PDA has 3.18.x
 %define enablekernel 3.18.0
 %else
-%define enablekernel 4.10.0
+%define enablekernel 4.14.0
 %endif
 %endif
 
@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	9
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -234,7 +234,6 @@ BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
 BuildRequires:	systemd
-#BuildRequires:	pkgconfig(libxcrypt)
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -936,7 +935,6 @@ done
 
 %prep
 %setup -q -n %{source_dir} -a3
-
 %autopatch -p1
 
 %if %{with selinux}
@@ -1042,7 +1040,7 @@ function BuildGlibc() {
   BuildCXX="g++ -fuse-ld=bfd $BuildCompFlags"
 
   # Are we supposed to cross-compile?
-  if [[ "%{target_cpu}" != "%{_target_cpu}" ]]; then
+  if [ "%{target_cpu}" != "%{_target_cpu}" ]; then
     # Can't use BuildCC anymore with previous changes.
     BuildCC="%{cross_program_prefix}gcc $BuildCompFlags"
     BuildCXX="%{cross_program_prefix}g++ $BuildCompFlags"
@@ -1056,7 +1054,7 @@ function BuildGlibc() {
   BuildFlags="$BuildFlags -fno-lto"
   %endif
 
-  if [ "$arch" = "i586" -o "$arch" = "i686" ]; then
+  if [ "$arch" = 'i586' ] || [ "$arch" = 'i686' ]; then
     # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
     BuildCC="$BuildCC -fomit-frame-pointer"
     BuildCXX="$BuildCXX -fomit-frame-pointer"
@@ -1080,7 +1078,7 @@ function BuildGlibc() {
    # functionality and that we might just ditch biarch packaging completely,
    # we just enable it on the main arch for now.
 %if %{with systap}
-   if [[ "$BuildAltArch" = "no" ]]; then
+   if [ "$BuildAltArch" = 'no' ]; then
 %if %{with systap}
    ExtraFlags="$ExtraFlags --enable-systemtap"
 %endif
@@ -1162,7 +1160,7 @@ function BuildGlibc() {
   check_flags="-k"
 
   # Generate test matrix
-  [[ -d "build-$arch-linux" ]] || {
+  [ -d "build-$arch-linux" ] || {
     echo "ERROR: PrepareGlibcTest: build-$arch-linux does not exist!"
     return 1
   }
@@ -1174,7 +1172,7 @@ function BuildGlibc() {
   *)		base_arch=none;;
   esac
 
-  [[ -d "build-$base_arch-linux" ]] && {
+  [ -d "build-$base_arch-linux" ] && {
     check_flags="$check_flags -l build-$base_arch-linux/elf/ld.so"
     echo "$BuildJobs -d build-$arch-linux $check_flags" >> %{checklist}
   }
@@ -1362,7 +1360,7 @@ function InstallGlibc() {
   local SubDir="$2"
   local LibDir="$3"
 
-  [[ -z "$LibDir" ]] && LibDir="%{_slibdir}"
+  [ -z "$LibDir" ] && LibDir="%{_slibdir}"
 
   cd $BuildDir
   mkdir -p %{buildroot}$LibDir/$SubDir/
@@ -1453,7 +1451,7 @@ touch %{buildroot}%{_sysconfdir}/ld.so.cache
 
 # Are we cross-compiling?
 Strip="strip"
-if [[ "%{_target_cpu}" != "%{target_cpu}" ]]; then
+if [ "%{_target_cpu}" != "%{target_cpu}" ]; then
   Strip="%{cross_program_prefix}$Strip"
 fi
 
