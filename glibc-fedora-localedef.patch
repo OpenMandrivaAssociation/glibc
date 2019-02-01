@@ -1,12 +1,11 @@
-diff --git a/localedata/Makefile b/localedata/Makefile
-index a5f3c92d58954dfc..56719c7c714aa0f1 100644
---- a/localedata/Makefile
-+++ b/localedata/Makefile
-@@ -218,6 +218,7 @@ $(INSTALL-SUPPORTED-LOCALES): install-locales-dir
+diff -Naur glibc-2.29/localedata/Makefile glibc-2.29.tpg/localedata/Makefile
+--- glibc-2.29/localedata/Makefile	2019-02-01 11:37:49.564873847 +0000
++++ glibc-2.29.tpg/localedata/Makefile	2019-02-01 11:38:20.352871703 +0000
+@@ -413,6 +413,7 @@
  	echo -n '...'; \
  	input=`echo $$locale | sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/'`; \
  	$(LOCALEDEF) $$flags --alias-file=../intl/locale.alias \
 +		     --no-archive \
  		     -i locales/$$input -f charmaps/$$charset \
  		     $(addprefix --prefix=,$(install_root)) $$locale \
- 	&& echo ' done'; \
+ 	&& echo ' done';

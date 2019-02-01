@@ -185,8 +185,6 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
-# https://sourceware.org/ml/libc-alpha/2018-03/msg00504.html
-Patch98:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
@@ -220,7 +218,6 @@ Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch1033:	glibc-2.25-force-use-ld-bfd.patch
 Patch1034:	glibc-2.27-clang-_Float.patch
-Patch1035:	glibc-2.28-riscv-compile.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
@@ -233,6 +230,7 @@ BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
 BuildRequires:	systemd
+BuildRequires:	systemd-macros
 %if %{with selinux}
 BuildRequires:	libselinux-devel >= 1.17.10
 %endif
@@ -257,7 +255,6 @@ Provides:	should-restart = system
 Obsoletes:	glibc-profile
 # Old prelink versions breaks the system with glibc 2.11
 Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
-
 Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
