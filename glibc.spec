@@ -227,7 +227,7 @@ BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
+BuildRequires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 BuildRequires:	patch
 BuildRequires:	hardlink
 BuildRequires:	cap-devel
@@ -668,7 +668,7 @@ Requires:	pkgconfig(libxcrypt)
 Requires:	%{multilibc} = %{EVRD}
 %endif
 Autoreq:	true
-Requires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
+Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
@@ -920,7 +920,7 @@ for i in %{long_targets}; do
 %package -n ${package}
 Summary: Libc for crosscompiling to ${i}
 Group: Development/Other
-BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-release-headers
+BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-headers
 BuildRequires: kernel-release-source-latest
 Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
