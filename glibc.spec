@@ -1,4 +1,4 @@
-%bcond_without crosscompilers
+%bcond_with crosscompilers
 %ifarch %{ix86} %{arm}
 # FIXME add riscv32-linux when glibc starts supporting it
 # FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
