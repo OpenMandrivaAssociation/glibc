@@ -1049,8 +1049,10 @@ function BuildGlibc() {
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
 
+# set some extra flags here
 # (tpg) build with -O3
-  BuildFlags="$BuildFlags -DNDEBUG=1 %(echo %{__common_cflags_with_ssp} |sed -e 's#-O[s2]#-O3#g')"
+
+  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -fasynchronous-unwind-tables -fstack-clash-protection -funwind-tables %(echo %{__common_cflags_with_ssp} |sed -e 's#-O[s2]#-O3#g')"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
