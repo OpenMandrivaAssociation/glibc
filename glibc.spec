@@ -262,7 +262,7 @@ Conflicts:	prelink < 1:0.4.2-1.20091104.1mdv2010.1
 Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
-%define _filter_GLIBC_PRIVATE 1
+%global __filter_GLIBC_PRIVATE 1
 
 %rename		ld.so
 %ifarch %{mips} %{mipsel}
