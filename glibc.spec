@@ -558,6 +558,9 @@ LANG variable to their preferred language in their
 %if %isarch %{mips}
 %{_slibdir}/ld.so.1
 %endif
+%if %isarch riscv64
+%{_slibdir}/ld-linux-riscv64-lp64d.so.1
+%endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
