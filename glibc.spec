@@ -1583,6 +1583,16 @@ rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
+%ifarch riscv64
+# RISC-V ABI wants to install everything in /lib64/lp64d or /usr/lib64/lp64d.
+# Make these be symlinks to /lib64 or /usr/lib64 respectively.  See:
+# https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/DRHT5YTPK4WWVGL3GIN5BF2IKX2ODHZ3/
+for d in %{buildroot}%{_libdir} %{buildroot}/%{_lib}; do
+        mkdir -p $d
+        (cd $d && ln -sf . lp64d)
+done
+%endif
+
 %ifarch %{x86_64}
 # Needed for bootstrapping x32 compilers
 [ -e %{buildroot}%{_includedir}/gnu/stubs-x32.h ] || cp %{buildroot}%{_includedir}/gnu/stubs-64.h %{buildroot}%{_includedir}/gnu/stubs-x32.h
