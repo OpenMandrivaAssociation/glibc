@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	8
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -791,7 +791,7 @@ library.
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
-BuildRequires:	systemd
+BuildRequires:	systemd-macros
 BuildRequires:	rpm-helper
 Requires(post):	systemd
 Requires(pre):	shadow
@@ -803,7 +803,7 @@ performance with NIS+, and may help with DNS as well.
 %pre -n nscd -p <lua>
 user = os.execute("/usr/bin/getent passwd nscd >/dev/null 2>&1")
 if user ~= 0 then
-	os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd >/dev/null 2>&1")
+    os.execute("/usr/sbin/useradd -r -M -U -s /sbin/nologin -d / -c 'system user for nscd' nscd >/dev/null 2>&1")
 end
 
 %post -n nscd -p <lua>
@@ -816,6 +816,7 @@ os.execute("/bin/systemctl preset --now nscd.service >/dev/null 2>&1")
 %dir %attr(0755,root,root) /run/nscd
 %dir %attr(0755,root,root) %{_var}/db/nscd
 %dir %attr(0755,root,root) %{_sysconfdir}/netgroup
+%{_presetdir}/86-nscd.preset
 %{_unitdir}/nscd.service
 %{_unitdir}/nscd.socket
 %{_sbindir}/nscd
@@ -1414,6 +1415,11 @@ install -m 644 %{SOURCE11} %{buildroot}%{_sysconfdir}/nsswitch.conf
     touch %{buildroot}%{_var}/db/nscd/{passwd,group,hosts,services}
     install -m755 -d %{buildroot}/run/nscd
     touch %{buildroot}/run/nscd/{nscd.pid,socket,passwd,group,hosts,services}
+    install -d %{buildroot}%{_presetdir}
+cat > %{buildroot}%{_presetdir}/86-nscd.preset << EOF
+enable nscd.socket
+enable nscd.service
+EOF
 %endif
 
 # Include ld.so.conf
