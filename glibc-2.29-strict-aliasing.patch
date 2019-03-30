@@ -63,7 +63,7 @@ diff -up glibc-2.29/inet/Makefile.omv~ glibc-2.29/inet/Makefile
 diff -up glibc-2.29/libio/Makefile.omv~ glibc-2.29/libio/Makefile
 --- glibc-2.29/libio/Makefile.omv~	2019-03-30 01:39:01.060542141 +0100
 +++ glibc-2.29/libio/Makefile	2019-03-30 01:42:50.636635556 +0100
-@@ -150,6 +150,15 @@ CFLAGS-iofopen.c += -fexceptions
+@@ -150,6 +150,19 @@ CFLAGS-iofopen.c += -fexceptions
  CFLAGS-iofopen64.c += -fexceptions
  CFLAGS-oldtmpfile.c += -fexceptions
  # XXX Do we need filedoalloc and wfiledoalloc?  Others?
@@ -76,6 +76,10 @@ diff -up glibc-2.29/libio/Makefile.omv~ glibc-2.29/libio/Makefile
 +CFLAGS-obprintf.c += -fno-strict-aliasing
 +CFLAGS-stdfiles.c += -fno-strict-aliasing
 +CFLAGS-stdio.c += -fno-strict-aliasing
++CFLAGS-oldiofopen.c += -fno-strict-aliasing
++CFLAGS-oldiofdopen.c += -fno-strict-aliasing
++CFLAGS-oldiopopen.c += -fno-strict-aliasing
++CFLAGS-oldstdfiles.c += -fno-strict-aliasing
  
  CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
  
@@ -105,7 +109,7 @@ diff -up glibc-2.29/nis/Makefile.omv~ glibc-2.29/nis/Makefile
 diff -up glibc-2.29/nptl/Makefile.omv~ glibc-2.29/nptl/Makefile
 --- glibc-2.29/nptl/Makefile.omv~	2019-03-30 01:54:13.009910066 +0100
 +++ glibc-2.29/nptl/Makefile	2019-03-30 02:54:03.985495103 +0100
-@@ -231,6 +231,13 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
+@@ -231,6 +231,18 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
  
  CFLAGS-pt-system.c += -fexceptions
  
@@ -115,6 +119,11 @@ diff -up glibc-2.29/nptl/Makefile.omv~ glibc-2.29/nptl/Makefile
 +CFLAGS-sem_timedwait.c += -fno-strict-aliasing
 +CFLAGS-sem_post.c += -fno-strict-aliasing
 +CFLAGS-unwind.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_common.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_destroy.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_wait.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_signal.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_broadcast.c += -fno-strict-aliasing
 +
  LDLIBS-tst-once5 = -lstdc++
  CFLAGS-tst-thread_local1.o = -std=gnu++11
@@ -150,12 +159,15 @@ diff -up glibc-2.29/nss/Makefile.omv~ glibc-2.29/nss/Makefile
 diff -up glibc-2.29/posix/Makefile.omv~ glibc-2.29/posix/Makefile
 --- glibc-2.29/posix/Makefile.omv~	2019-03-30 01:46:24.029606033 +0100
 +++ glibc-2.29/posix/Makefile	2019-03-30 01:50:14.205620892 +0100
-@@ -242,6 +242,10 @@ CFLAGS-execvp.os = -fomit-frame-pointer
+@@ -242,6 +242,13 @@ CFLAGS-execvp.os = -fomit-frame-pointer
  CFLAGS-execlp.os = -fomit-frame-pointer
  CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
  
 +CFLAGS-glob.c += -fno-strict-aliasing
 +CFLAGS-glob-lstat-compat.c += -fno-strict-aliasing
++CFLAGS-glob64.c += -fno-strict-aliasing
++CFLAGS-glob64-lstat-compat.c += -fno-strict-aliasing
++CFLAGS-oldglob.c += -fno-strict-aliasing
 +CFLAGS-getaddrinfo.c += -fno-strict-aliasing
 +
  tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
@@ -247,4 +259,14 @@ diff -up glibc-2.29/support/Makefile.omv~ glibc-2.29/support/Makefile
  ifeq (,$(CXX))
  LINKS_DSO_PROGRAM = links-dso-program-c
  else
-diff -up glibc-2.29/sysdeps/unix/sysv/linux/Makefile.omv~ glibc-2.29/sysdeps/unix/sysv/linux/Makefile
+diff -up glibc-2.29/locale/Makefile.omv~ glibc-2.29/locale/Makefile
+--- glibc-2.29/locale/Makefile.omv~	2019-03-30 15:26:20.271041292 +0100
++++ glibc-2.29/locale/Makefile	2019-03-30 15:26:45.691112618 +0100
+@@ -101,6 +101,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
+ CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-charmap-dir.c += -Wno-write-strings
++CFLAGS-C-ctype.c += -fno-strict-aliasing
+ 
+ # Set libof-* for each routine.
+ cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
