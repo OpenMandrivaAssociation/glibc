@@ -1,4 +1,4 @@
-%bcond_with crosscompilers
+%bcond_without crosscompilers
 %ifarch %{ix86} %{arm}
 # FIXME add riscv32-linux when glibc starts supporting it
 # FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
@@ -192,6 +192,19 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Patches from upstream
 #
+# Taken from git://sourceware.org/git/glibc.git
+# release branch
+Patch500:	0001-nptl-Fix-pthread_rwlock_try-lock-stalls-Bug-23844.patch
+Patch501:	0002-x86-64-memcmp-Use-unsigned-Jcc-instructions-on-size-.patch
+Patch502:	0003-arm-Use-nr-constraint-for-Systemtap-probes-BZ-24164.patch
+Patch503:	0004-Add-compiler-barriers-around-modifications-of-the-ro.patch
+Patch504:	0005-nptl-Avoid-fork-handler-lock-for-async-signal-safe-f.patch
+Patch505:	0006-nptl-Fix-invalid-Systemtap-probe-in-pthread_join-BZ-.patch
+Patch506:	0007-Fix-output-of-LD_SHOW_AUXV-1.patch
+Patch507:	0008-regex-fix-read-overrun-BZ-24114.patch
+Patch508:	0009-Record-CVE-2019-9169-in-NEWS-and-ChangeLog-BZ-24114.patch
+Patch509:	0010-S390-Mark-vx-and-vxe-as-important-hwcap.patch
+Patch510:	0011-ja_JP-Change-the-offset-for-Taisho-gan-nen-from-2-to.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
@@ -910,7 +923,7 @@ These are configuration files that describe possible time zones.
 %endif
 
 %if %{with crosscompilers}
-%global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-release-source-latest)
+%global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-release-source)
 %(
 for i in %{long_targets}; do
 	[ "$i" = "%{_target_platform}" ] && continue
@@ -920,7 +933,7 @@ for i in %{long_targets}; do
 Summary: Libc for crosscompiling to ${i}
 Group: Development/Other
 BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-headers
-BuildRequires: kernel-release-source-latest
+BuildRequires: kernel-release-source
 Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
 Libc for crosscompiling to ${i}
@@ -979,7 +992,7 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-flto##' -e 's#-O[s2]#-O3#')"
+  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
 
   case $arch in
     i[3-6]86)
@@ -1051,7 +1064,7 @@ function BuildGlibc() {
 # set some extra flags here
 # (tpg) build with -O3
 
-  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -fasynchronous-unwind-tables -fstack-clash-protection -funwind-tables %(echo %{__common_cflags_with_ssp} |sed -e 's#-O[s2]#-O3#g')"
+  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -funwind-tables -fasynchronous-unwind-tables -fstack-clash-protection %(echo %{optflags} |sed -e 's#-m[36][24]##g;s#-O[s2]#-O3#g')"
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
@@ -1155,7 +1168,7 @@ function BuildGlibc() {
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
 
-  # FIXME use %%make if the Makefiles ever get fixed for parallel build
+  # FIXME drop -j1 if the Makefiles ever get fixed for parallel build
   %make_build -j1 -r all subdir_stubs
   cd -
 
@@ -1205,10 +1218,10 @@ for i in %{targets}; do
 	esac
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
-	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
-	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
-	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g;s,-Werror[^ ]*,,g')" \
-	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-flto,,g')" \
+	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
 	CC="${TRIPLET}-gcc ${CFLAGS}" \
 	../configure \
 		--prefix=%{_prefix}/${TRIPLET} \
@@ -1216,7 +1229,10 @@ for i in %{targets}; do
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
 		--with-headers=%{_prefix}/${TRIPLET}/include
-	%make_build
+	# We set CXX to empty to prevent links-dso-program from being built
+	# (it may not work -- if we're using a bootstrap version of gcc,
+	# there's no libstdc++ or libgcc_s)
+	%make_build CXX="" LIBGD=no
 	cd ..
 done
 %endif
@@ -1321,7 +1337,7 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
     %endif
     for ALT_ARCH in $ALT_ARCHES; do
 	mkdir -p %{buildroot}/$ALT_ARCH
-	%make install_root=%{buildroot}/$ALT_ARCH -C build-$ALT_ARCH \
+	%make install_root=%{buildroot}/$ALT_ARCH LIBGD=no -C build-$ALT_ARCH \
 		install
 
 	# Dispatch */lib only
