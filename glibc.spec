@@ -1169,7 +1169,11 @@ function BuildGlibc() {
     --with-bugurl=%{bugurl}
 
   # FIXME drop -j1 if the Makefiles ever get fixed for parallel build
-  %make_build -j1 -r all subdir_stubs
+  if [ "$BuildAltArch" = "yes" ]; then
+    %make_build -j1 -r all subdir_stubs LIBGD=no
+  else
+    %make_build -j1 -r all subdir_stubs
+  fi
   cd -
 
   check_flags="-k"
