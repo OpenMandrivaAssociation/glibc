@@ -1032,6 +1032,11 @@ function BuildGlibc() {
       ;;
     # to check
     armv7*)
+      # As of gcc 8.3.0, glibc 2.29, using -funwind-tables or -fasynchronous-unwind-tables
+      # on armv7hnl results in a build failure because configure can't find a
+      # compiler it believes to be working -- with -nostdlib, we get an
+      # undefined reference to __aeabi_unwind_cpp_pr0
+      BuildFlags="`echo $BuildFlags |sed -e 's,-funwind-tables ,,g;s,-fasynchronous-unwind-tables,,g'`"
       BuildCompFlags="$BuildFlags"
       ;;
     armv6*)
@@ -1064,7 +1069,14 @@ function BuildGlibc() {
 # set some extra flags here
 # (tpg) build with -O3
 
-  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -funwind-tables -fasynchronous-unwind-tables -fstack-clash-protection %(echo %{optflags} |sed -e 's#-m[36][24]##g;s#-O[s2]#-O3#g')"
+  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -fstack-clash-protection %(echo %{optflags} |sed -e 's#-m[36][24]##g;s#-O[s2]#-O3#g')"
+  %ifnarch %{arm}
+  # As of gcc 8.3.0, glibc 2.29, using -funwind-tables or -fasynchronous-unwind-tables
+  # on armv7hnl results in a build failure because configure can't find a
+  # compiler it believes to be working -- with -nostdlib, we get an
+  # undefined reference to __aeabi_unwind_cpp_pr0
+  BuildFlags="-funwind-tables -fasynchronous-unwind-tables $BuildFlags"
+  %endif
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
