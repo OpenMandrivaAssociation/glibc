@@ -1632,7 +1632,7 @@ ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/DRHT5YTPK4WWVGL3GIN5BF2IKX2ODHZ3/
 for d in %{buildroot}%{_libdir} %{buildroot}/%{_lib}; do
         mkdir -p $d
-        (cd $d && ln -sf . lp64d)
+        (cd $d && rm -f lp64d; ln -sf . lp64d)
 done
 %endif
 
