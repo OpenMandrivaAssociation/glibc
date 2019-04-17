@@ -571,6 +571,8 @@ LANG variable to their preferred language in their
 %endif
 %if %isarch riscv64
 %{_slibdir}/ld-linux-riscv64-lp64d.so.1
+%dir %{_slibdir}/lp64d
+%dir %{_libdir}/lp64d
 %endif
 %{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
