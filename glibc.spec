@@ -38,7 +38,11 @@
 %define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
+%bcond_without lto
+%if !%{with lto}
 %define _disable_lto 1
+%endif
+
 %define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
@@ -185,7 +189,9 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+%if %{with lto}
 Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
+%endif
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
@@ -996,8 +1002,11 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
+%if %{with lto}
+  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
+%else
   BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
-
+%endif
   case $arch in
     i[3-6]86)
 %ifarch %{x86_64}
@@ -1081,9 +1090,11 @@ function BuildGlibc() {
   # undefined reference to __aeabi_unwind_cpp_pr0
   BuildFlags="-funwind-tables -fasynchronous-unwind-tables $BuildFlags"
   %endif
+%if !%{with lto}
   %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
   %endif
+%endif
 
   if [ "$arch" = 'i586' ] || [ "$arch" = 'i686' ]; then
     # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
@@ -1238,10 +1249,17 @@ for i in %{targets}; do
 	esac
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
+%if %{with lto}
+	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
+	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
+	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
+	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,')" \
+%else
 	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
+%endif
 	CC="${TRIPLET}-gcc ${CFLAGS}" \
 	../configure \
 		--prefix=%{_prefix}/${TRIPLET} \
