@@ -185,6 +185,8 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
+Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
