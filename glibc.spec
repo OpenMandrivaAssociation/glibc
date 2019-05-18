@@ -247,7 +247,7 @@ BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
+BuildRequires:	kernel-release-headers >= %{enablekernel}
 BuildRequires:	patch
 BuildRequires:	hardlink
 BuildRequires:	cap-devel
