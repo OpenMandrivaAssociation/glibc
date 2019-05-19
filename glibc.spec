@@ -1019,7 +1019,7 @@ function BuildGlibc() {
 	BuildCompFlags="-m32"
 %endif
 %ifarch %{ix86}
-	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic"
+	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic -mstackalign"
 %endif
       ;;
     znver1)
