@@ -123,7 +123,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -196,6 +196,7 @@ Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.pa
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
+Patch102:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/0001-Compile-branred.c-with-mprefer-vector-width-128.patch
 
 #
 # Patches from upstream
