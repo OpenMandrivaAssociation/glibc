@@ -192,7 +192,6 @@ Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig
 %if %{with lto}
 Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
 %endif
-Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/0001-x86-64-Remove-sysdeps-x86_64-fpu-s_sinf.S.patch
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
