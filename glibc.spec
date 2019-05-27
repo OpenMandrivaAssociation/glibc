@@ -123,7 +123,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -691,7 +691,7 @@ Requires:	pkgconfig(libxcrypt)
 Requires:	%{multilibc} = %{EVRD}
 %endif
 Autoreq:	true
-Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
+Requires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
@@ -943,7 +943,7 @@ for i in %{long_targets}; do
 %package -n ${package}
 Summary: Libc for crosscompiling to ${i}
 Group: Development/Other
-BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-headers
+BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-release-headers
 BuildRequires: kernel-release-source
 Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
