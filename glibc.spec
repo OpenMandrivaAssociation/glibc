@@ -983,6 +983,10 @@ autoconf
 
 #-----------------------------------------------------------------------
 %build
+# qemu hack
+%ifarch %{riscv}
+export libc_cv_mtls_dialect_gnu2=yes
+%endif
 # ...
 mkdir -p bin
 ln -sf %{_bindir}/ld.bfd bin/ld
