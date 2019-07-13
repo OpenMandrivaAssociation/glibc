@@ -1659,6 +1659,9 @@ for d in %{buildroot}%{_libdir} %{buildroot}/%{_lib}; do
         mkdir -p $d
         (cd $d && rm -f lp64d; ln -sf . lp64d)
 done
+# Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
+# as dynamic loader
+ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
