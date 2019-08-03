@@ -1,7 +1,6 @@
-diff -up glibc-2.29/csu/libc-start.c.omv~ glibc-2.29/csu/libc-start.c
-diff -up glibc-2.29/csu/Makefile.omv~ glibc-2.29/csu/Makefile
---- glibc-2.29/csu/Makefile.omv~	2019-02-01 12:56:29.350902408 +0100
-+++ glibc-2.29/csu/Makefile	2019-02-01 12:56:37.276973565 +0100
+diff -up glibc-2.30/csu/Makefile.59~ glibc-2.30/csu/Makefile
+--- glibc-2.30/csu/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/csu/Makefile	2019-08-02 14:02:25.655110470 +0200
 @@ -114,7 +114,7 @@ endif
  asm-CPPFLAGS += -I$(objpfx).
  
@@ -11,22 +10,9 @@ diff -up glibc-2.29/csu/Makefile.omv~ glibc-2.29/csu/Makefile
  
  include ../Rules
  
-diff -up glibc-2.29/setjmp/Makefile.omv~ glibc-2.29/setjmp/Makefile
---- glibc-2.29/setjmp/Makefile.omv~	2019-02-01 12:57:17.619335768 +0100
-+++ glibc-2.29/setjmp/Makefile	2019-02-01 12:57:39.538532599 +0100
-@@ -31,6 +31,9 @@ tests		:= tst-setjmp jmpbug bug269-setjm
- 		   tst-sigsetjmp tst-setjmp-static
- tests-static	:= tst-setjmp-static
- 
-+CFLAGS-sigjmp.c += -fno-strict-aliasing
-+CFLAGS-longjmp.c += -fno-strict-aliasing
-+CFLAGS-longjmp_chk.c += -fno-strict-aliasing
- 
- include ../Rules
- 
-diff -up glibc-2.29/debug/Makefile.omv~ glibc-2.29/debug/Makefile
---- glibc-2.29/debug/Makefile.omv~	2019-03-30 03:01:07.097615956 +0100
-+++ glibc-2.29/debug/Makefile	2019-03-30 03:01:59.144920770 +0100
+diff -up glibc-2.30/debug/Makefile.59~ glibc-2.30/debug/Makefile
+--- glibc-2.30/debug/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/debug/Makefile	2019-08-02 14:02:25.655110470 +0200
 @@ -109,6 +109,8 @@ CPPFLAGS-tst-longjmp_chk2.c += -D_FORTIF
  CFLAGS-tst-longjmp_chk3.c += -fexceptions -fasynchronous-unwind-tables
  CPPFLAGS-tst-longjmp_chk3.c += -D_FORTIFY_SOURCE=1
@@ -36,9 +22,9 @@ diff -up glibc-2.29/debug/Makefile.omv~ glibc-2.29/debug/Makefile
  # We know these tests have problems with format strings, this is what
  # we are testing.  Disable that warning.  They are also testing
  # deprecated functions (notably gets) so disable that warning as well.
-diff -up glibc-2.29/inet/Makefile.omv~ glibc-2.29/inet/Makefile
---- glibc-2.29/inet/Makefile.omv~	2019-03-30 03:05:58.653583520 +0100
-+++ glibc-2.29/inet/Makefile	2019-03-30 03:36:46.336546885 +0100
+diff -up glibc-2.30/inet/Makefile.59~ glibc-2.30/inet/Makefile
+--- glibc-2.30/inet/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/inet/Makefile	2019-08-02 14:02:25.655110470 +0200
 @@ -106,6 +106,20 @@ CFLAGS-getnetgrent_r.c += -fexceptions
  CFLAGS-tst-checks-posix.c += -std=c99
  CFLAGS-tst-sockaddr.c += -fno-strict-aliasing
@@ -60,10 +46,10 @@ diff -up glibc-2.29/inet/Makefile.omv~ glibc-2.29/inet/Makefile
  endif
  
  ifeq ($(build-static-nss),yes)
-diff -up glibc-2.29/libio/Makefile.omv~ glibc-2.29/libio/Makefile
---- glibc-2.29/libio/Makefile.omv~	2019-03-30 01:39:01.060542141 +0100
-+++ glibc-2.29/libio/Makefile	2019-03-30 01:42:50.636635556 +0100
-@@ -150,6 +150,19 @@ CFLAGS-iofopen.c += -fexceptions
+diff -up glibc-2.30/libio/Makefile.59~ glibc-2.30/libio/Makefile
+--- glibc-2.30/libio/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/libio/Makefile	2019-08-02 14:02:25.656110465 +0200
+@@ -154,6 +154,19 @@ CFLAGS-iofopen.c += -fexceptions
  CFLAGS-iofopen64.c += -fexceptions
  CFLAGS-oldtmpfile.c += -fexceptions
  # XXX Do we need filedoalloc and wfiledoalloc?  Others?
@@ -83,10 +69,21 @@ diff -up glibc-2.29/libio/Makefile.omv~ glibc-2.29/libio/Makefile
  
  CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
  
-diff -up glibc-2.29/misc/Makefile.omv~ glibc-2.29/misc/Makefile
---- glibc-2.29/misc/Makefile.omv~	2019-03-30 01:52:31.674329260 +0100
-+++ glibc-2.29/misc/Makefile	2019-03-30 01:52:50.631439902 +0100
-@@ -135,6 +135,8 @@ CFLAGS-sbrk.op = $(no-stack-protector)
+diff -up glibc-2.30/locale/Makefile.59~ glibc-2.30/locale/Makefile
+--- glibc-2.30/locale/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/locale/Makefile	2019-08-02 14:02:25.658110454 +0200
+@@ -105,6 +105,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
+ CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-charmap-dir.c += -Wno-write-strings
++CFLAGS-C-ctype.c += -fno-strict-aliasing
+ 
+ # Set libof-* for each routine.
+ cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
+diff -up glibc-2.30/misc/Makefile.59~ glibc-2.30/misc/Makefile
+--- glibc-2.30/misc/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/misc/Makefile	2019-08-02 14:02:25.656110465 +0200
+@@ -136,6 +136,8 @@ CFLAGS-sbrk.op = $(no-stack-protector)
  CFLAGS-brk.o = $(no-stack-protector)
  CFLAGS-brk.op = $(no-stack-protector)
  
@@ -95,9 +92,9 @@ diff -up glibc-2.29/misc/Makefile.omv~ glibc-2.29/misc/Makefile
  include ../Rules
  
  $(objpfx)libg.a: $(dep-dummy-lib); $(make-dummy-lib)
-diff -up glibc-2.29/nis/Makefile.omv~ glibc-2.29/nis/Makefile
---- glibc-2.29/nis/Makefile.omv~	2019-03-30 04:09:44.362755054 +0100
-+++ glibc-2.29/nis/Makefile	2019-03-30 04:10:02.983008221 +0100
+diff -up glibc-2.30/nis/Makefile.59~ glibc-2.30/nis/Makefile
+--- glibc-2.30/nis/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/nis/Makefile	2019-08-02 14:02:25.656110465 +0200
 @@ -92,6 +92,7 @@ endif # have-GLIBC_2.28
  
  include ../Rules
@@ -106,14 +103,15 @@ diff -up glibc-2.29/nis/Makefile.omv~ glibc-2.29/nis/Makefile
  
  ifeq ($(build-obsolete-nsl),yes)
  $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
-diff -up glibc-2.29/nptl/Makefile.omv~ glibc-2.29/nptl/Makefile
---- glibc-2.29/nptl/Makefile.omv~	2019-03-30 01:54:13.009910066 +0100
-+++ glibc-2.29/nptl/Makefile	2019-03-30 02:54:03.985495103 +0100
-@@ -231,6 +231,18 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
+diff -up glibc-2.30/nptl/Makefile.59~ glibc-2.30/nptl/Makefile
+--- glibc-2.30/nptl/Makefile.59~	2019-08-02 14:02:25.469111491 +0200
++++ glibc-2.30/nptl/Makefile	2019-08-02 14:02:25.656110465 +0200
+@@ -234,6 +234,19 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
  
  CFLAGS-pt-system.c += -fexceptions
  
 +CFLAGS-pthread_create.c += -fno-strict-aliasing
++CFLAGS-sem_clockwait.c += -fno-strict-aliasing
 +CFLAGS-sem_wait.c += -fno-strict-aliasing
 +CFLAGS-sem_waitcommon.c += -fno-strict-aliasing
 +CFLAGS-sem_timedwait.c += -fno-strict-aliasing
@@ -128,9 +126,9 @@ diff -up glibc-2.29/nptl/Makefile.omv~ glibc-2.29/nptl/Makefile
  LDLIBS-tst-once5 = -lstdc++
  CFLAGS-tst-thread_local1.o = -std=gnu++11
  LDLIBS-tst-thread_local1 = -lstdc++
-diff -up glibc-2.29/nscd/Makefile.omv~ glibc-2.29/nscd/Makefile
---- glibc-2.29/nscd/Makefile.omv~	2019-03-30 03:52:06.514438444 +0100
-+++ glibc-2.29/nscd/Makefile	2019-03-30 04:16:11.619357418 +0100
+diff -up glibc-2.30/nscd/Makefile.59~ glibc-2.30/nscd/Makefile
+--- glibc-2.30/nscd/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/nscd/Makefile	2019-08-02 14:02:25.656110465 +0200
 @@ -79,6 +79,14 @@ CFLAGS-nscd_gethst_r.c += -fexceptions
  CFLAGS-nscd_getai.c += -fexceptions
  CFLAGS-nscd_initgroups.c += -fexceptions
@@ -146,20 +144,20 @@ diff -up glibc-2.29/nscd/Makefile.omv~ glibc-2.29/nscd/Makefile
  CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
  
  ifeq (yesyes,$(have-fpie)$(build-shared))
-diff -up glibc-2.29/nss/Makefile.omv~ glibc-2.29/nss/Makefile
---- glibc-2.29/nss/Makefile.omv~	2019-03-30 03:04:47.253152286 +0100
-+++ glibc-2.29/nss/Makefile	2019-03-30 03:40:14.235313434 +0100
-@@ -176,3 +176,6 @@ $(objpfx)tst-nss-files-hosts-multi: $(li
- $(objpfx)tst-nss-files-hosts-getent: $(libdl)
- $(objpfx)tst-nss-files-alias-leak: $(libdl)
+diff -up glibc-2.30/nss/Makefile.59~ glibc-2.30/nss/Makefile
+--- glibc-2.30/nss/Makefile.59~	2019-08-02 14:02:25.656110465 +0200
++++ glibc-2.30/nss/Makefile	2019-08-02 14:03:29.043761884 +0200
+@@ -182,3 +182,6 @@ $(objpfx)tst-nss-files-alias-leak: $(lib
  $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
+ $(objpfx)tst-nss-files-alias-truncated: $(libdl)
+ $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so
 +
 +CFLAGS-getnssent_r.c += -fno-strict-aliasing
 +CFLAGS-digits_dots.c += -fno-strict-aliasing
-diff -up glibc-2.29/posix/Makefile.omv~ glibc-2.29/posix/Makefile
---- glibc-2.29/posix/Makefile.omv~	2019-03-30 01:46:24.029606033 +0100
-+++ glibc-2.29/posix/Makefile	2019-03-30 01:50:14.205620892 +0100
-@@ -242,6 +242,13 @@ CFLAGS-execvp.os = -fomit-frame-pointer
+diff -up glibc-2.30/posix/Makefile.59~ glibc-2.30/posix/Makefile
+--- glibc-2.30/posix/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/posix/Makefile	2019-08-02 14:02:25.657110460 +0200
+@@ -246,6 +246,13 @@ CFLAGS-execvp.os = -fomit-frame-pointer
  CFLAGS-execlp.os = -fomit-frame-pointer
  CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
  
@@ -173,10 +171,10 @@ diff -up glibc-2.29/posix/Makefile.omv~ glibc-2.29/posix/Makefile
  tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
  		--none random --col --color --colour
  
-diff -up glibc-2.29/resolv/Makefile.omv~ glibc-2.29/resolv/Makefile
---- glibc-2.29/resolv/Makefile.omv~	2019-03-30 03:03:22.248963330 +0100
-+++ glibc-2.29/resolv/Makefile	2019-03-30 04:08:30.501708568 +0100
-@@ -147,6 +147,19 @@ include ../gen-locales.mk
+diff -up glibc-2.30/resolv/Makefile.59~ glibc-2.30/resolv/Makefile
+--- glibc-2.30/resolv/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/resolv/Makefile	2019-08-02 14:02:25.657110460 +0200
+@@ -143,6 +143,19 @@ include ../gen-locales.mk
  
  CFLAGS-res_hconf.c += -fexceptions
  
@@ -196,9 +194,9 @@ diff -up glibc-2.29/resolv/Makefile.omv~ glibc-2.29/resolv/Makefile
  # The DNS NSS modules needs the resolver.
  $(objpfx)libnss_dns.so: $(objpfx)libresolv.so
  
-diff -up glibc-2.29/rt/Makefile.omv~ glibc-2.29/rt/Makefile
---- glibc-2.29/rt/Makefile.omv~	2019-03-30 03:59:15.091352740 +0100
-+++ glibc-2.29/rt/Makefile	2019-03-30 03:59:28.235458532 +0100
+diff -up glibc-2.30/rt/Makefile.59~ glibc-2.30/rt/Makefile
+--- glibc-2.30/rt/Makefile.59~	2019-08-02 14:02:25.635110580 +0200
++++ glibc-2.30/rt/Makefile	2019-08-02 14:02:25.657110460 +0200
 @@ -66,6 +66,8 @@ CFLAGS-mq_timedsend.c += -fexceptions -f
  CFLAGS-clock_nanosleep.c += -fexceptions -fasynchronous-unwind-tables
  CFLAGS-librt-cancellation.c += -fasynchronous-unwind-tables
@@ -208,9 +206,22 @@ diff -up glibc-2.29/rt/Makefile.omv~ glibc-2.29/rt/Makefile
  LDFLAGS-rt.so = -Wl,--enable-new-dtags,-z,nodelete
  
  $(objpfx)librt.so: $(shared-thread-library)
-diff -up glibc-2.29/stdio-common/Makefile.omv~ glibc-2.29/stdio-common/Makefile
---- glibc-2.29/stdio-common/Makefile.omv~	2019-03-30 01:34:47.071238325 +0100
-+++ glibc-2.29/stdio-common/Makefile	2019-03-30 01:38:08.931284110 +0100
+diff -up glibc-2.30/setjmp/Makefile.59~ glibc-2.30/setjmp/Makefile
+--- glibc-2.30/setjmp/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/setjmp/Makefile	2019-08-02 14:02:25.655110470 +0200
+@@ -31,6 +31,9 @@ tests		:= tst-setjmp jmpbug bug269-setjm
+ 		   tst-sigsetjmp tst-setjmp-static
+ tests-static	:= tst-setjmp-static
+ 
++CFLAGS-sigjmp.c += -fno-strict-aliasing
++CFLAGS-longjmp.c += -fno-strict-aliasing
++CFLAGS-longjmp_chk.c += -fno-strict-aliasing
+ 
+ include ../Rules
+ 
+diff -up glibc-2.30/stdio-common/Makefile.59~ glibc-2.30/stdio-common/Makefile
+--- glibc-2.30/stdio-common/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/stdio-common/Makefile	2019-08-02 14:02:25.657110460 +0200
 @@ -125,6 +125,10 @@ $(objpfx)tst-%-mem.out: $(objpfx)tst-%.o
  
  CFLAGS-vfprintf.c += -Wno-uninitialized
@@ -222,9 +233,9 @@ diff -up glibc-2.29/stdio-common/Makefile.omv~ glibc-2.29/stdio-common/Makefile
  
  CFLAGS-tmpfile.c += -fexceptions
  CFLAGS-tmpfile64.c += -fexceptions
-diff -up glibc-2.29/sunrpc/Makefile.omv~ glibc-2.29/sunrpc/Makefile
---- glibc-2.29/sunrpc/Makefile.omv~	2019-03-30 03:41:07.036516482 +0100
-+++ glibc-2.29/sunrpc/Makefile	2019-03-30 03:50:31.416395875 +0100
+diff -up glibc-2.30/sunrpc/Makefile.59~ glibc-2.30/sunrpc/Makefile
+--- glibc-2.30/sunrpc/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
++++ glibc-2.30/sunrpc/Makefile	2019-08-02 14:02:25.657110460 +0200
 @@ -156,6 +156,21 @@ CFLAGS-pmap_rmt.c += -fexceptions
  CFLAGS-clnt_perr.c += -fexceptions
  CFLAGS-openchild.c += -fexceptions
@@ -247,26 +258,40 @@ diff -up glibc-2.29/sunrpc/Makefile.omv~ glibc-2.29/sunrpc/Makefile
  $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
  $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
  $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
-diff -up glibc-2.29/support/Makefile.omv~ glibc-2.29/support/Makefile
---- glibc-2.29/support/Makefile.omv~	2019-03-30 04:00:21.185878611 +0100
-+++ glibc-2.29/support/Makefile	2019-03-30 04:00:35.030986920 +0100
-@@ -169,6 +169,8 @@ CFLAGS-support_paths.c = \
- 		-DINSTDIR_PATH=\"$(prefix)\" \
- 		-DLIBDIR_PATH=\"$(libdir)\"
+diff -up glibc-2.30/support/Makefile.59~ glibc-2.30/support/Makefile
+--- glibc-2.30/support/Makefile.59~	2019-08-02 14:02:25.658110454 +0200
++++ glibc-2.30/support/Makefile	2019-08-02 14:03:49.448649403 +0200
+@@ -184,6 +184,8 @@ CFLAGS-support_paths.c = \
+ 		-DSBINDIR_PATH=\"$(sbindir)\" \
+ 		-DROOTSBINDIR_PATH=\"$(rootsbindir)\"
  
 +CFLAGS-resolv_test.c = -fno-strict-aliasing
 +
  ifeq (,$(CXX))
  LINKS_DSO_PROGRAM = links-dso-program-c
  else
-diff -up glibc-2.29/locale/Makefile.omv~ glibc-2.29/locale/Makefile
---- glibc-2.29/locale/Makefile.omv~	2019-03-30 15:26:20.271041292 +0100
-+++ glibc-2.29/locale/Makefile	2019-03-30 15:26:45.691112618 +0100
-@@ -101,6 +101,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
- CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
- CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
- CFLAGS-charmap-dir.c += -Wno-write-strings
-+CFLAGS-C-ctype.c += -fno-strict-aliasing
+diff -up glibc-2.30/libio/libioP.h.omv~ glibc-2.30/libio/libioP.h
+--- glibc-2.30/libio/libioP.h.omv~	2019-08-03 00:07:22.023320351 +0200
++++ glibc-2.30/libio/libioP.h	2019-08-03 00:07:47.826180694 +0200
+@@ -842,8 +842,8 @@ extern struct _IO_FILE_plus _IO_stderr_;
+ static inline bool
+ _IO_legacy_file (FILE *fp)
+ {
+-  return fp == (FILE *) &_IO_stdin_ || fp == (FILE *) &_IO_stdout_
+-    || fp == (FILE *) &_IO_stderr_;
++  return (void*)fp == &_IO_stdin_ || (void*)fp == &_IO_stdout_
++    || (void*)fp == &_IO_stderr_;
+ }
+ #endif
  
- # Set libof-* for each routine.
- cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
+@@ -853,8 +853,8 @@ static inline void
+ _IO_deallocate_file (FILE *fp)
+ {
+   /* The current stream variables.  */
+-  if (fp == (FILE *) &_IO_2_1_stdin_ || fp == (FILE *) &_IO_2_1_stdout_
+-      || fp == (FILE *) &_IO_2_1_stderr_)
++  if ((void*)fp == &_IO_2_1_stdin_ || (void*)fp == &_IO_2_1_stdout_
++      || (void*)fp == &_IO_2_1_stderr_)
+     return;
+ #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
+   if (_IO_legacy_file (fp))

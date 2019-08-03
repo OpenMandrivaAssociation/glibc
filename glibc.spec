@@ -19,7 +19,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.29
+%define ver 2.30
 %define linaro %{nil}
 
 %define oname glibc
@@ -123,7 +123,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	5
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -196,24 +196,12 @@ Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.pa
 Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
-Patch102:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/0001-Compile-branred.c-with-mprefer-vector-width-128.patch
 
 #
 # Patches from upstream
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-Patch500:	0001-nptl-Fix-pthread_rwlock_try-lock-stalls-Bug-23844.patch
-Patch501:	0002-x86-64-memcmp-Use-unsigned-Jcc-instructions-on-size-.patch
-Patch502:	0003-arm-Use-nr-constraint-for-Systemtap-probes-BZ-24164.patch
-Patch503:	0004-Add-compiler-barriers-around-modifications-of-the-ro.patch
-Patch504:	0005-nptl-Avoid-fork-handler-lock-for-async-signal-safe-f.patch
-Patch505:	0006-nptl-Fix-invalid-Systemtap-probe-in-pthread_join-BZ-.patch
-Patch506:	0007-Fix-output-of-LD_SHOW_AUXV-1.patch
-Patch507:	0008-regex-fix-read-overrun-BZ-24114.patch
-Patch508:	0009-Record-CVE-2019-9169-in-NEWS-and-ChangeLog-BZ-24114.patch
-Patch509:	0010-S390-Mark-vx-and-vxe-as-important-hwcap.patch
-Patch510:	0011-ja_JP-Change-the-offset-for-Taisho-gan-nen-from-2-to.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
@@ -1354,6 +1342,12 @@ for i in %{long_targets}; do
 	fi
 	echo "===== Installing %{_target_platform} -> $i cross libc ====="
 	cd obj-${i}
+
+	# FIXME as of 2.30, installing the x86_64 -> aarch64 crosscompiler
+	# fails unless those directories are created first. Should figure
+	# out what's going on there at some point.
+	mkdir cstdlib cmath
+
 	%make_install
 	cd ..
 	# We don't need all the bits and pieces with a crosscompiler
