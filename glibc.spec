@@ -79,7 +79,9 @@
 # Gemini PDA has 3.18.x
 %define enablekernel 3.18.0
 %else
-%define enablekernel 4.14.0
+# (tpg) some popular clouds will fail with error "FATAL: kernel too old"
+# when running our docker or building it. Let's be safe and pretend it's 2015.
+%define enablekernel 4.0
 %endif
 %endif
 
@@ -123,7 +125,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
 %endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
