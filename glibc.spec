@@ -299,6 +299,14 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %if "%{name}" == "glibc"
+%pre -p <lua>
+-- Check that the running kernel is new enough
+required = '%{enablekernel}'
+rel = posix.uname("%r")
+if rpm.vercmp(rel, required) < 0 then
+  error("FATAL: kernel too old", 0)
+end
+
 %post -p <lua>
 os.execute("/usr/sbin/glibc_post_upgrade")
 
