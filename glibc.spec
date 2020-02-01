@@ -86,7 +86,8 @@
 %endif
 
 # Define to build nscd with selinux support
-%bcond_with selinux
+# Distro-specific default value is defined in branding-configs package
+%{?build_selinux}%{?!build_selinux:%bcond_with selinux}
 
 # Define to build a biarch package
 %define build_biarch 0
@@ -247,7 +248,10 @@ BuildRequires:	pkgconfig(libidn2)
 BuildRequires:	systemd
 BuildRequires:	systemd-macros
 %if %{with selinux}
-BuildRequires:	libselinux-devel >= 1.17.10
+# see configure.ac
+BuildRequires:	selinux-devel
+BuildRequires:	audit-devel
+BuildRequires:	pkgconfig(libcap)
 %endif
 BuildRequires:	texinfo
 %if %{with pdf}
@@ -960,12 +964,6 @@ done
 %setup -q -n %{source_dir} -a3
 %autopatch -p1
 
-%if %{with selinux}
-    # XXX kludge to build nscd with selinux support as it added -nostdinc
-    # so /usr/include/selinux is not found
-    ln -s %{_includedir}/selinux selinux
-%endif
-
 find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Remove patch backups from files we ship in glibc packages
@@ -993,6 +991,27 @@ export PATH=$PWD/bin:$PATH
 
 # Prepare test matrix in the next function
 > %{checklist}
+
+#
+# WithSelinux
+#
+# When building on 64 bit system 32 bit binaries are also built.
+# But building with --with-selinux requires linking with at least libselinux.
+# This linking requires a 32 bit libselinux.so, but 32 bit repositories
+# are not or may not be available at build time, so there is no source to take
+# 32 bit libselinux.so from. Only nscd executable is linked with libselinux
+# and we do not need to build 32 bit nscd executable on 64 bit systems,
+# so let's just omit selinux when building 32 bit binaries on 64 bit systems.
+function WithSelinux() {
+%if %{with selinux}
+  if [ "$BIARCH_BUILDING" = 0 ]
+    then echo '--with-selinux'
+    else echo '--without-selinux'
+  fi
+%else
+  echo '--without-selinux'
+%endif
+}
 
 #
 # BuildGlibc <arch> [<extra_configure_options>+]
@@ -1181,11 +1200,7 @@ function BuildGlibc() {
     --disable-profile \
     --enable-static \
     --disable-nss-crypt \
-%if %{with selinux}
-    --with-selinux \
-%else
-    --without-selinux \
-%endif
+    $(WithSelinux) \
 %if !%{with nscd}
     --disable-build-nscd \
 %endif
@@ -1280,8 +1295,10 @@ done
 %endif
 
 # Build main glibc
+export BIARCH_BUILDING=0
 BuildGlibc %{target_cpu}
 
+export BIARCH_BUILDING=1
 %if %{build_biarch}
     %if %isarch %{x86_64}
 	BuildGlibc i686
