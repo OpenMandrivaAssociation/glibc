@@ -1114,9 +1114,7 @@ function BuildGlibc() {
   BuildFlags="-funwind-tables -fasynchronous-unwind-tables $BuildFlags"
   %endif
 %if !%{with lto}
-  %if "%{distepoch}" >= "2015.0"
   BuildFlags="$BuildFlags -fno-lto"
-  %endif
 %endif
 
   if [ "$arch" = 'i586' ] || [ "$arch" = 'i686' ]; then
