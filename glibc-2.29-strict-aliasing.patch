@@ -1,6 +1,6 @@
-diff -up glibc-2.30/csu/Makefile.59~ glibc-2.30/csu/Makefile
---- glibc-2.30/csu/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/csu/Makefile	2019-08-02 14:02:25.655110470 +0200
+diff -up glibc-2.31/csu/Makefile.59~ glibc-2.31/csu/Makefile
+--- glibc-2.31/csu/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/csu/Makefile	2020-02-04 02:34:09.646778297 +0100
 @@ -114,7 +114,7 @@ endif
  asm-CPPFLAGS += -I$(objpfx).
  
@@ -10,9 +10,9 @@ diff -up glibc-2.30/csu/Makefile.59~ glibc-2.30/csu/Makefile
  
  include ../Rules
  
-diff -up glibc-2.30/debug/Makefile.59~ glibc-2.30/debug/Makefile
---- glibc-2.30/debug/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/debug/Makefile	2019-08-02 14:02:25.655110470 +0200
+diff -up glibc-2.31/debug/Makefile.59~ glibc-2.31/debug/Makefile
+--- glibc-2.31/debug/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/debug/Makefile	2020-02-04 02:34:09.646778297 +0100
 @@ -109,6 +109,8 @@ CPPFLAGS-tst-longjmp_chk2.c += -D_FORTIF
  CFLAGS-tst-longjmp_chk3.c += -fexceptions -fasynchronous-unwind-tables
  CPPFLAGS-tst-longjmp_chk3.c += -D_FORTIFY_SOURCE=1
@@ -22,9 +22,9 @@ diff -up glibc-2.30/debug/Makefile.59~ glibc-2.30/debug/Makefile
  # We know these tests have problems with format strings, this is what
  # we are testing.  Disable that warning.  They are also testing
  # deprecated functions (notably gets) so disable that warning as well.
-diff -up glibc-2.30/inet/Makefile.59~ glibc-2.30/inet/Makefile
---- glibc-2.30/inet/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/inet/Makefile	2019-08-02 14:02:25.655110470 +0200
+diff -up glibc-2.31/inet/Makefile.59~ glibc-2.31/inet/Makefile
+--- glibc-2.31/inet/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/inet/Makefile	2020-02-04 02:34:09.646778297 +0100
 @@ -106,6 +106,20 @@ CFLAGS-getnetgrent_r.c += -fexceptions
  CFLAGS-tst-checks-posix.c += -std=c99
  CFLAGS-tst-sockaddr.c += -fno-strict-aliasing
@@ -46,233 +46,9 @@ diff -up glibc-2.30/inet/Makefile.59~ glibc-2.30/inet/Makefile
  endif
  
  ifeq ($(build-static-nss),yes)
-diff -up glibc-2.30/libio/Makefile.59~ glibc-2.30/libio/Makefile
---- glibc-2.30/libio/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/libio/Makefile	2019-08-02 14:02:25.656110465 +0200
-@@ -154,6 +154,19 @@ CFLAGS-iofopen.c += -fexceptions
- CFLAGS-iofopen64.c += -fexceptions
- CFLAGS-oldtmpfile.c += -fexceptions
- # XXX Do we need filedoalloc and wfiledoalloc?  Others?
-+#
-+CFLAGS-iofopncook.c += -fno-strict-aliasing
-+CFLAGS-iopopen.c += -fno-strict-aliasing
-+CFLAGS-vswprintf.c += -fno-strict-aliasing
-+CFLAGS-wmemstream.c += -fno-strict-aliasing
-+CFLAGS-memstream.c += -fno-strict-aliasing
-+CFLAGS-obprintf.c += -fno-strict-aliasing
-+CFLAGS-stdfiles.c += -fno-strict-aliasing
-+CFLAGS-stdio.c += -fno-strict-aliasing
-+CFLAGS-oldiofopen.c += -fno-strict-aliasing
-+CFLAGS-oldiofdopen.c += -fno-strict-aliasing
-+CFLAGS-oldiopopen.c += -fno-strict-aliasing
-+CFLAGS-oldstdfiles.c += -fno-strict-aliasing
- 
- CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
- 
-diff -up glibc-2.30/locale/Makefile.59~ glibc-2.30/locale/Makefile
---- glibc-2.30/locale/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/locale/Makefile	2019-08-02 14:02:25.658110454 +0200
-@@ -105,6 +105,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
- CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
- CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
- CFLAGS-charmap-dir.c += -Wno-write-strings
-+CFLAGS-C-ctype.c += -fno-strict-aliasing
- 
- # Set libof-* for each routine.
- cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
-diff -up glibc-2.30/misc/Makefile.59~ glibc-2.30/misc/Makefile
---- glibc-2.30/misc/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/misc/Makefile	2019-08-02 14:02:25.656110465 +0200
-@@ -136,6 +136,8 @@ CFLAGS-sbrk.op = $(no-stack-protector)
- CFLAGS-brk.o = $(no-stack-protector)
- CFLAGS-brk.op = $(no-stack-protector)
- 
-+CFLAGS-tsearch.c += -fno-strict-aliasing
-+
- include ../Rules
- 
- $(objpfx)libg.a: $(dep-dummy-lib); $(make-dummy-lib)
-diff -up glibc-2.30/nis/Makefile.59~ glibc-2.30/nis/Makefile
---- glibc-2.30/nis/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/nis/Makefile	2019-08-02 14:02:25.656110465 +0200
-@@ -92,6 +92,7 @@ endif # have-GLIBC_2.28
- 
- include ../Rules
- 
-+CFLAGS-nis_callback.c += -fno-strict-aliasing
- 
- ifeq ($(build-obsolete-nsl),yes)
- $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
-diff -up glibc-2.30/nptl/Makefile.59~ glibc-2.30/nptl/Makefile
---- glibc-2.30/nptl/Makefile.59~	2019-08-02 14:02:25.469111491 +0200
-+++ glibc-2.30/nptl/Makefile	2019-08-02 14:02:25.656110465 +0200
-@@ -234,6 +234,19 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
- 
- CFLAGS-pt-system.c += -fexceptions
- 
-+CFLAGS-pthread_create.c += -fno-strict-aliasing
-+CFLAGS-sem_clockwait.c += -fno-strict-aliasing
-+CFLAGS-sem_wait.c += -fno-strict-aliasing
-+CFLAGS-sem_waitcommon.c += -fno-strict-aliasing
-+CFLAGS-sem_timedwait.c += -fno-strict-aliasing
-+CFLAGS-sem_post.c += -fno-strict-aliasing
-+CFLAGS-unwind.c += -fno-strict-aliasing
-+CFLAGS-pthread_cond_common.c += -fno-strict-aliasing
-+CFLAGS-pthread_cond_destroy.c += -fno-strict-aliasing
-+CFLAGS-pthread_cond_wait.c += -fno-strict-aliasing
-+CFLAGS-pthread_cond_signal.c += -fno-strict-aliasing
-+CFLAGS-pthread_cond_broadcast.c += -fno-strict-aliasing
-+
- LDLIBS-tst-once5 = -lstdc++
- CFLAGS-tst-thread_local1.o = -std=gnu++11
- LDLIBS-tst-thread_local1 = -lstdc++
-diff -up glibc-2.30/nscd/Makefile.59~ glibc-2.30/nscd/Makefile
---- glibc-2.30/nscd/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/nscd/Makefile	2019-08-02 14:02:25.656110465 +0200
-@@ -79,6 +79,14 @@ CFLAGS-nscd_gethst_r.c += -fexceptions
- CFLAGS-nscd_getai.c += -fexceptions
- CFLAGS-nscd_initgroups.c += -fexceptions
- 
-+CFLAGS-nscd_helper.c += -fno-strict-aliasing
-+CFLAGS-nscd.c += -fno-strict-aliasing
-+CFLAGS-connections.c += -fno-strict-aliasing
-+CFLAGS-gethstbyad_r.c += -fno-strict-aliasing
-+CFLAGS-gethstbynm3_r.c += -fno-strict-aliasing
-+CFLAGS-aicache.c += -fno-strict-aliasing
-+CFLAGS-gai.c += -fno-strict-aliasing
-+
- CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
- 
- ifeq (yesyes,$(have-fpie)$(build-shared))
-diff -up glibc-2.30/nss/Makefile.59~ glibc-2.30/nss/Makefile
---- glibc-2.30/nss/Makefile.59~	2019-08-02 14:02:25.656110465 +0200
-+++ glibc-2.30/nss/Makefile	2019-08-02 14:03:29.043761884 +0200
-@@ -182,3 +182,6 @@ $(objpfx)tst-nss-files-alias-leak: $(lib
- $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
- $(objpfx)tst-nss-files-alias-truncated: $(libdl)
- $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so
-+
-+CFLAGS-getnssent_r.c += -fno-strict-aliasing
-+CFLAGS-digits_dots.c += -fno-strict-aliasing
-diff -up glibc-2.30/posix/Makefile.59~ glibc-2.30/posix/Makefile
---- glibc-2.30/posix/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/posix/Makefile	2019-08-02 14:02:25.657110460 +0200
-@@ -246,6 +246,13 @@ CFLAGS-execvp.os = -fomit-frame-pointer
- CFLAGS-execlp.os = -fomit-frame-pointer
- CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
- 
-+CFLAGS-glob.c += -fno-strict-aliasing
-+CFLAGS-glob-lstat-compat.c += -fno-strict-aliasing
-+CFLAGS-glob64.c += -fno-strict-aliasing
-+CFLAGS-glob64-lstat-compat.c += -fno-strict-aliasing
-+CFLAGS-oldglob.c += -fno-strict-aliasing
-+CFLAGS-getaddrinfo.c += -fno-strict-aliasing
-+
- tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
- 		--none random --col --color --colour
- 
-diff -up glibc-2.30/resolv/Makefile.59~ glibc-2.30/resolv/Makefile
---- glibc-2.30/resolv/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/resolv/Makefile	2019-08-02 14:02:25.657110460 +0200
-@@ -143,6 +143,19 @@ include ../gen-locales.mk
- 
- CFLAGS-res_hconf.c += -fexceptions
- 
-+CFLAGS-gethstbyad_r.c += -fno-strict-aliasing
-+CFLAGS-res-close.c += -fno-strict-aliasing
-+CFLAGS-resolv_context.c += -fno-strict-aliasing
-+CFLAGS-resolv_conf.c += -fno-strict-aliasing
-+CFLAGS-res_mkquery.c += -fno-strict-aliasing
-+CFLAGS-res_query.c += -fno-strict-aliasing
-+CFLAGS-res_send.c += -fno-strict-aliasing
-+CFLAGS-compat-hnamaddr.c += -fno-strict-aliasing
-+CFLAGS-compat-gethnamaddr.c += -fno-strict-aliasing
-+CFLAGS-dns-host.c += -fno-strict-aliasing
-+CFLAGS-dns-network.c += -fno-strict-aliasing
-+CFLAGS-dns-canon.c += -fno-strict-aliasing
-+
- # The DNS NSS modules needs the resolver.
- $(objpfx)libnss_dns.so: $(objpfx)libresolv.so
- 
-diff -up glibc-2.30/rt/Makefile.59~ glibc-2.30/rt/Makefile
---- glibc-2.30/rt/Makefile.59~	2019-08-02 14:02:25.635110580 +0200
-+++ glibc-2.30/rt/Makefile	2019-08-02 14:02:25.657110460 +0200
-@@ -66,6 +66,8 @@ CFLAGS-mq_timedsend.c += -fexceptions -f
- CFLAGS-clock_nanosleep.c += -fexceptions -fasynchronous-unwind-tables
- CFLAGS-librt-cancellation.c += -fasynchronous-unwind-tables
- 
-+CFLAGS-timer_create.c += -fno-strict-aliasing
-+
- LDFLAGS-rt.so = -Wl,--enable-new-dtags,-z,nodelete
- 
- $(objpfx)librt.so: $(shared-thread-library)
-diff -up glibc-2.30/setjmp/Makefile.59~ glibc-2.30/setjmp/Makefile
---- glibc-2.30/setjmp/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/setjmp/Makefile	2019-08-02 14:02:25.655110470 +0200
-@@ -31,6 +31,9 @@ tests		:= tst-setjmp jmpbug bug269-setjm
- 		   tst-sigsetjmp tst-setjmp-static
- tests-static	:= tst-setjmp-static
- 
-+CFLAGS-sigjmp.c += -fno-strict-aliasing
-+CFLAGS-longjmp.c += -fno-strict-aliasing
-+CFLAGS-longjmp_chk.c += -fno-strict-aliasing
- 
- include ../Rules
- 
-diff -up glibc-2.30/stdio-common/Makefile.59~ glibc-2.30/stdio-common/Makefile
---- glibc-2.30/stdio-common/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/stdio-common/Makefile	2019-08-02 14:02:25.657110460 +0200
-@@ -125,6 +125,10 @@ $(objpfx)tst-%-mem.out: $(objpfx)tst-%.o
- 
- CFLAGS-vfprintf.c += -Wno-uninitialized
- CFLAGS-vfwprintf.c += -Wno-uninitialized
-+CFLAGS-vfscanf-internal.c += -fno-strict-aliasing
-+CFLAGS-vfwscanf-internal.c += -fno-strict-aliasing
-+CFLAGS-vfprintf-internal.c += -fno-strict-aliasing
-+CFLAGS-vfwprintf-internal.c += -fno-strict-aliasing
- 
- CFLAGS-tmpfile.c += -fexceptions
- CFLAGS-tmpfile64.c += -fexceptions
-diff -up glibc-2.30/sunrpc/Makefile.59~ glibc-2.30/sunrpc/Makefile
---- glibc-2.30/sunrpc/Makefile.59~	2019-08-01 06:29:31.000000000 +0200
-+++ glibc-2.30/sunrpc/Makefile	2019-08-02 14:02:25.657110460 +0200
-@@ -156,6 +156,21 @@ CFLAGS-pmap_rmt.c += -fexceptions
- CFLAGS-clnt_perr.c += -fexceptions
- CFLAGS-openchild.c += -fexceptions
- 
-+CFLAGS-authuxprot.c += -fno-strict-aliasing
-+CFLAGS-pmap_rmt.c += -fno-strict-aliasing
-+CFLAGS-rpc_prot.c += -fno-strict-aliasing
-+CFLAGS-rpc_cmsg.c += -fno-strict-aliasing
-+CFLAGS-authdes_prot.c += -fno-strict-aliasing
-+CFLAGS-rtime.c += -fno-strict-aliasing
-+CFLAGS-svcauth_des.c += -fno-strict-aliasing
-+CFLAGS-svc_unix.c += -fno-strict-aliasing
-+CFLAGS-auth_des.c += -fno-strict-aliasing
-+CFLAGS-clnt_udp.c += -fno-strict-aliasing
-+CFLAGS-key_call.c += -fno-strict-aliasing
-+CFLAGS-pm_getport.c += -fno-strict-aliasing
-+CFLAGS-svc_tcp.c += -fno-strict-aliasing
-+CFLAGS-svc_udp.c += -fno-strict-aliasing
-+
- $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
- $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
- $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
-diff -up glibc-2.30/support/Makefile.59~ glibc-2.30/support/Makefile
---- glibc-2.30/support/Makefile.59~	2019-08-02 14:02:25.658110454 +0200
-+++ glibc-2.30/support/Makefile	2019-08-02 14:03:49.448649403 +0200
-@@ -184,6 +184,8 @@ CFLAGS-support_paths.c = \
- 		-DSBINDIR_PATH=\"$(sbindir)\" \
- 		-DROOTSBINDIR_PATH=\"$(rootsbindir)\"
- 
-+CFLAGS-resolv_test.c = -fno-strict-aliasing
-+
- ifeq (,$(CXX))
- LINKS_DSO_PROGRAM = links-dso-program-c
- else
-diff -up glibc-2.30/libio/libioP.h.omv~ glibc-2.30/libio/libioP.h
---- glibc-2.30/libio/libioP.h.omv~	2019-08-03 00:07:22.023320351 +0200
-+++ glibc-2.30/libio/libioP.h	2019-08-03 00:07:47.826180694 +0200
+diff -up glibc-2.31/libio/libioP.h.59~ glibc-2.31/libio/libioP.h
+--- glibc-2.31/libio/libioP.h.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/libio/libioP.h	2020-02-04 02:34:09.648778297 +0100
 @@ -842,8 +842,8 @@ extern struct _IO_FILE_plus _IO_stderr_;
  static inline bool
  _IO_legacy_file (FILE *fp)
@@ -295,3 +71,227 @@ diff -up glibc-2.30/libio/libioP.h.omv~ glibc-2.30/libio/libioP.h
      return;
  #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
    if (_IO_legacy_file (fp))
+diff -up glibc-2.31/libio/Makefile.59~ glibc-2.31/libio/Makefile
+--- glibc-2.31/libio/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/libio/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -154,6 +154,19 @@ CFLAGS-iofopen.c += -fexceptions
+ CFLAGS-iofopen64.c += -fexceptions
+ CFLAGS-oldtmpfile.c += -fexceptions
+ # XXX Do we need filedoalloc and wfiledoalloc?  Others?
++#
++CFLAGS-iofopncook.c += -fno-strict-aliasing
++CFLAGS-iopopen.c += -fno-strict-aliasing
++CFLAGS-vswprintf.c += -fno-strict-aliasing
++CFLAGS-wmemstream.c += -fno-strict-aliasing
++CFLAGS-memstream.c += -fno-strict-aliasing
++CFLAGS-obprintf.c += -fno-strict-aliasing
++CFLAGS-stdfiles.c += -fno-strict-aliasing
++CFLAGS-stdio.c += -fno-strict-aliasing
++CFLAGS-oldiofopen.c += -fno-strict-aliasing
++CFLAGS-oldiofdopen.c += -fno-strict-aliasing
++CFLAGS-oldiopopen.c += -fno-strict-aliasing
++CFLAGS-oldstdfiles.c += -fno-strict-aliasing
+ 
+ CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
+ 
+diff -up glibc-2.31/locale/Makefile.59~ glibc-2.31/locale/Makefile
+--- glibc-2.31/locale/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/locale/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -105,6 +105,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
+ CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
+ CFLAGS-charmap-dir.c += -Wno-write-strings
++CFLAGS-C-ctype.c += -fno-strict-aliasing
+ 
+ # Set libof-* for each routine.
+ cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
+diff -up glibc-2.31/misc/Makefile.59~ glibc-2.31/misc/Makefile
+--- glibc-2.31/misc/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/misc/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -137,6 +137,8 @@ CFLAGS-sbrk.op = $(no-stack-protector)
+ CFLAGS-brk.o = $(no-stack-protector)
+ CFLAGS-brk.op = $(no-stack-protector)
+ 
++CFLAGS-tsearch.c += -fno-strict-aliasing
++
+ include ../Rules
+ 
+ $(objpfx)libg.a: $(dep-dummy-lib); $(make-dummy-lib)
+diff -up glibc-2.31/nis/Makefile.59~ glibc-2.31/nis/Makefile
+--- glibc-2.31/nis/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/nis/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -92,6 +92,7 @@ endif # have-GLIBC_2.28
+ 
+ include ../Rules
+ 
++CFLAGS-nis_callback.c += -fno-strict-aliasing
+ 
+ ifeq ($(build-obsolete-nsl),yes)
+ $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
+diff -up glibc-2.31/nptl/Makefile.59~ glibc-2.31/nptl/Makefile
+--- glibc-2.31/nptl/Makefile.59~	2020-02-04 02:34:09.591778295 +0100
++++ glibc-2.31/nptl/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -231,6 +231,19 @@ CFLAGS-fsync.c += -fexceptions -fasynchr
+ 
+ CFLAGS-pt-system.c += -fexceptions
+ 
++CFLAGS-pthread_create.c += -fno-strict-aliasing
++CFLAGS-sem_clockwait.c += -fno-strict-aliasing
++CFLAGS-sem_wait.c += -fno-strict-aliasing
++CFLAGS-sem_waitcommon.c += -fno-strict-aliasing
++CFLAGS-sem_timedwait.c += -fno-strict-aliasing
++CFLAGS-sem_post.c += -fno-strict-aliasing
++CFLAGS-unwind.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_common.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_destroy.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_wait.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_signal.c += -fno-strict-aliasing
++CFLAGS-pthread_cond_broadcast.c += -fno-strict-aliasing
++
+ LDLIBS-tst-once5 = -lstdc++
+ CFLAGS-tst-thread_local1.o = -std=gnu++11
+ LDLIBS-tst-thread_local1 = -lstdc++
+diff -up glibc-2.31/nscd/Makefile.59~ glibc-2.31/nscd/Makefile
+--- glibc-2.31/nscd/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/nscd/Makefile	2020-02-04 02:34:09.646778297 +0100
+@@ -79,6 +79,14 @@ CFLAGS-nscd_gethst_r.c += -fexceptions
+ CFLAGS-nscd_getai.c += -fexceptions
+ CFLAGS-nscd_initgroups.c += -fexceptions
+ 
++CFLAGS-nscd_helper.c += -fno-strict-aliasing
++CFLAGS-nscd.c += -fno-strict-aliasing
++CFLAGS-connections.c += -fno-strict-aliasing
++CFLAGS-gethstbyad_r.c += -fno-strict-aliasing
++CFLAGS-gethstbynm3_r.c += -fno-strict-aliasing
++CFLAGS-aicache.c += -fno-strict-aliasing
++CFLAGS-gai.c += -fno-strict-aliasing
++
+ CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
+ 
+ ifeq (yesyes,$(have-fpie)$(build-shared))
+diff -up glibc-2.31/nss/Makefile.59~ glibc-2.31/nss/Makefile
+--- glibc-2.31/nss/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/nss/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -182,3 +182,6 @@ $(objpfx)tst-nss-files-alias-leak: $(lib
+ $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
+ $(objpfx)tst-nss-files-alias-truncated: $(libdl)
+ $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so
++
++CFLAGS-getnssent_r.c += -fno-strict-aliasing
++CFLAGS-digits_dots.c += -fno-strict-aliasing
+diff -up glibc-2.31/posix/Makefile.59~ glibc-2.31/posix/Makefile
+--- glibc-2.31/posix/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/posix/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -248,6 +248,13 @@ CFLAGS-execvp.os = -fomit-frame-pointer
+ CFLAGS-execlp.os = -fomit-frame-pointer
+ CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
+ 
++CFLAGS-glob.c += -fno-strict-aliasing
++CFLAGS-glob-lstat-compat.c += -fno-strict-aliasing
++CFLAGS-glob64.c += -fno-strict-aliasing
++CFLAGS-glob64-lstat-compat.c += -fno-strict-aliasing
++CFLAGS-oldglob.c += -fno-strict-aliasing
++CFLAGS-getaddrinfo.c += -fno-strict-aliasing
++
+ tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
+ 		--none random --col --color --colour
+ 
+diff -up glibc-2.31/resolv/Makefile.59~ glibc-2.31/resolv/Makefile
+--- glibc-2.31/resolv/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/resolv/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -144,6 +144,19 @@ include ../gen-locales.mk
+ 
+ CFLAGS-res_hconf.c += -fexceptions
+ 
++CFLAGS-gethstbyad_r.c += -fno-strict-aliasing
++CFLAGS-res-close.c += -fno-strict-aliasing
++CFLAGS-resolv_context.c += -fno-strict-aliasing
++CFLAGS-resolv_conf.c += -fno-strict-aliasing
++CFLAGS-res_mkquery.c += -fno-strict-aliasing
++CFLAGS-res_query.c += -fno-strict-aliasing
++CFLAGS-res_send.c += -fno-strict-aliasing
++CFLAGS-compat-hnamaddr.c += -fno-strict-aliasing
++CFLAGS-compat-gethnamaddr.c += -fno-strict-aliasing
++CFLAGS-dns-host.c += -fno-strict-aliasing
++CFLAGS-dns-network.c += -fno-strict-aliasing
++CFLAGS-dns-canon.c += -fno-strict-aliasing
++
+ # The DNS NSS modules needs the resolver.
+ $(objpfx)libnss_dns.so: $(objpfx)libresolv.so
+ 
+diff -up glibc-2.31/rt/Makefile.59~ glibc-2.31/rt/Makefile
+--- glibc-2.31/rt/Makefile.59~	2020-02-04 02:34:09.647778297 +0100
++++ glibc-2.31/rt/Makefile	2020-02-04 02:34:42.832779760 +0100
+@@ -58,6 +58,8 @@ CFLAGS-mq_timedreceive.c += -fexceptions
+ CFLAGS-mq_timedsend.c += -fexceptions -fasynchronous-unwind-tables
+ CFLAGS-librt-cancellation.c += -fasynchronous-unwind-tables
+ 
++CFLAGS-timer_create.c += -fno-strict-aliasing
++
+ LDFLAGS-rt.so = -Wl,--enable-new-dtags,-z,nodelete
+ 
+ $(objpfx)librt.so: $(shared-thread-library)
+diff -up glibc-2.31/setjmp/Makefile.59~ glibc-2.31/setjmp/Makefile
+--- glibc-2.31/setjmp/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/setjmp/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -31,6 +31,9 @@ tests		:= tst-setjmp jmpbug bug269-setjm
+ 		   tst-sigsetjmp tst-setjmp-static
+ tests-static	:= tst-setjmp-static
+ 
++CFLAGS-sigjmp.c += -fno-strict-aliasing
++CFLAGS-longjmp.c += -fno-strict-aliasing
++CFLAGS-longjmp_chk.c += -fno-strict-aliasing
+ 
+ include ../Rules
+ 
+diff -up glibc-2.31/stdio-common/Makefile.59~ glibc-2.31/stdio-common/Makefile
+--- glibc-2.31/stdio-common/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/stdio-common/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -125,6 +125,10 @@ $(objpfx)tst-%-mem.out: $(objpfx)tst-%.o
+ 
+ CFLAGS-vfprintf.c += -Wno-uninitialized
+ CFLAGS-vfwprintf.c += -Wno-uninitialized
++CFLAGS-vfscanf-internal.c += -fno-strict-aliasing
++CFLAGS-vfwscanf-internal.c += -fno-strict-aliasing
++CFLAGS-vfprintf-internal.c += -fno-strict-aliasing
++CFLAGS-vfwprintf-internal.c += -fno-strict-aliasing
+ 
+ CFLAGS-tmpfile.c += -fexceptions
+ CFLAGS-tmpfile64.c += -fexceptions
+diff -up glibc-2.31/sunrpc/Makefile.59~ glibc-2.31/sunrpc/Makefile
+--- glibc-2.31/sunrpc/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/sunrpc/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -156,6 +156,21 @@ CFLAGS-pmap_rmt.c += -fexceptions
+ CFLAGS-clnt_perr.c += -fexceptions
+ CFLAGS-openchild.c += -fexceptions
+ 
++CFLAGS-authuxprot.c += -fno-strict-aliasing
++CFLAGS-pmap_rmt.c += -fno-strict-aliasing
++CFLAGS-rpc_prot.c += -fno-strict-aliasing
++CFLAGS-rpc_cmsg.c += -fno-strict-aliasing
++CFLAGS-authdes_prot.c += -fno-strict-aliasing
++CFLAGS-rtime.c += -fno-strict-aliasing
++CFLAGS-svcauth_des.c += -fno-strict-aliasing
++CFLAGS-svc_unix.c += -fno-strict-aliasing
++CFLAGS-auth_des.c += -fno-strict-aliasing
++CFLAGS-clnt_udp.c += -fno-strict-aliasing
++CFLAGS-key_call.c += -fno-strict-aliasing
++CFLAGS-pm_getport.c += -fno-strict-aliasing
++CFLAGS-svc_tcp.c += -fno-strict-aliasing
++CFLAGS-svc_udp.c += -fno-strict-aliasing
++
+ $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
+ $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
+diff -up glibc-2.31/support/Makefile.59~ glibc-2.31/support/Makefile
+--- glibc-2.31/support/Makefile.59~	2020-02-01 12:52:50.000000000 +0100
++++ glibc-2.31/support/Makefile	2020-02-04 02:34:09.647778297 +0100
+@@ -188,6 +188,8 @@ CFLAGS-support_paths.c = \
+ 		-DSBINDIR_PATH=\"$(sbindir)\" \
+ 		-DROOTSBINDIR_PATH=\"$(rootsbindir)\"
+ 
++CFLAGS-resolv_test.c = -fno-strict-aliasing
++
+ ifeq (,$(CXX))
+ LINKS_DSO_PROGRAM = links-dso-program-c
+ else

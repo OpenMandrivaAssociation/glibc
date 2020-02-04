@@ -19,7 +19,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.30
+%define ver 2.31
 %define linaro %{nil}
 
 %define oname glibc
@@ -176,7 +176,6 @@ Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416
 Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
 #Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
 Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
-Patch62:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh741105.patch
 Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
@@ -450,6 +449,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Malayalam" "ml" "ml_IN")}
 %{expand:%(sh %{S:1000} "Mongolian" "mn" "mn_MN")}
 %{expand:%(sh %{S:1000} "Manipuri" "mni" "mni_IN")}
+%{expand:%(sh %{S:1000} "Mon" "mnw" "mnw_MM")}
 %{expand:%(sh %{S:1000} "Marathi" "mr" "mr_IN")}
 %{expand:%(sh %{S:1000} "Malay" "ms" "ms_MY")}
 %{expand:%(sh %{S:1000} "Maltese" "mt" "mt_MT")}
@@ -1026,9 +1026,9 @@ function BuildGlibc() {
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
 %if %{with lto}
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
+  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g1##;s#-g##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
 %else
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
+  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g1##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
 %endif
   case $arch in
     i[3-6]86)
@@ -1185,6 +1185,7 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
+echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd"
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
@@ -1371,7 +1372,7 @@ for i in %{long_targets}; do
 	# FIXME as of 2.30, installing the x86_64 -> aarch64 crosscompiler
 	# fails unless those directories are created first. Should figure
 	# out what's going on there at some point.
-	mkdir cstdlib cmath
+	#mkdir cstdlib cmath
 
 	%make_install
 	cd ..
@@ -1574,9 +1575,8 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
     cd -
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
     hesiod/README.hesiod						\
-    ChangeLog nis/nss posix/gai.conf		\
+    nis/nss posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
-xz -0 --text -T0 %{buildroot}%{_docdir}/glibc/ChangeLog
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 
 # Localization
