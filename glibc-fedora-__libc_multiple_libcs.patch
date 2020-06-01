@@ -1,6 +1,7 @@
---- glibc-2.25.51/elf/dl-init.c.0044~	2017-07-11 16:44:14.000000000 +0200
-+++ glibc-2.25.51/elf/dl-init.c	2017-07-11 18:44:49.173115475 +0200
-@@ -119,8 +119,6 @@ _dl_init (struct link_map *main_map, int
+diff -up glibc-2.31.20200601/elf/dl-init.c.13~ glibc-2.31.20200601/elf/dl-init.c
+--- glibc-2.31.20200601/elf/dl-init.c.13~	2020-06-01 19:38:31.000000000 +0200
++++ glibc-2.31.20200601/elf/dl-init.c	2020-06-01 20:22:12.944488696 +0200
+@@ -120,8 +120,6 @@ _dl_init (struct link_map *main_map, int
    while (i-- > 0)
      call_init (main_map->l_initfini[i], argc, argv, env);
  
@@ -9,9 +10,10 @@
    _dl_starting_up = 0;
 -#endif
  }
---- glibc-2.25.51/elf/dl-support.c.0044~	2017-07-11 16:44:14.000000000 +0200
-+++ glibc-2.25.51/elf/dl-support.c	2017-07-11 18:44:49.173115475 +0200
-@@ -117,10 +117,8 @@ struct r_scope_elem _dl_initial_searchli
+diff -up glibc-2.31.20200601/elf/dl-support.c.13~ glibc-2.31.20200601/elf/dl-support.c
+--- glibc-2.31.20200601/elf/dl-support.c.13~	2020-06-01 19:38:31.000000000 +0200
++++ glibc-2.31.20200601/elf/dl-support.c	2020-06-01 20:22:12.944488696 +0200
+@@ -120,10 +120,8 @@ struct r_scope_elem _dl_initial_searchli
      .r_nlist = 1,
    };
  
@@ -22,17 +24,18 @@
  
  /* Random data provided by the kernel.  */
  void *_dl_random;
---- glibc-2.25.51/elf/rtld.c.0044~	2017-07-11 16:44:14.000000000 +0200
-+++ glibc-2.25.51/elf/rtld.c	2017-07-11 18:45:48.606706875 +0200
-@@ -214,7 +214,6 @@ audit_list_iter_next (struct audit_list_
-   return iter->previous->name;
+diff -up glibc-2.31.20200601/elf/rtld.c.13~ glibc-2.31.20200601/elf/rtld.c
+--- glibc-2.31.20200601/elf/rtld.c.13~	2020-06-01 19:38:31.000000000 +0200
++++ glibc-2.31.20200601/elf/rtld.c	2020-06-01 20:23:25.595284637 +0200
+@@ -299,7 +299,6 @@ audit_list_next (struct audit_list *list
+     }
  }
  
 -#ifndef HAVE_INLINED_SYSCALLS
  /* Set nonzero during loading and initialization of executable and
     libraries, cleared before the executable's entry point runs.  This
     must not be initialized to nonzero, because the unused dynamic
-@@ -224,7 +223,6 @@ audit_list_iter_next (struct audit_list_
+@@ -309,7 +308,6 @@ audit_list_next (struct audit_list *list
     never be called.  */
  int _dl_starting_up = 0;
  rtld_hidden_def (_dl_starting_up)
@@ -40,9 +43,9 @@
  
  /* This is the structure which defines all variables global to ld.so
     (except those which cannot be added for some reason).  */
-@@ -898,10 +896,8 @@ dl_main (const ElfW(Phdr) *phdr,
+@@ -1158,10 +1156,8 @@ dl_main (const ElfW(Phdr) *phdr,
    /* Process the environment variable which control the behaviour.  */
-   process_envvars (&mode);
+   process_envvars (&mode, &audit_list);
  
 -#ifndef HAVE_INLINED_SYSCALLS
    /* Set up a flag which tells we are just starting.  */

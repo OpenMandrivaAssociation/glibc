@@ -19,18 +19,12 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.31
-%define linaro %{nil}
+%define ver 2.31.20200601
+%define fullver 2.31.9000
 
 %define oname glibc
 %define major 6
-%if "%{linaro}" != ""
-%define fullver %{ver}-%{linaro}
-%define source_dir glibc-linaro-%{fullver}
-%else
-%define fullver %{ver}
 %define source_dir %{oname}-%{ver}
-%endif
 %define checklist %{_builddir}/%{source_dir}/Check.list
 %define libc %mklibname c %{major}
 %define devname %mklibname -d c
@@ -116,17 +110,12 @@
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-%if "%{linaro}" != ""
-Version:	%{ver}_%{linaro}
-Source0:	http://cbuild.validation.linaro.org/snapshots/glibc-linaro-%{fullver}.tar.xz
-%else
 Version:	%{ver}
-Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
+Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.zst
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-%endif
-Release:	4
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -147,7 +136,6 @@ Source1003:	locales.sysconfig
 
 #-----------------------------------------------------------------------
 # fedora patches
-Patch21:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-i386-tls-direct-seg-refs.patch
 Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
 Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedata-rh61908.patch
@@ -158,7 +146,6 @@ Patch30:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-lo
 Patch31:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-locarchive.patch
 Patch32:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
 Patch33:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nis-rh188246.patch
-Patch34:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nptl-linklibc.patch
 Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
 Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
 Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
@@ -188,7 +175,6 @@ Patch85:	https://github.com/clearlinux-pkgs/glibc/blob/master/spinaphore.patch
 Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
 Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
 Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
-Patch89:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-format-new.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 %if %{with lto}
@@ -369,6 +355,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Catalan" "ca" "ca_AD" "ca_ES" "ca_FR" "ca_IT")}
 %{expand:%(sh %{S:1000} "Chechen" "ce" "ce_RU")}
 %{expand:%(sh %{S:1000} "Cherokee" "chr" "chr_US")}
+%{expand:%(sh %{S:1000} "Central Kurdish" "ckb" "ckb_IQ")}
 %{expand:%(sh %{S:1000} "Crimean Tatar" "crh" "crh_UA")}
 %{expand:%(sh %{S:1000} "Czech" "cs" "cs_CZ")}
 %{expand:%(sh %{S:1000} "Chuvash" "cv" "cv_RU")}
@@ -560,7 +547,7 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
-%{_slibdir}/ld-%{fullver}.so
+%{_slibdir}/ld-[0-9]*.so
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %endif
@@ -623,7 +610,7 @@ LANG variable to their preferred language in their
 %else
 %if %isarch mips mipsel
 %if %{build_biarch}
-%{_slibdir32}/ld-%{fullver}.so
+%{_slibdir32}/ld-[0-9]*.so
 %{_slibdir32}/ld.so.1
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -660,7 +647,7 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %files -n %{multilibc}
-%{_slibdir32}/ld-%{fullver}.so
+%{_slibdir32}/ld-[0-9]*.so
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
@@ -782,7 +769,7 @@ library.
 %{_libdir}/libdl.a
 %{_libdir}/libm.a
 # Versioned libm.a seems to be generated only on x86_64
-%optional %{_libdir}/libm-%{version}.a
+%optional %{_libdir}/libm-[0-9]*.a
 %{_libdir}/libpthread.a
 %{_libdir}/libresolv.a
 %{_libdir}/librt.a
