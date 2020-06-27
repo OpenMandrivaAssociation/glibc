@@ -1,0 +1,11 @@
+diff -up glibc-2.31.20200621/iconv/Makefile.omv~ glibc-2.31.20200621/iconv/Makefile
+--- glibc-2.31.20200621/iconv/Makefile.omv~	2020-06-27 03:39:53.689509570 +0200
++++ glibc-2.31.20200621/iconv/Makefile	2020-06-27 03:41:42.958406000 +0200
+@@ -53,6 +53,7 @@ install-sbin	= iconvconfig
+ CFLAGS-gconv_cache.c += -DGCONV_DIR='"$(gconvdir)"'
+ CFLAGS-gconv_conf.c += -DGCONV_PATH='"$(gconvdir)"'
+ CFLAGS-iconvconfig.c += -DGCONV_PATH='"$(gconvdir)"' -DGCONV_DIR='"$(gconvdir)"'
++CFLAGS-gconv_simple.c += -Wno-error=stringop-overflow
+ 
+ # Set libof-* for each routine.
+ cpp-srcs-left := $(iconv_prog-modules) $(iconvconfig-modules)

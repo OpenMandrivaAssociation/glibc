@@ -219,6 +219,7 @@ Patch1034:	glibc-2.27-clang-_Float.patch
 Patch1035:	glibc-2.29-aarch64-buildfix.patch
 Patch1036:	glibc-2.29-strict-aliasing.patch
 Patch1037:	glibc-2.29-SIG_BLOCK.patch
+Patch1038:	glibc-2.31.9000-aarch64-compile.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
