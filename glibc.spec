@@ -19,7 +19,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.31.20200626
+%define ver 2.31.20200715
 %define fullver 2.31.9000
 
 %define oname glibc
@@ -67,11 +67,12 @@
 %ifarch %{aarch64}
 # Before increasing, please make sure all
 # boxes we support can be updated:
-# As of 2018/06/08:
-# Opteron server boxes have 4.4.x
+# As of 2020/07/15:
+# Synquacer, Macchiatobin and friends have mainline
 # Rockchip 3399 has 4.4.x
 # Gemini PDA has 3.18.x
-%define enablekernel 3.18.0
+# Nexus 5X has 3.10.x
+%define enablekernel 3.10.0
 %else
 # (tpg) some popular clouds will fail with error "FATAL: kernel too old"
 # when running our docker or building it. Let's be safe and pretend it's 2015.
@@ -181,7 +182,6 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
 %endif
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
-Patch99:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/gcc-8-fix.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
 
