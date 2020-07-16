@@ -1276,7 +1276,11 @@ for i in %{targets}; do
 	# We set CXX to empty to prevent links-dso-program from being built
 	# (it may not work -- if we're using a bootstrap version of gcc,
 	# there's no libstdc++ or libgcc_s)
-	%make_build CXX="" LIBGD=no
+	# the " || make ..." part is a workaround for the build failing on
+	# aarch64 boxes with lots of cores while building the iconv converters
+	# for the i686 crosscompiler. This should be fixed properly at some
+	# point.
+	%make_build CXX="" LIBGD=no || make CXX="" LIBGD=no
 	cd ..
 done
 %endif
