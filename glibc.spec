@@ -1,4 +1,4 @@
-%bcond_without crosscompilers
+%bcond_with crosscompilers
 %ifarch %{ix86} %{arm}
 # FIXME add riscv32-linux when glibc starts supporting it
 # FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
@@ -19,7 +19,7 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.31.20200715
+%define ver 2.31.20200716
 %define fullver 2.31.9000
 
 %define oname glibc
