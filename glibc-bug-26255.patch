@@ -1,0 +1,15 @@
+diff -up glibc-2.31.20200716/resolv/netdb.h.omv~ glibc-2.31.20200716/resolv/netdb.h
+--- glibc-2.31.20200716/resolv/netdb.h.omv~	2020-07-17 04:55:55.863610438 +0200
++++ glibc-2.31.20200716/resolv/netdb.h	2020-07-17 04:56:06.578754274 +0200
+@@ -26,11 +26,6 @@
+ 
+ #include <netinet/in.h>
+ #include <bits/stdint-uintn.h>
+-#ifdef __USE_MISC
+-/* This is necessary to make this include file properly replace the
+-   Sun version.  */
+-# include <rpc/netdb.h>
+-#endif
+ 
+ #ifdef __USE_GNU
+ # include <bits/types/sigevent_t.h>
