@@ -116,7 +116,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.zst
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -220,6 +220,7 @@ Patch1035:	glibc-2.29-aarch64-buildfix.patch
 Patch1036:	glibc-2.29-strict-aliasing.patch
 Patch1037:	glibc-2.29-SIG_BLOCK.patch
 Patch1038:	glibc-2.31.9000-aarch64-compile.patch
+Patch1039:	glibc-bug-26255.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
