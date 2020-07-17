@@ -40,7 +40,7 @@
 %define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
-%global optflags %{optflags} -O3
+%global optflags %{optflags} -O3 -Wno-error=stringop-overflow
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
 %global target_cpu %{_target_cpu}
