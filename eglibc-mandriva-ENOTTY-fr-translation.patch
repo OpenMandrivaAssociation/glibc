@@ -1,8 +1,9 @@
---- glibc-2.20/po/fr.po.ENOTTYfr~	2014-09-08 21:27:29.600168512 +0200
-+++ glibc-2.20/po/fr.po	2014-09-08 21:28:29.519419418 +0200
-@@ -6029,7 +6029,7 @@ msgstr "Trop de fichiers ouverts dans le
+diff -up glibc-2.32/po/fr.po.44~ glibc-2.32/po/fr.po
+--- glibc-2.32/po/fr.po.44~	2020-08-08 02:26:17.393947894 +0200
++++ glibc-2.32/po/fr.po	2020-08-08 02:26:49.631443164 +0200
+@@ -5655,7 +5655,7 @@ msgstr "Trop de fichiers ouverts dans le
  #. TRANS modes on an ordinary file.
- #: sysdeps/gnu/errlist.c:286
+ #: sysdeps/gnu/errlist.h:173
  msgid "Inappropriate ioctl for device"
 -msgstr "Ioctl() inappropré pour un périphérique"
 +msgstr "Ioctl() inapproprié pour un périphérique"
