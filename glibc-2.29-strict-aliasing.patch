@@ -298,3 +298,15 @@ diff -up glibc-2.31.20200715/support/Makefile.54~ glibc-2.31.20200715/support/Ma
  CFLAGS-support_paths.c = \
  		-DSRCDIR_PATH=\"`cd .. ; pwd`\" \
  		-DOBJDIR_PATH=\"`cd $(objpfx)/..; pwd`\" \
+diff -up glibc-2.32/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.omv~ glibc-2.32/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h
+--- glibc-2.32/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.omv~	2020-08-10 05:01:38.876042446 +0200
++++ glibc-2.32/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h	2020-08-10 05:06:11.774020733 +0200
+@@ -17,6 +17,8 @@
+ 
+ #include <ldsodefs.h>
+ 
++#pragma GCC diagnostic ignored "-Wstrict-aliasing"
++
+ /* The code checks if _rtld_global_ro was realocated before trying to access
+    the dl_hwcap field. The assembly is to make the compiler not optimize the
+    test (&_rtld_global_ro != NULL), which is always true in ISO C (but not
