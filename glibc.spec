@@ -122,7 +122,6 @@ Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
 
 # From Fedora
-Source2:	glibc_post_upgrade.c
 Source3:	glibc-manpages.tar.bz2
 Source5:	glibc-check.sh
 Source10:	libc-lock.h
@@ -296,11 +295,138 @@ Linux system will not function.
 required = '%{enablekernel}'
 rel = posix.uname("%r")
 if rpm.vercmp(rel, required) < 0 then
-  error("FATAL: kernel too old", 0)
+  error("FATAL: installed kernel is too old for glibc", 0)
 end
 
 %post -p <lua>
-os.execute("/usr/sbin/glibc_post_upgrade")
+-- We use lua's posix.exec because there may be no shell that we can
+-- run during glibc upgrade.
+function post_exec (program, ...)
+  local pid = posix.fork ()
+  if pid == 0 then
+    assert (posix.exec (program, ...))
+  elseif pid > 0 then
+    posix.wait (pid)
+  end
+end
+
+-- (1) Remove multilib libraries from previous installs.
+-- In order to support in-place upgrades, we must immediately remove
+-- obsolete platform directories after installing a new glibc
+-- version.  RPM only deletes files removed by updates near the end
+-- of the transaction.  If we did not remove the obsolete platform
+-- directories here, they may be preferred by the dynamic linker
+-- during the execution of subsequent RPM scriptlets, likely
+-- resulting in process startup failures.
+
+-- Full set of libraries glibc may install.
+install_libs = { "anl", "BrokenLocale", "c", "dl", "m", "mvec",
+	 "nss_compat", "nss_db", "nss_dns", "nss_files",
+	 "nss_hesiod", "pthread", "resolv", "rt", "SegFault",
+	 "thread_db", "util" }
+
+-- We are going to remove these libraries. Generally speaking we remove
+-- all core libraries in the multilib directory.
+-- We employ a tight match where X.Y is in [2.0,9.9*], so we would 
+-- match "libc-2.0.so" and so on up to "libc-9.9*".
+remove_regexps = {}
+for i = 1, #install_libs do
+  remove_regexps[i] = ("lib" .. install_libs[i]
+                       .. "%%-[2-9]%%.[0-9]+%%.so$")
+end
+
+-- Two exceptions:
+remove_regexps[#install_libs + 1] = "libthread_db%%-1%%.0%%.so"
+remove_regexps[#install_libs + 2] = "libSegFault%%.so"
+
+-- We are going to search these directories.
+local remove_dirs = { "%{_libdir}/i686",
+	      "%{_libdir}/i686/nosegneg",
+	      "%{_libdir}/power6",
+	      "%{_libdir}/power7",
+	      "%{_libdir}/power8" }
+
+-- Walk all the directories with files we need to remove...
+for _, rdir in ipairs (remove_dirs) do
+  if posix.access (rdir) then
+    -- If the directory exists we look at all the files...
+    local remove_files = posix.files (rdir)
+    for rfile in remove_files do
+      for _, rregexp in ipairs (remove_regexps) do
+    -- Does it match the regexp?
+    local dso = string.match (rfile, rregexp)
+        if (dso ~= nil) then
+      -- Removing file...
+      os.remove (rdir .. '/' .. rfile)
+    end
+      end
+    end
+  end
+end
+
+-- (2) Update /etc/ld.so.conf
+-- Next we update /etc/ld.so.conf to ensure that it starts with
+-- a literal "include ld.so.conf.d/*.conf".
+
+local ldsoconf = "/etc/ld.so.conf"
+local ldsoconf_tmp = "/etc/glibc_post_upgrade.ld.so.conf"
+
+if posix.access (ldsoconf) then
+
+  -- We must have a "include ld.so.conf.d/*.conf" line.
+  local have_include = false
+  for line in io.lines (ldsoconf) do
+    -- This must match, and we don't ignore whitespace.
+    if string.match (line, "^include ld.so.conf.d/%%*%%.conf$") ~= nil then
+      have_include = true
+    end
+  end
+
+  if not have_include then
+    -- Insert "include ld.so.conf.d/*.conf" line at the start of the
+    -- file. We only support one of these post upgrades running at
+    -- a time (temporary file name is fixed).
+    local tmp_fd = io.open (ldsoconf_tmp, "w")
+    if tmp_fd ~= nil then
+      tmp_fd:write ("include ld.so.conf.d/*.conf\n")
+      for line in io.lines (ldsoconf) do
+        tmp_fd:write (line .. "\n")
+      end
+      tmp_fd:close ()
+      local res = os.rename (ldsoconf_tmp, ldsoconf)
+      if res == nil then
+        io.stdout:write ("Error: Unable to update configuration file (rename).\n")
+      end
+    else
+      io.stdout:write ("Error: Unable to update configuration file (open).\n")
+    end
+  end
+end
+
+-- (3) Rebuild ld.so.cache early.
+-- If the format of the cache changes then we need to rebuild
+-- the cache early to avoid any problems running binaries with
+-- the new glibc.
+
+-- Note: We use _prefix because Fedora's UsrMove says so.
+post_exec ("/sbin/ldconfig")
+
+-- (4) Update gconv modules cache.
+-- If the /usr/lib/gconv/gconv-modules.cache exists, then update it
+-- with the latest set of modules that were just installed.
+-- We assume that the cache is in _libdir/gconv and called
+-- "gconv-modules.cache".
+
+local iconv_dir = "%{_libdir}/gconv"
+local iconv_cache = iconv_dir .. "/gconv-modules.cache"
+if (posix.utime (iconv_cache) == 0) then
+  post_exec ("%{_sbindir}/iconvconfig",
+         "-o", iconv_cache,
+         "--nostdlib",
+         iconv_dir)
+else
+  io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n")
+end
 
 %transfiletriggerin -p <lua> -- /lib/ /lib64/ /usr/lib/ /usr/lib64/ /etc/ld.so.conf.d/
 os.execute("/sbin/ldconfig -X")
@@ -1323,16 +1449,6 @@ export BIARCH_BUILDING=1
     esac
 %endif
 
-%if "%{name}" == "glibc"
-
-# post install wrapper
-gcc -static -Lbuild-%{target_cpu}-linux %{optflags} -Os %{SOURCE2} -o build-%{target_cpu}-linux/glibc_post_upgrade \
-  '-DLIBTLS="/%{_lib}/tls/"' \
-  '-DGCONV_MODULES_DIR="%{_libdir}/gconv"' \
-  '-DLD_SO_CONF="/etc/ld.so.conf"' \
-  '-DICONVCONFIG="%{_sbindir}/iconvconfig"'
-%endif
-
 #-----------------------------------------------------------------------
 
 %if "%{target_cpu}" != "i686"
@@ -1427,11 +1543,6 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
 	> %{buildroot}%{_includedir}/gnu/stubs-32.h
 	done
-%endif
-
-%if "%{name}" == "glibc"
-    install -m700 build-%{target_cpu}-linux/glibc_post_upgrade -D %{buildroot}%{_sbindir}/glibc_post_upgrade
-    sh manpages/Script.sh
 %endif
 
 # Install extra glibc libraries
