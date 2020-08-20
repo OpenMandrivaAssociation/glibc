@@ -32,7 +32,7 @@
 %define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
-%bcond_with lto
+%bcond_without lto
 %if !%{with lto}
 %define _disable_lto 1
 %endif
@@ -193,28 +193,20 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #-----------------------------------------------------------------------
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
-Patch1001:	eglibc-mandriva-fix-dns-with-broken-routers.patch
 Patch1002:	eglibc-mandriva-nss-upgrade.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
-Patch1006:	eglibc-mandriva-nscd-enable.patch
 Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch1009:	eglibc-mandriva-nscd-init-should-start.patch
 Patch1010:	eglibc-mandriva-timezone.patch
-Patch1011:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch1012:	eglibc-mandriva-ENOTTY-fr-translation.patch
-Patch1013:	eglibc-mandriva-biarch-utils.patch
-Patch1015:	glibc-2.26-no-attribute-leaf-for-clang.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
-#Patch1021:	eglibc-mandriva-no-leaf-attribute.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch1033:	glibc-2.25-force-use-ld-bfd.patch
-Patch1034:	glibc-2.27-clang-_Float.patch
 Patch1035:	glibc-2.29-aarch64-buildfix.patch
 Patch1036:	glibc-2.29-strict-aliasing.patch
 Patch1037:	glibc-2.29-SIG_BLOCK.patch
