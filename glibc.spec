@@ -661,9 +661,6 @@ LANG variable to their preferred language in their
 %doc %{_docdir}/glibc/gai.conf
 %doc %{_docdir}/glibc/COPYING
 %doc %{_docdir}/glibc/COPYING.LIB
-%{_mandir}/man1/*
-%{_mandir}/man8/rpcinfo.8*
-%{_mandir}/man8/ld.so*
 %{_localedir}/locale.alias
 /sbin/sln
 %{_prefix}/libexec/getconf
@@ -729,9 +726,7 @@ LANG variable to their preferred language in their
 %{_bindir}/sprof
 %{_bindir}/tzselect
 %{_sbindir}/iconvconfig
-%{_sbindir}/glibc_post_upgrade
 /sbin/ldconfig
-%{_mandir}/man8/ldconfig*
 %ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
