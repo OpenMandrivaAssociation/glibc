@@ -32,10 +32,9 @@
 %define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
-%bcond_with lto
-%if !%{with lto}
+
+# (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
-%endif
 
 %define _disable_ld_no_undefined 1
 
@@ -177,9 +176,6 @@ Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv
 Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
-%if %{with lto}
-Patch91:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/mathlto.patch
-%endif
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
 Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
@@ -193,28 +189,20 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #-----------------------------------------------------------------------
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
-Patch1001:	eglibc-mandriva-fix-dns-with-broken-routers.patch
 Patch1002:	eglibc-mandriva-nss-upgrade.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
-Patch1006:	eglibc-mandriva-nscd-enable.patch
 Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
-Patch1009:	eglibc-mandriva-nscd-init-should-start.patch
 Patch1010:	eglibc-mandriva-timezone.patch
-Patch1011:	eglibc-mandriva-biarch-cpp-defines.patch
 Patch1012:	eglibc-mandriva-ENOTTY-fr-translation.patch
-Patch1013:	eglibc-mandriva-biarch-utils.patch
-Patch1015:	glibc-2.26-no-attribute-leaf-for-clang.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
-#Patch1021:	eglibc-mandriva-no-leaf-attribute.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
 Patch1029:	glibc-2.19-nscd-socket-and-pid-moved-from-varrun-to-run.patch
 Patch1033:	glibc-2.25-force-use-ld-bfd.patch
-Patch1034:	glibc-2.27-clang-_Float.patch
 Patch1035:	glibc-2.29-aarch64-buildfix.patch
 Patch1036:	glibc-2.29-strict-aliasing.patch
 Patch1037:	glibc-2.29-SIG_BLOCK.patch
@@ -1136,11 +1124,7 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-%if %{with lto}
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g1##;s#-g##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
-%else
   BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g1##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
-%endif
   case $arch in
     i[3-6]86)
 %ifarch %{x86_64}
@@ -1224,9 +1208,7 @@ function BuildGlibc() {
   # undefined reference to __aeabi_unwind_cpp_pr0
   BuildFlags="-funwind-tables -fasynchronous-unwind-tables $BuildFlags"
   %endif
-%if !%{with lto}
   BuildFlags="$BuildFlags -fno-lto"
-%endif
 
   if [ "$arch" = 'i586' ] || [ "$arch" = 'i686' ]; then
     # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
@@ -1310,6 +1292,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --disable-profile \
     --enable-static \
     --disable-nss-crypt \
+    --disable-crypt \
     $(WithSelinux) \
 %if !%{with nscd}
     --disable-build-nscd \
@@ -1378,17 +1361,10 @@ for i in %{targets}; do
 	esac
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
-%if %{with lto}
-	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
-	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
-	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-Werror[^ ]*,,g')" \
-	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,')" \
-%else
 	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
-%endif
 	CC="${TRIPLET}-gcc ${CFLAGS}" \
 	../configure \
 		--prefix=%{_prefix}/${TRIPLET} \
