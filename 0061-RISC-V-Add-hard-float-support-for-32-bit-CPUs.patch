@@ -1,0 +1,171 @@
+From 941a55cf590ed23fdca9efff291f1ef82112bd6f Mon Sep 17 00:00:00 2001
+From: Zong Li <zongbox@gmail.com>
+Date: Fri, 30 Nov 2018 17:16:38 +0800
+Subject: [PATCH 061/267] RISC-V: Add hard float support for 32-bit CPUs
+
+This patch adds support for hardware floating-point support for the
+RV32IF and RV32IFD platforms.
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ sysdeps/riscv/rv32/rvd/s_lrint.c   | 31 ++++++++++++++++++++++++++++++
+ sysdeps/riscv/rv32/rvd/s_lround.c  | 31 ++++++++++++++++++++++++++++++
+ sysdeps/riscv/rv32/rvf/s_lrintf.c  | 31 ++++++++++++++++++++++++++++++
+ sysdeps/riscv/rv32/rvf/s_lroundf.c | 31 ++++++++++++++++++++++++++++++
+ 4 files changed, 124 insertions(+)
+ create mode 100644 sysdeps/riscv/rv32/rvd/s_lrint.c
+ create mode 100644 sysdeps/riscv/rv32/rvd/s_lround.c
+ create mode 100644 sysdeps/riscv/rv32/rvf/s_lrintf.c
+ create mode 100644 sysdeps/riscv/rv32/rvf/s_lroundf.c
+
+diff --git a/sysdeps/riscv/rv32/rvd/s_lrint.c b/sysdeps/riscv/rv32/rvd/s_lrint.c
+new file mode 100644
+index 0000000000..bdec792f18
+--- /dev/null
++++ b/sysdeps/riscv/rv32/rvd/s_lrint.c
+@@ -0,0 +1,31 @@
++/* lrint().  The 32-bit RISC-V (RV32) version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <math.h>
++#include <libm-alias-double.h>
++#include <stdint.h>
++
++long int
++__lrint (double x)
++{
++  int32_t res;
++  asm ("fcvt.w.d %0, %1" : "=r" (res) : "f" (x));
++  return res;
++}
++
++libm_alias_double (__lrint, lrint)
+diff --git a/sysdeps/riscv/rv32/rvd/s_lround.c b/sysdeps/riscv/rv32/rvd/s_lround.c
+new file mode 100644
+index 0000000000..78bccd47ae
+--- /dev/null
++++ b/sysdeps/riscv/rv32/rvd/s_lround.c
+@@ -0,0 +1,31 @@
++/* lround().  32-bit RISC-V (RV32) version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <math.h>
++#include <libm-alias-double.h>
++#include <stdint.h>
++
++long int
++__lround (double x)
++{
++  int32_t res;
++  asm ("fcvt.w.d %0, %1, rmm" : "=r" (res) : "f" (x));
++  return res;
++}
++
++libm_alias_double (__lround, lround)
+diff --git a/sysdeps/riscv/rv32/rvf/s_lrintf.c b/sysdeps/riscv/rv32/rvf/s_lrintf.c
+new file mode 100644
+index 0000000000..b8e1df439e
+--- /dev/null
++++ b/sysdeps/riscv/rv32/rvf/s_lrintf.c
+@@ -0,0 +1,31 @@
++/* lrintf().  32-bit RISC-V (RV32) version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <math.h>
++#include <libm-alias-float.h>
++#include <stdint.h>
++
++long int
++__lrintf (float x)
++{
++  int32_t res;
++  asm ("fcvt.w.s %0, %1" : "=r" (res) : "f" (x));
++  return res;
++}
++
++libm_alias_float (__lrint, lrint)
+diff --git a/sysdeps/riscv/rv32/rvf/s_lroundf.c b/sysdeps/riscv/rv32/rvf/s_lroundf.c
+new file mode 100644
+index 0000000000..32f9925084
+--- /dev/null
++++ b/sysdeps/riscv/rv32/rvf/s_lroundf.c
+@@ -0,0 +1,31 @@
++/* lroundf().  32-bit RISC-V (RV32) version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <math.h>
++#include <libm-alias-float.h>
++#include <stdint.h>
++
++long int
++__lroundf (float x)
++{
++  int32_t res;
++  asm ("fcvt.w.s %0, %1, rmm" : "=r" (res) : "f" (x));
++  return res;
++}
++
++libm_alias_float (__lround, lround)
+-- 
+2.29.0
+

@@ -1,0 +1,246 @@
+From e3960d1c57e57f33e0e846d615788f4ede73b945 Mon Sep 17 00:00:00 2001
+From: Martin Liska <mliska@suse.cz>
+Date: Tue, 7 Jul 2020 13:58:24 +0200
+Subject: [PATCH 072/267] Add mallinfo2 function that support sizes >= 4GB.
+
+The current int type can easily overflow for allocation of more
+than 4GB.
+---
+ malloc/malloc.c    | 35 ++++++++++++++++++++++++++++++-----
+ malloc/malloc.h    | 21 +++++++++++++++++++++
+ manual/memory.texi | 36 ++++++++++++++++++------------------
+ 3 files changed, 69 insertions(+), 23 deletions(-)
+
+diff --git a/malloc/malloc.c b/malloc/malloc.c
+index ee87ddbbf9..560fee2c31 100644
+--- a/malloc/malloc.c
++++ b/malloc/malloc.c
+@@ -638,6 +638,8 @@ libc_hidden_proto (__libc_mallopt)
+   be kept as longs, the reported values may wrap around zero and
+   thus be inaccurate.
+ */
++struct mallinfo2 __libc_mallinfo2(void);
++
+ struct mallinfo __libc_mallinfo(void);
+ 
+ 
+@@ -4911,7 +4913,7 @@ __malloc_usable_size (void *m)
+  */
+ 
+ static void
+-int_mallinfo (mstate av, struct mallinfo *m)
++int_mallinfo (mstate av, struct mallinfo2 *m)
+ {
+   size_t i;
+   mbinptr b;
+@@ -4974,10 +4976,10 @@ int_mallinfo (mstate av, struct mallinfo *m)
+ }
+ 
+ 
+-struct mallinfo
+-__libc_mallinfo (void)
++struct mallinfo2
++__libc_mallinfo2 (void)
+ {
+-  struct mallinfo m;
++  struct mallinfo2 m;
+   mstate ar_ptr;
+ 
+   if (__malloc_initialized < 0)
+@@ -4998,6 +5000,27 @@ __libc_mallinfo (void)
+   return m;
+ }
+ 
++struct mallinfo
++__libc_mallinfo (void)
++{
++  struct mallinfo m;
++  struct mallinfo2 m2 = __libc_mallinfo2 ();
++
++  m.arena = m2.arena;
++  m.ordblks = m2.ordblks;
++  m.smblks = m2.smblks;
++  m.hblks = m2.hblks;
++  m.hblkhd = m2.hblkhd;
++  m.usmblks = m2.usmblks;
++  m.fsmblks = m2.fsmblks;
++  m.uordblks = m2.uordblks;
++  m.fordblks = m2.fordblks;
++  m.keepcost = m2.keepcost;
++
++  return m;
++}
++
++
+ /*
+    ------------------------------ malloc_stats ------------------------------
+  */
+@@ -5016,7 +5039,7 @@ __malloc_stats (void)
+   stderr->_flags2 |= _IO_FLAGS2_NOTCANCEL;
+   for (i = 0, ar_ptr = &main_arena;; i++)
+     {
+-      struct mallinfo mi;
++      struct mallinfo2 mi;
+ 
+       memset (&mi, 0, sizeof (mi));
+       __libc_lock_lock (ar_ptr->mutex);
+@@ -5632,6 +5655,8 @@ strong_alias (__libc_valloc, __valloc) weak_alias (__libc_valloc, valloc)
+ strong_alias (__libc_pvalloc, __pvalloc) weak_alias (__libc_pvalloc, pvalloc)
+ strong_alias (__libc_mallinfo, __mallinfo)
+ weak_alias (__libc_mallinfo, mallinfo)
++strong_alias (__libc_mallinfo2, __mallinfo2)
++weak_alias (__libc_mallinfo2, mallinfo2)
+ strong_alias (__libc_mallopt, __mallopt) weak_alias (__libc_mallopt, mallopt)
+ 
+ weak_alias (__malloc_stats, malloc_stats)
+diff --git a/malloc/malloc.h b/malloc/malloc.h
+index e0e91a9331..e25b33462a 100644
+--- a/malloc/malloc.h
++++ b/malloc/malloc.h
+@@ -97,9 +97,30 @@ struct mallinfo
+   int keepcost; /* top-most, releasable (via malloc_trim) space */
+ };
+ 
++/* SVID2/XPG mallinfo2 structure which can handle allocations
++   bigger than 4GB.  */
++
++struct mallinfo2
++{
++  size_t arena;    /* non-mmapped space allocated from system */
++  size_t ordblks;  /* number of free chunks */
++  size_t smblks;   /* number of fastbin blocks */
++  size_t hblks;    /* number of mmapped regions */
++  size_t hblkhd;   /* space in mmapped regions */
++  size_t usmblks;  /* always 0, preserved for backwards compatibility */
++  size_t fsmblks;  /* space available in freed fastbin blocks */
++  size_t uordblks; /* total allocated space */
++  size_t fordblks; /* total free space */
++  size_t keepcost; /* top-most, releasable (via malloc_trim) space */
++};
++
+ /* Returns a copy of the updated current mallinfo. */
++__MALLOC_DEPRECATED;
+ extern struct mallinfo mallinfo (void) __THROW;
+ 
++/* Returns a copy of the updated current mallinfo. */
++extern struct mallinfo2 mallinfo2 (void) __THROW;
++
+ /* SVID2/XPG mallopt options */
+ #ifndef M_MXFAST
+ # define M_MXFAST  1    /* maximum request size for "fastbins" */
+diff --git a/manual/memory.texi b/manual/memory.texi
+index aa5011e4f9..e5ea71bc6d 100644
+--- a/manual/memory.texi
++++ b/manual/memory.texi
+@@ -1505,50 +1505,50 @@ installing such hooks.
+ 
+ @cindex allocation statistics
+ You can get information about dynamic memory allocation by calling the
+-@code{mallinfo} function.  This function and its associated data type
++@code{mallinfo2} function.  This function and its associated data type
+ are declared in @file{malloc.h}; they are an extension of the standard
+ SVID/XPG version.
+ @pindex malloc.h
+ 
+-@deftp {Data Type} {struct mallinfo}
++@deftp {Data Type} {struct mallinfo2}
+ @standards{GNU, malloc.h}
+ This structure type is used to return information about the dynamic
+ memory allocator.  It contains the following members:
+ 
+ @table @code
+-@item int arena
++@item size_t arena
+ This is the total size of memory allocated with @code{sbrk} by
+ @code{malloc}, in bytes.
+ 
+-@item int ordblks
++@item size_t ordblks
+ This is the number of chunks not in use.  (The memory allocator
+-internally gets chunks of memory from the operating system, and then
++size_ternally gets chunks of memory from the operating system, and then
+ carves them up to satisfy individual @code{malloc} requests;
+ @pxref{The GNU Allocator}.)
+ 
+-@item int smblks
++@item size_t smblks
+ This field is unused.
+ 
+-@item int hblks
++@item size_t hblks
+ This is the total number of chunks allocated with @code{mmap}.
+ 
+-@item int hblkhd
++@item size_t hblkhd
+ This is the total size of memory allocated with @code{mmap}, in bytes.
+ 
+-@item int usmblks
++@item size_t usmblks
+ This field is unused and always 0.
+ 
+-@item int fsmblks
++@item size_t fsmblks
+ This field is unused.
+ 
+-@item int uordblks
++@item size_t uordblks
+ This is the total size of memory occupied by chunks handed out by
+ @code{malloc}.
+ 
+-@item int fordblks
++@item size_t fordblks
+ This is the total size of memory occupied by free (not in use) chunks.
+ 
+-@item int keepcost
++@item size_t keepcost
+ This is the size of the top-most releasable chunk that normally
+ borders the end of the heap (i.e., the high end of the virtual address
+ space's data segment).
+@@ -1556,7 +1556,7 @@ space's data segment).
+ @end table
+ @end deftp
+ 
+-@deftypefun {struct mallinfo} mallinfo (void)
++@deftypefun {struct mallinfo2} mallinfo2 (void)
+ @standards{SVID, malloc.h}
+ @safety{@prelim{}@mtunsafe{@mtuinit{} @mtasuconst{:mallopt}}@asunsafe{@asuinit{} @asulock{}}@acunsafe{@acuinit{} @aculock{}}}
+ @c Accessing mp_.n_mmaps and mp_.max_mmapped_mem, modified with atomics
+@@ -1564,7 +1564,7 @@ space's data segment).
+ @c mark the statistics as unsafe, rather than the fast-path functions
+ @c that collect the possibly inconsistent data.
+ 
+-@c __libc_mallinfo @mtuinit @mtasuconst:mallopt @asuinit @asulock @aculock
++@c __libc_mallinfo2 @mtuinit @mtasuconst:mallopt @asuinit @asulock @aculock
+ @c  ptmalloc_init (once) dup @mtsenv @asulock @aculock @acsfd @acsmem
+ @c  mutex_lock dup @asulock @aculock
+ @c  int_mallinfo @mtasuconst:mallopt [mp_ access on main_arena]
+@@ -1577,7 +1577,7 @@ space's data segment).
+ @c  mutex_unlock @aculock
+ 
+ This function returns information about the current dynamic memory usage
+-in a structure of type @code{struct mallinfo}.
++in a structure of type @code{struct mallinfo2}.
+ @end deftypefun
+ 
+ @node Summary of Malloc
+@@ -1644,7 +1644,7 @@ A pointer to a function that @code{free} uses whenever it is called.
+ A pointer to a function that @code{aligned_alloc}, @code{memalign},
+ @code{posix_memalign} and @code{valloc} use whenever they are called.
+ 
+-@item struct mallinfo mallinfo (void)
++@item struct mallinfo2 mallinfo2 (void)
+ Return information about the current dynamic memory usage.
+ @xref{Statistics of Malloc}.
+ @end table
+@@ -1970,7 +1970,7 @@ In addition, very old applications may use the obsolete @code{cfree}
+ function.
+ 
+ Further @code{malloc}-related functions such as @code{mallopt} or
+-@code{mallinfo} will not have any effect or return incorrect statistics
++@code{mallinfo2} will not have any effect or return incorrect statistics
+ when a replacement @code{malloc} is in use.  However, failure to replace
+ these functions typically does not result in crashes or other incorrect
+ application behavior, but may result in static linking failures.
+-- 
+2.29.0
+

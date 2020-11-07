@@ -1,0 +1,45 @@
+From d445d9ca8d961148ffde8ec597ecc0e050542024 Mon Sep 17 00:00:00 2001
+From: Jonathan Wakely <jwakely@redhat.com>
+Date: Tue, 22 Sep 2020 11:54:38 +0100
+Subject: [PATCH 119/267] Define __THROW to noexcept for C++11 and later
+
+The __THROW macro and friends expand to "throw ()" for C++ code, but
+that syntax is deprecated in C++11 and no longer supported at all since
+C++20. In order for glibc headers to be compatible with C++20,
+"noexcept" should be used instead.
+
+This patch uses "noexcept (true)" rather than just "noexcept", which is
+semantically equivalent, but avoids any possibility of parsing
+ambiguities if the next preprocessor token happens to be an opening
+parenthesis. This is probably unnecessary, but it seems safer to be
+cautious.
+---
+ misc/sys/cdefs.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/misc/sys/cdefs.h b/misc/sys/cdefs.h
+index 19d9cc5cfe..6b9763a92a 100644
+--- a/misc/sys/cdefs.h
++++ b/misc/sys/cdefs.h
+@@ -58,10 +58,14 @@
+ #  define __NTHNL(fct)  __attribute__ ((__nothrow__)) fct
+ # else
+ #  if defined __cplusplus && __GNUC_PREREQ (2,8)
+-#   define __THROW	throw ()
+-#   define __THROWNL	throw ()
+-#   define __NTH(fct)	__LEAF_ATTR fct throw ()
+-#   define __NTHNL(fct) fct throw ()
++#   if __cplusplus >= 201103L
++#    define __THROW	noexcept (true)
++#   else
++#    define __THROW	throw ()
++#   endif
++#   define __THROWNL	__THROW
++#   define __NTH(fct)	__LEAF_ATTR fct __THROW
++#   define __NTHNL(fct) fct __THROW
+ #  else
+ #   define __THROW
+ #   define __THROWNL
+-- 
+2.29.0
+

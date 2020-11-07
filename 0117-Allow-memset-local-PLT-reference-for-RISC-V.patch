@@ -1,0 +1,37 @@
+From d38e1bbda0be2d184f0496001cfeab00216fe01c Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Fri, 19 Jun 2020 09:00:23 -0700
+Subject: [PATCH 117/267] Allow memset local PLT reference for RISC-V.
+
+This is similar to commit a26e2e9feab87d4f745c31411458b048742ac733
+"Allow memset local PLT reference for powerpc soft-float.".
+
+GCC 10.1 results in the localplt test failing for RISC-V.
+
+From the original commit for power-pc:
+    Since memset is documented as a function GCC may always implicitly
+    generate calls to, it seems reasonable to allow that local PLT
+    reference (just like those for libgcc functions that GCC implicitly
+    generates calls to and that are also exported from libc.so), which
+    this patch does.
+
+Acked-by: Palmer Dabbelt <palmerdabbelt@google.com>
+---
+ sysdeps/unix/sysv/linux/riscv/localplt.data | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sysdeps/unix/sysv/linux/riscv/localplt.data b/sysdeps/unix/sysv/linux/riscv/localplt.data
+index 0ed8650b65..0a235592c3 100644
+--- a/sysdeps/unix/sysv/linux/riscv/localplt.data
++++ b/sysdeps/unix/sysv/linux/riscv/localplt.data
+@@ -5,6 +5,7 @@ libc.so: calloc
+ libc.so: free
+ libc.so: malloc
+ libc.so: memalign
++libc.so: memset ?
+ libc.so: realloc
+ # The TLS-enabled version of these functions is interposed from libc.so.
+ ld.so: _dl_signal_error
+-- 
+2.29.0
+

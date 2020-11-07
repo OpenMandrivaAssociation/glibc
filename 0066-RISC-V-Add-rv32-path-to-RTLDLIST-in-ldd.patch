@@ -1,0 +1,20 @@
+From 30b963c143eaa07f09567f2e0649edb7525c43fd Mon Sep 17 00:00:00 2001
+From: Zong Li <zong.li@sifive.com>
+Date: Mon, 9 Sep 2019 21:35:50 -0700
+Subject: [PATCH 066/267] RISC-V: Add rv32 path to RTLDLIST in ldd
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed b/sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed
+index 377a9c6ef4..09aaf2275d 100644
+--- a/sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed
++++ b/sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed
+@@ -1 +1 @@
+-s_^\(RTLDLIST=\)\(.*lib/\)\(ld-linux\)-\(riscv64\)-\(lp64\)\(d*\)\(\.so\.[0-9.]*\)_\1"\2\3-\4-\5\7 \2\3-\4-\5d\7"_
++s_^\(RTLDLIST=\)\(.*lib\)\(/[^/]*\)\(64\|32\)\(-.*\)\(lp\)\(64\|32\)d*\(\.so\.[0-9.]*\)[	]*$_\1"\2\364-\664\8 \2\364-\664d\8 \2\332-i\632\8 \2\332-i\632d\8"_
+-- 
+2.29.0
+

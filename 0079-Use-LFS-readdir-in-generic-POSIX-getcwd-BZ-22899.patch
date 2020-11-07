@@ -1,0 +1,75 @@
+From 804200923df4f40dbde09ea708869d252caba288 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 25 Aug 2020 17:22:09 -0300
+Subject: [PATCH 079/267] Use LFS readdir in generic POSIX getcwd [BZ# 22899]
+
+Checked on x86_64-linux-gnu and i686-linux-gnu.
+---
+ sysdeps/posix/getcwd.c              | 9 +++++----
+ sysdeps/unix/sysv/linux/readdir64.c | 4 ++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/sysdeps/posix/getcwd.c b/sysdeps/posix/getcwd.c
+index e466a4a8bf..066aab7de7 100644
+--- a/sysdeps/posix/getcwd.c
++++ b/sysdeps/posix/getcwd.c
+@@ -97,11 +97,12 @@
+ # define __lstat64 lstat
+ # define __closedir closedir
+ # define __opendir opendir
+-# define __readdir readdir
++# define __readdir64 readdir
+ # define __fdopendir fdopendir
+ # define __openat openat
+ # define __rewinddir rewinddir
+ # define __openat64 openat
++# define dirent64 dirent
+ #else
+ # include <not-cancel.h>
+ #endif
+@@ -260,7 +261,7 @@ __getcwd_generic (char *buf, size_t size)
+ 
+   while (!(thisdev == rootdev && thisino == rootino))
+     {
+-      struct dirent *d;
++      struct dirent64 *d;
+       dev_t dotdev;
+       ino_t dotino;
+       bool mount_point;
+@@ -313,7 +314,7 @@ __getcwd_generic (char *buf, size_t size)
+           /* Clear errno to distinguish EOF from error if readdir returns
+              NULL.  */
+           __set_errno (0);
+-          d = __readdir (dirstream);
++          d = __readdir64 (dirstream);
+ 
+           /* When we've iterated through all directory entries without finding
+              one with a matching d_ino, rewind the stream and consider each
+@@ -326,7 +327,7 @@ __getcwd_generic (char *buf, size_t size)
+             {
+               use_d_ino = false;
+               __rewinddir (dirstream);
+-              d = __readdir (dirstream);
++              d = __readdir64 (dirstream);
+             }
+ 
+           if (d == NULL)
+diff --git a/sysdeps/unix/sysv/linux/readdir64.c b/sysdeps/unix/sysv/linux/readdir64.c
+index 7d4b0001b3..170a889c51 100644
+--- a/sysdeps/unix/sysv/linux/readdir64.c
++++ b/sysdeps/unix/sysv/linux/readdir64.c
+@@ -42,7 +42,11 @@ weak_alias (__readdir64, readdir)
+ /* The compat code expects the 'struct direct' with d_ino being a __ino_t
+    instead of __ino64_t.  */
+ # include <shlib-compat.h>
++# if IS_IN(rtld)
++weak_alias (__readdir64, readdir64)
++# else
+ versioned_symbol (libc, __readdir64, readdir64, GLIBC_2_2);
++# endif
+ # if SHLIB_COMPAT(libc, GLIBC_2_1, GLIBC_2_2)
+ #  include <olddirent.h>
+ #  define __READDIR   attribute_compat_text_section __old_readdir64
+-- 
+2.29.0
+

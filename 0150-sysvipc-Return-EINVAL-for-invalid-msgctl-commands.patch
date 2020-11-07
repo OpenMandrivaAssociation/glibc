@@ -1,0 +1,137 @@
+From be9b0b9a012780a403a266c90878efffb9a5f3ca Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 29 Sep 2020 14:45:09 -0300
+Subject: [PATCH 150/267] sysvipc: Return EINVAL for invalid msgctl commands
+
+It avoids regressions on possible future commands that might require
+additional libc support.  The downside is new commands added by newer
+kernels will need further glibc support.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (Linux v4.15 and v5.4).
+---
+ sysdeps/unix/sysv/linux/msgctl.c | 41 ++++++++++++++++++++++++--------
+ sysvipc/test-sysvipc.h           | 25 +++++++++++++++++++
+ sysvipc/test-sysvmsg.c           |  5 ++++
+ 3 files changed, 61 insertions(+), 10 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/msgctl.c b/sysdeps/unix/sysv/linux/msgctl.c
+index a1f24ab242..f4493de573 100644
+--- a/sysdeps/unix/sysv/linux/msgctl.c
++++ b/sysdeps/unix/sysv/linux/msgctl.c
+@@ -88,25 +88,46 @@ __msgctl64 (int msqid, int cmd, struct __msqid64_ds *buf)
+ {
+ #if __IPC_TIME64
+   struct kernel_msqid64_ds ksemid, *arg = NULL;
+-  if (buf != NULL)
++#else
++  msgctl_arg_t *arg;
++#endif
++
++  switch (cmd)
+     {
+-      /* This is a Linux extension where kernel returns a 'struct msginfo'
+-	 instead.  */
+-      if (cmd == IPC_INFO || cmd == MSG_INFO)
+-	arg = (struct kernel_msqid64_ds *) buf;
+-      else
++    case IPC_RMID:
++      arg = NULL;
++      break;
++
++    case IPC_SET:
++    case IPC_STAT:
++    case MSG_STAT:
++    case MSG_STAT_ANY:
++#if __IPC_TIME64
++      if (buf != NULL)
+ 	{
+ 	  msqid64_to_kmsqid64 (buf, &ksemid);
+ 	  arg = &ksemid;
+ 	}
+-    }
+ # ifdef __ASSUME_SYSVIPC_BROKEN_MODE_T
+-  if (cmd == IPC_SET)
+-    arg->msg_perm.mode *= 0x10000U;
++      if (cmd == IPC_SET)
++	arg->msg_perm.mode *= 0x10000U;
+ # endif
+ #else
+-  msgctl_arg_t *arg = buf;
++      arg = buf;
+ #endif
++      break;
++
++    case IPC_INFO:
++    case MSG_INFO:
++      /* This is a Linux extension where kernel returns a 'struct msginfo'
++	 instead.  */
++      arg = (__typeof__ (arg)) buf;
++      break;
++
++    default:
++      __set_errno (EINVAL);
++      return -1;
++    }
+ 
+   int ret = msgctl_syscall (msqid, cmd, arg);
+   if (ret < 0)
+diff --git a/sysvipc/test-sysvipc.h b/sysvipc/test-sysvipc.h
+index d7ed496511..21ef6c6565 100644
+--- a/sysvipc/test-sysvipc.h
++++ b/sysvipc/test-sysvipc.h
+@@ -82,4 +82,29 @@ first_sem_invalid_cmd (void)
+   return invalid;
+ }
+ 
++/* Return the first invalid command SysV IPC command for message queue.  */
++static inline int
++first_msg_invalid_cmd (void)
++{
++  const int msg_cmds[] = {
++    MSG_STAT,
++    MSG_INFO,
++#ifdef MSG_STAT_ANY
++    MSG_STAT_ANY,
++#endif
++  };
++
++  int invalid = first_common_invalid_cmd ();
++  for (int i = 0; i < array_length (msg_cmds); i++)
++    {
++      if (invalid == msg_cmds[i])
++	{
++	  invalid++;
++	  i = 0;
++	}
++    }
++
++  return invalid;
++}
++
+ #endif /* _TEST_SYSV_H  */
+diff --git a/sysvipc/test-sysvmsg.c b/sysvipc/test-sysvmsg.c
+index 84efdade5e..ada2881065 100644
+--- a/sysvipc/test-sysvmsg.c
++++ b/sysvipc/test-sysvmsg.c
+@@ -24,6 +24,8 @@
+ #include <sys/ipc.h>
+ #include <sys/msg.h>
+ 
++#include <test-sysvipc.h>
++
+ #include <support/support.h>
+ #include <support/check.h>
+ #include <support/temp_file.h>
+@@ -86,6 +88,9 @@ do_test (void)
+       FAIL_EXIT1 ("msgget failed (errno=%d)", errno);
+     }
+ 
++  TEST_COMPARE (msgctl (msqid, first_msg_invalid_cmd (), NULL), -1);
++  TEST_COMPARE (errno, EINVAL);
++
+   /* Get message queue kernel information and do some sanity checks.  */
+   struct msqid_ds msginfo;
+   if (msgctl (msqid, IPC_STAT, &msginfo) == -1)
+-- 
+2.29.0
+

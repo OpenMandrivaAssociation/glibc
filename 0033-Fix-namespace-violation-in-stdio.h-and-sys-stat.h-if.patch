@@ -1,0 +1,102 @@
+From e1fd4bbe31581ffe6ebd79555e3cd78f77bba26b Mon Sep 17 00:00:00 2001
+From: Stefan Liebler <stli@linux.ibm.com>
+Date: Thu, 20 Aug 2020 10:45:26 +0200
+Subject: [PATCH 033/267] Fix namespace violation in stdio.h and sys/stat.h if
+ build with optimization. [BZ #26376]
+
+If build with optimization, stdio.h and sys/stat.h are defining some inlining
+functions.  This leads to test fails if glibc is build with the following
+commands. (Note that the conformtests usually builds without optimization or
+other CFLAGS):
+<glibc>/configure CC="gcc -O3" --prefix=/usr
+make
+make subdirs=conform check
+- FAIL: conform/XPG4/stdio.h/conform
+- FAIL: conform/XPG42/stdio.h/conform
+out-files:
+...
+PASSCOMBINED: Availability of variable optopt
+PASSCOMBINED: Type of variable optopt
+    Namespace violation: "getc_unlocked"
+    Namespace violation: "getchar_unlocked"
+    Namespace violation: "putc_unlocked"
+    Namespace violation: "putchar_unlocked"
+FAIL: Namespace of <stdio.h>
+----------------------------------------------------------------------------
+  Total number of tests   :  168
+  Number of failed tests  :    1
+  Number of xfailed tests :    0
+  Number of skipped tests :    0
+
+- FAIL: conform/POSIX2008/sys/stat.h/conform
+out-file:
+...
+PASSCOMBINED: Availability of function utimensat
+PASSCOMBINED: Type of function utimensat
+    Namespace violation: "mknodat"
+FAIL: Namespace of <sys/stat.h>
+----------------------------------------------------------------------------
+  Total number of tests   :   97
+  Number of failed tests  :    1
+  Number of xfailed tests :    0
+  Number of skipped tests :    0
+
+For getc_unlocked, getchar_unlocked, putc_unlocked, putchar_unlocked in stdio.h,
+those are defined "# ifdef __USE_POSIX" instead of "#ifdef __USE_POSIX199506"
+for the non-inlining declaration. See also
+"Bug 20014 - stdio.h namespace for pre-threads POSIX"
+(https://sourceware.org/bugzilla/show_bug.cgi?id=20014).
+
+For mknodat in sys/stat.h, those are defined "# ifdef __USE_ATFILE" instead of
+the additional guard "# if defined __USE_MISC || defined __USE_XOPEN_EXTENDED".
+---
+ io/sys/stat.h      | 4 +++-
+ libio/bits/stdio.h | 4 ++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/io/sys/stat.h b/io/sys/stat.h
+index ce014d03a5..69e333656a 100644
+--- a/io/sys/stat.h
++++ b/io/sys/stat.h
+@@ -486,13 +486,15 @@ __NTH (mknod (const char *__path, __mode_t __mode, __dev_t __dev))
+ }
+ # endif
+ 
+-# ifdef __USE_ATFILE
++# if defined __USE_MISC || defined __USE_XOPEN_EXTENDED
++#  ifdef __USE_ATFILE
+ __extern_inline int
+ __NTH (mknodat (int __fd, const char *__path, __mode_t __mode,
+ 		__dev_t __dev))
+ {
+   return __xmknodat (_MKNOD_VER, __fd, __path, __mode, &__dev);
+ }
++#  endif
+ # endif
+ 
+ # if defined __USE_LARGEFILE64 \
+diff --git a/libio/bits/stdio.h b/libio/bits/stdio.h
+index da62908fd7..6745571ed5 100644
+--- a/libio/bits/stdio.h
++++ b/libio/bits/stdio.h
+@@ -60,7 +60,7 @@ fgetc_unlocked (FILE *__fp)
+ # endif /* misc */
+ 
+ 
+-# ifdef __USE_POSIX
++# ifdef __USE_POSIX199506
+ /* This is defined in POSIX.1:1996.  */
+ __STDIO_INLINE int
+ getc_unlocked (FILE *__fp)
+@@ -95,7 +95,7 @@ fputc_unlocked (int __c, FILE *__stream)
+ # endif /* misc */
+ 
+ 
+-# ifdef __USE_POSIX
++# ifdef __USE_POSIX199506
+ /* This is defined in POSIX.1:1996.  */
+ __STDIO_INLINE int
+ putc_unlocked (int __c, FILE *__stream)
+-- 
+2.29.0
+

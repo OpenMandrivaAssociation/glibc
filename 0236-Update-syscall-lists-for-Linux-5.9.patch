@@ -1,0 +1,365 @@
+From dac8713629c8736a60aebec2f01657e46baa4c73 Mon Sep 17 00:00:00 2001
+From: Joseph Myers <joseph@codesourcery.com>
+Date: Fri, 23 Oct 2020 16:31:11 +0000
+Subject: [PATCH 236/267] Update syscall lists for Linux 5.9.
+
+Linux 5.9 has one new syscall, close_range.  Update syscall-names.list
+and regenerate the arch-syscall.h headers with build-many-glibcs.py
+update-syscalls.
+
+Tested with build-many-glibcs.py.
+---
+ sysdeps/unix/sysv/linux/aarch64/arch-syscall.h           | 1 +
+ sysdeps/unix/sysv/linux/alpha/arch-syscall.h             | 1 +
+ sysdeps/unix/sysv/linux/arc/arch-syscall.h               | 1 +
+ sysdeps/unix/sysv/linux/arm/arch-syscall.h               | 1 +
+ sysdeps/unix/sysv/linux/csky/arch-syscall.h              | 1 +
+ sysdeps/unix/sysv/linux/hppa/arch-syscall.h              | 1 +
+ sysdeps/unix/sysv/linux/i386/arch-syscall.h              | 1 +
+ sysdeps/unix/sysv/linux/ia64/arch-syscall.h              | 1 +
+ sysdeps/unix/sysv/linux/m68k/arch-syscall.h              | 1 +
+ sysdeps/unix/sysv/linux/microblaze/arch-syscall.h        | 1 +
+ sysdeps/unix/sysv/linux/mips/mips32/arch-syscall.h       | 1 +
+ sysdeps/unix/sysv/linux/mips/mips64/n32/arch-syscall.h   | 1 +
+ sysdeps/unix/sysv/linux/mips/mips64/n64/arch-syscall.h   | 1 +
+ sysdeps/unix/sysv/linux/nios2/arch-syscall.h             | 1 +
+ sysdeps/unix/sysv/linux/powerpc/powerpc32/arch-syscall.h | 1 +
+ sysdeps/unix/sysv/linux/powerpc/powerpc64/arch-syscall.h | 1 +
+ sysdeps/unix/sysv/linux/riscv/rv32/arch-syscall.h        | 1 +
+ sysdeps/unix/sysv/linux/riscv/rv64/arch-syscall.h        | 1 +
+ sysdeps/unix/sysv/linux/s390/s390-32/arch-syscall.h      | 1 +
+ sysdeps/unix/sysv/linux/s390/s390-64/arch-syscall.h      | 1 +
+ sysdeps/unix/sysv/linux/sh/arch-syscall.h                | 1 +
+ sysdeps/unix/sysv/linux/sparc/sparc32/arch-syscall.h     | 1 +
+ sysdeps/unix/sysv/linux/sparc/sparc64/arch-syscall.h     | 1 +
+ sysdeps/unix/sysv/linux/syscall-names.list               | 5 +++--
+ sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h         | 1 +
+ sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h        | 1 +
+ 26 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/aarch64/arch-syscall.h b/sysdeps/unix/sysv/linux/aarch64/arch-syscall.h
+index ebbb5e13c3..91964b478c 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/aarch64/arch-syscall.h
+@@ -19,6 +19,7 @@
+ #define __NR_clone 220
+ #define __NR_clone3 435
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/alpha/arch-syscall.h b/sysdeps/unix/sysv/linux/alpha/arch-syscall.h
+index f0744f241b..5ed2913269 100644
+--- a/sysdeps/unix/sysv/linux/alpha/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/alpha/arch-syscall.h
+@@ -24,6 +24,7 @@
+ #define __NR_clock_settime 419
+ #define __NR_clone 312
+ #define __NR_close 6
++#define __NR_close_range 546
+ #define __NR_connect 98
+ #define __NR_copy_file_range 519
+ #define __NR_create_module 306
+diff --git a/sysdeps/unix/sysv/linux/arc/arch-syscall.h b/sysdeps/unix/sysv/linux/arc/arch-syscall.h
+index 591ff88869..60aa943220 100644
+--- a/sysdeps/unix/sysv/linux/arc/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/arc/arch-syscall.h
+@@ -23,6 +23,7 @@
+ #define __NR_clone 220
+ #define __NR_clone3 435
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/arm/arch-syscall.h b/sysdeps/unix/sysv/linux/arm/arch-syscall.h
+index 42ea0fda16..2a959fb4ab 100644
+--- a/sysdeps/unix/sysv/linux/arm/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/arm/arch-syscall.h
+@@ -35,6 +35,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 283
+ #define __NR_copy_file_range 391
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/csky/arch-syscall.h b/sysdeps/unix/sysv/linux/csky/arch-syscall.h
+index 64dc411b9d..d0eca62589 100644
+--- a/sysdeps/unix/sysv/linux/csky/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/csky/arch-syscall.h
+@@ -25,6 +25,7 @@
+ #define __NR_clone 220
+ #define __NR_clone3 435
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/hppa/arch-syscall.h b/sysdeps/unix/sysv/linux/hppa/arch-syscall.h
+index 56e3bad12b..7a63870dd2 100644
+--- a/sysdeps/unix/sysv/linux/hppa/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/hppa/arch-syscall.h
+@@ -32,6 +32,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 31
+ #define __NR_copy_file_range 346
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/i386/arch-syscall.h b/sysdeps/unix/sysv/linux/i386/arch-syscall.h
+index cc554ca5b7..31b3378565 100644
+--- a/sysdeps/unix/sysv/linux/i386/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/i386/arch-syscall.h
+@@ -35,6 +35,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 362
+ #define __NR_copy_file_range 377
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/ia64/arch-syscall.h b/sysdeps/unix/sysv/linux/ia64/arch-syscall.h
+index 50405e4d04..39d115d926 100644
+--- a/sysdeps/unix/sysv/linux/ia64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/ia64/arch-syscall.h
+@@ -25,6 +25,7 @@
+ #define __NR_clone 1128
+ #define __NR_clone2 1213
+ #define __NR_close 1029
++#define __NR_close_range 1460
+ #define __NR_connect 1192
+ #define __NR_copy_file_range 1347
+ #define __NR_creat 1030
+diff --git a/sysdeps/unix/sysv/linux/m68k/arch-syscall.h b/sysdeps/unix/sysv/linux/m68k/arch-syscall.h
+index 49ceaa8b3a..c5536d2ad1 100644
+--- a/sysdeps/unix/sysv/linux/m68k/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/m68k/arch-syscall.h
+@@ -35,6 +35,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 359
+ #define __NR_copy_file_range 376
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/microblaze/arch-syscall.h b/sysdeps/unix/sysv/linux/microblaze/arch-syscall.h
+index 2bc15c6021..f684836d29 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/microblaze/arch-syscall.h
+@@ -35,6 +35,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 350
+ #define __NR_copy_file_range 392
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/mips/mips32/arch-syscall.h b/sysdeps/unix/sysv/linux/mips/mips32/arch-syscall.h
+index 57e0fe0b3b..c2baedfff1 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/mips/mips32/arch-syscall.h
+@@ -36,6 +36,7 @@
+ #define __NR_clone 4120
+ #define __NR_clone3 4435
+ #define __NR_close 4006
++#define __NR_close_range 4436
+ #define __NR_connect 4170
+ #define __NR_copy_file_range 4360
+ #define __NR_creat 4008
+diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n32/arch-syscall.h b/sysdeps/unix/sysv/linux/mips/mips64/n32/arch-syscall.h
+index 202329795c..48621c1fc1 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/arch-syscall.h
+@@ -33,6 +33,7 @@
+ #define __NR_clone 6055
+ #define __NR_clone3 6435
+ #define __NR_close 6003
++#define __NR_close_range 6436
+ #define __NR_connect 6041
+ #define __NR_copy_file_range 6324
+ #define __NR_creat 6083
+diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n64/arch-syscall.h b/sysdeps/unix/sysv/linux/mips/mips64/n64/arch-syscall.h
+index 8e1dd0ca94..8455cc66d3 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/arch-syscall.h
+@@ -28,6 +28,7 @@
+ #define __NR_clone 5055
+ #define __NR_clone3 5435
+ #define __NR_close 5003
++#define __NR_close_range 5436
+ #define __NR_connect 5041
+ #define __NR_copy_file_range 5320
+ #define __NR_creat 5083
+diff --git a/sysdeps/unix/sysv/linux/nios2/arch-syscall.h b/sysdeps/unix/sysv/linux/nios2/arch-syscall.h
+index d107c5e34c..3818418235 100644
+--- a/sysdeps/unix/sysv/linux/nios2/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/nios2/arch-syscall.h
+@@ -24,6 +24,7 @@
+ #define __NR_clock_settime64 404
+ #define __NR_clone 220
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/arch-syscall.h b/sysdeps/unix/sysv/linux/powerpc/powerpc32/arch-syscall.h
+index 2ef6c88541..6922d7857b 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/arch-syscall.h
+@@ -34,6 +34,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 328
+ #define __NR_copy_file_range 379
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/arch-syscall.h b/sysdeps/unix/sysv/linux/powerpc/powerpc64/arch-syscall.h
+index 130e23514d..72779efec7 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/arch-syscall.h
+@@ -29,6 +29,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 328
+ #define __NR_copy_file_range 379
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/riscv/rv32/arch-syscall.h b/sysdeps/unix/sysv/linux/riscv/rv32/arch-syscall.h
+index c397bf3e47..3ad0b98488 100644
+--- a/sysdeps/unix/sysv/linux/riscv/rv32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/riscv/rv32/arch-syscall.h
+@@ -17,6 +17,7 @@
+ #define __NR_clock_settime64 404
+ #define __NR_clone 220
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/riscv/rv64/arch-syscall.h b/sysdeps/unix/sysv/linux/riscv/rv64/arch-syscall.h
+index 385722c6b3..cd13dd12b7 100644
+--- a/sysdeps/unix/sysv/linux/riscv/rv64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/riscv/rv64/arch-syscall.h
+@@ -19,6 +19,7 @@
+ #define __NR_clone 220
+ #define __NR_clone3 435
+ #define __NR_close 57
++#define __NR_close_range 436
+ #define __NR_connect 203
+ #define __NR_copy_file_range 285
+ #define __NR_delete_module 106
+diff --git a/sysdeps/unix/sysv/linux/s390/s390-32/arch-syscall.h b/sysdeps/unix/sysv/linux/s390/s390-32/arch-syscall.h
+index 18a8ed1b00..a4bdf3cff0 100644
+--- a/sysdeps/unix/sysv/linux/s390/s390-32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/s390/s390-32/arch-syscall.h
+@@ -33,6 +33,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 362
+ #define __NR_copy_file_range 375
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/s390/s390-64/arch-syscall.h b/sysdeps/unix/sysv/linux/s390/s390-64/arch-syscall.h
+index d59248e2b2..3cbbc9c842 100644
+--- a/sysdeps/unix/sysv/linux/s390/s390-64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/s390/s390-64/arch-syscall.h
+@@ -25,6 +25,7 @@
+ #define __NR_clone 120
+ #define __NR_clone3 435
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 362
+ #define __NR_copy_file_range 375
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/sh/arch-syscall.h b/sysdeps/unix/sysv/linux/sh/arch-syscall.h
+index e69906c492..3fe779b998 100644
+--- a/sysdeps/unix/sysv/linux/sh/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/sh/arch-syscall.h
+@@ -33,6 +33,7 @@
+ #define __NR_clock_settime64 404
+ #define __NR_clone 120
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 342
+ #define __NR_copy_file_range 380
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/sparc/sparc32/arch-syscall.h b/sysdeps/unix/sysv/linux/sparc/sparc32/arch-syscall.h
+index ee186fa5bd..3bd20e11ca 100644
+--- a/sysdeps/unix/sysv/linux/sparc/sparc32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/sparc/sparc32/arch-syscall.h
+@@ -33,6 +33,7 @@
+ #define __NR_clock_settime64 404
+ #define __NR_clone 217
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 98
+ #define __NR_copy_file_range 357
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/sparc/sparc64/arch-syscall.h b/sysdeps/unix/sysv/linux/sparc/sparc64/arch-syscall.h
+index 7ce4150d6d..41bb83f08e 100644
+--- a/sysdeps/unix/sysv/linux/sparc/sparc64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/sparc/sparc64/arch-syscall.h
+@@ -27,6 +27,7 @@
+ #define __NR_clock_settime 256
+ #define __NR_clone 217
+ #define __NR_close 6
++#define __NR_close_range 436
+ #define __NR_connect 98
+ #define __NR_copy_file_range 357
+ #define __NR_creat 8
+diff --git a/sysdeps/unix/sysv/linux/syscall-names.list b/sysdeps/unix/sysv/linux/syscall-names.list
+index a462318ecf..2d42aaf803 100644
+--- a/sysdeps/unix/sysv/linux/syscall-names.list
++++ b/sysdeps/unix/sysv/linux/syscall-names.list
+@@ -21,8 +21,8 @@
+ # This file can list all potential system calls.  The names are only
+ # used if the installed kernel headers also provide them.
+ 
+-# The list of system calls is current as of Linux 5.8.
+-kernel 5.8
++# The list of system calls is current as of Linux 5.9.
++kernel 5.9
+ 
+ FAST_atomic_update
+ FAST_cmpxchg
+@@ -79,6 +79,7 @@ clone
+ clone2
+ clone3
+ close
++close_range
+ cmpxchg_badaddr
+ connect
+ copy_file_range
+diff --git a/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h b/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
+index 8dc0062a53..ec5863efd5 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
+@@ -26,6 +26,7 @@
+ #define __NR_clone 56
+ #define __NR_clone3 435
+ #define __NR_close 3
++#define __NR_close_range 436
+ #define __NR_connect 42
+ #define __NR_copy_file_range 326
+ #define __NR_creat 85
+diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h b/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
+index 7b64b1fa0c..b1f45a434c 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
+@@ -25,6 +25,7 @@
+ #define __NR_clone 1073741880
+ #define __NR_clone3 1073742259
+ #define __NR_close 1073741827
++#define __NR_close_range 1073742260
+ #define __NR_connect 1073741866
+ #define __NR_copy_file_range 1073742150
+ #define __NR_creat 1073741909
+-- 
+2.29.0
+

@@ -1,0 +1,39 @@
+From 3357087b2a95a33dbb38579c9bf7b23f1f85c7a1 Mon Sep 17 00:00:00 2001
+From: "Maciej W. Rozycki" <macro@wdc.com>
+Date: Mon, 31 Aug 2020 14:26:47 +0100
+Subject: [PATCH 084/267] string: Fix GCC 11 `-Werror=stringop-overread' error
+
+Fix a compilation error:
+
+In function '__rawmemchr',
+    inlined from '__rawmemchr' at rawmemchr.c:27:1:
+rawmemchr.c:36:12: error: 'memchr' specified bound 18446744073709551615 exceeds maximum object size 9223372036854775807 [-Werror=stringop-overread]
+   36 |     return memchr (s, c, (size_t)-1);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors
+../o-iterator.mk:9: recipe for target '.../string/rawmemchr.o' failed
+
+introduced with GCC 11 commit d14c547abd48 ("Add -Wstringop-overread
+for reading past the end by string functions.").
+---
+ string/rawmemchr.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/string/rawmemchr.c b/string/rawmemchr.c
+index b62d285d7e..d6ce8209be 100644
+--- a/string/rawmemchr.c
++++ b/string/rawmemchr.c
+@@ -31,6 +31,10 @@ RAWMEMCHR (const void *s, int c)
+   /* GCC 8 warns about the size passed to memchr being larger than
+      PTRDIFF_MAX; the use of SIZE_MAX is deliberate here.  */
+   DIAG_IGNORE_NEEDS_COMMENT (8, "-Wstringop-overflow=");
++#endif
++#if __GNUC_PREREQ (11, 0)
++  /* Likewise GCC 11, with a different warning option.  */
++  DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
+ #endif
+   if (c != '\0')
+     return memchr (s, c, (size_t)-1);
+-- 
+2.29.0
+

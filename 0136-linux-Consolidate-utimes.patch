@@ -1,0 +1,128 @@
+From 4af88f96dec03a7f732ac217e220afa4b48281d7 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Thu, 9 Jul 2020 16:35:28 -0300
+Subject: [PATCH 136/267] linux: Consolidate utimes
+
+The generic version does not have time64 support and Linux default
+uses utimensat.  With hppa version gone, __ASSUME_UTIMES is not used
+anymore.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (on 5.4 and on 4.15
+kernel).
+
+Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+---
+ sysdeps/unix/sysv/linux/generic/utimes.c      | 46 -------------------
+ .../unix/sysv/linux/hppa/kernel-features.h    |  5 --
+ sysdeps/unix/sysv/linux/hppa/utimes.c         | 30 ------------
+ 3 files changed, 81 deletions(-)
+ delete mode 100644 sysdeps/unix/sysv/linux/generic/utimes.c
+ delete mode 100644 sysdeps/unix/sysv/linux/hppa/utimes.c
+
+diff --git a/sysdeps/unix/sysv/linux/generic/utimes.c b/sysdeps/unix/sysv/linux/generic/utimes.c
+deleted file mode 100644
+index 0a8100e1b8..0000000000
+--- a/sysdeps/unix/sysv/linux/generic/utimes.c
++++ /dev/null
+@@ -1,46 +0,0 @@
+-/* utimes -- Change access and modification times of file.  Linux version.
+-   Copyright (C) 2011-2020 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library.  If not, see
+-   <https://www.gnu.org/licenses/>.  */
+-
+-#include <errno.h>
+-#include <stddef.h>
+-#include <utime.h>
+-#include <fcntl.h>
+-#include <sys/time.h>
+-#include <sysdep.h>
+-
+-
+-/* Change the access time of FILE to TVP[0] and
+-   the modification time of FILE to TVP[1].  */
+-int
+-__utimes (const char *file, const struct timeval tvp[2])
+-{
+-  struct timespec ts[2];
+-  struct timespec *tsp = NULL;
+-
+-  if (tvp)
+-    {
+-      TIMEVAL_TO_TIMESPEC (&tvp[0], &ts[0]);
+-      TIMEVAL_TO_TIMESPEC (&tvp[1], &ts[1]);
+-      tsp = &ts[0];
+-    }
+-
+-  return INLINE_SYSCALL (utimensat, 4, AT_FDCWD, file, tsp, 0);
+-}
+-
+-weak_alias (__utimes, utimes)
+diff --git a/sysdeps/unix/sysv/linux/hppa/kernel-features.h b/sysdeps/unix/sysv/linux/hppa/kernel-features.h
+index 8548b5c258..80eec02314 100644
+--- a/sysdeps/unix/sysv/linux/hppa/kernel-features.h
++++ b/sysdeps/unix/sysv/linux/hppa/kernel-features.h
+@@ -18,11 +18,6 @@
+    <https://www.gnu.org/licenses/>.  */
+ 
+ 
+-/* Support for the utimes syscall was added in 3.14.  */
+-#if __LINUX_KERNEL_VERSION >= 0x030e00
+-# define __ASSUME_UTIMES		1
+-#endif
+-
+ #include_next <kernel-features.h>
+ 
+ #define __ASSUME_RECV_SYSCALL   1
+diff --git a/sysdeps/unix/sysv/linux/hppa/utimes.c b/sysdeps/unix/sysv/linux/hppa/utimes.c
+deleted file mode 100644
+index a9c4a7ff45..0000000000
+--- a/sysdeps/unix/sysv/linux/hppa/utimes.c
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/* Implement utimes for hppa.
+-   Copyright (C) 2014-2020 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <https://www.gnu.org/licenses/>.  */
+-
+-/* hppa has the utimensat syscall in all supported kernel versions but
+-   gained the utimes syscall later, so use the linux-generic
+-   implementation of utimes in terms of the utimensat syscall unless
+-   the utimes syscall is known to be available.  */
+-
+-#include <kernel-features.h>
+-
+-#ifdef __ASSUME_UTIMES
+-# include <sysdeps/unix/sysv/linux/utimes.c>
+-#else
+-# include <sysdeps/unix/sysv/linux/generic/utimes.c>
+-#endif
+-- 
+2.29.0
+

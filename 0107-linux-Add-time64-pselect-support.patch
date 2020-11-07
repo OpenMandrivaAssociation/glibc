@@ -1,0 +1,271 @@
+From a92f4e6299fe0e3cb6f77e79de00817aece501ce Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Mon, 6 Jul 2020 13:27:12 -0300
+Subject: [PATCH 107/267] linux: Add time64 pselect support
+
+The syscall __NR_pselect6_time64 (32-bit) or __NR_pselect6 (64-bit)
+is used as default.  For architectures with __ASSUME_TIME64_SYSCALLS
+the 32-bit fallback uses __NR_pselec6.
+
+To accomodate microblaze missing pselect6 support on kernel older
+than 3.15 the fallback is moved to its own function to the microblaze
+specific implementation can override it.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (on 5.4 and on 4.15
+kernel).
+
+Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+---
+ include/sys/select.h                          | 16 ++++++
+ sysdeps/unix/sysv/linux/Makefile              |  2 +-
+ .../microblaze/{pselect.c => pselect32.c}     | 32 ++++-------
+ sysdeps/unix/sysv/linux/pselect.c             | 53 ++++++++++++++-----
+ sysdeps/unix/sysv/linux/pselect32.c           | 47 ++++++++++++++++
+ 5 files changed, 115 insertions(+), 35 deletions(-)
+ rename sysdeps/unix/sysv/linux/microblaze/{pselect.c => pselect32.c} (67%)
+ create mode 100644 sysdeps/unix/sysv/linux/pselect32.c
+
+diff --git a/include/sys/select.h b/include/sys/select.h
+index 07bb49b994..b5ae9af861 100644
+--- a/include/sys/select.h
++++ b/include/sys/select.h
+@@ -3,6 +3,22 @@
+ 
+ #ifndef _ISOMAC
+ /* Now define the internal interfaces.  */
++# if __TIMESIZE == 64
++#  define __pselect64 __pselect
++#else
++# include <struct___timespec64.h>
++extern int __pselect64 (int __nfds, fd_set *__readfds,
++			fd_set *__writefds, fd_set *__exceptfds,
++			const struct __timespec64 *__timeout,
++			const __sigset_t *__sigmask);
++libc_hidden_proto (__pselect64)
++
++extern int __pselect32 (int __nfds, fd_set *__readfds,
++			fd_set *__writefds, fd_set *__exceptfds,
++			const struct __timespec64 *__timeout,
++			const __sigset_t *__sigmask)
++  attribute_hidden;
++#endif
+ extern int __pselect (int __nfds, fd_set *__readfds,
+ 		      fd_set *__writefds, fd_set *__exceptfds,
+ 		      const struct timespec *__timeout,
+diff --git a/sysdeps/unix/sysv/linux/Makefile b/sysdeps/unix/sysv/linux/Makefile
+index 7c87cd5417..3bd3106ef9 100644
+--- a/sysdeps/unix/sysv/linux/Makefile
++++ b/sysdeps/unix/sysv/linux/Makefile
+@@ -61,7 +61,7 @@ sysdep_routines += adjtimex clone umount umount2 readahead sysctl \
+ 		   open_by_handle_at mlock2 pkey_mprotect pkey_set pkey_get \
+ 		   timerfd_gettime timerfd_settime prctl \
+ 		   process_vm_readv process_vm_writev clock_adjtime \
+-		   time64-support
++		   time64-support pselect32
+ 
+ CFLAGS-gethostid.c = -fexceptions
+ CFLAGS-tee.c = -fexceptions -fasynchronous-unwind-tables
+diff --git a/sysdeps/unix/sysv/linux/microblaze/pselect.c b/sysdeps/unix/sysv/linux/microblaze/pselect32.c
+similarity index 67%
+rename from sysdeps/unix/sysv/linux/microblaze/pselect.c
+rename to sysdeps/unix/sysv/linux/microblaze/pselect32.c
+index 1dfc3b8fc9..fe9dac866c 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/pselect.c
++++ b/sysdeps/unix/sysv/linux/microblaze/pselect32.c
+@@ -23,38 +23,27 @@
+ #include <sysdep-cancel.h>
+ 
+ #ifndef __ASSUME_PSELECT
+-# define __pselect __pselect_syscall
+-#endif
+-
+-/* If pselect is supported, just use the Linux generic implementation.  */
+-#include <sysdeps/unix/sysv/linux/pselect.c>
+-
+-#ifndef __ASSUME_PSELECT
+-# undef __pselect
+ int
+-__pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+-	   const struct timespec *timeout, const sigset_t *sigmask)
++__pselect32 (int nfds, fd_set *readfds, fd_set *writefds,
++	     fd_set *exceptfds, const struct __timespec64 *timeout,
++	     const sigset_t *sigmask)
+ {
+-  int ret = __pselect_syscall (nfds, readfds, writefds, exceptfds, timeout,
+-			       sigmask);
+-  if (ret >= 0 || errno != ENOSYS)
+-    return ret;
+-
+   /* The fallback uses 'select' which shows the race condition regarding
+      signal mask set/restore, requires two additional syscalls, and has
+      a worse timeout precision (microseconds instead of nanoseconds).  */
+ 
+-  struct timeval tval, *ptval = NULL;
++  struct timeval tv32, *ptv32 = NULL;
+   if (timeout != NULL)
+     {
+-      if (! valid_nanoseconds (timeout->tv_nsec))
++      if (! in_time_t_range (timeout->tv_sec)
++	  || ! valid_nanoseconds (timeout->tv_nsec))
+ 	{
+ 	  __set_errno (EINVAL);
+ 	  return -1;
+ 	}
+ 
+-      TIMESPEC_TO_TIMEVAL (&tval, timeout);
+-      ptval = &tval;
++      tv32 = valid_timespec64_to_timeval (*timeout);
++      ptv32 = &tv32;
+     }
+ 
+   sigset_t savemask;
+@@ -62,12 +51,11 @@ __pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+     __sigprocmask (SIG_SETMASK, sigmask, &savemask);
+ 
+   /* select itself is a cancellation entrypoint.  */
+-  ret = __select (nfds, readfds, writefds, exceptfds, ptval);
++  int ret = __select (nfds, readfds, writefds, exceptfds, ptv32);
+ 
+   if (sigmask != NULL)
+     __sigprocmask (SIG_SETMASK, &savemask, NULL);
+ 
+   return ret;
+ }
+-weak_alias (__pselect, pselect)
+-#endif
++#endif /* __ASSUME_PSELECT  */
+diff --git a/sysdeps/unix/sysv/linux/pselect.c b/sysdeps/unix/sysv/linux/pselect.c
+index 304db03338..ed36121023 100644
+--- a/sysdeps/unix/sysv/linux/pselect.c
++++ b/sysdeps/unix/sysv/linux/pselect.c
+@@ -18,14 +18,15 @@
+ 
+ #include <sys/select.h>
+ #include <sysdep-cancel.h>
++#include <time64-support.h>
+ 
+ int
+-__pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+-	   const struct timespec *timeout, const sigset_t *sigmask)
++__pselect64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
++	     const struct __timespec64 *timeout, const sigset_t *sigmask)
+ {
+   /* The Linux kernel can in some situations update the timeout value.
+      We do not want that so use a local variable.  */
+-  struct timespec tval;
++  struct __timespec64 tval;
+   if (timeout != NULL)
+     {
+       tval = *timeout;
+@@ -36,18 +37,46 @@ __pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+      we can only pass in 6 directly.  If there is an architecture with
+      support for more parameters a new version of this file needs to
+      be created.  */
+-  struct
+-  {
+-    __syscall_ulong_t ss;
+-    __syscall_ulong_t ss_len;
+-  } data;
+ 
+-  data.ss = (__syscall_ulong_t) (uintptr_t) sigmask;
+-  data.ss_len = __NSIG_BYTES;
++#ifndef __NR_pselect6_time64
++# define __NR_pselect6_time64 __NR_pselect6
++#endif
++  int r;
++  if (supports_time64 ())
++    {
++      r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
++			  timeout,
++			  ((__syscall_ulong_t[]){ (uintptr_t) sigmask,
++						  __NSIG_BYTES }));
++      if (r == 0 || errno != ENOSYS)
++	return r;
++
++      mark_time64_unsupported ();
++    }
+ 
+-  return SYSCALL_CANCEL (pselect6, nfds, readfds, writefds, exceptfds,
+-                         timeout, &data);
++#ifndef __ASSUME_TIME64_SYSCALLS
++  r = __pselect32 (nfds, readfds, writefds, exceptfds, timeout, sigmask);
++#endif
++  return r;
+ }
++
++#if __TIMESIZE != 64
++libc_hidden_def (__pselect64)
++
++int
++__pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
++	   const struct timespec *timeout, const sigset_t *sigmask)
++{
++  struct __timespec64 ts64, *pts64 = NULL;
++  if (timeout != NULL)
++    {
++      ts64 = valid_timespec_to_timespec64 (*timeout);
++      pts64 = &ts64;
++    }
++  return __pselect64 (nfds, readfds, writefds, exceptfds, pts64, sigmask);
++}
++#endif
++
+ #ifndef __pselect
+ weak_alias (__pselect, pselect)
+ #endif
+diff --git a/sysdeps/unix/sysv/linux/pselect32.c b/sysdeps/unix/sysv/linux/pselect32.c
+new file mode 100644
+index 0000000000..0a2a7ac752
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/pselect32.c
+@@ -0,0 +1,47 @@
++/* Synchronous I/O multiplexing.  Linux 32-bit time fallback.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <sys/select.h>
++#include <sysdep-cancel.h>
++
++#ifndef __ASSUME_TIME64_SYSCALLS
++
++int
++__pselect32 (int nfds, fd_set *readfds, fd_set *writefds,
++	     fd_set *exceptfds, const struct __timespec64 *timeout,
++	     const sigset_t *sigmask)
++{
++  struct timespec ts32, *pts32 = NULL;
++  if (timeout != NULL)
++    {
++      if (! in_time_t_range (timeout->tv_sec))
++	{
++	  __set_errno (EINVAL);
++	  return -1;
++	}
++
++      ts32 = valid_timespec64_to_timespec (*timeout);
++      pts32 = &ts32;
++    }
++
++  return SYSCALL_CANCEL (pselect6, nfds, readfds, writefds, exceptfds,
++			 pts32,
++			 ((__syscall_ulong_t[]){ (uintptr_t) sigmask,
++						 __NSIG_BYTES }));
++}
++#endif
+-- 
+2.29.0
+

@@ -1,0 +1,224 @@
+From 2b09ebeee766be3678896b2a0e61e54a8ad10128 Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Fri, 21 Jun 2019 11:31:56 -0700
+Subject: [PATCH 053/267] RISC-V: Use 64-bit time_t and off_t for RV32 and RV64
+
+Using the original glibc headers under bits/ let's make small
+modifications to use 64-bit time_t and off_t for both RV32 and RV64.
+
+For the typesizes.h, here are justifications for the changes from the
+generic version (based on Arnd's very helpful feedback):
+- All the !__USE_FILE_OFFSET64 types (__off_t, __ino_t, __rlim_t, ...)
+  are changed to match the 64-bit replacements.
+
+- __time_t is defined to 64 bit, but no __time64_t is added. This makes
+  sense as we don't have the time64 support for other 32-bit
+  architectures yet, and it will be easy to change when that happens.
+
+- __suseconds_t is 64-bit. This matches what we use the kernel ABI for
+  the few drivers that are relying on 'struct timeval' input arguments
+  in ioctl, as well as the adjtimex system call. It means that timeval
+  has to be defined without the padding, unlike timespec, which needs
+  padding.
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ .../unix/sysv/linux/riscv/bits/environments.h | 81 +++++++++++++++++++
+ sysdeps/unix/sysv/linux/riscv/bits/time64.h   | 36 +++++++++
+ sysdeps/unix/sysv/linux/riscv/bits/timesize.h | 22 +++++
+ sysdeps/unix/sysv/linux/riscv/kernel_stat.h   | 23 ++++++
+ 4 files changed, 162 insertions(+)
+ create mode 100644 sysdeps/unix/sysv/linux/riscv/bits/environments.h
+ create mode 100644 sysdeps/unix/sysv/linux/riscv/bits/time64.h
+ create mode 100644 sysdeps/unix/sysv/linux/riscv/bits/timesize.h
+ create mode 100644 sysdeps/unix/sysv/linux/riscv/kernel_stat.h
+
+diff --git a/sysdeps/unix/sysv/linux/riscv/bits/environments.h b/sysdeps/unix/sysv/linux/riscv/bits/environments.h
+new file mode 100644
+index 0000000000..9ee21a217d
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/riscv/bits/environments.h
+@@ -0,0 +1,81 @@
++/* Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef _UNISTD_H
++# error "Never include this file directly.  Use <unistd.h> instead"
++#endif
++
++#include <bits/wordsize.h>
++
++/* This header should define the following symbols under the described
++   situations.  A value `1' means that the model is always supported,
++   `-1' means it is never supported.  Undefined means it cannot be
++   statically decided.
++
++   _POSIX_V7_ILP32_OFF32   32bit int, long, pointers, and off_t type
++   _POSIX_V7_ILP32_OFFBIG  32bit int, long, and pointers and larger off_t type
++
++   _POSIX_V7_LP64_OFF32    64bit long and pointers and 32bit off_t type
++   _POSIX_V7_LPBIG_OFFBIG  64bit long and pointers and large off_t type
++
++   The macros _POSIX_V6_ILP32_OFF32, _POSIX_V6_ILP32_OFFBIG,
++   _POSIX_V6_LP64_OFF32, _POSIX_V6_LPBIG_OFFBIG, _XBS5_ILP32_OFF32,
++   _XBS5_ILP32_OFFBIG, _XBS5_LP64_OFF32, and _XBS5_LPBIG_OFFBIG were
++   used in previous versions of the Unix standard and are available
++   only for compatibility.
++*/
++
++#if __WORDSIZE == 64
++
++/* We can never provide environments with 32-bit wide pointers.  */
++# define _POSIX_V7_ILP32_OFF32	-1
++# define _POSIX_V7_ILP32_OFFBIG	-1
++# define _POSIX_V6_ILP32_OFF32	-1
++# define _POSIX_V6_ILP32_OFFBIG	-1
++# define _XBS5_ILP32_OFF32	-1
++# define _XBS5_ILP32_OFFBIG	-1
++/* We also have no use (for now) for an environment with bigger pointers
++   and offsets.  */
++# define _POSIX_V7_LPBIG_OFFBIG	-1
++# define _POSIX_V6_LPBIG_OFFBIG	-1
++# define _XBS5_LPBIG_OFFBIG	-1
++
++/* By default we have 64-bit wide `long int', pointers and `off_t'.  */
++# define _POSIX_V7_LP64_OFF64	1
++# define _POSIX_V6_LP64_OFF64	1
++# define _XBS5_LP64_OFF64	1
++
++#else /* __WORDSIZE == 32 */
++
++/* RISC-V requires 64-bit off_t */
++# define _POSIX_V7_ILP32_OFF32 -1
++# define _POSIX_V6_ILP32_OFF32 -1
++# define _XBS5_ILP32_OFF32 -1
++
++# define _POSIX_V7_ILP32_OFFBIG	1
++# define _POSIX_V6_ILP32_OFFBIG	1
++# define _XBS5_ILP32_OFFBIG	1
++
++/* We can never provide environments with 64-bit wide pointers.  */
++# define _POSIX_V7_LP64_OFF64	-1
++# define _POSIX_V7_LPBIG_OFFBIG	-1
++# define _POSIX_V6_LP64_OFF64	-1
++# define _POSIX_V6_LPBIG_OFFBIG	-1
++# define _XBS5_LP64_OFF64	-1
++# define _XBS5_LPBIG_OFFBIG	-1
++
++#endif /* __WORDSIZE == 32 */
+diff --git a/sysdeps/unix/sysv/linux/riscv/bits/time64.h b/sysdeps/unix/sysv/linux/riscv/bits/time64.h
+new file mode 100644
+index 0000000000..139a7c7335
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/riscv/bits/time64.h
+@@ -0,0 +1,36 @@
++/* bits/time64.h -- underlying types for __time64_t.  RISC-V version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef _BITS_TYPES_H
++# error "Never include <bits/time64.h> directly; use <sys/types.h> instead."
++#endif
++
++#ifndef	_BITS_TIME64_H
++#define	_BITS_TIME64_H	1
++
++/* Define __TIME64_T_TYPE so that it is always a 64-bit type.  */
++
++#if __WORDSIZE == 64
++/* If we already have 64-bit time type then use it.  */
++# define __TIME64_T_TYPE		__TIME_T_TYPE
++#else
++/* Define a 64-bit time type alongsize the 32-bit one.  */
++# define __TIME64_T_TYPE		__SQUAD_TYPE
++#endif
++
++#endif /* bits/time64.h */
+diff --git a/sysdeps/unix/sysv/linux/riscv/bits/timesize.h b/sysdeps/unix/sysv/linux/riscv/bits/timesize.h
+new file mode 100644
+index 0000000000..728d6c5053
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/riscv/bits/timesize.h
+@@ -0,0 +1,22 @@
++/* Bit size of the time_t type at glibc build time, RISC-V case.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <bits/wordsize.h>
++
++/* RV32 and RV64 both use 64-bit time_t */
++#define __TIMESIZE	64
+diff --git a/sysdeps/unix/sysv/linux/riscv/kernel_stat.h b/sysdeps/unix/sysv/linux/riscv/kernel_stat.h
+new file mode 100644
+index 0000000000..06eb5bce96
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/riscv/kernel_stat.h
+@@ -0,0 +1,23 @@
++/* Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <bits/wordsize.h>
++
++#define STAT_IS_KERNEL_STAT 1
++
++#define XSTAT_IS_XSTAT64 1
++#define STATFS_IS_STATFS64 0
+-- 
+2.29.0
+

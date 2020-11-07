@@ -1,0 +1,52 @@
+From 4875afe5526efe86478abe33e8b1320969d766d5 Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Wed, 8 Jul 2020 07:49:40 -0700
+Subject: [PATCH 054/267] RISC-V: Cleanup some of the sysdep.h code
+
+Remove a duplicate inclusion of <sysdeps/unix/sysdep.h> which is already
+pulled via <sysdeps/unix/sysv/linux/generic/sysdep.h>, and the inclusion
+of <errno.h> whose definition of `__set_errno' is not needed here.
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ sysdeps/unix/sysv/linux/riscv/sysdep.h | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/riscv/sysdep.h b/sysdeps/unix/sysv/linux/riscv/sysdep.h
+index 83e4adf6a2..fbb3a02bbd 100644
+--- a/sysdeps/unix/sysv/linux/riscv/sysdep.h
++++ b/sysdeps/unix/sysv/linux/riscv/sysdep.h
+@@ -22,6 +22,9 @@
+ #include <sysdeps/unix/sysv/linux/generic/sysdep.h>
+ #include <tls.h>
+ 
++#undef SYS_ify
++#define SYS_ify(syscall_name)	__NR_##syscall_name
++
+ #ifdef __ASSEMBLER__
+ 
+ # include <sys/asm.h>
+@@ -107,19 +110,7 @@
+ # undef ret_ERRVAL
+ # define ret_ERRVAL ret
+ 
+-#endif /* __ASSEMBLER__ */
+-
+-/* In order to get __set_errno() definition in INLINE_SYSCALL.  */
+-#ifndef __ASSEMBLER__
+-# include <errno.h>
+-#endif
+-
+-#include <sysdeps/unix/sysdep.h>
+-
+-#undef SYS_ify
+-#define SYS_ify(syscall_name)	__NR_##syscall_name
+-
+-#ifndef __ASSEMBLER__
++#else /* !__ASSEMBLER__ */
+ 
+ # define VDSO_NAME  "LINUX_4.15"
+ # define VDSO_HASH  182943605
+-- 
+2.29.0
+

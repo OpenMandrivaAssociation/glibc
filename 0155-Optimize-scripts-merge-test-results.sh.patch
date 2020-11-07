@@ -1,0 +1,35 @@
+From 78e09591a59fb4cb634cde28089924383151fcfe Mon Sep 17 00:00:00 2001
+From: DJ Delorie <dj@redhat.com>
+Date: Wed, 1 Apr 2020 15:33:00 -0400
+Subject: [PATCH 155/267] Optimize scripts/merge-test-results.sh
+
+The inner loop is called thousands of times per "make check" even
+if there's otherwise nothing to do.  Avoid calling /bin/head all
+those times when a builtin will do.
+
+Reviewed-by: Carlos O'Donell <carlos@redhat.com>
+---
+ scripts/merge-test-results.sh | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/merge-test-results.sh b/scripts/merge-test-results.sh
+index 573a44d8cf..1e236db4a7 100755
+--- a/scripts/merge-test-results.sh
++++ b/scripts/merge-test-results.sh
+@@ -35,7 +35,12 @@ case $type in
+     subdir=${subdir:+$subdir/}
+     for t in "$@"; do
+       if [ -s "$objpfx$t.test-result" ]; then
+-	head -n1 "$objpfx$t.test-result"
++	# This loop is called thousands of times even when there's
++	# nothing to do.  Avoid using non-built-in commands (like
++	# /bin/head) where possible.  We assume "echo" is typically a
++	# built-in.
++	IFS= read -r line < "$objpfx$t.test-result"
++	echo "$line"
+       else
+ 	echo "UNRESOLVED: $subdir$t"
+       fi
+-- 
+2.29.0
+

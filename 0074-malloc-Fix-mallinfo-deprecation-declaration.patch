@@ -1,0 +1,100 @@
+From 30e5069c7d4b51288d3e6f75f53a6ad2f5e71b0f Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Mon, 31 Aug 2020 11:14:01 -0300
+Subject: [PATCH 074/267] malloc: Fix mallinfo deprecation declaration
+
+It fixes the build issue below introduced by e3960d1c57e57 (Add
+mallinfo2  function that support sizes >= 4GB).  It moves the
+__MALLOC_DEPRECATED to the usual place for function attributes:
+
+  In file included from ../include/malloc.h:3,
+                   from ../sysdeps/x86_64/multiarch/../../../test-skeleton.c:31,
+                   from ../sysdeps/x86_64/multiarch/test-multiarch.c:96:
+  ../malloc/malloc.h:118:1: error: empty declaration [-Werror]
+    118 | __MALLOC_DEPRECATED;
+
+It also adds the required deprecated warning suppression on the tests.
+
+Checked on x86_64-linux-gnu.
+---
+ malloc/malloc.h                 | 3 +--
+ malloc/tst-malloc-tcache-leak.c | 7 +++++++
+ malloc/tst-mxfast.c             | 7 +++++++
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/malloc/malloc.h b/malloc/malloc.h
+index e25b33462a..b2371f7704 100644
+--- a/malloc/malloc.h
++++ b/malloc/malloc.h
+@@ -115,8 +115,7 @@ struct mallinfo2
+ };
+ 
+ /* Returns a copy of the updated current mallinfo. */
+-__MALLOC_DEPRECATED;
+-extern struct mallinfo mallinfo (void) __THROW;
++extern struct mallinfo mallinfo (void) __THROW __MALLOC_DEPRECATED;
+ 
+ /* Returns a copy of the updated current mallinfo. */
+ extern struct mallinfo2 mallinfo2 (void) __THROW;
+diff --git a/malloc/tst-malloc-tcache-leak.c b/malloc/tst-malloc-tcache-leak.c
+index f6f6023b5a..2a7a0646c5 100644
+--- a/malloc/tst-malloc-tcache-leak.c
++++ b/malloc/tst-malloc-tcache-leak.c
+@@ -29,6 +29,7 @@
+ #include <malloc.h>
+ #include <pthread.h>
+ #include <assert.h>
++#include <libc-diag.h>
+ 
+ #include <support/check.h>
+ #include <support/support.h>
+@@ -72,6 +73,10 @@ do_test (void)
+      pthread_t required to run the test.  */
+   thread = (pthread_t *) xcalloc (1, sizeof (pthread_t));
+ 
++  /* The test below covers the deprecated mallinfo function.  */
++  DIAG_PUSH_NEEDS_COMMENT;
++  DIAG_IGNORE_NEEDS_COMMENT (4.9, "-Wdeprecated-declarations");
++
+   info_before = mallinfo ();
+ 
+   assert (info_before.uordblks != 0);
+@@ -104,6 +109,8 @@ do_test (void)
+   if (info_after.uordblks > (info_before.uordblks + threads))
+     FAIL_EXIT1 ("Memory usage after threads is too high.\n");
+ 
++  DIAG_POP_NEEDS_COMMENT;
++
+   /* Did not detect excessive memory usage.  */
+   free (thread);
+   exit (0);
+diff --git a/malloc/tst-mxfast.c b/malloc/tst-mxfast.c
+index 57b4a0a8dc..8afee0f9d5 100644
+--- a/malloc/tst-mxfast.c
++++ b/malloc/tst-mxfast.c
+@@ -21,6 +21,7 @@
+    the fast bins.  */
+ 
+ #include <malloc.h>
++#include <libc-diag.h>
+ #include <support/check.h>
+ 
+ int
+@@ -36,8 +37,14 @@ do_test (void)
+   p2 = malloc (512);
+   free (p1);
+ 
++  /* The test below covers the deprecated mallinfo function.  */
++  DIAG_PUSH_NEEDS_COMMENT;
++  DIAG_IGNORE_NEEDS_COMMENT (4.9, "-Wdeprecated-declarations");
++
+   m = mallinfo ();
+ 
++  DIAG_POP_NEEDS_COMMENT;
++
+   /* This will fail if there are any blocks in the fastbins.  */
+   TEST_COMPARE (m.smblks, 0);
+ 
+-- 
+2.29.0
+

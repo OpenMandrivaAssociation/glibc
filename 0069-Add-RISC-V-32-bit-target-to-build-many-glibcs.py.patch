@@ -1,0 +1,44 @@
+From 567b1705017a0876b1cf9661a20521ef1e4ddc54 Mon Sep 17 00:00:00 2001
+From: Zong Li <zongbox@gmail.com>
+Date: Fri, 30 Nov 2018 17:18:40 +0800
+Subject: [PATCH 069/267] Add RISC-V 32-bit target to build-many-glibcs.py
+
+Support building three variants of 32-bit RISC-V glibc as follows:
+- riscv32-linux-gnu-rv32imac-ilp32
+- riscv32-linux-gnu-rv32imafdc-ilp32
+- riscv32-linux-gnu-rv32imafdc-ilp32d
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ scripts/build-many-glibcs.py | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/scripts/build-many-glibcs.py b/scripts/build-many-glibcs.py
+index 687c056b7a..31684eaee2 100755
+--- a/scripts/build-many-glibcs.py
++++ b/scripts/build-many-glibcs.py
+@@ -348,6 +348,21 @@ class Context(object):
+         self.add_config(arch='powerpc64le',
+                         os_name='linux-gnu',
+                         gcc_cfg=['--disable-multilib', '--enable-secureplt'])
++        self.add_config(arch='riscv32',
++                        os_name='linux-gnu',
++                        variant='rv32imac-ilp32',
++                        gcc_cfg=['--with-arch=rv32imac', '--with-abi=ilp32',
++                                 '--disable-multilib'])
++        self.add_config(arch='riscv32',
++                        os_name='linux-gnu',
++                        variant='rv32imafdc-ilp32',
++                        gcc_cfg=['--with-arch=rv32imafdc', '--with-abi=ilp32',
++                                 '--disable-multilib'])
++        self.add_config(arch='riscv32',
++                        os_name='linux-gnu',
++                        variant='rv32imafdc-ilp32d',
++                        gcc_cfg=['--with-arch=rv32imafdc', '--with-abi=ilp32d',
++                                 '--disable-multilib'])
+         self.add_config(arch='riscv64',
+                         os_name='linux-gnu',
+                         variant='rv64imac-lp64',
+-- 
+2.29.0
+

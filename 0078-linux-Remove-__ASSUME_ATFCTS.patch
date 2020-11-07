@@ -1,0 +1,47 @@
+From bbedd75c41ff801c7606bbaf1b7bdfc45d3f45a5 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 25 Aug 2020 16:57:12 -0300
+Subject: [PATCH 078/267] linux: Remove __ASSUME_ATFCTS
+
+The __have_atfcts is not used anywhere.
+
+Checked on x86_64-linux-gnu.
+---
+ io/openat.c                               | 5 -----
+ sysdeps/unix/sysv/linux/kernel-features.h | 4 ----
+ 2 files changed, 9 deletions(-)
+
+diff --git a/io/openat.c b/io/openat.c
+index a7ce65bee2..2f5a9f04de 100644
+--- a/io/openat.c
++++ b/io/openat.c
+@@ -23,11 +23,6 @@
+ #include <sys/stat.h>
+ #include <kernel-features.h>
+ 
+-/* Some mostly-generic code (e.g. sysdeps/posix/getcwd.c) uses this variable
+-   if __ASSUME_ATFCTS is not defined.  */
+-#ifndef __ASSUME_ATFCTS
+-int __have_atfcts;
+-#endif
+ 
+ /* Open FILE with access OFLAG.  Interpret relative paths relative to
+    the directory associated with FD.  If O_CREAT or O_TMPFILE is in OFLAG, a
+diff --git a/sysdeps/unix/sysv/linux/kernel-features.h b/sysdeps/unix/sysv/linux/kernel-features.h
+index a6bbc3c94e..e648eecc0d 100644
+--- a/sysdeps/unix/sysv/linux/kernel-features.h
++++ b/sysdeps/unix/sysv/linux/kernel-features.h
+@@ -49,10 +49,6 @@
+    SH this appeared first in 2.6.19-rc1, on ia64 in 2.6.22-rc1.  */
+ #define __ASSUME_PSELECT	1
+ 
+-/* The *at syscalls were introduced just after 2.6.16-rc1.  On PPC
+-   they were introduced in 2.6.17-rc1, on SH in 2.6.19-rc1.  */
+-#define __ASSUME_ATFCTS	1
+-
+ /* Support for inter-process robust mutexes was added in 2.6.17 (but
+    some architectures lack futex_atomic_cmpxchg_inatomic in some
+    configurations).  */
+-- 
+2.29.0
+

@@ -1,0 +1,101 @@
+From 01f33a9acc8f02ae6a6dd1efe366c28c825af8a8 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Fri, 10 Jul 2020 17:54:42 -0300
+Subject: [PATCH 217/267] linux: Fix time64 support for futimesat
+
+The generic implementation does not support time64 and the default
+one return overflow for invalid tv_sec with UTIME_NOW / UTIME_OMIT
+(which is valid since tv_sec in such cases is ignored by the
+kernel).
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (on 5.4 and on 4.15
+kernel).
+
+Reviewed-by: Lukasz Majewski <lukma@denx.de>
+---
+ sysdeps/unix/sysv/linux/generic/futimesat.c | 52 ---------------------
+ sysdeps/unix/sysv/linux/utimensat.c         |  8 +++-
+ 2 files changed, 6 insertions(+), 54 deletions(-)
+ delete mode 100644 sysdeps/unix/sysv/linux/generic/futimesat.c
+
+diff --git a/sysdeps/unix/sysv/linux/generic/futimesat.c b/sysdeps/unix/sysv/linux/generic/futimesat.c
+deleted file mode 100644
+index 7be1fbc252..0000000000
+--- a/sysdeps/unix/sysv/linux/generic/futimesat.c
++++ /dev/null
+@@ -1,52 +0,0 @@
+-/* futimesat -- Change access and modification times of file.  Linux version.
+-   Copyright (C) 2005-2020 Free Software Foundation, Inc.
+-   This file is part of the GNU C Library.
+-   Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library.  If not, see
+-   <https://www.gnu.org/licenses/>.  */
+-
+-#include <errno.h>
+-#include <fcntl.h>
+-#include <stddef.h>
+-#include <stdio.h>
+-#include <string.h>
+-#include <utime.h>
+-#include <sys/time.h>
+-#include <sysdep.h>
+-
+-
+-/* Change the access time of FILE relative to FD to TVP[0] and
+-   the modification time of FILE to TVP[1].  */
+-int
+-futimesat (int fd, const char *file, const struct timeval tvp[2])
+-{
+-  struct timespec tsp[2];
+-  int result;
+-
+-  if (tvp)
+-    {
+-      if (tvp[0].tv_usec >= 1000000 || tvp[0].tv_usec < 0
+-          || tvp[1].tv_usec >= 1000000 || tvp[1].tv_usec < 0)
+-        {
+-          __set_errno (EINVAL);
+-          return -1;
+-        }
+-      TIMEVAL_TO_TIMESPEC (&tvp[0], &tsp[0]);
+-      TIMEVAL_TO_TIMESPEC (&tvp[1], &tsp[1]);
+-    }
+-
+-  result = INLINE_SYSCALL (utimensat, 4, fd, file, tvp ? tsp : NULL, 0);
+-  return result;
+-}
+diff --git a/sysdeps/unix/sysv/linux/utimensat.c b/sysdeps/unix/sysv/linux/utimensat.c
+index ea23c2f051..aef34916e8 100644
+--- a/sysdeps/unix/sysv/linux/utimensat.c
++++ b/sysdeps/unix/sysv/linux/utimensat.c
+@@ -36,9 +36,13 @@ __utimensat64_helper (int fd, const char *file,
+   if (ret == 0 || errno != ENOSYS)
+     return ret;
+ 
++  /* For UTIME_NOW and UTIME_OMIT the value of tv_sec field is ignored.  */
++# define TS_VALID(ns) \
++  ((((ns).tv_nsec == UTIME_NOW || (ns).tv_nsec == UTIME_OMIT) \
++   || in_time_t_range ((ns).tv_sec)))
++
+   if (tsp64 != NULL
+-      && (! in_time_t_range (tsp64[0].tv_sec)
+-          || ! in_time_t_range (tsp64[1].tv_sec)))
++      && (!TS_VALID (tsp64[0]) || !TS_VALID (tsp64[1])))
+     {
+       __set_errno (EOVERFLOW);
+       return -1;
+-- 
+2.29.0
+

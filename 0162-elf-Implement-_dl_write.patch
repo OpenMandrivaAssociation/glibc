@@ -1,0 +1,150 @@
+From b31d4355ae817aa3caf9414f842cc07465bca028 Mon Sep 17 00:00:00 2001
+From: Florian Weimer <fweimer@redhat.com>
+Date: Wed, 7 Oct 2020 16:39:50 +0200
+Subject: [PATCH 162/267] elf: Implement _dl_write
+
+The generic version is parallel to _dl_writev.  It cannot use
+_dl_writev directly because the errno value needs to be obtained
+under a lock.
+
+Reviewed-by: Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+---
+ elf/Makefile                       |  2 +-
+ elf/dl-write.c                     | 56 ++++++++++++++++++++++++++++++
+ sysdeps/generic/ldsodefs.h         |  6 ++++
+ sysdeps/unix/sysv/linux/dl-write.c | 30 ++++++++++++++++
+ 4 files changed, 93 insertions(+), 1 deletion(-)
+ create mode 100644 elf/dl-write.c
+ create mode 100644 sysdeps/unix/sysv/linux/dl-write.c
+
+diff --git a/elf/Makefile b/elf/Makefile
+index e0a8bf2998..ab792d45c2 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -34,7 +34,7 @@ dl-routines	= $(addprefix dl-,load lookup object reloc deps \
+ 				  version profile tls origin scope \
+ 				  execstack open close trampoline \
+ 				  exception sort-maps lookup-direct \
+-				  call-libc-early-init)
++				  call-libc-early-init write)
+ ifeq (yes,$(use-ldconfig))
+ dl-routines += dl-cache
+ endif
+diff --git a/elf/dl-write.c b/elf/dl-write.c
+new file mode 100644
+index 0000000000..7350aff003
+--- /dev/null
++++ b/elf/dl-write.c
+@@ -0,0 +1,56 @@
++/* Implementation of the _dl_write function.  Generic version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <ldsodefs.h>
++#include <libc-lock.h>
++#include <sys/uio.h>
++
++ssize_t
++_dl_write (int fd, const void *buffer, size_t length)
++{
++  struct iovec iov = { .iov_base = (void *) buffer, .iov_len = length };
++  ssize_t ret;
++
++#if RTLD_PRIVATE_ERRNO
++  /* We have to take this lock just to be sure we don't clobber the private
++     errno when it's being used by another thread that cares about it.
++     Yet we must be sure not to try calling the lock functions before
++     the thread library is fully initialized.  */
++  if (__glibc_unlikely (_dl_starting_up))
++    {
++      ret = __writev (fd, &iov, 1);
++      if (ret < 0)
++        ret = -errno;
++    }
++  else
++    {
++      __rtld_lock_lock_recursive (GL(dl_load_lock));
++      __writev (fd, &iov, 1);
++      if (ret < 0)
++        ret = -errno;
++      __rtld_lock_unlock_recursive (GL(dl_load_lock));
++    }
++#else
++  ret = __writev (fd, &iov, 1);
++  if (ret < 0)
++    ret = -errno;
++#endif
++
++  return ret;
++}
+diff --git a/sysdeps/generic/ldsodefs.h b/sysdeps/generic/ldsodefs.h
+index ba114ab4b1..7cb1fccc80 100644
+--- a/sysdeps/generic/ldsodefs.h
++++ b/sysdeps/generic/ldsodefs.h
+@@ -757,6 +757,12 @@ _dl_dprintf (int fd, const char *fmt, ...)
+ }
+ #endif
+ 
++/* Write LENGTH bytes at BUFFER to FD, like write.  Returns the number
++   of bytes written on success, or a negative error constant on
++   failure.  */
++ssize_t _dl_write (int fd, const void *buffer, size_t length)
++  attribute_hidden;
++
+ /* Write a message on the specified descriptor standard output.  The
+    parameters are interpreted as for a `printf' call.  */
+ void _dl_printf (const char *fmt, ...)
+diff --git a/sysdeps/unix/sysv/linux/dl-write.c b/sysdeps/unix/sysv/linux/dl-write.c
+new file mode 100644
+index 0000000000..1c6298fb41
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/dl-write.c
+@@ -0,0 +1,30 @@
++/* Implementation of the _dl_write function.  Linux version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <sysdep.h>
++#include <unistd.h>
++#include <ldsodefs.h>
++
++ssize_t
++_dl_write (int fd, const void *buffer, size_t length)
++{
++  long int r = INTERNAL_SYSCALL_CALL (write, fd, buffer, length);
++  if (INTERNAL_SYSCALL_ERROR_P (r))
++    r = - INTERNAL_SYSCALL_ERRNO (r);
++  return r;
++}
+-- 
+2.29.0
+

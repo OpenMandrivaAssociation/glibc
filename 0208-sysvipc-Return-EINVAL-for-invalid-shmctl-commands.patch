@@ -1,0 +1,169 @@
+From 9ebaabeaac1a96b0d91f52902ce1dbf4f5a562dd Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 29 Sep 2020 14:55:02 -0300
+Subject: [PATCH 208/267] sysvipc: Return EINVAL for invalid shmctl commands
+
+It avoids regressions on possible future commands that might require
+additional libc support.  The downside is new commands added by newer
+kernels will need further glibc support.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (Linux v4.15 and v5.4).
+---
+ sysdeps/unix/sysv/linux/shmctl.c | 44 ++++++++++++++++++++++++--------
+ sysvipc/test-sysvipc.h           | 33 +++++++++++++++++++++---
+ sysvipc/test-sysvshm.c           |  5 ++++
+ 3 files changed, 69 insertions(+), 13 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/shmctl.c b/sysdeps/unix/sysv/linux/shmctl.c
+index 1d19a798b1..833f013e69 100644
+--- a/sysdeps/unix/sysv/linux/shmctl.c
++++ b/sysdeps/unix/sysv/linux/shmctl.c
+@@ -88,25 +88,49 @@ __shmctl64 (int shmid, int cmd, struct __shmid64_ds *buf)
+ {
+ #if __IPC_TIME64
+   struct kernel_shmid64_ds kshmid, *arg = NULL;
+-  if (buf != NULL)
++#else
++  shmctl_arg_t *arg;
++#endif
++
++  switch (cmd)
+     {
+-      /* This is a Linux extension where kernel expects either a
+-	 'struct shminfo' (IPC_INFO) or 'struct shm_info' (SHM_INFO).  */
+-      if (cmd == IPC_INFO || cmd == SHM_INFO)
+-	arg = (struct kernel_shmid64_ds *) buf;
+-      else
++    case IPC_RMID:
++    case SHM_LOCK:
++    case SHM_UNLOCK:
++      arg = NULL;
++      break;
++
++    case IPC_SET:
++    case IPC_STAT:
++    case SHM_STAT:
++    case SHM_STAT_ANY:
++#if __IPC_TIME64
++      if (buf != NULL)
+ 	{
+ 	  shmid64_to_kshmid64 (buf, &kshmid);
+ 	  arg = &kshmid;
+ 	}
+-    }
+ # ifdef __ASSUME_SYSVIPC_BROKEN_MODE_T
+-  if (cmd == IPC_SET)
+-    arg->shm_perm.mode *= 0x10000U;
++      if (cmd == IPC_SET)
++        arg->shm_perm.mode *= 0x10000U;
+ # endif
+ #else
+-  shmctl_arg_t *arg = buf;
++      arg = buf;
+ #endif
++      break;
++
++    case IPC_INFO:
++    case SHM_INFO:
++      /* This is a Linux extension where kernel expects either a
++	 'struct shminfo' (IPC_INFO) or 'struct shm_info' (SHM_INFO).  */
++      arg = (__typeof__ (arg)) buf;
++      break;
++
++    default:
++      __set_errno (EINVAL);
++      return -1;
++    }
++
+ 
+   int ret = shmctl_syscall (shmid, cmd, arg);
+   if (ret < 0)
+diff --git a/sysvipc/test-sysvipc.h b/sysvipc/test-sysvipc.h
+index 21ef6c6565..d1c8349b45 100644
+--- a/sysvipc/test-sysvipc.h
++++ b/sysvipc/test-sysvipc.h
+@@ -25,7 +25,7 @@
+ #include <sys/shm.h>
+ #include <include/array_length.h>
+ 
+-/* Return the first invalid command SysV IPC command from common shared
++/* Return the first invalid SysV IPC command from common shared
+    between message queue, shared memory, and semaphore.  */
+ static inline int
+ first_common_invalid_cmd (void)
+@@ -50,7 +50,7 @@ first_common_invalid_cmd (void)
+   return invalid;
+ }
+ 
+-/* Return the first invalid command SysV IPC command for semaphore.  */
++/* Return the first invalid SysV IPC command for semaphore.  */
+ static inline int
+ first_sem_invalid_cmd (void)
+ {
+@@ -82,7 +82,7 @@ first_sem_invalid_cmd (void)
+   return invalid;
+ }
+ 
+-/* Return the first invalid command SysV IPC command for message queue.  */
++/* Return the first invalid SysV IPC command for message queue.  */
+ static inline int
+ first_msg_invalid_cmd (void)
+ {
+@@ -107,4 +107,31 @@ first_msg_invalid_cmd (void)
+   return invalid;
+ }
+ 
++/* Return the first invalid SysV IPC command for shared memory.  */
++static inline int
++first_shm_invalid_cmd (void)
++{
++  const int shm_cmds[] = {
++    SHM_STAT,
++    SHM_INFO,
++#ifdef SHM_STAT_ANY
++    SHM_STAT_ANY,
++#endif
++    SHM_LOCK,
++    SHM_UNLOCK
++  };
++
++  int invalid = first_common_invalid_cmd ();
++  for (int i = 0; i < array_length (shm_cmds); i++)
++    {
++      if (invalid == shm_cmds[i])
++	{
++	  invalid++;
++	  i = 0;
++	}
++    }
++
++  return invalid;
++}
++
+ #endif /* _TEST_SYSV_H  */
+diff --git a/sysvipc/test-sysvshm.c b/sysvipc/test-sysvshm.c
+index f083fd280b..a1b8b4823e 100644
+--- a/sysvipc/test-sysvshm.c
++++ b/sysvipc/test-sysvshm.c
+@@ -25,6 +25,8 @@
+ #include <sys/ipc.h>
+ #include <sys/shm.h>
+ 
++#include <test-sysvipc.h>
++
+ #include <support/support.h>
+ #include <support/check.h>
+ #include <support/temp_file.h>
+@@ -81,6 +83,9 @@ do_test (void)
+       FAIL_EXIT1 ("shmget failed (errno=%d)", errno);
+     }
+ 
++  TEST_COMPARE (shmctl (shmid, first_shm_invalid_cmd (), NULL), -1);
++  TEST_COMPARE (errno, EINVAL);
++
+   /* Get shared memory kernel information and do some sanity checks.  */
+   struct shmid_ds shminfo;
+   if (shmctl (shmid, IPC_STAT, &shminfo) == -1)
+-- 
+2.29.0
+

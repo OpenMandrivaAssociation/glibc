@@ -1,0 +1,50 @@
+From 7a55dd3fb6d2c307a002a16776be84310b9c8989 Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Fri, 20 Dec 2019 18:29:42 -0800
+Subject: [PATCH 065/267] riscv32: Specify the arch_minimum_kernel as 5.4
+
+Specify the minimum kernel version for RISC-V 32-bit as the 5.4 kernel.
+We require this commit: "waitid: Add support for waiting for the current
+process group" for the kernel as it adds support for the P_PGID id for
+the waitid syscall.  Without this patch we can't replace the wait4
+syscall on 64-bit time_t only systems.
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ sysdeps/unix/sysv/linux/riscv/configure    | 4 ++++
+ sysdeps/unix/sysv/linux/riscv/configure.ac | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/sysdeps/unix/sysv/linux/riscv/configure b/sysdeps/unix/sysv/linux/riscv/configure
+index 3018ca8f1b..de3bb62003 100755
+--- a/sysdeps/unix/sysv/linux/riscv/configure
++++ b/sysdeps/unix/sysv/linux/riscv/configure
+@@ -151,6 +151,10 @@ if test $libc_cv_riscv_int_abi = no; then
+   as_fn_error $? "Unable to determine integer ABI" "$LINENO" 5
+ fi
+ 
++if test $libc_cv_riscv_int_abi = ilp32; then
++  arch_minimum_kernel=5.4.0
++fi
++
+ libc_cv_riscv_float_abi=no
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+diff --git a/sysdeps/unix/sysv/linux/riscv/configure.ac b/sysdeps/unix/sysv/linux/riscv/configure.ac
+index d4819931ca..0f7596502b 100644
+--- a/sysdeps/unix/sysv/linux/riscv/configure.ac
++++ b/sysdeps/unix/sysv/linux/riscv/configure.ac
+@@ -11,6 +11,10 @@ if test $libc_cv_riscv_int_abi = no; then
+   AC_MSG_ERROR([Unable to determine integer ABI])
+ fi
+ 
++if test $libc_cv_riscv_int_abi = ilp32; then
++  arch_minimum_kernel=5.4.0
++fi
++
+ libc_cv_riscv_float_abi=no
+ AC_EGREP_CPP(yes, [#ifdef __riscv_float_abi_double
+ 		   yes
+-- 
+2.29.0
+

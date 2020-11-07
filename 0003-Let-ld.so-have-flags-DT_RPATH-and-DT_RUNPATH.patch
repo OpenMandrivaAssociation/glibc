@@ -1,0 +1,30 @@
+From 44c7513a5f55101ff96e078eae896b6a289e4047 Mon Sep 17 00:00:00 2001
+From: Tulio Magno Quites Machado Filho <tuliom@linux.ibm.com>
+Date: Thu, 2 Aug 2018 13:57:26 -0300
+Subject: [PATCH 3/3] Let ld.so have flags DT_RPATH and DT_RUNPATH
+
+Remove asserts that prevent ld.so from 	having the flags DT_RPATH and
+DT_RUNPATH.
+---
+ elf/get-dynamic-info.h | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/elf/get-dynamic-info.h b/elf/get-dynamic-info.h
+index 4f6a86ef37..3040d9a914 100644
+--- a/elf/get-dynamic-info.h
++++ b/elf/get-dynamic-info.h
+@@ -142,10 +142,7 @@ elf_get_dynamic_info (struct link_map *l, ElfW(Dyn) *temp)
+   assert (info[DT_FLAGS] == NULL
+ 	  || (info[DT_FLAGS]->d_un.d_val & ~DF_BIND_NOW) == 0);
+ #endif
+-#if defined RTLD_BOOTSTRAP || defined STATIC_PIE_BOOTSTRAP
+-  assert (info[DT_RUNPATH] == NULL);
+-  assert (info[DT_RPATH] == NULL);
+-#else
++#if ! defined RTLD_BOOTSTRAP && ! defined STATIC_PIE_BOOTSTRAP
+   if (info[DT_FLAGS] != NULL)
+     {
+       /* Flags are used.  Translate to the old form where available.
+-- 
+2.29.0
+

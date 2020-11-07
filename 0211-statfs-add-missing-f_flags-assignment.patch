@@ -1,0 +1,27 @@
+From d3a5ae6ad16ba488dec7d15c6554585d9a405336 Mon Sep 17 00:00:00 2001
+From: Chen Li <chenli@uniontech.com>
+Date: Mon, 12 Oct 2020 13:46:00 +0800
+Subject: [PATCH 211/267] statfs: add missing f_flags assignment
+
+f_flags is added into struct statfs since Linux 2.6.36, which is lacked
+in glibc's statfs64.c until now. So mount flags is uninitialized on
+platforms having no statfs64 syscall in kernel, e.g., alpha and its derivation
+---
+ sysdeps/unix/sysv/linux/statfs64.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sysdeps/unix/sysv/linux/statfs64.c b/sysdeps/unix/sysv/linux/statfs64.c
+index c941128637..2c293badc8 100644
+--- a/sysdeps/unix/sysv/linux/statfs64.c
++++ b/sysdeps/unix/sysv/linux/statfs64.c
+@@ -78,6 +78,7 @@ __statfs64 (const char *file, struct statfs64 *buf)
+   buf->f_fsid = buf32.f_fsid;
+   buf->f_namelen = buf32.f_namelen;
+   buf->f_frsize = buf32.f_frsize;
++  buf->f_flags = buf32.f_flags;
+   memcpy (buf->f_spare, buf32.f_spare, sizeof (buf32.f_spare));
+ 
+   return 0;
+-- 
+2.29.0
+

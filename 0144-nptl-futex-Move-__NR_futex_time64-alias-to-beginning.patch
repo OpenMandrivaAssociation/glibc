@@ -1,0 +1,44 @@
+From e75fbaaa21563cecccfda9705260ae0b608ed660 Mon Sep 17 00:00:00 2001
+From: Lukasz Majewski <lukma@denx.de>
+Date: Tue, 8 Sep 2020 10:48:13 +0200
+Subject: [PATCH 144/267] nptl: futex: Move __NR_futex_time64 alias to
+ beginning of futex-internal.h
+
+This alias macro shall be moved to the beginning of the futex-internal.h
+to be easily reused by other functions, which would support 64 bit time.
+
+Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+Reviewed-by: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+---
+ sysdeps/nptl/futex-internal.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sysdeps/nptl/futex-internal.h b/sysdeps/nptl/futex-internal.h
+index 84ab3f3853..7f3910ad98 100644
+--- a/sysdeps/nptl/futex-internal.h
++++ b/sysdeps/nptl/futex-internal.h
+@@ -74,6 +74,10 @@
+ # error FUTEX_PRIVATE must be equal to 0
+ #endif
+ 
++#ifndef __NR_futex_time64
++# define __NR_futex_time64 __NR_futex
++#endif
++
+ /* Calls __libc_fatal with an error message.  Convenience function for
+    concrete implementations of the futex interface.  */
+ static __always_inline __attribute__ ((__noreturn__)) void
+@@ -467,10 +471,6 @@ futex_unlock_pi (unsigned int *futex_word, int private)
+     }
+ }
+ 
+-#ifndef __NR_futex_time64
+-# define __NR_futex_time64 __NR_futex
+-#endif
+-
+ static __always_inline int
+ futex_timed_wait_cancel64 (pid_t *tidp,  pid_t tid,
+                            const struct __timespec64 *timeout, int private)
+-- 
+2.29.0
+

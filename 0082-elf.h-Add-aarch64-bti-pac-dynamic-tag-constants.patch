@@ -1,0 +1,30 @@
+From 721a853415e358ba887c9fc693899cb648ca79f3 Mon Sep 17 00:00:00 2001
+From: Mark Wielaard <mark@klomp.org>
+Date: Fri, 28 Aug 2020 18:44:16 +0200
+Subject: [PATCH 082/267] elf.h: Add aarch64 bti/pac dynamic tag constants
+
+Constants double checked against binutils and the ELF for the Arm 64-bit
+Architecture (AArch64) Release 2020Q2 document.
+
+Only BTI PLT is used in glibc, there's no PAC PLT with glibc, and people
+are expected to use BIND_NOW.
+---
+ elf/elf.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/elf/elf.h b/elf/elf.h
+index 197b557d15..ff9f1dadd5 100644
+--- a/elf/elf.h
++++ b/elf/elf.h
+@@ -2875,6 +2875,8 @@ enum
+ #define R_AARCH64_IRELATIVE	1032	/* STT_GNU_IFUNC relocation.  */
+ 
+ /* AArch64 specific values for the Dyn d_tag field.  */
++#define DT_AARCH64_BTI_PLT	(DT_LOPROC + 1)
++#define DT_AARCH64_PAC_PLT	(DT_LOPROC + 3)
+ #define DT_AARCH64_VARIANT_PCS	(DT_LOPROC + 5)
+ #define DT_AARCH64_NUM		6
+ 
+-- 
+2.29.0
+

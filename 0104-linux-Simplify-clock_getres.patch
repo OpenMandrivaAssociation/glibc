@@ -1,0 +1,94 @@
+From ecdcafa571ba68e081e9cfcdda4ea8c1a9dbdf0d Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Thu, 9 Jul 2020 17:46:34 -0300
+Subject: [PATCH 104/267] linux: Simplify clock_getres
+
+With arch-syscall.h it can now assumes the existance of either
+__NR_clock_getres or __NR_clock_getres_time64.  The 32-bit time_t
+support is now only build for !__ASSUME_TIME64_SYSCALLS.
+
+It also uses the time64-support functions to simplify it further.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (on 5.4 and on 4.15
+kernel).
+
+Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+---
+ sysdeps/unix/sysv/linux/clock_getres.c | 38 ++++++++++----------------
+ 1 file changed, 15 insertions(+), 23 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/clock_getres.c b/sysdeps/unix/sysv/linux/clock_getres.c
+index 5f6955ab10..6be73c94de 100644
+--- a/sysdeps/unix/sysv/linux/clock_getres.c
++++ b/sysdeps/unix/sysv/linux/clock_getres.c
+@@ -21,6 +21,7 @@
+ #include <time.h>
+ 
+ #include <sysdep-vdso.h>
++#include <time64-support.h>
+ #include <shlib-compat.h>
+ #include <kernel-features.h>
+ 
+@@ -28,36 +29,26 @@
+ int
+ __clock_getres64 (clockid_t clock_id, struct __timespec64 *res)
+ {
+-#ifdef __ASSUME_TIME64_SYSCALLS
+-  /* 64 bit ABIs or Newer 32-bit ABIs that only support 64-bit time_t.  */
+-# ifndef __NR_clock_getres_time64
+-#  define __NR_clock_getres_time64 __NR_clock_getres
+-# endif
+-# ifdef HAVE_CLOCK_GETRES64_VSYSCALL
+-  return INLINE_VSYSCALL (clock_getres_time64, 2, clock_id, res);
+-# else
+-  return INLINE_SYSCALL_CALL (clock_getres_time64, clock_id, res);
+-# endif
+-#else
+   int r;
+-  /* Old 32-bit ABI with possible 64-bit time_t support.  */
+-# ifdef __NR_clock_getres_time64
+-  /* Avoid issue a __NR_clock_getres_time64 syscall on kernels that do not
+-     support 64-bit time_t.  */
+-  static int time64_support = 1;
+-  if (atomic_load_relaxed (&time64_support) != 0)
++
++#ifndef __NR_clock_getres_time64
++# define __NR_clock_getres_time64 __NR_clock_getres
++#endif
++  if (supports_time64 ())
+     {
+-#  ifdef HAVE_CLOCK_GETRES64_VSYSCALL
++#ifdef HAVE_CLOCK_GETRES64_VSYSCALL
+       r = INLINE_VSYSCALL (clock_getres_time64, 2, clock_id, res);
+-#  else
++#else
+       r = INLINE_SYSCALL_CALL (clock_getres_time64, clock_id, res);
+-#  endif
++#endif
++
+       if (r == 0 || errno != ENOSYS)
+ 	return r;
+ 
+-      atomic_store_relaxed (&time64_support, 0);
++      mark_time64_unsupported ();
+     }
+-# endif
++
++#ifndef __ASSUME_TIME64_SYSCALLS
+   /* Fallback code that uses 32-bit support.  */
+   struct timespec ts32;
+ # ifdef HAVE_CLOCK_GETRES_VSYSCALL
+@@ -67,8 +58,9 @@ __clock_getres64 (clockid_t clock_id, struct __timespec64 *res)
+ # endif
+   if (r == 0)
+     *res = valid_timespec_to_timespec64 (ts32);
+-  return r;
+ #endif
++
++  return r;
+ }
+ 
+ #if __TIMESIZE != 64
+-- 
+2.29.0
+

@@ -1,0 +1,58 @@
+From 4b564f347fdcd021dbb6c1ada98a18249d9e888a Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Fri, 11 Sep 2020 19:36:12 -0700
+Subject: [PATCH 111/267] pselect.c: Pass a pointer to SYSCALL_CANCEL [BZ
+ #26606]
+
+commit a92f4e6299fe0e3cb6f77e79de00817aece501ce
+Author: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date:   Mon Jul 6 13:27:12 2020 -0300
+
+    linux: Add time64 pselect support
+
+changed pselect.c to
+
+     r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
+			  timeout,
+			  ((__syscall_ulong_t[]){ (uintptr_t) sigmask,
+						  __NSIG_BYTES }));
+
+which doesn't work with x32's ARGIFY and data passed to syscall isn't
+initialized with sigmask and __NSIG_BYTES.  Change to
+
+     __syscall_ulong_t data[2] =
+	{
+	  (uintptr_t) sigmask, __NSIG_BYTES
+	};
+      r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
+			  timeout, data);
+
+fixes [BZ #26606].
+---
+ sysdeps/unix/sysv/linux/pselect.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/pselect.c b/sysdeps/unix/sysv/linux/pselect.c
+index ed36121023..165b2b5e66 100644
+--- a/sysdeps/unix/sysv/linux/pselect.c
++++ b/sysdeps/unix/sysv/linux/pselect.c
+@@ -44,10 +44,13 @@ __pselect64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+   int r;
+   if (supports_time64 ())
+     {
++      /* NB: This is required by ARGIFY used in x32 internal_syscallN.  */
++      __syscall_ulong_t data[2] =
++	{
++	  (uintptr_t) sigmask, __NSIG_BYTES
++	};
+       r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
+-			  timeout,
+-			  ((__syscall_ulong_t[]){ (uintptr_t) sigmask,
+-						  __NSIG_BYTES }));
++			  timeout, data);
+       if (r == 0 || errno != ENOSYS)
+ 	return r;
+ 
+-- 
+2.29.0
+

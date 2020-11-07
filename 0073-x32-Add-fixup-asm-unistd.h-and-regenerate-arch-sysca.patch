@@ -1,0 +1,67 @@
+From 306bdd99834204d0d70985c39382d2c42a619a09 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Tue, 25 Aug 2020 05:35:45 -0700
+Subject: [PATCH 073/267] x32: Add <fixup-asm-unistd.h> and regenerate
+ arch-syscall.h
+
+X32 uses the same 64-bit syscall interface for set_thread_area.  But
+__NR_set_thread_area is missing from <asm/unistd_x32.h>.  A kernel patch
+was submitted:
+
+From 7b05d5b43ae2545e0d4a3edb24205d18bc883626 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Sat, 15 Aug 2020 10:34:00 -0700
+Subject: [PATCH] x86-64: Enable x32 set_thread_area
+
+X32 uses the common 64-bit syscall interface for set_thread_area.  Add
+<fixup-asm-unistd.h> to provide __NR_set_thread_area.
+
+Co-authored-by: Florian Weimer <fweimer@redhat.com>
+---
+ .../unix/sysv/linux/x86_64/x32/arch-syscall.h |  1 +
+ .../sysv/linux/x86_64/x32/fixup-asm-unistd.h  | 21 +++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+ create mode 100644 sysdeps/unix/sysv/linux/x86_64/x32/fixup-asm-unistd.h
+
+diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h b/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
+index 1a701c1472..7b64b1fa0c 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/arch-syscall.h
+@@ -260,6 +260,7 @@
+ #define __NR_sendto 1073741868
+ #define __NR_set_mempolicy 1073742062
+ #define __NR_set_robust_list 1073742354
++#define __NR_set_thread_area 1073742029
+ #define __NR_set_tid_address 1073742042
+ #define __NR_setdomainname 1073741995
+ #define __NR_setfsgid 1073741947
+diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/fixup-asm-unistd.h b/sysdeps/unix/sysv/linux/x86_64/x32/fixup-asm-unistd.h
+new file mode 100644
+index 0000000000..01d1f448ca
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/fixup-asm-unistd.h
+@@ -0,0 +1,21 @@
++/* Regularize <asm/unistd.h> definitions.  X32 version.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <http://www.gnu.org/licenses/>.  */
++
++/* X32 uses the same 64-bit syscall interface for set_thread_area.   */
++#ifndef __NR_set_thread_area
++# define __NR_set_thread_area 1073742029
++#endif
+-- 
+2.29.0
+

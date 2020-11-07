@@ -1,0 +1,163 @@
+From 02c91eb6115872219a85bb93724affd7fcdedf7a Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Thu, 20 Aug 2020 09:18:15 -0300
+Subject: [PATCH 037/267] linux: Add helper function to optimize 64-bit time_t
+ fallback support
+
+These helper functions are used to optimize the 64-bit time_t support on
+configurations that requires support for 32-bit time_t fallback
+(!__ASSUME_TIME64_SYSCALLS).  The idea is once the kernel advertises that
+it does not have 64-bit time_t support, glibc will stop to try issue the
+64-bit time_t syscall altogether.
+
+For instance:
+
+  #ifndef __NR_symbol_time64
+  # define __NR_symbol_time64 __NR_symbol
+  #endif
+  int r;
+  if (supports_time64 ())
+    {
+      r = INLINE_SYSCALL_CALL (symbol, ...);
+      if (r == 0 || errno != ENOSYS)
+        return r;
+
+      mark_time64_unsupported ();
+    }
+  #ifndef __ASSUME_TIME64_SYSCALLS
+  <32-bit fallback syscall>
+  #endif
+  return r;
+
+On configuration with default 64-bit time_t this optimization should be
+optimized away by the compiler resulting in no overhead.
+---
+ sysdeps/unix/sysv/linux/Makefile         |  3 +-
+ sysdeps/unix/sysv/linux/time64-support.c | 23 ++++++++
+ sysdeps/unix/sysv/linux/time64-support.h | 70 ++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+), 1 deletion(-)
+ create mode 100644 sysdeps/unix/sysv/linux/time64-support.c
+ create mode 100644 sysdeps/unix/sysv/linux/time64-support.h
+
+diff --git a/sysdeps/unix/sysv/linux/Makefile b/sysdeps/unix/sysv/linux/Makefile
+index 9b2a253032..5079f33655 100644
+--- a/sysdeps/unix/sysv/linux/Makefile
++++ b/sysdeps/unix/sysv/linux/Makefile
+@@ -60,7 +60,8 @@ sysdep_routines += adjtimex clone umount umount2 readahead sysctl \
+ 		   personality epoll_wait tee vmsplice splice \
+ 		   open_by_handle_at mlock2 pkey_mprotect pkey_set pkey_get \
+ 		   timerfd_gettime timerfd_settime prctl \
+-		   process_vm_readv process_vm_writev clock_adjtime
++		   process_vm_readv process_vm_writev clock_adjtime \
++		   time64-support
+ 
+ CFLAGS-gethostid.c = -fexceptions
+ CFLAGS-tee.c = -fexceptions -fasynchronous-unwind-tables
+diff --git a/sysdeps/unix/sysv/linux/time64-support.c b/sysdeps/unix/sysv/linux/time64-support.c
+new file mode 100644
+index 0000000000..9f03c9adda
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/time64-support.c
+@@ -0,0 +1,23 @@
++/* Auxiliary definitions for 64-bit time_t support.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <time64-support.h>
++
++#ifndef __ASSUME_TIME64_SYSCALLS
++int __time64_support = 1;
++#endif
+diff --git a/sysdeps/unix/sysv/linux/time64-support.h b/sysdeps/unix/sysv/linux/time64-support.h
+new file mode 100644
+index 0000000000..ebba155f98
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/time64-support.h
+@@ -0,0 +1,70 @@
++/* Auxiliary definitions for 64-bit time_t support.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <stdbool.h>
++#include <atomic.h>
++
++/* These helper functions are used to optimize the 64-bit time_t support on
++   configurations that requires support for 32-bit time_t fallback
++   (!__ASSUME_TIME64_SYSCALLS).  The idea is once the kernel advertises that
++   it does not have 64-bit time_t support, glibc will stop to try issue the
++   64-bit time_t syscall altogether.
++
++   For instance:
++
++     #ifndef __NR_symbol_time64
++     # define __NR_symbol_time64 __NR_symbol
++     #endif
++     int r;
++     if (supports_time64 ())
++       {
++         r = INLINE_SYSCALL_CALL (symbol, ...);
++         if (r == 0 || errno != ENOSYS)
++	   return r;
++
++         mark_time64_unsupported ();
++       }
++     #ifndef __ASSUME_TIME64_SYSCALLS
++     <32-bit fallback syscall>
++     #endif
++     return r;
++
++   On configuration with default 64-bit time_t this optimization should be
++   optimized away by the compiler resulting in no overhead.  */
++
++#ifndef __ASSUME_TIME64_SYSCALLS
++extern int __time64_support attribute_hidden;
++#endif
++
++static inline bool
++supports_time64 (void)
++{
++#ifdef __ASSUME_TIME64_SYSCALLS
++  return true;
++#else
++  return atomic_load_relaxed (&__time64_support) != 0;
++#endif
++}
++
++static inline void
++mark_time64_unsupported (void)
++{
++#ifndef __ASSUME_TIME64_SYSCALLS
++  atomic_store_relaxed (&__time64_support, 0);
++#endif
++}
+-- 
+2.29.0
+

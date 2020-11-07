@@ -1,0 +1,65 @@
+From 7c7671767e58ad49f15cf99f6861eaf91e05f60b Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 7 Jul 2020 17:25:00 -0300
+Subject: [PATCH 135/267] linux: Use 64-bit time_t syscall on
+ clock_getcputclockid
+
+The syscall __NR_clock_getres_time64 (for 32-bit) or __NR_clock_getres
+(for 64-bit) is used as default.  The 32-bit fallback is used iff
+__ASSUME_TIME64_SYSCALLS is not defined, which assumes the kernel ABI
+provides either __NR_rt_sigtimedwait (32-bit time_t).
+
+Since the symbol does not use any type which might be affected by the
+time_t, there is no need to add a 64-bit variant.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu (on 5.4 and on 4.15
+kernel).
+
+Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+---
+ sysdeps/unix/sysv/linux/clock_getcpuclockid.c | 25 +++++++++++--------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/clock_getcpuclockid.c b/sysdeps/unix/sysv/linux/clock_getcpuclockid.c
+index be1f477187..7d2e6d6bfe 100644
+--- a/sysdeps/unix/sysv/linux/clock_getcpuclockid.c
++++ b/sysdeps/unix/sysv/linux/clock_getcpuclockid.c
+@@ -30,20 +30,25 @@ __clock_getcpuclockid (pid_t pid, clockid_t *clock_id)
+ 
+   const clockid_t pidclock = MAKE_PROCESS_CPUCLOCK (pid, CPUCLOCK_SCHED);
+ 
+-  int r = INTERNAL_SYSCALL_CALL (clock_getres, pidclock, NULL);
+-  if (!INTERNAL_SYSCALL_ERROR_P (r))
++#ifndef __NR_clock_getres_time64
++# define __NR_clock_getres_time64 __NR_clock_getres
++#endif
++  int r = INTERNAL_SYSCALL_CALL (clock_getres_time64, pidclock, NULL);
++
++#ifndef __ASSUME_TIME64_SYSCALLS
++  if (r != 0 && r == -ENOSYS)
++    r = INTERNAL_SYSCALL_CALL (clock_getres, pidclock, NULL);
++#endif
++
++  if (r == 0)
+     {
+       *clock_id = pidclock;
+       return 0;
+     }
+-
+-  if (INTERNAL_SYSCALL_ERRNO (r) == EINVAL)
+-    {
+-      /* The clock_getres system call checked the PID for us.  */
+-      return ESRCH;
+-    }
+-  else
+-    return INTERNAL_SYSCALL_ERRNO (r);
++  if (r == -EINVAL)
++    /* The clock_getres system call checked the PID for us.  */
++    return ESRCH;
++  return -r;
+ }
+ 
+ versioned_symbol (libc, __clock_getcpuclockid, clock_getcpuclockid, GLIBC_2_17);
+-- 
+2.29.0
+

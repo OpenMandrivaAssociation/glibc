@@ -1,0 +1,274 @@
+From 5b6113d62efabb123db433b14adddd4a5fb6b7ec Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Mon, 10 Feb 2020 10:36:21 -0800
+Subject: [PATCH 060/267] RISC-V: Support the 32-bit ABI implementation
+
+This patch adds the ABI implementation for 32-bit RISC-V.  It contains
+the Linux-specific and RISC-V architecture code.
+
+Reviewed-by: Maciej W. Rozycki <macro@wdc.com>
+---
+ sysdeps/riscv/bits/wordsize.h                 |  9 +--
+ sysdeps/riscv/nptl/bits/pthreadtypes-arch.h   | 26 +++++----
+ sysdeps/riscv/nptl/bits/struct_rwlock.h       | 27 ++++++++-
+ sysdeps/riscv/nptl/pthread-offsets.h          | 17 +++++-
+ sysdeps/riscv/sfp-machine.h                   | 27 ++++++++-
+ sysdeps/riscv/sys/asm.h                       |  7 ++-
+ .../unix/sysv/linux/riscv/jmp_buf-macros.h    | 55 +++++++++++++++++++
+ 7 files changed, 146 insertions(+), 22 deletions(-)
+ create mode 100644 sysdeps/unix/sysv/linux/riscv/jmp_buf-macros.h
+
+diff --git a/sysdeps/riscv/bits/wordsize.h b/sysdeps/riscv/bits/wordsize.h
+index faccc71828..4929dcf873 100644
+--- a/sysdeps/riscv/bits/wordsize.h
++++ b/sysdeps/riscv/bits/wordsize.h
+@@ -22,8 +22,9 @@
+ # error unsupported ABI
+ #endif
+ 
+-#if __riscv_xlen == 64
+-# define __WORDSIZE_TIME64_COMPAT32 1
+-#else
+-# error "rv32i-based targets are not supported"
++#define __WORDSIZE_TIME64_COMPAT32  1
++
++#if __WORDSIZE == 32
++# define __WORDSIZE32_SIZE_ULONG    0
++# define __WORDSIZE32_PTRDIFF_LONG  0
+ #endif
+diff --git a/sysdeps/riscv/nptl/bits/pthreadtypes-arch.h b/sysdeps/riscv/nptl/bits/pthreadtypes-arch.h
+index c3c72d6c10..8a602e864a 100644
+--- a/sysdeps/riscv/nptl/bits/pthreadtypes-arch.h
++++ b/sysdeps/riscv/nptl/bits/pthreadtypes-arch.h
+@@ -21,18 +21,22 @@
+ 
+ #include <bits/endian.h>
+ 
+-#if __riscv_xlen == 64
+-# define __SIZEOF_PTHREAD_ATTR_T 		56
+-# define __SIZEOF_PTHREAD_MUTEX_T 		40
+-# define __SIZEOF_PTHREAD_MUTEXATTR_T 		 4
+-# define __SIZEOF_PTHREAD_COND_T 		48
+-# define __SIZEOF_PTHREAD_CONDATTR_T 		 4
+-# define __SIZEOF_PTHREAD_RWLOCK_T 		56
+-# define __SIZEOF_PTHREAD_RWLOCKATTR_T 		 8
+-# define __SIZEOF_PTHREAD_BARRIER_T 		32
+-# define __SIZEOF_PTHREAD_BARRIERATTR_T 	 4
++#define __SIZEOF_PTHREAD_MUTEXATTR_T		4
++#define __SIZEOF_PTHREAD_COND_T			48
++#define __SIZEOF_PTHREAD_CONDATTR_T		4
++#define __SIZEOF_PTHREAD_RWLOCKATTR_T		8
++#define __SIZEOF_PTHREAD_BARRIERATTR_T		4
++
++#if __WORDSIZE == 64
++# define __SIZEOF_PTHREAD_ATTR_T		56
++# define __SIZEOF_PTHREAD_MUTEX_T		40
++# define __SIZEOF_PTHREAD_RWLOCK_T		56
++# define __SIZEOF_PTHREAD_BARRIER_T		32
+ #else
+-# error "rv32i-based systems are not supported"
++# define __SIZEOF_PTHREAD_ATTR_T		32
++# define __SIZEOF_PTHREAD_MUTEX_T		32
++# define __SIZEOF_PTHREAD_RWLOCK_T		48
++# define __SIZEOF_PTHREAD_BARRIER_T		20
+ #endif
+ 
+ #define __LOCK_ALIGNMENT
+diff --git a/sysdeps/riscv/nptl/bits/struct_rwlock.h b/sysdeps/riscv/nptl/bits/struct_rwlock.h
+index acfaa75e1b..dc467d42c7 100644
+--- a/sysdeps/riscv/nptl/bits/struct_rwlock.h
++++ b/sysdeps/riscv/nptl/bits/struct_rwlock.h
+@@ -15,7 +15,7 @@
+ 
+    You should have received a copy of the GNU Lesser General Public
+    License along with the GNU C Library; if not, see
+-   <http://www.gnu.org/licenses/>.  */
++   <https://www.gnu.org/licenses/>.  */
+ 
+ #ifndef _RWLOCK_INTERNAL_H
+ #define _RWLOCK_INTERNAL_H
+@@ -32,14 +32,37 @@ struct __pthread_rwlock_arch_t
+   unsigned int __writers_futex;
+   unsigned int __pad3;
+   unsigned int __pad4;
++#if __WORDSIZE == 64
+   int __cur_writer;
+   int __shared;
+   unsigned long int __pad1;
+   unsigned long int __pad2;
+   unsigned int __flags;
++#else
++# if __BYTE_ORDER == __BIG_ENDIAN
++  unsigned char __pad1;
++  unsigned char __pad2;
++  unsigned char __shared;
++  unsigned char __flags;
++# else
++  unsigned char __flags;
++  unsigned char __shared;
++  unsigned char __pad1;
++  unsigned char __pad2;
++# endif
++  int __cur_writer;
++#endif
+ };
+ 
+-#define __PTHREAD_RWLOCK_INITIALIZER(__flags) \
++#if __WORDSIZE == 64
++# define __PTHREAD_RWLOCK_INITIALIZER(__flags) \
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, __flags
++#elif __BYTE_ORDER == __BIG_ENDIAN
++# define __PTHREAD_RWLOCK_INITIALIZER(__flags) \
++  0, 0, 0, 0, 0, 0, 0, 0, 0, __flags, 0
++#else
++# define __PTHREAD_RWLOCK_INITIALIZER(__flags) \
++  0, 0, 0, 0, 0, 0, __flags, 0, 0, 0, 0
++#endif
+ 
+ #endif
+diff --git a/sysdeps/riscv/nptl/pthread-offsets.h b/sysdeps/riscv/nptl/pthread-offsets.h
+index 31f0587bec..d76c6cfb95 100644
+--- a/sysdeps/riscv/nptl/pthread-offsets.h
++++ b/sysdeps/riscv/nptl/pthread-offsets.h
+@@ -1,3 +1,16 @@
+-#define __PTHREAD_MUTEX_KIND_OFFSET		16
++#if __WORDSIZE == 64
++# define __PTHREAD_MUTEX_KIND_OFFSET		16
++#else
++# define __PTHREAD_MUTEX_KIND_OFFSET		12
++#endif
+ 
+-#define __PTHREAD_RWLOCK_FLAGS_OFFSET		48
++
++#if __WORDSIZE == 64
++# define __PTHREAD_RWLOCK_FLAGS_OFFSET		48
++#else
++# if __BYTE_ORDER == __BIG_ENDIAN
++#  define __PTHREAD_RWLOCK_FLAGS_OFFSET		27
++# else
++#  define __PTHREAD_RWLOCK_FLAGS_OFFSET		24
++# endif
++#endif
+diff --git a/sysdeps/riscv/sfp-machine.h b/sysdeps/riscv/sfp-machine.h
+index 08a84fd701..bbeb9b37cf 100644
+--- a/sysdeps/riscv/sfp-machine.h
++++ b/sysdeps/riscv/sfp-machine.h
+@@ -22,7 +22,32 @@
+ 
+ #if __riscv_xlen == 32
+ 
+-# error "rv32i-based targets are not supported"
++# define _FP_W_TYPE_SIZE	32
++# define _FP_W_TYPE		unsigned long
++# define _FP_WS_TYPE		signed long
++# define _FP_I_TYPE		long
++
++# define _FP_MUL_MEAT_S(R, X, Y)				\
++  _FP_MUL_MEAT_1_wide (_FP_WFRACBITS_S, R, X, Y, umul_ppmm)
++# define _FP_MUL_MEAT_D(R, X, Y)				\
++  _FP_MUL_MEAT_2_wide (_FP_WFRACBITS_D, R, X, Y, umul_ppmm)
++# define _FP_MUL_MEAT_Q(R, X, Y)				\
++  _FP_MUL_MEAT_4_wide (_FP_WFRACBITS_Q, R, X, Y, umul_ppmm)
++
++# define _FP_MUL_MEAT_DW_S(R, X, Y)					\
++  _FP_MUL_MEAT_DW_1_wide (_FP_WFRACBITS_S, R, X, Y, umul_ppmm)
++# define _FP_MUL_MEAT_DW_D(R, X, Y)					\
++  _FP_MUL_MEAT_DW_2_wide (_FP_WFRACBITS_D, R, X, Y, umul_ppmm)
++# define _FP_MUL_MEAT_DW_Q(R, X, Y)					\
++  _FP_MUL_MEAT_DW_4_wide (_FP_WFRACBITS_Q, R, X, Y, umul_ppmm)
++
++# define _FP_DIV_MEAT_S(R, X, Y)	_FP_DIV_MEAT_1_udiv_norm (S, R, X, Y)
++# define _FP_DIV_MEAT_D(R, X, Y)	_FP_DIV_MEAT_2_udiv (D, R, X, Y)
++# define _FP_DIV_MEAT_Q(R, X, Y)	_FP_DIV_MEAT_4_udiv (Q, R, X, Y)
++
++# define _FP_NANFRAC_S		_FP_QNANBIT_S
++# define _FP_NANFRAC_D		_FP_QNANBIT_D, 0
++# define _FP_NANFRAC_Q		_FP_QNANBIT_Q, 0, 0, 0
+ 
+ #else
+ 
+diff --git a/sysdeps/riscv/sys/asm.h b/sysdeps/riscv/sys/asm.h
+index bd2de17e17..8292ec77b0 100644
+--- a/sysdeps/riscv/sys/asm.h
++++ b/sysdeps/riscv/sys/asm.h
+@@ -22,11 +22,14 @@
+ /* Macros to handle different pointer/register sizes for 32/64-bit code.  */
+ #if __riscv_xlen == 64
+ # define PTRLOG 3
+-# define SZREG	8
++# define SZREG  8
+ # define REG_S sd
+ # define REG_L ld
+ #elif __riscv_xlen == 32
+-# error "rv32i-based targets are not supported"
++# define PTRLOG 2
++# define SZREG  4
++# define REG_S sw
++# define REG_L lw
+ #else
+ # error __riscv_xlen must equal 32 or 64
+ #endif
+diff --git a/sysdeps/unix/sysv/linux/riscv/jmp_buf-macros.h b/sysdeps/unix/sysv/linux/riscv/jmp_buf-macros.h
+new file mode 100644
+index 0000000000..234b979a8c
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/riscv/jmp_buf-macros.h
+@@ -0,0 +1,55 @@
++/* The jump buffer constants for RISC-V.
++   Copyright (C) 2020 Free Software Foundation, Inc.
++
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library.  If not, see
++   <https://www.gnu.org/licenses/>.  */
++
++/* Produced by this program:
++
++  #include <stdio.h>
++  #include <unistd.h>
++  #include <setjmp.h>
++  #include <stddef.h>
++
++  int main (int argc, char **argv)
++    {
++      printf ("#define JMP_BUF_SIZE %d\n", sizeof (jmp_buf));
++      printf ("#define JMP_BUF_ALIGN %d\n", __alignof__ (jmp_buf));
++      printf ("#define SIGJMP_BUF_SIZE %d\n", sizeof (sigjmp_buf));
++      printf ("#define SIGJMP_BUF_ALIGN %d\n", __alignof__ (sigjmp_buf));
++      printf ("#define MASK_WAS_SAVED_OFFSET %d\n",
++              offsetof (struct __jmp_buf_tag, __mask_was_saved));
++      printf ("#define SAVED_MASK_OFFSET %d\n",
++              offsetof (struct __jmp_buf_tag, __saved_mask));
++    } */
++
++#if defined __riscv_float_abi_soft
++# define JMP_BUF_SIZE 188
++# define JMP_BUF_ALIGN 4
++# define SIGJMP_BUF_SIZE 188
++# define SIGJMP_BUF_ALIGN 4
++# define MASK_WAS_SAVED_OFFSET 56
++# define SAVED_MASK_OFFSET 60
++#elif defined __riscv_float_abi_double
++# define JMP_BUF_SIZE 288
++# define JMP_BUF_ALIGN 8
++# define SIGJMP_BUF_SIZE 288
++# define SIGJMP_BUF_ALIGN 8
++# define MASK_WAS_SAVED_OFFSET 152
++# define SAVED_MASK_OFFSET 156
++#else
++# error "Unknown RISC-V floating-point ABI"
++#endif
+-- 
+2.29.0
+
