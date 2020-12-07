@@ -6,7 +6,7 @@
 %global targets aarch64-linux armv7hnl-linux i686-linux x32-linux riscv64-linux ppc64-linux
 %else
 # FIXME add riscv32-linux when glibc starts supporting it
-%global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux
+%global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux
 %endif
 %global long_targets %(
         for i in %{targets}; do
@@ -115,7 +115,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1480,18 +1480,6 @@ for i in %{targets}; do
 		continue
 	fi
 	echo "===== Building %{_target_platform} -> $i ($TRIPLET) cross libc ====="
-	KARCH=$(echo $TRIPLET |cut -d- -f1)
-	case $KARCH in
-	aarch64)
-		KARCH=arm64
-		;;
-	arm*)
-		KARCH=arm
-		;;
-	i.86)
-		KARCH=x86
-		;;
-	esac
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
 	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
@@ -1513,6 +1501,18 @@ for i in %{targets}; do
 	# for the i686 crosscompiler. This should be fixed properly at some
 	# point.
 	%make_build CXX="" LIBGD=no || make CXX="" LIBGD=no
+	if echo $i |grep -q ppc64le; then
+		# FIXME for reasons yet to be determined, the ppc64le build
+		# forgets about some components (but gets them right if
+		# given a kick in the right direction)
+		if [ -d cstdlib ]; then
+			echo "ppc64le SMP build bug seems to have been fixed."
+			echo "Please remove the workaround from the spec."
+			exit 1
+		fi
+		mkdir cstdlib cmath
+		make CC="${CC}" CXX="" LIBGD=no
+	fi
 	cd ..
 done
 %endif
