@@ -19,8 +19,8 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.32
-%define fullver 2.32
+%define ver 2.33
+%define fullver 2.33
 
 %define oname glibc
 %define major 6
@@ -67,8 +67,7 @@
 # Before increasing, please make sure all
 # boxes we support can be updated:
 # As of 2020/07/15:
-# Synquacer, Macchiatobin and friends have mainline
-# Rockchip 3399 has 4.4.x
+# Synquacer, Macchiatobin, rk3399 and friends have mainline
 # Gemini PDA has 3.18.x
 # Nexus 5X has 3.10.x
 %define enablekernel 3.10.0
@@ -92,7 +91,7 @@
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-%bcond_without locales
+%bcond_with locales
 
 %if %isarch %{ix86} %{x86_64}
 %bcond_without systap
@@ -115,7 +114,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	4
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -144,7 +143,6 @@ Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-lo
 Patch30:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedef.patch
 Patch31:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-locarchive.patch
 Patch32:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
-Patch33:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nis-rh188246.patch
 Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
 Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
 Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
@@ -162,7 +160,6 @@ Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416
 Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
 #Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
 Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
-Patch63:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh819430.patch
 Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
 Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
 
@@ -170,7 +167,6 @@ Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.
 # Clear Linux patches
 Patch83:	https://github.com/clearlinux-pkgs/glibc/blob/master/alternate_trim.patch
 Patch84:	https://github.com/clearlinux-pkgs/glibc/blob/master/madvise-bss.patch
-Patch85:	https://github.com/clearlinux-pkgs/glibc/blob/master/spinaphore.patch
 Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
 Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
 Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
@@ -185,144 +181,13 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-Patch200:	0001-x86-64-Fix-FMA4-detection-in-ifunc-BZ-26534.patch
-Patch201:	0002-NEWS-Update-for-BZ-26534-fix.patch
-Patch202:	0003-intl-Handle-translation-output-codesets-with-suffixe.patch
-Patch203:	0004-string-Fix-strerrorname_np-return-value-BZ-26555.patch
-Patch204:	0005-Set-version.h-RELEASE-to-stable-Bug-26700.patch
-Patch205:	0006-AArch64-Improve-backwards-memmove-performance.patch
-Patch206:	0007-AArch64-Use-__memcpy_simd-on-Neoverse-N2-V1.patch
-Patch207:	0008-sysvipc-Fix-SEM_STAT_ANY-kernel-argument-pass-BZ-266.patch
-Patch208:	0009-sysvipc-Fix-IPC_INFO-and-MSG_INFO-handling-BZ-26639.patch
-Patch209:	0010-sysvipc-Fix-IPC_INFO-and-SHM_INFO-handling-BZ-26636.patch
-Patch210:	0011-Reversing-calculation-of-__x86_shared_non_temporal_t.patch
-Patch211:	0012-x86-Optimizing-memcpy-for-AMD-Zen-architecture.patch
-Patch212:	0013-aarch64-Fix-DT_AARCH64_VARIANT_PCS-handling-BZ-26798.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
-Patch250:	0003-Let-ld.so-have-flags-DT_RPATH-and-DT_RUNPATH.patch
-
-# from glibc master branch (considered safe because those are bugfixes and
-# syncs with already released stable gnulib, etc.)
-Patch300:	0002-Sync-intprops.h-from-Gnulib.patch
-Patch301:	0003-Sync-mktime.c-from-Gnulib.patch
-Patch302:	0004-Sync-regex.h-from-Gnulib.patch
-Patch303:	0005-Copy-regex-BITSET_WORD_BITS-porting-from-Gnulib.patch
-Patch304:	0006-Copy-regex_internal.h-from-Gnulib.patch
-Patch305:	0014-Use-Linux-5.8-in-build-many-glibcs.py.patch
-Patch306:	0015-Update-syscall-lists-for-Linux-5.8.patch
-Patch307:	0016-math-Fix-inaccuracy-of-j0f-for-x-2-127-when-sin-x-co.patch
-Patch308:	0018-Linux-Use-faccessat2-to-implement-faccessat-bug-1868.patch
-Patch309:	0025-y2038-nptl-Convert-pthread_-clock-timed-join_np-to-s.patch
-Patch310:	0028-nptl-Handle-NULL-abstime-BZ-26394.patch
-Patch311:	0029-Correct-locking-and-cancellation-cleanup-in-syslog-f.patch
-Patch312:	0030-Add-new-STATX_-constants-from-Linux-5.8-to-bits-stat.patch
-Patch313:	0032-Add-C2x-BOOL_MAX-and-BOOL_WIDTH-to-limits.h.patch
-Patch314:	0033-Fix-namespace-violation-in-stdio.h-and-sys-stat.h-if.patch
-Patch315:	0037-linux-Add-helper-function-to-optimize-64-bit-time_t-.patch
-Patch316:	0038-linux-Simplify-clock_adjtime.patch
-Patch317:	0039-linux-Simplify-clock_gettime.patch
-Patch318:	0040-linux-Simplify-clock_nanosleep.patch
-Patch319:	0041-linux-Simplify-clock_settime.patch
-Patch320:	0042-linux-Simplify-mq_timedreceive.patch
-Patch321:	0043-linux-Simplify-mq_timedsend.patch
-Patch322:	0044-linux-Simplify-ppoll.patch
-Patch323:	0045-linux-Simplify-sched_rr_get_interval.patch
-Patch324:	0046-linux-Simplify-timer_gettime.patch
-Patch325:	0047-linux-Simplify-timerfd_settime.patch
-Patch326:	0048-linux-Simplify-utimensat.patch
-Patch327:	0052-io-lockf-Include-bits-types.h-before-__OFF_T_MATCHES.patch
-Patch328:	0053-RISC-V-Use-64-bit-time_t-and-off_t-for-RV32-and-RV64.patch
-Patch329:	0054-RISC-V-Cleanup-some-of-the-sysdep.h-code.patch
-Patch330:	0055-RISC-V-Use-64-bit-time-syscall-numbers-with-the-32-b.patch
-Patch331:	0056-RISC-V-Add-support-for-32-bit-vDSO-calls.patch
-Patch332:	0057-RISC-V-Support-dynamic-loader-for-the-32-bit.patch
-Patch333:	0058-RISC-V-Add-path-of-library-directories-for-the-32-bi.patch
-Patch334:	0059-RISC-V-Add-arch-syscall.h-for-RV32.patch
-Patch335:	0060-RISC-V-Support-the-32-bit-ABI-implementation.patch
-Patch336:	0061-RISC-V-Add-hard-float-support-for-32-bit-CPUs.patch
-Patch337:	0062-RISC-V-Add-32-bit-ABI-lists.patch
-Patch338:	0063-RISC-V-Add-the-RV32-libm-test-ulps.patch
-Patch339:	0064-RISC-V-Fix-llrint-and-llround-missing-exceptions-on-.patch
-Patch340:	0065-riscv32-Specify-the-arch_minimum_kernel-as-5.4.patch
-Patch341:	0066-RISC-V-Add-rv32-path-to-RTLDLIST-in-ldd.patch
-Patch342:	0067-RISC-V-Build-infrastructure-for-32-bit-port.patch
-Patch344:	0069-Add-RISC-V-32-bit-target-to-build-many-glibcs.py.patch
-Patch345:	0072-Add-mallinfo2-function-that-support-sizes-4GB.patch
-Patch346:	0073-x32-Add-fixup-asm-unistd.h-and-regenerate-arch-sysca.patch
-Patch347:	0074-malloc-Fix-mallinfo-deprecation-declaration.patch
-Patch348:	0075-y2038-nptl-Convert-pthread_cond_-clock-timed-wait-to.patch
-Patch349:	0077-Sync-getcwd-with-gnulib.patch
-Patch350:	0078-linux-Remove-__ASSUME_ATFCTS.patch
-Patch351:	0079-Use-LFS-readdir-in-generic-POSIX-getcwd-BZ-22899.patch
-Patch352:	0081-x86-Set-CPU-usable-feature-bits-conservatively-BZ-26.patch
-Patch353:	0082-elf.h-Add-aarch64-bti-pac-dynamic-tag-constants.patch
-Patch354:	0084-string-Fix-GCC-11-Werror-stringop-overread-error.patch
-Patch355:	0104-linux-Simplify-clock_getres.patch
-Patch356:	0105-linux-Add-ppoll-time64-optimization.patch
-Patch357:	0106-linux-Add-time64-semtimedop-support.patch
-Patch358:	0107-linux-Add-time64-pselect-support.patch
-Patch359:	0108-x86-Install-sys-platform-x86.h-BZ-26124.patch
-Patch360:	0111-pselect.c-Pass-a-pointer-to-SYSCALL_CANCEL-BZ-26606.patch
-Patch361:	0112-Fix-handling-of-collating-symbols-in-fnmatch-bug-266.patch
-Patch362:	0113-sys-platform-x86.h-Add-Intel-Key-Locker-support.patch
-Patch363:	0114-x86-Use-HAS_CPU_FEATURE-with-IBT-and-SHSTK-BZ-26625.patch
-Patch364:	0115-nscd-bump-GC-cycle-during-cache-pruning-bug-26130.patch
-Patch365:	0116-powerpc-fix-ifunc-implementation-list-for-POWER9-str.patch
-Patch366:	0117-Allow-memset-local-PLT-reference-for-RISC-V.patch
-Patch367:	0119-Define-__THROW-to-noexcept-for-C-11-and-later.patch
-Patch368:	0131-sysvipc-Fix-semtimeop-for-__ASSUME_DIRECT_SYSVIPC_SY.patch
-Patch369:	0132-nptl-Fix-__futex_abstimed_wait_cancellable32.patch
-Patch370:	0133-linux-Add-time64-select-support.patch
-Patch371:	0134-linux-Add-time64-sigtimedwait-support.patch
-Patch372:	0135-linux-Use-64-bit-time_t-syscall-on-clock_getcputcloc.patch
-Patch373:	0136-linux-Consolidate-utimes.patch
-Patch374:	0137-linux-Add-time64-support-for-nanosleep.patch
-Patch375:	0138-linux-Add-time64-recvmmsg-support.patch
-Patch376:	0144-nptl-futex-Move-__NR_futex_time64-alias-to-beginning.patch
-Patch377:	0145-sysvipc-Fix-semtimedop-for-Linux-5.1-for-64-bit-ABI.patch
-Patch378:	0146-aarch64-enforce-64K-guard-size-BZ-26691.patch
-Patch379:	0148-sysvipc-Return-EINVAL-for-invalid-semctl-commands.patch
-Patch380:	0150-sysvipc-Return-EINVAL-for-invalid-msgctl-commands.patch
-Patch381:	0154-Fix-GCC-11-Warray-parameter-warning-for-__sigsetjmp-.patch
-Patch382:	0155-Optimize-scripts-merge-test-results.sh.patch
-Patch383:	0157-posix-Fix-Warray-bounds-instances-building-timer_cre.patch
-Patch384:	0162-elf-Implement-_dl_write.patch
-Patch385:	0163-nptl-Add-missing-cancellation-flags-on-futex_interna.patch
-Patch386:	0165-__vfscanf_internal-fix-aliasing-violation-bug-26690.patch
-Patch387:	0166-elf-Implement-__rtld_malloc_is_complete.patch
-Patch388:	0179-Avoid-GCC-11-Warray-parameter-warnings-BZ-26686.patch
-Patch389:	0180-sunrpc-Adjust-RPC-function-declarations-to-match-Sun.patch
-Patch390:	0184-sys-platform-x86.h-Add-Intel-UINTR-support.patch
-Patch391:	0185-sys-platform-x86.h-Add-AVX512_FP16-support.patch
-Patch392:	0186-sys-platform-x86.h-Add-AVX-VNNI-support.patch
-Patch393:	0187-sys-platform-x86.h-Add-Intel-HRESET-support.patch
-Patch394:	0188-sys-platform-x86.h-Add-FSRCS-FSRS-FZLRM-support.patch
-Patch395:	0203-support-Provide-a-way-to-reorder-responses-within-th.patch
-Patch396:	0204-support-Provide-a-way-to-clear-the-RA-bit-in-DNS-ser.patch
-Patch397:	0205-resolv-Handle-transaction-ID-collisions-in-parallel-.patch
-Patch398:	0208-sysvipc-Return-EINVAL-for-invalid-shmctl-commands.patch
-Patch399:	0211-statfs-add-missing-f_flags-assignment.patch
-Patch400:	0212-resolv-Serialize-processing-in-resolv-tst-resolv-txn.patch
-Patch401:	0213-x86-CET-Update-vfork-to-prevent-child-return.patch
-Patch402:	0214-sysvipc-Fix-tst-sysvshm-linux-on-x32.patch
-Patch403:	0215-shm-tests-Append-PID-to-names-passed-to-shm_open-BZ-.patch
-Patch404:	0217-linux-Fix-time64-support-for-futimesat.patch
-Patch405:	0219-linux-Add-64-bit-time_t-support-for-wait3.patch
-Patch406:	0236-Update-syscall-lists-for-Linux-5.9.patch
-Patch407:	0244-misc-Add-internal-__getauxval2-function.patch
-Patch408:	0245-Add-IP_RECVERR_RFC4884-and-IPV6_RECVERR_RFC4884-from.patch
-Patch409:	0248-Make-elf.h-header-self-contained.patch
-Patch410:	0259-Avoid-Wstringop-overflow-warning-in-pthread_cleanup_.patch
-Patch412:	0262-aarch64-Add-variant-PCS-lazy-binding-test-BZ-26798.patch
-Patch413:	0265-iconv-Accept-redundant-shift-sequences-in-IBM1364-BZ.patch
-Patch414:	0266-Remove-__warn_memset_zero_len-BZ-25399.patch
-Patch415:	0267-Remove-__warndecl.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
-Patch1002:	eglibc-mandriva-nss-upgrade.patch
+Patch1001:	glibc-2.33-compile.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
@@ -778,7 +643,6 @@ LANG variable to their preferred language in their
 %dir %{_sysconfdir}/ld.so.conf.d
 %config(noreplace) %{_sysconfdir}/rpc
 %doc %dir %{_docdir}/glibc
-%doc %{_docdir}/glibc/nss
 %doc %{_docdir}/glibc/gai.conf
 %doc %{_docdir}/glibc/COPYING
 %doc %{_docdir}/glibc/COPYING.LIB
@@ -846,6 +710,7 @@ LANG variable to their preferred language in their
 %{_bindir}/sotruss
 %{_bindir}/sprof
 %{_bindir}/tzselect
+%{_bindir}/zdump
 %{_sbindir}/iconvconfig
 /sbin/ldconfig
 %ghost %{_sysconfdir}/ld.so.cache
@@ -949,7 +814,6 @@ The glibc-docs package contains docs for %{name}.
 
 %files doc
 %doc %{_docdir}/glibc/*
-%exclude %{_docdir}/glibc/nss
 %exclude %{_docdir}/glibc/gai.conf
 %exclude %{_docdir}/glibc/COPYING
 %exclude %{_docdir}/glibc/COPYING.LIB
@@ -1202,8 +1066,8 @@ find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 #rm localedata/locales/[a-z_]*.*
 
 # Regenerate autoconf files, some of our patches touch them
-# Remove the autoconf 2.68 hardcode...
-sed -e "s,2.68,`autoconf --version |head -n1 |cut -d' ' -f4`," -i aclocal.m4
+# Remove the autoconf 2.69 hardcode...
+sed -e "s,2.69,`autoconf --version |head -n1 |cut -d' ' -f4`," -i aclocal.m4
 # fix nss headers location
 sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' -i configure*
 
@@ -1788,7 +1652,7 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
     cd -
 install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
     hesiod/README.hesiod						\
-    nis/nss posix/gai.conf		\
+    posix/gai.conf		\
     %{buildroot}%{_docdir}/glibc
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 
@@ -1906,8 +1770,6 @@ ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
-
-unset LD_LIBRARY_PATH
 
 %if %{with locales}
 %files -n locales

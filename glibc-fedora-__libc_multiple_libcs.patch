@@ -1,6 +1,6 @@
-diff -up glibc-2.31.20200715/elf/dl-init.c.13~ glibc-2.31.20200715/elf/dl-init.c
---- glibc-2.31.20200715/elf/dl-init.c.13~	2020-07-15 17:58:07.000000000 +0200
-+++ glibc-2.31.20200715/elf/dl-init.c	2020-07-15 23:52:46.296238095 +0200
+diff -up glibc-2.33/elf/dl-init.c.12~ glibc-2.33/elf/dl-init.c
+--- glibc-2.33/elf/dl-init.c.12~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/elf/dl-init.c	2021-02-02 00:10:07.506005790 +0100
 @@ -120,8 +120,6 @@ _dl_init (struct link_map *main_map, int
    while (i-- > 0)
      call_init (main_map->l_initfini[i], argc, argv, env);
@@ -10,10 +10,10 @@ diff -up glibc-2.31.20200715/elf/dl-init.c.13~ glibc-2.31.20200715/elf/dl-init.c
    _dl_starting_up = 0;
 -#endif
  }
-diff -up glibc-2.31.20200715/elf/dl-support.c.13~ glibc-2.31.20200715/elf/dl-support.c
---- glibc-2.31.20200715/elf/dl-support.c.13~	2020-07-15 17:58:07.000000000 +0200
-+++ glibc-2.31.20200715/elf/dl-support.c	2020-07-15 23:52:46.296238095 +0200
-@@ -120,10 +120,8 @@ struct r_scope_elem _dl_initial_searchli
+diff -up glibc-2.33/elf/dl-support.c.12~ glibc-2.33/elf/dl-support.c
+--- glibc-2.33/elf/dl-support.c.12~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/elf/dl-support.c	2021-02-02 00:10:07.506005790 +0100
+@@ -126,10 +126,8 @@ struct r_scope_elem _dl_initial_searchli
      .r_nlist = 1,
    };
  
@@ -24,18 +24,18 @@ diff -up glibc-2.31.20200715/elf/dl-support.c.13~ glibc-2.31.20200715/elf/dl-sup
  
  /* Random data provided by the kernel.  */
  void *_dl_random;
-diff -up glibc-2.31.20200715/elf/rtld.c.13~ glibc-2.31.20200715/elf/rtld.c
---- glibc-2.31.20200715/elf/rtld.c.13~	2020-07-15 17:58:07.000000000 +0200
-+++ glibc-2.31.20200715/elf/rtld.c	2020-07-15 23:57:44.187875422 +0200
-@@ -316,7 +316,6 @@ audit_list_count (struct audit_list *lis
-   return naudit;
+diff -up glibc-2.33/elf/rtld.c.12~ glibc-2.33/elf/rtld.c
+--- glibc-2.33/elf/rtld.c.12~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/elf/rtld.c	2021-02-02 00:11:06.989150813 +0100
+@@ -299,7 +299,6 @@ dl_main_state_init (struct dl_main_state
+   state->version_info = false;
  }
  
 -#ifndef HAVE_INLINED_SYSCALLS
  /* Set nonzero during loading and initialization of executable and
     libraries, cleared before the executable's entry point runs.  This
     must not be initialized to nonzero, because the unused dynamic
-@@ -326,7 +325,6 @@ audit_list_count (struct audit_list *lis
+@@ -309,7 +308,6 @@ dl_main_state_init (struct dl_main_state
     never be called.  */
  int _dl_starting_up = 0;
  rtld_hidden_def (_dl_starting_up)
@@ -43,14 +43,14 @@ diff -up glibc-2.31.20200715/elf/rtld.c.13~ glibc-2.31.20200715/elf/rtld.c
  
  /* This is the structure which defines all variables global to ld.so
     (except those which cannot be added for some reason).  */
-@@ -1178,10 +1176,8 @@ dl_main (const ElfW(Phdr) *phdr,
+@@ -1159,10 +1157,8 @@ dl_main (const ElfW(Phdr) *phdr,
    /* Process the environment variable which control the behaviour.  */
-   process_envvars (&mode, &audit_list);
+   process_envvars (&state);
  
 -#ifndef HAVE_INLINED_SYSCALLS
    /* Set up a flag which tells we are just starting.  */
    _dl_starting_up = 1;
 -#endif
  
+   const char *ld_so_name = _dl_argv[0];
    if (*user_entry == (ElfW(Addr)) ENTRY_POINT)
-     {
