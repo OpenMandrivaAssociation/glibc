@@ -1,12 +1,20 @@
 %bcond_without crosscompilers
-%ifarch %{ix86} %{arm}
+%ifarch %{ix86}
 # FIXME add riscv32-linux when glibc starts supporting it
 # FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
 # are broken (build failure with static assertion on offset of __private_ss)
 %global targets aarch64-linux armv7hnl-linux i686-linux x32-linux riscv64-linux
 %else
+%ifarch %{arm}
+# FIXME add riscv32-linux when glibc starts supporting it
+# FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
+# are broken (build failure with static assertion on offset of __private_ss)
+# FIXME determine why gcc segfaults when building an aarch64 cross libc on armv7hnl
+%global targets armv7hnl-linux i686-linux x32-linux riscv64-linux
+%else
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux
+%endif
 %endif
 %global long_targets %(
         for i in %{targets}; do
