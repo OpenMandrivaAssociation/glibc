@@ -1,0 +1,54 @@
+diff -up glibc-2.33/sysdeps/x86/configure.ac.omv~ glibc-2.33/sysdeps/x86/configure.ac
+--- glibc-2.33/sysdeps/x86/configure.ac.omv~	2021-02-04 20:33:49.640192477 +0100
++++ glibc-2.33/sysdeps/x86/configure.ac	2021-02-04 20:37:59.388734372 +0100
+@@ -98,12 +98,12 @@ cat > conftest2.S <<EOF
+ 4:
+ EOF
+ libc_cv_include_x86_isa_level=no
+-if AC_TRY_COMMAND(${CC-cc} $CFLAGS $CPPFLAGS -nostartfiles -nostdlib -r -o conftest conftest1.S conftest2.S); then
+-  count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
+-  if test "$count" = 1; then
+-    libc_cv_include_x86_isa_level=yes
+-  fi
+-fi
++#if AC_TRY_COMMAND(${CC-cc} $CFLAGS $CPPFLAGS -nostartfiles -nostdlib -r -o conftest conftest1.S conftest2.S); then
++#  count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
++#  if test "$count" = 1; then
++#    libc_cv_include_x86_isa_level=yes
++#  fi
++#fi
+ rm -f conftest*])
+ if test $libc_cv_include_x86_isa_level = yes; then
+   AC_DEFINE(INCLUDE_X86_ISA_LEVEL)
+diff -up glibc-2.33/sysdeps/x86/configure.omv~ glibc-2.33/sysdeps/x86/configure
+--- glibc-2.33/sysdeps/x86/configure.omv~	2021-02-04 20:38:01.338743988 +0100
++++ glibc-2.33/sysdeps/x86/configure	2021-02-04 20:38:22.218842902 +0100
+@@ -126,17 +126,17 @@ cat > conftest2.S <<EOF
+ 4:
+ EOF
+ libc_cv_include_x86_isa_level=no
+-if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS -nostartfiles -nostdlib -r -o conftest conftest1.S conftest2.S'
+-  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+-  (eval $ac_try) 2>&5
+-  ac_status=$?
+-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+-  test $ac_status = 0; }; }; then
+-  count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
+-  if test "$count" = 1; then
+-    libc_cv_include_x86_isa_level=yes
+-  fi
+-fi
++#if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS -nostartfiles -nostdlib -r -o conftest conftest1.S conftest2.S'
++#  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
++#  (eval $ac_try) 2>&5
++#  ac_status=$?
++#  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
++#  test $ac_status = 0; }; }; then
++#  count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
++#  if test "$count" = 1; then
++#    libc_cv_include_x86_isa_level=yes
++#  fi
++#fi
+ rm -f conftest*
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_include_x86_isa_level" >&5
