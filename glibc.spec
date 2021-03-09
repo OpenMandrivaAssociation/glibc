@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -186,6 +186,18 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
+Patch500:	0001-nsswitch-return-result-when-nss-database-is-locked-B.patch
+Patch501:	0002-tunables-Simplify-TUNABLE_SET-interface.patch
+Patch502:	0003-x86-Use-SIZE_MAX-instead-of-long-int-1-for-tunable-r.patch
+Patch503:	0004-tunables-Disallow-negative-values-for-some-tunables.patch
+Patch504:	0005-S390-Add-new-hwcap-values.patch
+Patch505:	0006-string-Work-around-GCC-PR-98512-in-rawmemchr.patch
+Patch506:	0007-ld.so-Implement-the-list-diagnostics-option.patch
+Patch507:	0008-x86-Automate-generation-of-PREFERRED_FEATURE_INDEX_1.patch
+Patch508:	0009-x86-Add-CPU-specific-diagnostics-to-ld.so-list-diagn.patch
+Patch509:	0010-nss-Re-enable-NSS-module-loading-after-chroot-BZ-273.patch
+Patch510:	0011-x86-Set-minimum-x86-64-level-marker-BZ-27318.patch
+Patch511:	0012-nscd-Fix-double-free-in-netgroupcache-BZ-27462.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 
@@ -193,6 +205,10 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
 Patch1001:	glibc-2.33-compile.patch
+# https://sourceware.org/bugzilla/show_bug.cgi?id=27444
+# Patch based on
+# https://sourceware.org/pipermail/libc-alpha/2021-March/123429.html
+Patch1002:	glibc-2.33-bug-27444.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
@@ -212,12 +228,6 @@ Patch1037:	glibc-2.29-SIG_BLOCK.patch
 Patch1038:	glibc-2.31.9000-aarch64-compile.patch
 Patch1039:	https://github.com/FireBurn/glibc/commit/4483f2500825a84382c2a6a9ac60fc77954533d7.patch
 Patch1040:	https://github.com/FireBurn/glibc/commit/2efa9591e5e8a129e7b73ad0dad3eecbd69482ff.patch
-# Workaround for ISA levels going wrong -- causes glibc to abort on
-# znver1 inside VirtualBox even if the right CPU instructions are
-# supported
-# https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
-# https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=5dbd6a821ff753e3b41324c4fb7c58cf65eeea33
-Patch1041:	glibc-2.33-no-x86-isa-level.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
