@@ -23,7 +23,7 @@ index 0000000..7e512d5
 +Description=Name Service Cache Daemon Socket
 +
 +[Socket]
-+ListenDatagram=/var/run/nscd/socket
++ListenDatagram=/run/nscd/socket
 +
 +[Install]
 +WantedBy=sockets.target
