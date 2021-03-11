@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -228,6 +228,12 @@ Patch1037:	glibc-2.29-SIG_BLOCK.patch
 Patch1038:	glibc-2.31.9000-aarch64-compile.patch
 Patch1039:	https://github.com/FireBurn/glibc/commit/4483f2500825a84382c2a6a9ac60fc77954533d7.patch
 Patch1040:	https://github.com/FireBurn/glibc/commit/2efa9591e5e8a129e7b73ad0dad3eecbd69482ff.patch
+# Workaround for ISA levels going wrong -- causes glibc to abort on
+# znver1 inside VirtualBox even if the right CPU instructions are
+# supported
+# https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
+# https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=5dbd6a821ff753e3b41324c4fb7c58cf65eeea33
+Patch1041:	glibc-2.33-no-x86-isa-level.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
