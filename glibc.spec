@@ -119,7 +119,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -245,8 +245,6 @@ BuildRequires:	hardlink
 BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
-BuildRequires:	systemd
-BuildRequires:	systemd-macros
 %if %{with selinux}
 # see configure.ac
 BuildRequires:	selinux-devel
@@ -771,8 +769,8 @@ Group:		System/Libraries
 Conflicts:	glibc < 2.14.90-13
 Requires:	%{name} = %{EVRD}
 
-%transfiletriggerin -p <lua> -- /usr/lib/gconv/
-os.execute("/usr/sbin/iconvconfig /usr/lib/gconv -o /usr/lib/gconv/gconv-modules.cache")
+%transfiletriggerin -p <lua> -- %{_libdir}/gconv
+os.execute("/usr/sbin/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv")
 
 %description -n %{multilibc}
 The glibc package contains standard libraries which are used by
@@ -1625,14 +1623,14 @@ chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
 mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
 # gconv-modules.cache
-touch %{buildroot}%{_libdir}/gconv/gconv-modules.cache
+truncate -s 0 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 %if %{build_biarch}
     touch %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
     chmod 644 %{buildroot}%{_libdir32}/gconv/gconv-modules.cache
 %endif
 
-touch %{buildroot}%{_sysconfdir}/ld.so.cache
+truncate -s 0 %{buildroot}%{_sysconfdir}/ld.so.cache
 %endif
 
 # Are we cross-compiling?
