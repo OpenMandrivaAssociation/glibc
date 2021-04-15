@@ -45,6 +45,7 @@
 
 # (tpg) optimize it a bit
 %global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing
+%global Werror_cflags %{nil}
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
 %global target_cpu %{_target_cpu}
@@ -198,6 +199,30 @@ Patch508:	0009-x86-Add-CPU-specific-diagnostics-to-ld.so-list-diagn.patch
 Patch509:	0010-nss-Re-enable-NSS-module-loading-after-chroot-BZ-273.patch
 Patch510:	0011-x86-Set-minimum-x86-64-level-marker-BZ-27318.patch
 Patch511:	0012-nscd-Fix-double-free-in-netgroupcache-BZ-27462.patch
+Patch512:	0013-io-Return-EBAFD-for-negative-file-descriptor-on-fsta.patch
+Patch513:	0014-x86-Handle-_SC_LEVEL1_ICACHE_LINESIZE-BZ-27444.patch
+Patch514:	0015-elf-Always-set-l-in-_dl_init_paths-bug-23462.patch
+Patch515:	0016-elf-ld.so-help-calls-_dl_init_paths-without-a-main-m.patch
+Patch516:	0017-pthread_once-hangs-when-init-routine-throws-an-excep.patch
+Patch517:	0018-nptl-Remove-private-futex-optimization-BZ-27304.patch
+Patch518:	0019-test-container-Always-copy-test-specific-support-fil.patch
+Patch519:	0020-S390-Also-check-vector-support-in-memmove-ifunc-sele.patch
+Patch520:	0021-malloc-Fix-a-realloc-crash-with-heap-tagging-BZ-2746.patch
+Patch521:	0022-Update-Nios-II-libm-test-ulps.patch
+Patch522:	0023-tst-Provide-test-for-select.patch
+Patch523:	0024-misc-Fix-tst-select-timeout-handling-BZ-27648.patch
+Patch524:	0025-libsupport-Add-support_select_modifies_timeout.patch
+Patch525:	0026-libsupport-Add-support_select_normalizes_timeout.patch
+Patch526:	0027-linux-Normalize-and-return-timeout-on-select-BZ-2765.patch
+Patch527:	0028-linux-always-update-select-timeout-BZ-27706.patch
+Patch528:	0029-tunables-Fix-comparison-of-tunable-values.patch
+Patch529:	0030-support-Typo-and-formatting-fixes.patch
+Patch530:	0031-support-Pass-environ-to-child-process.patch
+Patch531:	0032-support-Add-capability-to-fork-an-sgid-child.patch
+Patch532:	0033-tst-env-setuid-Use-support_capture_subprogram_self_s.patch
+Patch533:	0034-Enhance-setuid-tunables-test.patch
+Patch534:	0035-Fix-SXID_ERASE-behavior-in-setuid-programs-BZ-27471.patch
+Patch535:	0036-Remove-PR_TAGGED_ADDR_ENABLE-from-sys-prctl.h.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 
@@ -205,10 +230,6 @@ Patch511:	0012-nscd-Fix-double-free-in-netgroupcache-BZ-27462.patch
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
 Patch1001:	glibc-2.33-compile.patch
-# https://sourceware.org/bugzilla/show_bug.cgi?id=27444
-# Patch based on
-# https://sourceware.org/pipermail/libc-alpha/2021-March/123429.html
-Patch1002:	glibc-2.33-bug-27444.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch

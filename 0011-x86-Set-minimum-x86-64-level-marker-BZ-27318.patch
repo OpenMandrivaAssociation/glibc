@@ -1,7 +1,7 @@
 From ee9f98d9cac12e843ca59c6e4d4b225f58a66727 Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
 Date: Tue, 2 Feb 2021 13:45:58 -0800
-Subject: [PATCH 11/12] x86: Set minimum x86-64 level marker [BZ #27318]
+Subject: [PATCH 11/36] x86: Set minimum x86-64 level marker [BZ #27318]
 
 Since the full ISA set used in an ELF binary is unknown to compiler,
 an x86-64 ISA level marker indicates the minimum, not maximum, ISA set
@@ -183,5 +183,5 @@ index aaf524cb56..49ef4aa612 100644
  # else
  #  define ISA_V4	0
 -- 
-2.30.1
+2.31.1
 

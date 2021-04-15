@@ -1,7 +1,7 @@
 From a1eb3915e781c5b9aed89931cbd536a186c15ed5 Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Tue, 2 Mar 2021 14:58:05 +0100
-Subject: [PATCH 08/12] x86: Automate generation of PREFERRED_FEATURE_INDEX_1
+Subject: [PATCH 08/36] x86: Automate generation of PREFERRED_FEATURE_INDEX_1
  bitfield
 
 Use a .def file to define the bitfield layout, so that it is possible
@@ -117,5 +117,5 @@ index 624736b40e..e7f314657c 100644
  /* XCR0 Feature flags.  */
  #define bit_XMM_state		(1u << 1)
 -- 
-2.30.1
+2.31.1
 
