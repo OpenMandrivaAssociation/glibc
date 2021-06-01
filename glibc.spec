@@ -120,7 +120,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -137,6 +137,9 @@ Source1000:	localepkg.sh
 Source1001:	locale_install.sh
 Source1002:	locale_uninstall.sh
 Source1003:	locales.sysconfig
+
+# Ugly, temporary arch specific (x86_32) hack
+Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -223,6 +226,11 @@ Patch532:	0033-tst-env-setuid-Use-support_capture_subprogram_self_s.patch
 Patch533:	0034-Enhance-setuid-tunables-test.patch
 Patch534:	0035-Fix-SXID_ERASE-behavior-in-setuid-programs-BZ-27471.patch
 Patch535:	0036-Remove-PR_TAGGED_ADDR_ENABLE-from-sys-prctl.h.patch
+Patch536:	0037-x86-tst-cpu-features-supports.c-Update-AMX-check.patch
+Patch537:	0038-nptl_db-Support-different-libpthread-ld.so-load-orde.patch
+Patch538:	0039-nptl-Check-for-compatible-GDB-in-nptl-tst-pthread-gd.patch
+Patch539:	0040-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch
+Patch540:	0041-powerpc-Fix-handling-of-scv-return-error-codes-BZ-27.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 
@@ -255,6 +263,10 @@ Patch1040:	https://github.com/FireBurn/glibc/commit/2efa9591e5e8a129e7b73ad0dad3
 # https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
 # https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=5dbd6a821ff753e3b41324c4fb7c58cf65eeea33
 Patch1041:	glibc-2.33-no-x86-isa-level.patch
+Patch1042:	glibc-2.33-gcc-11.1.patch
+# Fix _Float32/_Float64 assumptions to make it work with
+# clang setting __GNUC__ to something > 6
+Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
@@ -1167,7 +1179,7 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g1##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[s2]#-O3#')"
+  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g[0-3]##;s#-gdwarf-[0-9]##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[sz0-9]#-O3#')"
   case $arch in
     i[3-6]86)
 %ifarch %{x86_64}
@@ -1308,6 +1320,11 @@ function BuildGlibc() {
     esac
   fi
   rm -f test.o
+
+  if echo $arch |grep -q i.86; then
+    patch -p1 -b -z .1010~ <%{S:1010}
+  fi
+
   # Force a separate object dir
   mkdir -p build-$arch-linux
   cd  build-$arch-linux
@@ -1357,6 +1374,10 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     %make_build -j1 -r all subdir_stubs
   fi
   cd -
+
+  if echo $arch |grep -q i.86; then
+    patch -p1 -R <%{S:1010}
+  fi
 
   check_flags="-k"
 

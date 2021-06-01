@@ -1,0 +1,12 @@
+diff -up glibc-2.33/misc/Makefile.omv~ glibc-2.33/misc/Makefile
+--- glibc-2.33/misc/Makefile.omv~	2021-05-31 23:28:41.341567881 +0200
++++ glibc-2.33/misc/Makefile	2021-05-31 23:28:51.604675253 +0200
+@@ -107,7 +107,7 @@ tests-special += $(objpfx)tst-error1-mem
+   $(objpfx)tst-allocate_once-mem.out
+ endif
+ 
+-CFLAGS-select.c += -fexceptions -fasynchronous-unwind-tables
++CFLAGS-select.c += -fexceptions -fasynchronous-unwind-tables -mno-stackrealign
+ CFLAGS-tsearch.c += $(uses-callbacks)
+ CFLAGS-lsearch.c += $(uses-callbacks)
+ CFLAGS-pselect.c += -fexceptions
