@@ -1523,6 +1523,8 @@ for i in %{long_targets}; do
 	cd ..
 	# We don't need all the bits and pieces with a crosscompiler
 	rm -rf %{buildroot}%{_prefix}/$i/bin %{buildroot}%{_prefix}/$i/sbin %{buildroot}%{_prefix}/$i/var %{buildroot}%{_prefix}/$i/share %{buildroot}%{_prefix}/$i/etc
+	# Get rid of object files to be a little friendlier to tmpfs buildroots
+	rm -rf "obj-${i}"
 	# We need to get rid of this hardcode at some point so the sysroot can
 	# double as a chroot... But we probably can't do this before the FS
 	# changes, it breaks second stage gcc crosscompilers
