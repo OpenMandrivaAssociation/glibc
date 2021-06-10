@@ -44,7 +44,7 @@
 %define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
-%global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing
+%global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing -Wformat
 %global Werror_cflags %{nil}
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
