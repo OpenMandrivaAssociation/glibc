@@ -472,10 +472,10 @@ else
   io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n")
 end
 
-%transfiletriggerin -p <lua> -- /lib/ /lib64/ /usr/lib/ /usr/lib64/ /etc/ld.so.conf.d/
+%transfiletriggerin -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
 os.execute("/sbin/ldconfig -X")
 
-%transfiletriggerpostun -p <lua> -- /lib/ /lib64/ /usr/lib/ /usr/lib64/ /etc/ld.so.conf.d/
+%transfiletriggerpostun -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
 os.execute("/sbin/ldconfig -X")
 %endif
 
@@ -971,7 +971,7 @@ library.
 Summary:	A Name Service Caching Daemon (nscd)
 Group:		System/Servers
 Conflicts:	kernel < 2.2.0
-BuildRequires:	systemd-macros
+BuildRequires:	systemd-rpm-macros
 BuildRequires:	rpm-helper
 Requires(post):	systemd
 Requires(pre):	shadow
@@ -1338,8 +1338,8 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
-echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd"
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{ldflags} -fuse-ld=bfd" ../configure \
+echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd"
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
     $BuildCross \
@@ -1403,9 +1403,9 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 
 %if %{with crosscompilers}
 for i in %{targets}; do
-        CPU=$(echo $i |cut -d- -f1)
-        OS=$(echo $i |cut -d- -f2)
-        TRIPLET="$(rpm --target=${CPU}-${OS} -E %%{_target_platform})"
+	CPU=$(echo $i |cut -d- -f1)
+	OS=$(echo $i |cut -d- -f2)
+	TRIPLET="$(rpm --target=${CPU}-${OS} -E %%{_target_platform})"
 	if [ "${TRIPLET}" = "%{_target_platform}" ]; then
 		echo "===== Skipping $i cross libc (native arch) ====="
 		continue
@@ -1822,8 +1822,8 @@ ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 # Make these be symlinks to /lib64 or /usr/lib64 respectively.  See:
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/DRHT5YTPK4WWVGL3GIN5BF2IKX2ODHZ3/
 for d in %{buildroot}%{_libdir} %{buildroot}/%{_lib}; do
-        mkdir -p $d
-        (cd $d && rm -f lp64d; ln -sf . lp64d)
+    mkdir -p $d
+    (cd $d && rm -f lp64d; ln -sf . lp64d)
 done
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
