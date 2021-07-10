@@ -120,7 +120,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	7
+Release:	8
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -231,6 +231,12 @@ Patch537:	0038-nptl_db-Support-different-libpthread-ld.so-load-orde.patch
 Patch538:	0039-nptl-Check-for-compatible-GDB-in-nptl-tst-pthread-gd.patch
 Patch539:	0040-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch
 Patch540:	0041-powerpc-Fix-handling-of-scv-return-error-codes-BZ-27.patch
+Patch541:	0042-dlfcn-Failures-after-dlmopen-should-not-terminate-pr.patch
+Patch542:	0043-Use-__pthread_attr_copy-in-mq_notify-bug-27896.patch
+Patch543:	0044-Fix-use-of-__pthread_attr_copy-in-mq_notify-bug-2789.patch
+Patch544:	0045-elf-Use-_dl_catch_error-from-base-namespace-in-dl-li.patch
+Patch545:	0046-wordexp-handle-overflow-in-positional-parameter-numb.patch
+Patch546:	0047-x86_64-Remove-unneeded-static-PIE-check-for-undefine.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 

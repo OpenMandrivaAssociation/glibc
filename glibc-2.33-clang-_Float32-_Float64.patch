@@ -1,6 +1,42 @@
-diff -up glibc-2.33/bits/floatn-common.h.omv~ glibc-2.33/bits/floatn-common.h
---- glibc-2.33/bits/floatn-common.h.omv~	2021-06-01 16:27:46.742941838 +0200
-+++ glibc-2.33/bits/floatn-common.h	2021-06-01 16:32:00.617869842 +0200
+diff -up glibc-2.33/bits/floatn-common.h.92~ glibc-2.33/bits/floatn-common.h
+--- glibc-2.33/bits/floatn-common.h.92~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/bits/floatn-common.h	2021-07-10 03:25:10.190826118 +0200
+@@ -145,7 +145,7 @@ typedef _Complex float __cfloat16 __attr
+ # endif
+ 
+ # if __HAVE_FLOAT32
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ #   define __CFLOAT32 _Complex float
+ #  else
+ #   define __CFLOAT32 _Complex _Float32
+@@ -153,7 +153,7 @@ typedef _Complex float __cfloat16 __attr
+ # endif
+ 
+ # if __HAVE_FLOAT64
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ #   ifdef __NO_LONG_DOUBLE_MATH
+ #    define __CFLOAT64 _Complex long double
+ #   else
+@@ -165,7 +165,7 @@ typedef _Complex float __cfloat16 __attr
+ # endif
+ 
+ # if __HAVE_FLOAT32X
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ #   define __CFLOAT32X _Complex double
+ #  else
+ #   define __CFLOAT32X _Complex _Float32x
+@@ -173,7 +173,7 @@ typedef _Complex float __cfloat16 __attr
+ # endif
+ 
+ # if __HAVE_FLOAT64X
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ #   if __HAVE_FLOAT64X_LONG_DOUBLE
+ #    define __CFLOAT64X _Complex long double
+ #   else
 @@ -210,11 +210,11 @@ typedef float _Float16 __attribute__ ((_
  
  # if __HAVE_FLOAT32
@@ -99,10 +135,39 @@ diff -up glibc-2.33/bits/floatn-common.h.omv~ glibc-2.33/bits/floatn-common.h
  #   define __builtin_huge_valf128x() ((_Float128x) __builtin_huge_val ())
  #   define __builtin_inff128x() ((_Float128x) __builtin_inf ())
  #   define __builtin_nanf128x(x) ((_Float128x) __builtin_nan (x))
-diff -up glibc-2.33/bits/floatn.h.omv~ glibc-2.33/bits/floatn.h
-diff -up glibc-2.33/sysdeps/x86/bits/floatn.h.omv~ glibc-2.33/sysdeps/x86/bits/floatn.h
---- glibc-2.33/sysdeps/x86/bits/floatn.h.omv~	2021-06-01 20:36:58.499994159 +0200
-+++ glibc-2.33/sysdeps/x86/bits/floatn.h	2021-06-01 20:41:28.043451866 +0200
+diff -up glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h.92~ glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h
+--- glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h.92~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h	2021-07-10 03:24:05.274345249 +0200
+@@ -55,7 +55,7 @@
+ /* Defined to concatenate the literal suffix to be used with _Float128
+    types, if __HAVE_FLOAT128 is 1. */
+ # if __HAVE_FLOAT128
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ /* The literal suffix f128 exists only since GCC 7.0.  */
+ #   define __f128(x) x##l
+ #  else
+@@ -65,7 +65,7 @@
+ 
+ /* Defined to a complex binary128 type if __HAVE_FLOAT128 is 1.  */
+ # if __HAVE_FLOAT128
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ #   define __CFLOAT128 _Complex long double
+ #  else
+ #   define __CFLOAT128 _Complex _Float128
+@@ -76,7 +76,7 @@
+ # if __HAVE_FLOAT128
+ 
+ /* The type _Float128 exists only since GCC 7.0.  */
+-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
++#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
+ typedef long double _Float128;
+ #  endif
+ 
+diff -up glibc-2.33/sysdeps/x86/bits/floatn.h.92~ glibc-2.33/sysdeps/x86/bits/floatn.h
+--- glibc-2.33/sysdeps/x86/bits/floatn.h.92~	2021-02-01 18:15:33.000000000 +0100
++++ glibc-2.33/sysdeps/x86/bits/floatn.h	2021-07-10 03:24:05.274345249 +0200
 @@ -58,7 +58,7 @@
  /* Defined to concatenate the literal suffix to be used with _Float128
     types, if __HAVE_FLOAT128 is 1. */
@@ -137,35 +202,5 @@ diff -up glibc-2.33/sysdeps/x86/bits/floatn.h.omv~ glibc-2.33/sysdeps/x86/bits/f
 -#  if !__GNUC_PREREQ (6, 0)
 +#  if !__GNUC_PREREQ (6, 0) || defined(__clang__)
  #   define __builtin_signbitf128 __signbitf128
- #  endif
- 
-diff -up glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h.omv~ glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h
---- glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h.omv~	2021-06-13 02:37:37.336566736 +0200
-+++ glibc-2.33/sysdeps/ieee754/ldbl-128/bits/floatn.h	2021-06-13 02:41:36.555569458 +0200
-@@ -55,7 +55,7 @@
- /* Defined to concatenate the literal suffix to be used with _Float128
-    types, if __HAVE_FLOAT128 is 1. */
- # if __HAVE_FLOAT128
--#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
-+#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
- /* The literal suffix f128 exists only since GCC 7.0.  */
- #   define __f128(x) x##l
- #  else
-@@ -65,7 +65,7 @@
- 
- /* Defined to a complex binary128 type if __HAVE_FLOAT128 is 1.  */
- # if __HAVE_FLOAT128
--#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
-+#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
- #   define __CFLOAT128 _Complex long double
- #  else
- #   define __CFLOAT128 _Complex _Float128
-@@ -76,7 +76,7 @@
- # if __HAVE_FLOAT128
- 
- /* The type _Float128 exists only since GCC 7.0.  */
--#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
-+#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus || defined __clang__
- typedef long double _Float128;
  #  endif
  
