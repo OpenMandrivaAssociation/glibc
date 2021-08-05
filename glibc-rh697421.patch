@@ -1,10 +1,10 @@
-diff -rup a/iconvdata/gconv-modules b/iconvdata/gconv-modules
---- a/iconvdata/gconv-modules	2010-05-04 05:27:23.000000000 -0600
-+++ b/iconvdata/gconv-modules	2012-01-26 10:58:24.181895489 -0700
-@@ -1954,3 +1954,6 @@ alias	HPGREEK8//		HP-GREEK8//
- alias	OSF10010004//		HP-GREEK8//
- module	HP-GREEK8//		INTERNAL		HP-GREEK8	1
- module	INTERNAL		HP-GREEK8//		HP-GREEK8	1
+diff -up glibc-2.34/iconvdata/gconv-modules.19~ glibc-2.34/iconvdata/gconv-modules
+--- glibc-2.34/iconvdata/gconv-modules.19~	2021-08-02 10:31:26.283941191 +0200
++++ glibc-2.34/iconvdata/gconv-modules	2021-08-02 10:32:27.975334292 +0200
+@@ -113,3 +113,6 @@ module	INTERNAL		UTF-32BE//		UTF-32		1
+ alias	UTF7//			UTF-7//
+ module	UTF-7//			INTERNAL		UTF-7		1
+ module	INTERNAL		UTF-7//			UTF-7		1
 +
 +alias	ISO-10646-UCS-2//	UNICODE//
 +alias	ISO-10646-UCS-2//	ISO-10646/UTF8/

@@ -1,7 +1,8 @@
---- glibc-2.18/rt/Makefile.tsp~	2013-08-17 14:36:45.795373985 +0200
-+++ glibc-2.18/rt/Makefile	2013-08-17 14:37:45.341629554 +0200
-@@ -73,3 +73,13 @@ $(addprefix $(objpfx),$(tests)): $(objpf
- endif
+diff -up glibc-2.34/rt/Makefile.39~ glibc-2.34/rt/Makefile
+--- glibc-2.34/rt/Makefile.39~	2021-08-02 10:35:18.780415863 +0200
++++ glibc-2.34/rt/Makefile	2021-08-02 10:35:56.864655876 +0200
+@@ -114,3 +114,13 @@ endif
+ endif # !$(pthread-in-libc)
  
  tst-mqueue7-ARGS = -- $(host-test-program-cmd)
 +

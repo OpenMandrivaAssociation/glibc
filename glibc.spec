@@ -24,8 +24,8 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.33
-%define fullver 2.33
+%define ver 2.34
+%define fullver 2.34
 
 %define oname glibc
 %define major 6
@@ -97,7 +97,7 @@
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-%bcond_without locales
+%bcond_with locales
 
 %if %isarch %{ix86} %{x86_64}
 %bcond_without systap
@@ -120,7 +120,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	8
+Release:	0
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -190,55 +190,10 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-Patch500:	0001-nsswitch-return-result-when-nss-database-is-locked-B.patch
-Patch501:	0002-tunables-Simplify-TUNABLE_SET-interface.patch
-Patch502:	0003-x86-Use-SIZE_MAX-instead-of-long-int-1-for-tunable-r.patch
-Patch503:	0004-tunables-Disallow-negative-values-for-some-tunables.patch
-Patch504:	0005-S390-Add-new-hwcap-values.patch
-Patch505:	0006-string-Work-around-GCC-PR-98512-in-rawmemchr.patch
-Patch506:	0007-ld.so-Implement-the-list-diagnostics-option.patch
-Patch507:	0008-x86-Automate-generation-of-PREFERRED_FEATURE_INDEX_1.patch
-Patch508:	0009-x86-Add-CPU-specific-diagnostics-to-ld.so-list-diagn.patch
-Patch509:	0010-nss-Re-enable-NSS-module-loading-after-chroot-BZ-273.patch
-Patch510:	0011-x86-Set-minimum-x86-64-level-marker-BZ-27318.patch
-Patch511:	0012-nscd-Fix-double-free-in-netgroupcache-BZ-27462.patch
-Patch512:	0013-io-Return-EBAFD-for-negative-file-descriptor-on-fsta.patch
-Patch513:	0014-x86-Handle-_SC_LEVEL1_ICACHE_LINESIZE-BZ-27444.patch
-Patch514:	0015-elf-Always-set-l-in-_dl_init_paths-bug-23462.patch
-Patch515:	0016-elf-ld.so-help-calls-_dl_init_paths-without-a-main-m.patch
-Patch516:	0017-pthread_once-hangs-when-init-routine-throws-an-excep.patch
-Patch517:	0018-nptl-Remove-private-futex-optimization-BZ-27304.patch
-Patch518:	0019-test-container-Always-copy-test-specific-support-fil.patch
-Patch519:	0020-S390-Also-check-vector-support-in-memmove-ifunc-sele.patch
-Patch520:	0021-malloc-Fix-a-realloc-crash-with-heap-tagging-BZ-2746.patch
-Patch521:	0022-Update-Nios-II-libm-test-ulps.patch
-Patch522:	0023-tst-Provide-test-for-select.patch
-Patch523:	0024-misc-Fix-tst-select-timeout-handling-BZ-27648.patch
-Patch524:	0025-libsupport-Add-support_select_modifies_timeout.patch
-Patch525:	0026-libsupport-Add-support_select_normalizes_timeout.patch
-Patch526:	0027-linux-Normalize-and-return-timeout-on-select-BZ-2765.patch
-Patch527:	0028-linux-always-update-select-timeout-BZ-27706.patch
-Patch528:	0029-tunables-Fix-comparison-of-tunable-values.patch
-Patch529:	0030-support-Typo-and-formatting-fixes.patch
-Patch530:	0031-support-Pass-environ-to-child-process.patch
-Patch531:	0032-support-Add-capability-to-fork-an-sgid-child.patch
-Patch532:	0033-tst-env-setuid-Use-support_capture_subprogram_self_s.patch
-Patch533:	0034-Enhance-setuid-tunables-test.patch
-Patch534:	0035-Fix-SXID_ERASE-behavior-in-setuid-programs-BZ-27471.patch
-Patch535:	0036-Remove-PR_TAGGED_ADDR_ENABLE-from-sys-prctl.h.patch
-Patch536:	0037-x86-tst-cpu-features-supports.c-Update-AMX-check.patch
-Patch537:	0038-nptl_db-Support-different-libpthread-ld.so-load-orde.patch
-Patch538:	0039-nptl-Check-for-compatible-GDB-in-nptl-tst-pthread-gd.patch
-Patch539:	0040-nptl-Do-not-build-nptl-tst-pthread-gdb-attach-as-PIE.patch
-Patch540:	0041-powerpc-Fix-handling-of-scv-return-error-codes-BZ-27.patch
-Patch541:	0042-dlfcn-Failures-after-dlmopen-should-not-terminate-pr.patch
-Patch542:	0043-Use-__pthread_attr_copy-in-mq_notify-bug-27896.patch
-Patch543:	0044-Fix-use-of-__pthread_attr_copy-in-mq_notify-bug-2789.patch
-Patch544:	0045-elf-Use-_dl_catch_error-from-base-namespace-in-dl-li.patch
-Patch545:	0046-wordexp-handle-overflow-in-positional-parameter-numb.patch
-Patch546:	0047-x86_64-Remove-unneeded-static-PIE-check-for-undefine.patch
+# [currently none]
 
 # from IBM release branch (ibm/%{version}/master branch in git)
+# [currently none]
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
@@ -710,6 +665,14 @@ LANG variable to their preferred language in their
 %doc %{_docdir}/glibc/gai.conf
 %doc %{_docdir}/glibc/COPYING
 %doc %{_docdir}/glibc/COPYING.LIB
+%dir %{_libdir}/gconv
+%dir %{_libdir}/gconv/gconv-modules.d
+%config %{_libdir}/gconv/gconv-modules.d/gconv-modules-extra.conf
+%if "%{_libdir}" != "%{_prefix}/lib"
+%dir %{_prefix}/lib/gconv
+%dir %{_prefix}/lib/gconv/gconv-modules.d
+%config %{_prefix}/lib/gconv/gconv-modules.d/gconv-modules-extra.conf
+%endif
 %{_localedir}/locale.alias
 /sbin/sln
 %{_prefix}/libexec/getconf
@@ -722,7 +685,6 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
-%{_slibdir}/ld-[0-9]*.so
 %if %isarch %{ix86}
 %{_slibdir}/ld-linux.so.2
 %endif
@@ -748,7 +710,6 @@ LANG variable to their preferred language in their
 %{_slibdir}/lp64d
 %{_libdir}/lp64d
 %endif
-%{_slibdir}/lib*-[.0-9]*.so
 %{_slibdir}/lib*.so.[0-9]*
 %{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
@@ -784,15 +745,11 @@ LANG variable to their preferred language in their
 %else
 %if %isarch mips mipsel
 %if %{build_biarch}
-%{_slibdir32}/ld-[0-9]*.so
 %{_slibdir32}/ld.so.1
-%{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
 %dir %{_slibdirn32}
-%{_slibdirn32}/ld*-[.0-9]*.so
 %{_slibdirn32}/ld.so.1
-%{_slibdirn32}/lib*-[.0-9]*.so
 %{_slibdirn32}/lib*.so.[0-9]*
 %{_slibdirn32}/libSegFault.so
 %endif
@@ -821,9 +778,7 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %files -n %{multilibc}
-%{_slibdir32}/ld-[0-9]*.so
 %{_slibdir32}/ld-linux*.so.2
-%{_slibdir32}/lib*-[.0-9]*.so
 %{_slibdir32}/lib*.so.[0-9]*
 %{_slibdir32}/libSegFault.so
 %if "%{name}" == "glibc"
@@ -1777,6 +1732,8 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %global glibcver %(rpm -q --qf "%%{VERSION}" glibc)
 export I18NPATH=%{buildroot}%{_datadir}/i18n
 
+export LDSO=$(ls -1 %{buildroot}/%{_lib}/ld-*.so* |head -n1)
+export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}
 # make default charset pseudo-locales
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
@@ -1785,7 +1742,7 @@ for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
 	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
 	# don't use en_DK because of LC_MONETARY
-	%{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
+	$LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
 done
 
 # Build regular locales
@@ -1793,8 +1750,9 @@ LANGS="$(sed '1,/^SUPPORTED-LOCALES=/d;s,\\$,,;s,\n,,' %{buildroot}%{_datadir}/i
 for l in $LANGS; do
 	LNG=$(echo $l |cut -d/ -f1)
 	CS=$(echo $l |cut -d/ -f2)
-	%{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
+	$LDSO %{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
 done
+unset LD_LIBRARY_PATH
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
