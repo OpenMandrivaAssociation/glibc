@@ -285,6 +285,13 @@ Obsoletes:	nss_db
 Requires:	%{multilibc} = %{EVRD}
 %endif
 
+%if %{with locales}
+# Fake it to keep build roots working with temporary
+# non-locale glibcs during upgrades
+Provides:	locales = %{EVRD}
+Provides:	locales-en = %{EVRD}
+%endif
+
 %description
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
@@ -1363,6 +1370,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 }
 
 %if %{with crosscompilers}
+TOP="$(pwd)"
 for i in %{targets}; do
 	CPU=$(echo $i |cut -d- -f1)
 	OS=$(echo $i |cut -d- -f2)
@@ -1405,7 +1413,19 @@ for i in %{targets}; do
 		mkdir cstdlib cmath
 		make CC="${CC}" CXX="" LIBGD=no
 	fi
+
+	DD="${TOP}/instroot-${TRIPLET}"
+	%make_install DESTDIR="${DD}"
 	cd ..
+
+	# We don't need all the bits and pieces with a crosscompiler
+	rm -rf ${DD}%{_prefix}/$i/bin ${DD}%{_prefix}/$i/sbin ${DD}%{_prefix}/$i/var ${DD}%{_prefix}/$i/share ${DD}%{_prefix}/$i/etc
+	# Get rid of object files to be a little friendlier to tmpfs buildroots
+	rm -rf "obj-${TRIPLET}"
+	# We need to get rid of this hardcode at some point so the sysroot can
+	# double as a chroot... But we probably can't do this before the FS
+	# changes, it breaks second stage gcc crosscompilers
+	# sed -i -e "s,%{_prefix}/$i,,g" ${DD}%{_prefix}/$i/lib/libc.so
 done
 %endif
 
@@ -1473,23 +1493,7 @@ for i in %{long_targets}; do
 		continue
 	fi
 	echo "===== Installing %{_target_platform} -> $i cross libc ====="
-	cd obj-${i}
-
-	# FIXME as of 2.30, installing the x86_64 -> aarch64 crosscompiler
-	# fails unless those directories are created first. Should figure
-	# out what's going on there at some point.
-	#mkdir cstdlib cmath
-
-	%make_install
-	cd ..
-	# We don't need all the bits and pieces with a crosscompiler
-	rm -rf %{buildroot}%{_prefix}/$i/bin %{buildroot}%{_prefix}/$i/sbin %{buildroot}%{_prefix}/$i/var %{buildroot}%{_prefix}/$i/share %{buildroot}%{_prefix}/$i/etc
-	# Get rid of object files to be a little friendlier to tmpfs buildroots
-	rm -rf "obj-${i}"
-	# We need to get rid of this hardcode at some point so the sysroot can
-	# double as a chroot... But we probably can't do this before the FS
-	# changes, it breaks second stage gcc crosscompilers
-	# sed -i -e "s,%{_prefix}/$i,,g" %{buildroot}%{_prefix}/$i/lib/libc.so
+	cp -a instroot-${i}/* %{buildroot}
 done
 %endif
 
