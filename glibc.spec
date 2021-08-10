@@ -1077,6 +1077,16 @@ Libc for crosscompiling to ${i}
 %files -n ${package}
 %{_prefix}/${i}/include/*
 %{_prefix}/${i}/lib*/*
+%{_prefix}/${i}/bin/*
+%{_prefix}/${i}/sbin
+%{_prefix}/${i}/var
+%{_prefix}/${i}/etc
+# FIXME do we want to package shared stuff here? On one hand, as long as
+# we're talking about OM sysroots, they should be in sync with the host and
+# a symlink to /usr/share would be better.
+# On the other hand, we might be building a *BSD or other distro sysroot...
+# Let's keep it at least until the new FS layout is in place
+%{_prefix}/${i}/share
 EOF
 done
 )
@@ -1418,8 +1428,6 @@ for i in %{targets}; do
 	%make_install DESTDIR="${DD}"
 	cd ..
 
-	# We don't need all the bits and pieces with a crosscompiler
-	rm -rf ${DD}%{_prefix}/$i/bin ${DD}%{_prefix}/$i/sbin ${DD}%{_prefix}/$i/var ${DD}%{_prefix}/$i/share ${DD}%{_prefix}/$i/etc
 	# Get rid of object files to be a little friendlier to tmpfs buildroots
 	rm -rf "obj-${TRIPLET}"
 	# We need to get rid of this hardcode at some point so the sysroot can
