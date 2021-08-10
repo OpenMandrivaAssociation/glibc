@@ -675,10 +675,12 @@ LANG variable to their preferred language in their
 %dir %{_libdir}/gconv
 %dir %{_libdir}/gconv/gconv-modules.d
 %config %{_libdir}/gconv/gconv-modules.d/gconv-modules-extra.conf
+%ifarch %{x86_64}
 %if "%{_libdir}" != "%{_prefix}/lib"
 %dir %{_prefix}/lib/gconv
 %dir %{_prefix}/lib/gconv/gconv-modules.d
 %config %{_prefix}/lib/gconv/gconv-modules.d/gconv-modules-extra.conf
+%endif
 %endif
 %{_localedir}/locale.alias
 /sbin/sln
