@@ -120,7 +120,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -199,6 +199,7 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 # OpenMandriva patches
 Patch1000:	eglibc-mandriva-localedef-archive-follow-symlinks.patch
 Patch1001:	glibc-2.33-compile.patch
+Patch1002:	glibc-2.34-headers-clang.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
