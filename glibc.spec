@@ -97,7 +97,7 @@
 %bcond_without nscd
 %bcond_without i18ndata
 %bcond_with timezone
-%bcond_with locales
+%bcond_without locales
 
 %if %isarch %{ix86} %{x86_64}
 %bcond_without systap
