@@ -725,7 +725,6 @@ LANG variable to their preferred language in their
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
-%dir %{_libdir}/gconv
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
@@ -849,7 +848,7 @@ The glibc-docs package contains docs for %{name}.
 
 %files devel
 %if "%{name}" == "glibc"
-%{_infodir}/libc.info*
+%doc %{_infodir}/libc.info*
 %endif
 %{_includedir}/*
 %{_libdir}/*.o
@@ -1055,7 +1054,7 @@ These are configuration files that describe possible time zones.
 %files -n timezone
 %{_sbindir}/zdump
 %{_sbindir}/zic
-%{_mandir}/man1/zdump.1*
+%doc %{_mandir}/man1/zdump.1*
 %{_datadir}/zoneinfo
 #-----------------------------------------------------------------------
 # with timezone
