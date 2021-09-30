@@ -9,8 +9,13 @@
 # FIXME determine why gcc segfaults when building any cross libc on armv7hnl
 %global targets armv7hnl-linux
 %else
+%ifarch aarch64
+# (tpg) reduce targets for aarch64 as aarch64 build nodes are low on disk space
+%global targets aarch64-linux
+%else
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux
+%endif
 %endif
 %endif
 %global long_targets %(
