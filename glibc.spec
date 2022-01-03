@@ -125,7 +125,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1079,9 +1079,10 @@ BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-re
 BuildRequires: kernel-release-source
 Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
-Libc for crosscompiling to ${i}
+Libc for crosscompiling to ${i}.
 
 %files -n ${package}
+%dir %{_prefix}/${i}
 %{_prefix}/${i}/include/*
 %{_prefix}/${i}/lib*/*
 %{_prefix}/${i}/bin/*
@@ -1100,8 +1101,7 @@ done
 %endif
 
 %prep
-%setup -q -n %{source_dir} -a3
-%autopatch -p1
+%autosetup -p1 -n %{source_dir} -a3
 
 find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
@@ -1110,7 +1110,7 @@ find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Regenerate autoconf files, some of our patches touch them
 # Remove the autoconf 2.69 hardcode...
-sed -e "s,2.69,`autoconf --version |head -n1 |cut -d' ' -f4`," -i aclocal.m4
+sed -e "s,2.69,$(autoconf --version |head -n1 |cut -d' ' -f4)," -i aclocal.m4
 # fix nss headers location
 sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' -i configure*
 
@@ -1207,7 +1207,7 @@ function BuildGlibc() {
       # on armv7hnl results in a build failure because configure can't find a
       # compiler it believes to be working -- with -nostdlib, we get an
       # undefined reference to __aeabi_unwind_cpp_pr0
-      BuildFlags="`echo $BuildFlags |sed -e 's,-funwind-tables ,,g;s,-fasynchronous-unwind-tables,,g'`"
+      BuildFlags="$(echo $BuildFlags |sed -e 's,-funwind-tables ,,g;s,-fasynchronous-unwind-tables,,g')"
       BuildCompFlags="$BuildFlags"
       ;;
     armv6*)
@@ -1298,7 +1298,7 @@ function BuildGlibc() {
   # Determine library name
   glibc_cv_cc_64bit_output=no
   if echo ".text" | $BuildCC -c -o test.o -xassembler -; then
-    case `/usr/bin/file test.o` in
+    case $(/usr/bin/file test.o) in
     *"ELF 64"*)
       glibc_cv_cc_64bit_output=yes
       ;;
@@ -1572,16 +1572,16 @@ function InstallGlibc() {
 
   cd $BuildDir
   mkdir -p %{buildroot}$LibDir/$SubDir/
-  install -m755 libc.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc-*.so`
-  ln -sf `basename %{buildroot}$LibDir/libc-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libc.so.*`
-  install -m755 math/libm.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm-*.so`
-  ln -sf `basename %{buildroot}$LibDir/libm-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libm.so.*`
-  install -m755 nptl/libpthread.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread-*.so`
-  ln -sf `basename %{buildroot}$LibDir/libpthread-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libpthread.so.*`
-  install -m755 nptl_db/libthread_db.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db-*.so`
-  ln -sf `basename %{buildroot}$LibDir/libthread_db-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/libthread_db.so.*`
-  install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt-*.so`
-  ln -sf `basename %{buildroot}$LibDir/librt-*.so` %{buildroot}$LibDir/$SubDir/`basename %{buildroot}$LibDir/librt.so.*`
+  install -m755 libc.so %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libc-*.so)
+  ln -sf $(basename %{buildroot}$LibDir/libc-*.so) %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libc.so.*)
+  install -m755 math/libm.so %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libm-*.so)
+  ln -sf $(basename %{buildroot}$LibDir/libm-*.so) %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libm.so.*)
+  install -m755 nptl/libpthread.so %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libpthread-*.so)
+  ln -sf $(basename %{buildroot}$LibDir/libpthread-*.so) %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libpthread.so.*)
+  install -m755 nptl_db/libthread_db.so %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libthread_db-*.so)
+  ln -sf $(basename %{buildroot}$LibDir/libthread_db-*.so) %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/libthread_db.so.*)
+  install -m755 rt/librt.so %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/librt-*.so)
+  ln -sf $(basename %{buildroot}$LibDir/librt-*.so) %{buildroot}$LibDir/$SubDir/$(basename %{buildroot}$LibDir/librt.so.*)
   cd -
 
 }
@@ -1710,6 +1710,13 @@ install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 %find_lang libc
 %else
 touch libc.lang
+%endif
+
+%if %{with crosscompilers}
+# (tpg) remove duplicated langs from lang list
+for i in %{long_targets}; do
+    sed -i -e "s#%{_prefix}/${i}/share/locale/*/LC_MESSAGES/libc.mo##g" libc.lang
+done
 %endif
 
 # Remove unpackaged files
