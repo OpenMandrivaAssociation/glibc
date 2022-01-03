@@ -5,7 +5,7 @@ locale="$1"
 shift
 
 cat <<EOF
-%package -n    locales-$locale
+%package -n locales-$locale
 Summary:	Base files for localization ($langname)
 Group:		System/Internationalization
 Obsoletes:	locales < 6:2.19-13

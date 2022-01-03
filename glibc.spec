@@ -1824,19 +1824,19 @@ export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}
 # those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
 # a lot of other locales, thus saving space
 for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
-	ISO-8859-5 ISO-8859-7 ISO-8859-9 \
-	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
+    ISO-8859-5 ISO-8859-7 ISO-8859-9 \
+    ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
-	# don't use en_DK because of LC_MONETARY
-	$LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
+    # don't use en_DK because of LC_MONETARY
+    $LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
 done
 
 # Build regular locales
 LANGS="$(sed '1,/^SUPPORTED-LOCALES=/d;s,\\$,,;s,\n,,' %{buildroot}%{_datadir}/i18n/SUPPORTED)"
 for l in $LANGS; do
-	LNG=$(echo $l |cut -d/ -f1)
-	CS=$(echo $l |cut -d/ -f2)
-	$LDSO %{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
+    LNG=$(echo $l |cut -d/ -f1)
+    CS=$(echo $l |cut -d/ -f2)
+    $LDSO %{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
 done
 unset LD_LIBRARY_PATH
 
@@ -1846,7 +1846,7 @@ install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/
 install -c -m 644 %{SOURCE1003} -D %{buildroot}%{_sysconfdir}/sysconfig/locales
 
 # Hardlink identical locales
-%{_sbindir}/hardlink -vvc %{buildroot}%{_datadir}/locale
+%{_sbindir}/hardlink -qc %{buildroot}%{_datadir}/locale
 
 # Symlink identical files
 # TODO
@@ -1891,7 +1891,10 @@ ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-
 export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
 
 # Disallow linking against libc_malloc_debug.
-rm %{buildroot}%{_libdir}/libc_malloc_debug.so
+%if %{build_biarch}
+rm -f %{buildroot}%{_prefix}/lib/libc_malloc_debug.so
+%endif
+rm -f %{buildroot}%{_libdir}/libc_malloc_debug.so
 
 %if %{with locales}
 %files -n locales
