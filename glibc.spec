@@ -116,6 +116,46 @@
 # enable utils by default
 %bcond_without utils
 
+##############################################################################
+# Utility functions for pre/post scripts.  Stick them at the beginning of
+# any lua %pre, %post, %postun, etc. sections to have them expand into
+# those scripts.  It only works in lua sections and not anywhere else.
+%define glibc_post_funcs() \
+-- We use lua posix.exec because there may be no shell that we can \
+-- run during glibc upgrade.  We used to implement much of %%post as a \
+-- C program, but from an overall maintenance perspective the lua in \
+-- the spec file was simpler and safer given the operations required. \
+-- All lua code will be ignored by rpm-ostree; see: \
+-- https://github.com/projectatomic/rpm-ostree/pull/1869 \
+-- If we add new lua actions to the %%post code we should coordinate \
+-- with rpm-ostree and ensure that their glibc install is functional. \
+function post_exec (program, ...) \
+  local pid = posix.fork () \
+  if pid == 0 then \
+    posix.exec (program, ...) \
+    assert (nil) \
+  elseif pid > 0 then \
+    posix.wait (pid) \
+  end \
+end \
+\
+function update_gconv_modules_cache () \
+  local iconv_dir = "%{_libdir}/gconv" \
+  local iconv_cache = iconv_dir .. "/gconv-modules.cache" \
+  local iconv_modules = iconv_dir .. "/gconv-modules" \
+  if (posix.utime (iconv_modules) == 0) then \
+    if (posix.utime (iconv_cache) == 0) then \
+      post_exec ("%{_prefix}/sbin/iconvconfig", \
+	 "-o", iconv_cache, \
+	 "--nostdlib", \
+	 iconv_dir) \
+    else \
+      io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n") \
+    end \
+  end \
+end \
+%{nil}
+
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
@@ -276,6 +316,7 @@ Conflicts:	kernel < %{enablekernel}
 
 # Don't try to explicitly provide GLIBC_PRIVATE versioned libraries
 %global __filter_GLIBC_PRIVATE 1
+%global __provides_exclude ^libc_malloc_debug\\.so.*$
 
 %rename		ld.so
 %ifarch %{mips} %{mipsel}
@@ -317,17 +358,7 @@ if rpm.vercmp(rel, required) < 0 then
 end
 
 %post -p <lua>
--- We use lua's posix.exec because there may be no shell that we can
--- run during glibc upgrade.
-function post_exec (program, ...)
-  local pid = posix.fork ()
-  if pid == 0 then
-    assert (posix.exec (program, ...))
-  elseif pid > 0 then
-    posix.wait (pid)
-  end
-end
-
+%glibc_post_funcs
 -- (1) Remove multilib libraries from previous installs.
 -- In order to support in-place upgrades, we must immediately remove
 -- obsolete platform directories after installing a new glibc
@@ -345,12 +376,18 @@ install_libs = { "anl", "BrokenLocale", "c", "dl", "m", "mvec",
 
 -- We are going to remove these libraries. Generally speaking we remove
 -- all core libraries in the multilib directory.
--- We employ a tight match where X.Y is in [2.0,9.9*], so we would 
+-- For the versioned install names, the version are [2.0,9.9*], so we
 -- match "libc-2.0.so" and so on up to "libc-9.9*".
+-- For the unversioned install names, we match the library plus ".so."
+-- followed by digests.
 remove_regexps = {}
 for i = 1, #install_libs do
-  remove_regexps[i] = ("lib" .. install_libs[i]
-                       .. "%%-[2-9]%%.[0-9]+%%.so$")
+  -- Versioned install name.
+  remove_regexps[#remove_regexps + 1] = ("lib" .. install_libs[i]
+                                         .. "%%-[2-9]%%.[0-9]+%%.so$")
+  -- Unversioned install name.
+  remove_regexps[#remove_regexps + 1] = ("lib" .. install_libs[i]
+                                         .. "%%.so%%.[0-9]+$")
 end
 
 -- Two exceptions:
@@ -362,7 +399,24 @@ local remove_dirs = { "%{_libdir}/i686",
 	      "%{_libdir}/i686/nosegneg",
 	      "%{_libdir}/power6",
 	      "%{_libdir}/power7",
-	      "%{_libdir}/power8" }
+	      "%{_libdir}/power8",
+	      "%{_libdir}/power9",
+	    }
+
+-- Add all the subdirectories of the glibc-hwcaps subdirectory.
+repeat
+  local iter = posix.files("%{_libdir}/glibc-hwcaps")
+  if iter ~= nil then
+    for entry in iter do
+      if entry ~= "." and entry ~= ".." then
+        local path = "%{_libdir}/glibc-hwcaps/" .. entry
+        if posix.access(path .. "/.", "x") then
+          remove_dirs[#remove_dirs + 1] = path
+        end
+      end
+    end
+  end
+until true
 
 -- Walk all the directories with files we need to remove...
 for _, rdir in ipairs (remove_dirs) do
@@ -425,7 +479,6 @@ end
 -- If the format of the cache changes then we need to rebuild
 -- the cache early to avoid any problems running binaries with
 -- the new glibc.
-
 -- Note: We use _prefix because Fedora's UsrMove says so.
 post_exec ("/sbin/ldconfig")
 
@@ -435,15 +488,21 @@ post_exec ("/sbin/ldconfig")
 -- We assume that the cache is in _libdir/gconv and called
 -- "gconv-modules.cache".
 
-local iconv_dir = "%{_libdir}/gconv"
-local iconv_cache = iconv_dir .. "/gconv-modules.cache"
-if (posix.utime (iconv_cache) == 0) then
-  post_exec ("%{_sbindir}/iconvconfig",
-         "-o", iconv_cache,
-         "--nostdlib",
-         iconv_dir)
-else
-  io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n")
+update_gconv_modules_cache()
+
+-- (5) On upgrades, restart systemd if installed.  "systemctl -q" does
+-- not suppress the error message (which is common in chroots), so
+-- open-code post_exec with standard error suppressed.
+if tonumber(arg[2]) >= 2
+   and posix.access("/bin/systemctl", "x")
+then
+  local pid = posix.fork()
+  if pid == 0 then
+    posix.redirect2null(2)
+    assert(posix.exec("/bin/systemctl", "daemon-reexec"))
+  elseif pid > 0 then
+    posix.wait(pid)
+  end
 end
 
 %transfiletriggerin -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
@@ -1495,6 +1554,7 @@ done < %{checklist}
 %endif
 
 #-----------------------------------------------------------------------
+
 %install
 # ...
 %if !%isarch %{mipsx}
@@ -1829,6 +1889,9 @@ ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
 export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
+
+# Disallow linking against libc_malloc_debug.
+rm %{buildroot}%{_libdir}/libc_malloc_debug.so
 
 %if %{with locales}
 %files -n locales
