@@ -235,7 +235,74 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# [currently none]
+# git format-patch glibc-2.34
+# (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
+Patch200:	0001-ldconfig-avoid-leak-on-empty-paths-in-config-file.patch
+Patch201:	0002-gconv_parseconfdir-Fix-memory-leak.patch
+Patch202:	0003-gaiconf_init-Avoid-double-free-in-label-and-preceden.patch
+Patch203:	0004-copy_and_spawn_sgid-Avoid-double-calls-to-close.patch
+Patch204:	0005-iconv_charmap-Close-output-file-when-done.patch
+Patch205:	0006-Linux-Fix-fcntl-ioctl-prctl-redirects-for-_TIME_BITS.patch
+Patch206:	0007-librt-fix-NULL-pointer-dereference-bug-28213.patch
+Patch207:	0008-librt-add-test-bug-28213.patch
+Patch208:	0009-elf-Fix-missing-colon-in-LD_SHOW_AUXV-output-BZ-2825.patch
+Patch209:	0010-x86-64-Use-testl-to-check-__x86_string_control.patch
+Patch210:	0011-MIPS-Setup-errno-for-f-l-xstat.patch
+Patch211:	0012-support-Add-support_wait_for_thread_exit.patch
+Patch212:	0013-nptl-pthread_kill-pthread_cancel-should-not-fail-aft.patch
+Patch213:	0014-nptl-Fix-race-between-pthread_kill-and-thread-exit-b.patch
+Patch214:	0015-iconvconfig-Fix-behaviour-with-prefix-BZ-28199.patch
+Patch215:	0016-Fix-failing-nss-tst-nss-files-hosts-long-with-local-.patch
+Patch216:	0017-Use-Linux-5.14-in-build-many-glibcs.py.patch
+Patch217:	0018-Update-syscall-lists-for-Linux-5.14.patch
+Patch218:	0019-Update-kernel-version-to-5.14-in-tst-mman-consts.py.patch
+Patch219:	0020-Add-MADV_POPULATE_READ-and-MADV_POPULATE_WRITE-from-.patch
+Patch220:	0021-posix-Fix-attribute-access-mode-on-getcwd-BZ-27476.patch
+Patch221:	0022-nptl-pthread_kill-needs-to-return-ESRCH-for-old-prog.patch
+Patch222:	0023-nptl-Fix-type-of-pthread_mutexattr_getrobust_np-pthr.patch
+Patch223:	0024-support-Add-support_open_dev_null_range.patch
+Patch224:	0025-Use-support_open_dev_null_range-io-tst-closefrom-mis.patch
+Patch225:	0026-nptl-Avoid-setxid-deadlock-with-blocked-signals-in-t.patch
+Patch226:	0027-support-Add-check-for-TID-zero-in-support_wait_for_t.patch
+Patch227:	0028-nptl-pthread_kill-must-send-signals-to-a-specific-th.patch
+Patch228:	0029-misc-Add-__get_nprocs_sched.patch
+Patch229:	0030-linux-Simplify-get_nprocs.patch
+Patch230:	0031-linux-Revert-the-use-of-sched_getaffinity-on-get_npr.patch
+Patch231:	0032-Suppress-Wcast-qual-warnings-in-bsearch.patch
+Patch232:	0033-Add-missing-braces-to-bsearch-inline-implementation-.patch
+Patch233:	0034-support-Also-return-fd-when-it-is-0.patch
+Patch234:	0035-S390-Add-PCI_MIO-and-SIE-HWCAPs.patch
+Patch235:	0036-elf-Replace-nsid-with-args.nsid-BZ-27609.patch
+Patch236:	0037-y2038-Use-a-common-definition-for-stat-for-sparc32.patch
+Patch237:	0038-timex-Use-64-bit-fields-on-32-bit-TIMESIZE-64-system.patch
+Patch238:	0039-elf-Avoid-deadlock-between-pthread_create-and-ctors-.patch
+Patch239:	0040-Handle-NULL-input-to-malloc_usable_size-BZ-28506.patch
+Patch240:	0041-ld.so-Replace-DL_RO_DYN_SECTION-with-dl_relocate_ld-.patch
+Patch241:	0042-ld.so-Initialize-bootstrap_map.l_ld_readonly-BZ-2834.patch
+Patch242:	0043-Avoid-warning-overriding-recipe-for-.-tst-ro-dynamic.patch
+Patch243:	0044-gconv-Do-not-emit-spurious-NUL-character-in-ISO-2022.patch
+Patch244:	0045-elf-Earlier-missing-dynamic-segment-check-in-_dl_map.patch
+Patch245:	0046-s390-Use-long-branches-across-object-boundaries-jgh-.patch
+Patch246:	0047-nptl-Do-not-set-signal-mask-on-second-setjmp-return-.patch
+Patch247:	0048-linux-Use-proc-stat-fallback-for-__get_nprocs_conf-B.patch
+Patch248:	0049-powerpc64-le-Fix-CFI-and-LR-save-address-for-asm-sys.patch
+Patch249:	0050-nptl-Add-one-more-barrier-to-nptl-tst-create1.patch
+Patch250:	0051-Run-conform-tests-using-newly-built-libc.patch
+Patch251:	0052-Use-pie-default-with-conformtest.patch
+Patch252:	0053-pthread-tst-cancel28-Fix-barrier-re-init-race-condit.patch
+Patch253:	0054-mips-align-stack-in-clone-BZ-28223.patch
+Patch254:	0055-mips-increase-stack-alignment-in-clone-to-match-the-.patch
+Patch255:	0056-arm-Guard-ucontext-_rtld_global_ro-access-by-SHARED-.patch
+Patch256:	0057-nss-Use-files-dns-as-the-default-for-the-hosts-datab.patch
+Patch257:	0058-elf-Fix-tst-cpu-features-cpuinfo-for-KVM-guests-on-s.patch
+Patch258:	0059-powerpc64-le-Allocate-extra-stack-frame-on-syscall.S.patch
+Patch259:	0060-riscv-align-stack-in-clone-BZ-28702.patch
+Patch260:	0061-riscv-align-stack-before-calling-_dl_init-BZ-28703.patch
+Patch261:	0062-Update-hppa-libm-test-ulps.patch
+Patch262:	0063-Update-sparc-libm-test-ulps.patch
+Patch263:	0064-linux-Add-sparck-brk-implementation.patch
+Patch264:	0065-Linux-Fix-32-bit-vDSO-for-clock_gettime-on-powerpc32.patch
+Patch265:	0066-intl-plural.y-Avoid-conflicting-declarations-of-yyer.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -274,6 +341,7 @@ Patch1042:	glibc-2.33-gcc-11.1.patch
 # Fix _Float32/_Float64 assumptions to make it work with
 # clang setting __GNUC__ to something > 6
 Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
+Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-crash-on-NULL.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
