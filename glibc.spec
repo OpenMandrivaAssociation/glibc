@@ -341,6 +341,7 @@ Patch1042:	glibc-2.33-gcc-11.1.patch
 # Fix _Float32/_Float64 assumptions to make it work with
 # clang setting __GNUC__ to something > 6
 Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
+Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-crash-on-NULL.patch
 
 BuildRequires:	autoconf2.5
