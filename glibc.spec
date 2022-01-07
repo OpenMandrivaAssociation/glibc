@@ -46,6 +46,9 @@
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
 
+# Takes forever on glibc with little effect (glibc doesn't
+# link to anything else anyway)
+%define dont_check_elf_files 1
 %define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
