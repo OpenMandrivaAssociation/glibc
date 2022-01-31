@@ -168,7 +168,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -306,6 +306,33 @@ Patch262:	0063-Update-sparc-libm-test-ulps.patch
 Patch263:	0064-linux-Add-sparck-brk-implementation.patch
 Patch264:	0065-Linux-Fix-32-bit-vDSO-for-clock_gettime-on-powerpc32.patch
 Patch265:	0066-intl-plural.y-Avoid-conflicting-declarations-of-yyer.patch
+Patch266:	0067-AArch64-Check-for-SVE-in-ifuncs-BZ-28744.patch
+Patch267:	0068-Fix-subscript-error-with-odd-TZif-file-BZ-28338.patch
+Patch268:	0069-timezone-handle-truncated-timezones-from-tzcode-2021.patch
+Patch269:	0070-timezone-test-case-for-BZ-28707.patch
+Patch270:	0071-powerpc-Fix-unrecognized-instruction-errors-with-rec.patch
+Patch271:	0072-Update-syscall-lists-for-Linux-5.15.patch
+Patch272:	0073-i386-Remove-broken-CAN_USE_REGISTER_ASM_EBP-bug-2877.patch
+Patch273:	0074-Update-syscall-lists-for-Linux-5.16.patch
+Patch274:	0075-Disable-debuginfod-in-printer-tests-BZ-28757.patch
+Patch275:	0076-socket-Add-the-__sockaddr_un_set-function.patch
+Patch276:	0077-CVE-2022-23219-Buffer-overflow-in-sunrpc-clnt_create.patch
+Patch277:	0078-sunrpc-Test-case-for-clnt_create-unix-buffer-overflo.patch
+Patch278:	0079-CVE-2022-23218-Buffer-overflow-in-sunrpc-svcunix_cre.patch
+Patch279:	0080-x86-use-default-cache-size-if-it-cannot-be-determine.patch
+Patch280:	0081-powerpc-Fix-unrecognized-instruction-errors-with-rec.patch
+Patch281:	0082-support-Add-helpers-to-create-paths-longer-than-PATH.patch
+Patch282:	0083-stdlib-Sort-tests-in-Makefile.patch
+Patch283:	0084-stdlib-Fix-formatting-of-tests-list-in-Makefile.patch
+Patch284:	0085-realpath-Set-errno-to-ENAMETOOLONG-for-result-larger.patch
+Patch285:	0086-tst-realpath-toolong-Fix-hurd-build.patch
+Patch286:	0087-getcwd-Set-errno-to-ERANGE-for-size-1-CVE-2021-3999.patch
+Patch287:	0088-realpath-Avoid-overwriting-preexisting-error-CVE-202.patch
+Patch288:	0089-Linux-Detect-user-namespace-support-in-io-tst-getcwd.patch
+Patch289:	0090-NEWS-add-bug-entry-for-BZ-28769-and-BZ-28770.patch
+Patch290:	0091-x86-Fix-__wcsncmp_avx2-in-strcmp-avx2.S-BZ-28755.patch
+Patch291:	0092-x86-Fix-__wcsncmp_evex-in-strcmp-evex.S-BZ-28755.patch
+Patch292:	0093-NEWS-Add-a-bug-entry-for-BZ-28755.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -1216,7 +1243,7 @@ Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
 Libc for crosscompiling to ${i}.
 
-%files -n ${package}
+%files -n ${package} -f cross-${i}.lang
 %dir %{_prefix}/${i}
 %{_prefix}/${i}/include/*
 %{_prefix}/${i}/lib*/*
@@ -1229,7 +1256,11 @@ Libc for crosscompiling to ${i}.
 # a symlink to /usr/share would be better.
 # On the other hand, we might be building a *BSD or other distro sysroot...
 # Let's keep it at least until the new FS layout is in place
-%{_prefix}/${i}/share
+%dir %{_prefix}/${i}/share
+%{_prefix}/${i}/share/i18n
+%{_prefix}/${i}/share/info
+%dir %{_prefix}/${i}/share/locale
+%{_prefix}/${i}/share/locale/locale.alias
 EOF
 done
 )
@@ -1851,7 +1882,12 @@ touch libc.lang
 %if %{with crosscompilers}
 # (tpg) remove duplicated langs from lang list
 for i in %{long_targets}; do
-    sed -i -e "s#%{_prefix}/${i}/share/locale/*/LC_MESSAGES/libc.mo##g" libc.lang
+	[ "$i" = "%{_target_platform}" ] && continue
+	grep %{_prefix}/${i} libc.lang >cross-${i}.lang
+	cat libc.lang cross-${i}.lang |sort |uniq -u >libc.lang.new
+	# We want to own the whole directory, not just libc.mo
+	sed -i -e 's,/libc.mo$,,' cross-${i}.lang
+	mv libc.lang.new libc.lang
 done
 %endif
 
