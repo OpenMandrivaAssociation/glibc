@@ -1,6 +1,7 @@
---- glibc-2.27/nptl/pthread_mutex_lock.c~	2018-02-01 16:17:18.000000000 +0000
-+++ glibc-2.27/nptl/pthread_mutex_lock.c	2018-05-15 14:19:00.864190585 +0000
-@@ -133,7 +133,13 @@
+diff -up glibc-2.35/nptl/pthread_mutex_lock.c.27~ glibc-2.35/nptl/pthread_mutex_lock.c
+--- glibc-2.35/nptl/pthread_mutex_lock.c.27~	2022-02-03 11:13:51.081588372 +0100
++++ glibc-2.35/nptl/pthread_mutex_lock.c	2022-02-03 11:16:15.380143680 +0100
+@@ -145,7 +145,13 @@ PTHREAD_MUTEX_LOCK (pthread_mutex_t *mut
  		  LLL_MUTEX_LOCK (mutex);
  		  break;
  		}
@@ -13,5 +14,5 @@
 +		while (atomic_load_relaxed (&mutex->__data.__lock) != 0 &&
 +			++cnt < max_cnt);
  	    }
- 	  while (LLL_MUTEX_TRYLOCK (mutex) != 0);
- 
+ 	  while (LLL_MUTEX_READ_LOCK (mutex) != 0
+ 		 || LLL_MUTEX_TRYLOCK (mutex) != 0);

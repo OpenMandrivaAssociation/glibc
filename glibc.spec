@@ -29,8 +29,8 @@
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
 
-%define ver 2.34
-%define fullver 2.34
+%define ver 2.35
+%define fullver 2.35
 
 %define oname glibc
 %define major 6
@@ -168,7 +168,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	6
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -203,7 +203,6 @@ Patch32:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ma
 Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
 Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
 Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
-Patch40:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-c-utf8-locale.patch
 Patch41:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
 # We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
 # Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
@@ -238,101 +237,26 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.34
+# git format-patch glibc-2.35
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch200:	0001-ldconfig-avoid-leak-on-empty-paths-in-config-file.patch
-Patch201:	0002-gconv_parseconfdir-Fix-memory-leak.patch
-Patch202:	0003-gaiconf_init-Avoid-double-free-in-label-and-preceden.patch
-Patch203:	0004-copy_and_spawn_sgid-Avoid-double-calls-to-close.patch
-Patch204:	0005-iconv_charmap-Close-output-file-when-done.patch
-Patch205:	0006-Linux-Fix-fcntl-ioctl-prctl-redirects-for-_TIME_BITS.patch
-Patch206:	0007-librt-fix-NULL-pointer-dereference-bug-28213.patch
-Patch207:	0008-librt-add-test-bug-28213.patch
-Patch208:	0009-elf-Fix-missing-colon-in-LD_SHOW_AUXV-output-BZ-2825.patch
-Patch209:	0010-x86-64-Use-testl-to-check-__x86_string_control.patch
-Patch210:	0011-MIPS-Setup-errno-for-f-l-xstat.patch
-Patch211:	0012-support-Add-support_wait_for_thread_exit.patch
-Patch212:	0013-nptl-pthread_kill-pthread_cancel-should-not-fail-aft.patch
-Patch213:	0014-nptl-Fix-race-between-pthread_kill-and-thread-exit-b.patch
-Patch214:	0015-iconvconfig-Fix-behaviour-with-prefix-BZ-28199.patch
-Patch215:	0016-Fix-failing-nss-tst-nss-files-hosts-long-with-local-.patch
-Patch216:	0017-Use-Linux-5.14-in-build-many-glibcs.py.patch
-Patch217:	0018-Update-syscall-lists-for-Linux-5.14.patch
-Patch218:	0019-Update-kernel-version-to-5.14-in-tst-mman-consts.py.patch
-Patch219:	0020-Add-MADV_POPULATE_READ-and-MADV_POPULATE_WRITE-from-.patch
-Patch220:	0021-posix-Fix-attribute-access-mode-on-getcwd-BZ-27476.patch
-Patch221:	0022-nptl-pthread_kill-needs-to-return-ESRCH-for-old-prog.patch
-Patch222:	0023-nptl-Fix-type-of-pthread_mutexattr_getrobust_np-pthr.patch
-Patch223:	0024-support-Add-support_open_dev_null_range.patch
-Patch224:	0025-Use-support_open_dev_null_range-io-tst-closefrom-mis.patch
-Patch225:	0026-nptl-Avoid-setxid-deadlock-with-blocked-signals-in-t.patch
-Patch226:	0027-support-Add-check-for-TID-zero-in-support_wait_for_t.patch
-Patch227:	0028-nptl-pthread_kill-must-send-signals-to-a-specific-th.patch
-Patch228:	0029-misc-Add-__get_nprocs_sched.patch
-Patch229:	0030-linux-Simplify-get_nprocs.patch
-Patch230:	0031-linux-Revert-the-use-of-sched_getaffinity-on-get_npr.patch
-Patch231:	0032-Suppress-Wcast-qual-warnings-in-bsearch.patch
-Patch232:	0033-Add-missing-braces-to-bsearch-inline-implementation-.patch
-Patch233:	0034-support-Also-return-fd-when-it-is-0.patch
-Patch234:	0035-S390-Add-PCI_MIO-and-SIE-HWCAPs.patch
-Patch235:	0036-elf-Replace-nsid-with-args.nsid-BZ-27609.patch
-Patch236:	0037-y2038-Use-a-common-definition-for-stat-for-sparc32.patch
-Patch237:	0038-timex-Use-64-bit-fields-on-32-bit-TIMESIZE-64-system.patch
-Patch238:	0039-elf-Avoid-deadlock-between-pthread_create-and-ctors-.patch
-Patch239:	0040-Handle-NULL-input-to-malloc_usable_size-BZ-28506.patch
-Patch240:	0041-ld.so-Replace-DL_RO_DYN_SECTION-with-dl_relocate_ld-.patch
-Patch241:	0042-ld.so-Initialize-bootstrap_map.l_ld_readonly-BZ-2834.patch
-Patch242:	0043-Avoid-warning-overriding-recipe-for-.-tst-ro-dynamic.patch
-Patch243:	0044-gconv-Do-not-emit-spurious-NUL-character-in-ISO-2022.patch
-Patch244:	0045-elf-Earlier-missing-dynamic-segment-check-in-_dl_map.patch
-Patch245:	0046-s390-Use-long-branches-across-object-boundaries-jgh-.patch
-Patch246:	0047-nptl-Do-not-set-signal-mask-on-second-setjmp-return-.patch
-Patch247:	0048-linux-Use-proc-stat-fallback-for-__get_nprocs_conf-B.patch
-Patch248:	0049-powerpc64-le-Fix-CFI-and-LR-save-address-for-asm-sys.patch
-Patch249:	0050-nptl-Add-one-more-barrier-to-nptl-tst-create1.patch
-Patch250:	0051-Run-conform-tests-using-newly-built-libc.patch
-Patch251:	0052-Use-pie-default-with-conformtest.patch
-Patch252:	0053-pthread-tst-cancel28-Fix-barrier-re-init-race-condit.patch
-Patch253:	0054-mips-align-stack-in-clone-BZ-28223.patch
-Patch254:	0055-mips-increase-stack-alignment-in-clone-to-match-the-.patch
-Patch255:	0056-arm-Guard-ucontext-_rtld_global_ro-access-by-SHARED-.patch
-Patch256:	0057-nss-Use-files-dns-as-the-default-for-the-hosts-datab.patch
-Patch257:	0058-elf-Fix-tst-cpu-features-cpuinfo-for-KVM-guests-on-s.patch
-Patch258:	0059-powerpc64-le-Allocate-extra-stack-frame-on-syscall.S.patch
-Patch259:	0060-riscv-align-stack-in-clone-BZ-28702.patch
-Patch260:	0061-riscv-align-stack-before-calling-_dl_init-BZ-28703.patch
-Patch261:	0062-Update-hppa-libm-test-ulps.patch
-Patch262:	0063-Update-sparc-libm-test-ulps.patch
-Patch263:	0064-linux-Add-sparck-brk-implementation.patch
-Patch264:	0065-Linux-Fix-32-bit-vDSO-for-clock_gettime-on-powerpc32.patch
-Patch265:	0066-intl-plural.y-Avoid-conflicting-declarations-of-yyer.patch
-Patch266:	0067-AArch64-Check-for-SVE-in-ifuncs-BZ-28744.patch
-Patch267:	0068-Fix-subscript-error-with-odd-TZif-file-BZ-28338.patch
-Patch268:	0069-timezone-handle-truncated-timezones-from-tzcode-2021.patch
-Patch269:	0070-timezone-test-case-for-BZ-28707.patch
-Patch270:	0071-powerpc-Fix-unrecognized-instruction-errors-with-rec.patch
-Patch271:	0072-Update-syscall-lists-for-Linux-5.15.patch
-Patch272:	0073-i386-Remove-broken-CAN_USE_REGISTER_ASM_EBP-bug-2877.patch
-Patch273:	0074-Update-syscall-lists-for-Linux-5.16.patch
-Patch274:	0075-Disable-debuginfod-in-printer-tests-BZ-28757.patch
-Patch275:	0076-socket-Add-the-__sockaddr_un_set-function.patch
-Patch276:	0077-CVE-2022-23219-Buffer-overflow-in-sunrpc-clnt_create.patch
-Patch277:	0078-sunrpc-Test-case-for-clnt_create-unix-buffer-overflo.patch
-Patch278:	0079-CVE-2022-23218-Buffer-overflow-in-sunrpc-svcunix_cre.patch
-Patch279:	0080-x86-use-default-cache-size-if-it-cannot-be-determine.patch
-Patch280:	0081-powerpc-Fix-unrecognized-instruction-errors-with-rec.patch
-Patch281:	0082-support-Add-helpers-to-create-paths-longer-than-PATH.patch
-Patch282:	0083-stdlib-Sort-tests-in-Makefile.patch
-Patch283:	0084-stdlib-Fix-formatting-of-tests-list-in-Makefile.patch
-Patch284:	0085-realpath-Set-errno-to-ENAMETOOLONG-for-result-larger.patch
-Patch285:	0086-tst-realpath-toolong-Fix-hurd-build.patch
-Patch286:	0087-getcwd-Set-errno-to-ERANGE-for-size-1-CVE-2021-3999.patch
-Patch287:	0088-realpath-Avoid-overwriting-preexisting-error-CVE-202.patch
-Patch288:	0089-Linux-Detect-user-namespace-support-in-io-tst-getcwd.patch
-Patch289:	0090-NEWS-add-bug-entry-for-BZ-28769-and-BZ-28770.patch
-Patch290:	0091-x86-Fix-__wcsncmp_avx2-in-strcmp-avx2.S-BZ-28755.patch
-Patch291:	0092-x86-Fix-__wcsncmp_evex-in-strcmp-evex.S-BZ-28755.patch
-Patch292:	0093-NEWS-Add-a-bug-entry-for-BZ-28755.patch
+Patch200:	0001-Regenerate-configure.patch
+Patch201:	0002-posix-Fix-tst-spawn6-terminal-handling-BZ-28853.patch
+Patch202:	0003-linux-__get_nprocs_sched-do-not-feed-CPU_COUNT_S-wit.patch
+Patch203:	0004-linux-Fix-missing-__convert_scm_timestamps-BZ-28860.patch
+Patch204:	0005-Add-BZ-28860-reference-on-NEWS.patch
+Patch205:	0006-linux-fix-accuracy-of-get_nprocs-and-get_nprocs_conf.patch
+Patch206:	0007-linux-Use-socket-constants-time64.h-on-tst-socket-ti.patch
+Patch207:	0008-string-Add-a-testcase-for-wcsncmp-with-SIZE_MAX-BZ-2.patch
+Patch208:	0009-x86-Fallback-str-wcs-cmp-RTM-in-the-ncmp-overflow-ca.patch
+Patch209:	0010-x86-Test-wcscmp-RTM-in-the-wcsncmp-overflow-case-BZ-.patch
+Patch210:	0011-x86-Fix-TEST_NAME-to-make-it-a-string-in-tst-strncmp.patch
+Patch211:	0012-NEWS-Add-a-bug-fix-entry-for-BZ-28896.patch
+Patch212:	0013-elf-Check-invalid-hole-in-PT_LOAD-segments-BZ-28838.patch
+Patch213:	0014-elf-Replace-tst-audit24bmod2.so-with-tst-audit24bmod.patch
+Patch214:	0015-resolv-Fix-tst-resolv-tests-for-2.35-ABIs-and-later.patch
+Patch215:	0016-NEWS-Add-a-bug-fix-entry-for-BZ-28688.patch
+Patch216:	0017-localedef-Update-LC_MONETARY-handling-Bug-28845.patch
+Patch217:	0018-localedata-Do-not-generate-output-if-warnings-were-p.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -347,7 +271,6 @@ Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
 Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
 Patch1010:	eglibc-mandriva-timezone.patch
-Patch1012:	eglibc-mandriva-ENOTTY-fr-translation.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
@@ -470,7 +393,7 @@ end
 -- Full set of libraries glibc may install.
 install_libs = { "anl", "BrokenLocale", "c", "dl", "m", "mvec",
 	 "nss_compat", "nss_db", "nss_dns", "nss_files",
-	 "nss_hesiod", "pthread", "resolv", "rt", "SegFault",
+	 "nss_hesiod", "pthread", "resolv", "rt",
 	 "thread_db", "util" }
 
 -- We are going to remove these libraries. Generally speaking we remove
@@ -489,9 +412,8 @@ for i = 1, #install_libs do
                                          .. "%%.so%%.[0-9]+$")
 end
 
--- Two exceptions:
+-- One exception:
 remove_regexps[#install_libs + 1] = "libthread_db%%-1%%.0%%.so"
-remove_regexps[#install_libs + 2] = "libSegFault%%.so"
 
 -- We are going to search these directories.
 local remove_dirs = { "%{_libdir}/i686",
@@ -888,18 +810,17 @@ LANG variable to their preferred language in their
 %{_libdir}/lp64d
 %endif
 %{_slibdir}/lib*.so.[0-9]*
-%{_slibdir}/libSegFault.so
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
 %{_libdir}/gconv/*.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
-%{_bindir}/catchsegv
 %{_bindir}/gencat
 %{_bindir}/getconf
 %{_bindir}/getent
 %{_bindir}/iconv
+%{_bindir}/ld.so
 %{_bindir}/ldd
 %if %isarch %{ix86}
 %{_bindir}/lddlibc4
@@ -923,11 +844,9 @@ LANG variable to their preferred language in their
 %if %{build_biarch}
 %{_slibdir32}/ld.so.1
 %{_slibdir32}/lib*.so.[0-9]*
-%{_slibdir32}/libSegFault.so
 %dir %{_slibdirn32}
 %{_slibdirn32}/ld.so.1
 %{_slibdirn32}/lib*.so.[0-9]*
-%{_slibdirn32}/libSegFault.so
 %endif
 %endif
 %endif
@@ -956,7 +875,6 @@ Linux system will not function.
 %files -n %{multilibc}
 %{_slibdir32}/ld-linux*.so.2
 %{_slibdir32}/lib*.so.[0-9]*
-%{_slibdir32}/libSegFault.so
 %if "%{name}" == "glibc"
 %dir %{_libdir32}/audit
 %{_libdir32}/audit/sotruss-lib.so
@@ -1022,7 +940,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir}/*.so
 %exclude %{_slibdir}/ld*-[.0-9]*.so
 %exclude %{_slibdir}/lib*-[.0-9]*.so
-%exclude %{_slibdir}/libSegFault.so
 %{_libdir}/libc_nonshared.a
 # Exists for some, but not all arches
 %optional %{_libdir}/libmvec_nonshared.a
@@ -1038,10 +955,8 @@ The glibc-docs package contains docs for %{name}.
 %if %isarch mips mipsel
 %exclude %{_slibdir32}/ld*-[.0-9]*.so
 %exclude %{_slibdir32}/lib*-[.0-9]*.so
-%exclude %{_slibdir32}/libSegFault.so
 %exclude %{_slibdirn32}/ld*-[.0-9]*.so
 %exclude %{_slibdirn32}/lib*-[.0-9]*.so
-%exclude %{_slibdirn32}/libSegFault.so
 %{_libdirn32}/*.o
 %{_libdirn32}/*.so
 %{_libdirn32}/libc_nonshared.a
@@ -1049,7 +964,6 @@ The glibc-docs package contains docs for %{name}.
 %{_libdirn32}/libmcheck.a
 %exclude %{_slibdir}/ld*-[.0-9]*.so
 %exclude %{_slibdir}/lib*-[.0-9]*.so
-%exclude %{_slibdir}/libSegFault.so
 %endif
 %endif
 
@@ -1330,7 +1244,8 @@ function BuildGlibc() {
   BuildCompFlags=""
   # -Wall is just added to get conditionally %%optflags printed...
   # cut -flto flag
-  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g[0-3]##;s#-gdwarf-[0-9]##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[sz0-9]#-O3#')"
+#  BuildFlags="$(rpm --target ${arch}-%{_target_os} -D '%__common_cflags_with_ssp -Wall' -E %%{optflags} | sed -e 's# -fPIC##g' -e 's#-m64##' -e 's#-gdwarf-4##;s#-g[0-3]##;s#-gdwarf-[0-9]##;s#-g##' -e 's#-flto##' -e 's#-m[36][24]##' -e 's#-O[sz0-9]#-O3#')"
+  BuildFlags="-O2"
   case $arch in
     i[3-6]86)
 %ifarch %{x86_64}
@@ -1406,7 +1321,8 @@ function BuildGlibc() {
 # set some extra flags here
 # (tpg) build with -O3
 
-  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -fstack-clash-protection %(echo %{optflags} |sed -e 's#-m[36][24]##g;s#-O[s2]#-O3#g')"
+#  BuildFlags="$BuildFlags -Wp,-D_GLIBCXX_ASSERTIONS -DNDEBUG=1 -fstack-clash-protection %(echo %{optflags} |sed -e 's#-m[36][24]##g;s#-O[s2]#-O3#g')"
+  BuildFlags="-O2"
   %ifnarch %{arm}
   # As of gcc 8.3.0, glibc 2.29, using -funwind-tables or -fasynchronous-unwind-tables
   # on armv7hnl results in a build failure because configure can't find a
@@ -1565,10 +1481,10 @@ for i in %{targets}; do
 	echo "===== Building %{_target_platform} -> $i ($TRIPLET) cross libc ====="
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
-	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
+#	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
 	CC="${TRIPLET}-gcc ${CFLAGS}" \
 	../configure \
 		--prefix=%{_prefix}/${TRIPLET} \
@@ -1667,6 +1583,7 @@ done < %{checklist}
 %if !%isarch %{mipsx}
 export PATH=$PWD/bin:$PATH
 %endif
+builddir="$(pwd)"
 
 %if %{with crosscompilers}
 for i in %{long_targets}; do
@@ -1926,31 +1843,33 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 %endif
 
 %if %{with locales}
-# Build locales...
-%global glibcver %(rpm -q --qf "%%{VERSION}" glibc)
-export I18NPATH=%{buildroot}%{_datadir}/i18n
-
-export LDSO=$(ls -1 %{buildroot}/%{_lib}/ld-*.so* |head -n1)
-export LD_LIBRARY_PATH=%{buildroot}/%{_lib}:%{buildroot}%{_libdir}
-# make default charset pseudo-locales
-# those will be symlinked (for LC_CTYPE, LC_COLLATE mainly) from
-# a lot of other locales, thus saving space
+# Generate locales...
+export LDSO="$(ls -1 %{buildroot}/%{_lib}/ld-*.so* |head -n1) --library-path %{buildroot}/%{_lib}:%{buildroot}%{_libdir}"
+# default charset pseudo-locales
 for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
-    ISO-8859-5 ISO-8859-7 ISO-8859-9 \
-    ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
+	ISO-8859-5 ISO-8859-7 ISO-8859-9 \
+	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
-    # don't use en_DK because of LC_MONETARY
-    $LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US %{buildroot}%{_datadir}/locale/$DEF_CHARSET
+	# don't use en_DK because of LC_MONETARY
+	$LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US --prefix %{buildroot} %{buildroot}%{_datadir}/locale/$DEF_CHARSET
 done
 
 # Build regular locales
-LANGS="$(sed '1,/^SUPPORTED-LOCALES=/d;s,\\$,,;s,\n,,' %{buildroot}%{_datadir}/i18n/SUPPORTED)"
+LANGS="$(sed '1,/^SUPPORTED-LOCALES=/d;s,\\$,,;s,\n,,' ${builddir}/localedata/SUPPORTED)"
+export I18NPATH=%{buildroot}%{_datadir}/i18n
 for l in $LANGS; do
     LNG=$(echo $l |cut -d/ -f1)
     CS=$(echo $l |cut -d/ -f2)
-    $LDSO %{buildroot}%{_bindir}/localedef -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
+    $LDSO %{buildroot}%{_bindir}/localedef --prefix %{buildroot} -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
 done
-unset LD_LIBRARY_PATH
+
+# Replace files identical to default locales
+# with symlinks
+find %{buildroot}%{_datadir}/locale -name LC_CTYPE -samefile %{buildroot}%{_datadir}/locale/C.UTF-8/LC_CTYPE |while read r; do
+	[ "$r" = "%{buildroot}%{_datadir}/locale/C.UTF-8/LC_CTYPE" ] && continue
+	echo "===== Symlinking $r to C.UTF-8 ====="
+	ln -sf ../C.UTF-8/LC_CTYPE "$r"
+done
 
 # Locale related tools
 install -c -m 755 %{SOURCE1001} %{SOURCE1002} %{buildroot}%{_bindir}/

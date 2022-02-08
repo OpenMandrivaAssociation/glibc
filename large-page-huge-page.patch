@@ -1,11 +1,13 @@
---- glibc-2.24/malloc/malloc.c~	2016-08-02 02:01:36.000000000 +0000
-+++ glibc-2.24/malloc/malloc.c	2016-08-27 04:16:33.210410956 +0000
-@@ -2333,6 +2333,8 @@
+diff -up glibc-2.35/malloc/malloc.c.23~ glibc-2.35/malloc/malloc.c
+--- glibc-2.35/malloc/malloc.c.23~	2022-02-03 11:12:21.887241710 +0100
++++ glibc-2.35/malloc/malloc.c	2022-02-03 11:13:26.221492043 +0100
+@@ -2449,6 +2449,9 @@ sysmalloc_mmap (INTERNAL_SIZE_T nb, size
+     madvise_thp (mm, size);
+ #endif
  
-           if (mm != MAP_FAILED)
-             {
-+              if (size > 8 * 1024 * 1024)
-+	              __madvise (mm, size , MADV_HUGEPAGE);
-               /*
-                  The offset to the start of the mmapped region is stored
-                  in the prev_size field of the chunk. This allows us to adjust
++  if (size > 8 * 1024 * 1024)
++    __madvise (mm, size , MADV_HUGEPAGE);
++
+   /*
+     The offset to the start of the mmapped region is stored in the prev_size
+     field of the chunk.  This allows us to adjust returned start address to
