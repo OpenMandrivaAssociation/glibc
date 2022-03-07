@@ -28,6 +28,8 @@
 
 %define _libdir32 %{_prefix}/lib
 %define _libdirn32 %{_prefix}/lib32
+# Don't make /lib/ld-linux-aarch64.so.1 and friends relative
+%define dont_relink 1
 
 %define ver 2.35
 %define fullver 2.35
