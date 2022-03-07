@@ -1929,6 +1929,11 @@ rm -f %{buildroot}%{_prefix}/lib/libc_malloc_debug.so
 %endif
 rm -f %{buildroot}%{_libdir}/libc_malloc_debug.so
 
+%ifarch %{aarch64}
+# Workaround for debugsource generator not finding any files
+echo '%doc README' >debugsourcefiles.list
+%endif
+
 %if %{with locales}
 %files -n locales
 %{_bindir}/locale_install.sh
