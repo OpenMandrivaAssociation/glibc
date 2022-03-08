@@ -44,6 +44,12 @@
 %define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
+%ifarch %{aarch64}
+# Workaround for debugsource generator
+# not finding anything
+%define _debugsource_packages 0
+%define _enable_debug_packages 0
+%endif
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
@@ -1928,11 +1934,6 @@ export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so l
 rm -f %{buildroot}%{_prefix}/lib/libc_malloc_debug.so
 %endif
 rm -f %{buildroot}%{_libdir}/libc_malloc_debug.so
-
-%ifarch %{aarch64}
-# Workaround for debugsource generator not finding any files
-echo '%doc README' >debugsourcefiles.list
-%endif
 
 %if %{with locales}
 %files -n locales
