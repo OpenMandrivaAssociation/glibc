@@ -9,13 +9,8 @@
 # FIXME determine why gcc segfaults when building any cross libc on armv7hnl
 %global targets armv7hnl-linux
 %else
-%ifarch aarch64
-# (tpg) reduce targets for aarch64 as aarch64 build nodes are low on disk space
-%global targets aarch64-linux
-%else
 # FIXME add riscv32-linux when glibc starts supporting it
 %global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux
-%endif
 %endif
 %endif
 %global long_targets %(
@@ -44,12 +39,6 @@
 %define multilibc libc%{major}
 
 %define _disable_rebuild_configure 1
-%ifarch %{aarch64}
-# Workaround for debugsource generator
-# not finding anything
-%define _debugsource_packages 0
-%define _enable_debug_packages 0
-%endif
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
@@ -1808,7 +1797,7 @@ touch libc.lang
 # (tpg) remove duplicated langs from lang list
 for i in %{long_targets}; do
 	[ "$i" = "%{_target_platform}" ] && continue
-	grep %{_prefix}/${i} libc.lang >cross-${i}.lang
+	grep %{_prefix}/${i} libc.lang >cross-${i}.lang || echo "%optional /no/locales/for/$i" >cross-${i}.lang
 	cat libc.lang cross-${i}.lang |sort |uniq -u >libc.lang.new
 	# We want to own the whole directory, not just libc.mo
 	sed -i -e 's,/libc.mo$,,' cross-${i}.lang
