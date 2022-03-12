@@ -1797,7 +1797,7 @@ touch libc.lang
 # (tpg) remove duplicated langs from lang list
 for i in %{long_targets}; do
 	[ "$i" = "%{_target_platform}" ] && continue
-	grep %{_prefix}/${i} libc.lang >cross-${i}.lang || echo "%optional /no/locales/for/$i" >cross-${i}.lang
+	grep -E "%{_prefix}/${i}($|/)" libc.lang >cross-${i}.lang || echo "%optional /no/locales/for/$i" >cross-${i}.lang
 	cat libc.lang cross-${i}.lang |sort |uniq -u >libc.lang.new
 	# We want to own the whole directory, not just libc.mo
 	sed -i -e 's,/libc.mo$,,' cross-${i}.lang
