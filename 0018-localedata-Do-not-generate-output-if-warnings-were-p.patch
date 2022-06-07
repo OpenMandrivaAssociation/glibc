@@ -1,7 +1,7 @@
 From 732dd3a63d39c7ca77e817b462285c14551c8b49 Mon Sep 17 00:00:00 2001
 From: Carlos O'Donell <carlos@redhat.com>
 Date: Thu, 3 Feb 2022 16:01:52 -0500
-Subject: [PATCH 18/18] localedata: Do not generate output if warnings were
+Subject: [PATCH 018/127] localedata: Do not generate output if warnings were
  present.
 
 With LC_MONETARY parsing fixed we can now generate locales
@@ -66,5 +66,5 @@ index 7fce35f212..8053c816a6 100644
  # For SJIS the charmap is SHIFT_JIS. We just want the locale to have
  # a slightly nicer name instead of using "*.SHIFT_SJIS", but that
 -- 
-2.35.1
+2.36.1
 

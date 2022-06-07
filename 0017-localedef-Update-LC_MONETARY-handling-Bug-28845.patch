@@ -1,7 +1,7 @@
 From 3feecd80013c822a12d4b01c5c25e155dfbc6e2f Mon Sep 17 00:00:00 2001
 From: Carlos O'Donell <carlos@redhat.com>
 Date: Thu, 3 Feb 2022 16:51:59 -0500
-Subject: [PATCH 17/18] localedef: Update LC_MONETARY handling (Bug 28845)
+Subject: [PATCH 017/127] localedef: Update LC_MONETARY handling (Bug 28845)
 
 ISO C17, POSIX Issue 7, and ISO 30112 all allow the char*
 types to be empty strings i.e. "", integer or char values to
@@ -298,5 +298,5 @@ index 3b0412b405..18698bbe94 100644
  
  
 -- 
-2.35.1
+2.36.1
 

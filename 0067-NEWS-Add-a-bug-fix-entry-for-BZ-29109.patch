@@ -1,0 +1,25 @@
+From bbb017a2bb2983de297f3d443c59221fbff92e30 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Fri, 6 May 2022 11:34:18 -0300
+Subject: [PATCH 067/127] NEWS: Add a bug fix entry for BZ #29109
+
+---
+ NEWS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/NEWS b/NEWS
+index 5e75481e4b..6c6dc03c6e 100644
+--- a/NEWS
++++ b/NEWS
+@@ -30,6 +30,8 @@ The following bugs are resolved with this release:
+   [29078] <dlfcn.h> functions unusable during early auditing
+   [29097] time: fchmodat does not handle 64 bit time_t for
+     AT_SYMLINK_NOFOLLOW
++  [29109] libc: posix_spawn() always returns 1 (EPERM) on clone()
++    failure
+ 
+ 
+ Version 2.35
+-- 
+2.36.1
+

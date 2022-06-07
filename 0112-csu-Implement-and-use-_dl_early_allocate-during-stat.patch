@@ -1,0 +1,370 @@
+From 72d9dcfd16468ed143a2800288476835f7a8c2a4 Mon Sep 17 00:00:00 2001
+From: Florian Weimer <fweimer@redhat.com>
+Date: Mon, 16 May 2022 18:41:43 +0200
+Subject: [PATCH 112/127] csu: Implement and use _dl_early_allocate during
+ static startup
+
+This implements mmap fallback for a brk failure during TLS
+allocation.
+
+scripts/tls-elf-edit.py is updated to support the new patching method.
+The script no longer requires that in the input object is of ET_DYN
+type.
+
+Reviewed-by: Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+(cherry picked from commit f787e138aa0bf677bf74fa2a08595c446292f3d7)
+---
+ csu/libc-tls.c                              | 11 ++-
+ elf/Makefile                                | 19 +++++
+ elf/dl-early_allocate.c                     | 30 ++++++++
+ elf/tst-tls-allocation-failure-static.c     | 31 ++++++++
+ scripts/tst-elf-edit.py                     | 34 +++++++--
+ sysdeps/generic/ldsodefs.h                  |  5 ++
+ sysdeps/unix/sysv/linux/dl-early_allocate.c | 82 +++++++++++++++++++++
+ 7 files changed, 202 insertions(+), 10 deletions(-)
+ create mode 100644 elf/dl-early_allocate.c
+ create mode 100644 elf/tst-tls-allocation-failure-static.c
+ create mode 100644 sysdeps/unix/sysv/linux/dl-early_allocate.c
+
+diff --git a/csu/libc-tls.c b/csu/libc-tls.c
+index bef92a7568..0a216c5502 100644
+--- a/csu/libc-tls.c
++++ b/csu/libc-tls.c
+@@ -145,11 +145,16 @@ __libc_setup_tls (void)
+      _dl_allocate_tls_storage (in elf/dl-tls.c) does using __libc_memalign
+      and dl_tls_static_align.  */
+   tcb_offset = roundup (memsz + GLRO(dl_tls_static_surplus), max_align);
+-  tlsblock = __sbrk (tcb_offset + TLS_INIT_TCB_SIZE + max_align);
++  tlsblock = _dl_early_allocate (tcb_offset + TLS_INIT_TCB_SIZE + max_align);
++  if (tlsblock == NULL)
++    _startup_fatal ("Fatal glibc error: Cannot allocate TLS block\n");
+ #elif TLS_DTV_AT_TP
+   tcb_offset = roundup (TLS_INIT_TCB_SIZE, align ?: 1);
+-  tlsblock = __sbrk (tcb_offset + memsz + max_align
+-		     + TLS_PRE_TCB_SIZE + GLRO(dl_tls_static_surplus));
++  tlsblock = _dl_early_allocate (tcb_offset + memsz + max_align
++				 + TLS_PRE_TCB_SIZE
++				 + GLRO(dl_tls_static_surplus));
++  if (tlsblock == NULL)
++    _startup_fatal ("Fatal glibc error: Cannot allocate TLS block\n");
+   tlsblock += TLS_PRE_TCB_SIZE;
+ #else
+   /* In case a model with a different layout for the TCB and DTV
+diff --git a/elf/Makefile b/elf/Makefile
+index e33fd87149..3536b6af5e 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -33,6 +33,7 @@ routines = \
+   $(all-dl-routines) \
+   dl-addr \
+   dl-addr-obj \
++  dl-early_allocate \
+   dl-error \
+   dl-iteratephdr \
+   dl-libc \
+@@ -108,6 +109,7 @@ all-dl-routines = $(dl-routines) $(sysdep-dl-routines)
+ # But they are absent from the shared libc, because that code is in ld.so.
+ elide-routines.os = \
+   $(all-dl-routines) \
++  dl-early_allocate \
+   dl-exception \
+   dl-origin \
+   dl-reloc-static-pie \
+@@ -277,6 +279,7 @@ tests-static-normal := \
+   tst-linkall-static \
+   tst-single_threaded-pthread-static \
+   tst-single_threaded-static \
++  tst-tls-allocation-failure-static \
+   tst-tlsalign-extern-static \
+   tst-tlsalign-static \
+   # tests-static-normal
+@@ -1173,6 +1176,10 @@ $(objpfx)tst-glibcelf.out: tst-glibcelf.py elf.h $(..)/scripts/glibcelf.py \
+           --cc="$(CC) $(patsubst -DMODULE_NAME=%,-DMODULE_NAME=testsuite,$(CPPFLAGS))" \
+ 	  < /dev/null > $@ 2>&1; $(evaluate-test)
+ 
++ifeq ($(run-built-tests),yes)
++tests-special += $(objpfx)tst-tls-allocation-failure-static-patched.out
++endif
++
+ # The test requires shared _and_ PIE because the executable
+ # unit test driver must be able to link with the shared object
+ # that is going to eventually go into an installed DSO.
+@@ -2846,3 +2853,15 @@ $(eval $(call tst-trace-skeleton,4,\
+ 	$(objpfx)libtracemod2:$(objpfx)libtracemod3:$(objpfx)libtracemod4))
+ $(eval $(call tst-trace-skeleton,5,\
+ 	$(objpfx)libtracemod2:$(objpfx)libtracemod3:$(objpfx)libtracemod4:$(objpfx)libtracemod5))
++
++$(objpfx)tst-tls-allocation-failure-static-patched: \
++  $(objpfx)tst-tls-allocation-failure-static $(..)scripts/tst-elf-edit.py
++	cp $< $@
++	$(PYTHON) $(..)scripts/tst-elf-edit.py --maximize-tls-size $@
++
++$(objpfx)tst-tls-allocation-failure-static-patched.out: \
++  $(objpfx)tst-tls-allocation-failure-static-patched
++	$< > $@ 2>&1; echo "status: $$?" >> $@
++	grep -q '^Fatal glibc error: Cannot allocate TLS block$$' $@ \
++	  && grep -q '^status: 127$$' $@; \
++	  $(evaluate-test)
+diff --git a/elf/dl-early_allocate.c b/elf/dl-early_allocate.c
+new file mode 100644
+index 0000000000..61677aaa03
+--- /dev/null
++++ b/elf/dl-early_allocate.c
+@@ -0,0 +1,30 @@
++/* Early memory allocation for the dynamic loader.  Generic version.
++   Copyright (C) 2022 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <ldsodefs.h>
++#include <stddef.h>
++#include <unistd.h>
++
++void *
++_dl_early_allocate (size_t size)
++{
++  void *result = __sbrk (size);
++  if (result == (void *) -1)
++    result = NULL;
++  return result;
++}
+diff --git a/elf/tst-tls-allocation-failure-static.c b/elf/tst-tls-allocation-failure-static.c
+new file mode 100644
+index 0000000000..8de831b246
+--- /dev/null
++++ b/elf/tst-tls-allocation-failure-static.c
+@@ -0,0 +1,31 @@
++/* Base for test program with impossiblyh large PT_TLS segment.
++   Copyright (C) 2022 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++/* The test actual binary is patched using scripts/tst-elf-edit.py
++   --maximize-tls-size, and this introduces the expected test
++   allocation failure due to an excessive PT_LS p_memsz value.
++
++   Patching the binary is required because on some 64-bit targets, TLS
++   relocations can only cover a 32-bit range, and glibc-internal TLS
++   variables such as errno end up outside that range.  */
++
++int
++main (void)
++{
++  return 0;
++}
+diff --git a/scripts/tst-elf-edit.py b/scripts/tst-elf-edit.py
+index a514179bbf..0e19ce1e73 100644
+--- a/scripts/tst-elf-edit.py
++++ b/scripts/tst-elf-edit.py
+@@ -43,9 +43,11 @@ EI_DATA=5
+ ELFDATA2LSB=b'\x01'
+ ELFDATA2MSB=b'\x02'
+ 
++ET_EXEC=2
+ ET_DYN=3
+ 
+ PT_LOAD=1
++PT_TLS=7
+ 
+ def elf_types_fmts(e_ident):
+     endian = '<' if e_ident[EI_DATA] == ELFDATA2LSB else '>'
+@@ -146,8 +148,15 @@ def elf_edit_align(phdr, align):
+     else:
+         phdr.p_align = int(align)
+ 
++def elf_edit_maximize_tls_size(phdr, elfclass):
++    if elfclass == ELFCLASS32:
++        # It is possible that the kernel can allocate half of the
++        # address space, so use something larger.
++        phdr.p_memsz = 0xfff00000
++    else:
++        phdr.p_memsz = 1 << 63
+ 
+-def elf_edit(f, align):
++def elf_edit(f, opts):
+     ei_nident_fmt = 'c' * EI_NIDENT
+     ei_nident_len = struct.calcsize(ei_nident_fmt)
+ 
+@@ -172,24 +181,35 @@ def elf_edit(f, align):
+ 
+     ehdr = Elf_Ehdr(e_ident)
+     ehdr.read(f)
+-    if ehdr.e_type != ET_DYN:
+-       error('{}: not a shared library'.format(f.name))
++    if ehdr.e_type not in (ET_EXEC, ET_DYN):
++       error('{}: not an executable or shared library'.format(f.name))
+ 
+     phdr = Elf_Phdr(e_ident)
++    maximize_tls_size_done = False
+     for i in range(0, ehdr.e_phnum):
+         f.seek(ehdr.e_phoff + i * phdr.len)
+         phdr.read(f)
+-        if phdr.p_type == PT_LOAD:
+-            elf_edit_align(phdr, align)
++        if phdr.p_type == PT_LOAD and opts.align is not None:
++            elf_edit_align(phdr, opts.align)
++            f.seek(ehdr.e_phoff + i * phdr.len)
++            phdr.write(f)
++            break
++        if phdr.p_type == PT_TLS and opts.maximize_tls_size:
++            elf_edit_maximize_tls_size(phdr, e_ident[EI_CLASS])
+             f.seek(ehdr.e_phoff + i * phdr.len)
+             phdr.write(f)
++            maximize_tls_size_done = True
+             break
+ 
++    if opts.maximize_tls_size and not maximize_tls_size_done:
++        error('{}: TLS maximum size was not updated'.format(f.name))
+ 
+ def get_parser():
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('-a', dest='align', required=True,
++    parser.add_argument('-a', dest='align',
+                         help='How to set the LOAD alignment')
++    parser.add_argument('--maximize-tls-size', action='store_true',
++                        help='Set maximum PT_TLS size')
+     parser.add_argument('output',
+                         help='ELF file to edit')
+     return parser
+@@ -199,7 +219,7 @@ def main(argv):
+     parser = get_parser()
+     opts = parser.parse_args(argv)
+     with open(opts.output, 'r+b') as fout:
+-       elf_edit(fout, opts.align)
++       elf_edit(fout, opts)
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/sysdeps/generic/ldsodefs.h b/sysdeps/generic/ldsodefs.h
+index 2ebe7901c0..64d7e52a39 100644
+--- a/sysdeps/generic/ldsodefs.h
++++ b/sysdeps/generic/ldsodefs.h
+@@ -1254,6 +1254,11 @@ extern struct link_map * _dl_get_dl_main_map (void)
+ # endif
+ #endif
+ 
++/* Perform early memory allocation, avoding a TCB dependency.
++   Terminate the process if allocation fails.  May attempt to use
++   brk.  */
++void *_dl_early_allocate (size_t size) attribute_hidden;
++
+ /* Initialize the DSO sort algorithm to use.  */
+ #if !HAVE_TUNABLES
+ static inline void
+diff --git a/sysdeps/unix/sysv/linux/dl-early_allocate.c b/sysdeps/unix/sysv/linux/dl-early_allocate.c
+new file mode 100644
+index 0000000000..52c538e85a
+--- /dev/null
++++ b/sysdeps/unix/sysv/linux/dl-early_allocate.c
+@@ -0,0 +1,82 @@
++/* Early memory allocation for the dynamic loader.  Generic version.
++   Copyright (C) 2022 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++/* Mark symbols hidden in static PIE for early self relocation to work.  */
++#if BUILD_PIE_DEFAULT
++# pragma GCC visibility push(hidden)
++#endif
++#include <startup.h>
++
++#include <ldsodefs.h>
++#include <stddef.h>
++#include <string.h>
++#include <sysdep.h>
++#include <unistd.h>
++
++#include <brk_call.h>
++#include <mmap_call.h>
++
++/* Defined in brk.c.  */
++extern void *__curbrk;
++
++void *
++_dl_early_allocate (size_t size)
++{
++  void *result;
++
++  if (__curbrk != NULL)
++    /* If the break has been initialized, brk must have run before,
++       so just call it once more.  */
++    {
++      result = __sbrk (size);
++      if (result == (void *) -1)
++        result = NULL;
++    }
++  else
++    {
++      /* If brk has not been invoked, there is no need to update
++         __curbrk.  The first call to brk will take care of that.  */
++      void *previous = __brk_call (0);
++      result = __brk_call (previous + size);
++      if (result == previous)
++        result = NULL;
++      else
++        result = previous;
++    }
++
++  /* If brk fails, fall back to mmap.  This can happen due to
++     unfortunate ASLR layout decisions and kernel bugs, particularly
++     for static PIE.  */
++  if (result == NULL)
++    {
++      long int ret;
++      int prot = PROT_READ | PROT_WRITE;
++      int flags = MAP_PRIVATE | MAP_ANONYMOUS;
++#ifdef __NR_mmap2
++      ret = MMAP_CALL_INTERNAL (mmap2, 0, size, prot, flags, -1, 0);
++#else
++      ret = MMAP_CALL_INTERNAL (mmap, 0, size, prot, flags, -1, 0);
++#endif
++      if (INTERNAL_SYSCALL_ERROR_P (ret))
++        result = NULL;
++      else
++        result = (void *) ret;
++    }
++
++  return result;
++}
+-- 
+2.36.1
+

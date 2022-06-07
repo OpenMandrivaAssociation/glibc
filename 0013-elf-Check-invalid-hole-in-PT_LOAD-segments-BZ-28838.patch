@@ -1,7 +1,8 @@
 From 1dd783fafdbc30bd82e078ccab42b9539d3274a5 Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
 Date: Tue, 15 Feb 2022 06:57:11 -0800
-Subject: [PATCH 13/18] elf: Check invalid hole in PT_LOAD segments [BZ #28838]
+Subject: [PATCH 013/127] elf: Check invalid hole in PT_LOAD segments [BZ
+ #28838]
 
 Changes in v2:
 
@@ -46,5 +47,5 @@ index 172692b120..fd24cf5d01 100644
                (__mprotect ((caddr_t) (l->l_addr + c->mapend),
                             loadcmds[nloadcmds - 1].mapstart - c->mapend,
 -- 
-2.35.1
+2.36.1
 

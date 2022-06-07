@@ -1,7 +1,8 @@
 From e247a3b1188f6c4b623bbfbe19bb415153c66637 Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
 Date: Sun, 6 Feb 2022 11:12:24 -0800
-Subject: [PATCH 14/18] elf: Replace tst-audit24bmod2.so with tst-audit24bmod2
+Subject: [PATCH 014/127] elf: Replace tst-audit24bmod2.so with
+ tst-audit24bmod2
 
 Replace tst-audit24bmod2.so with tst-audit24bmod2 to silence:
 
@@ -28,5 +29,5 @@ index 5bdf0a383d..ac37159b89 100644
  tests += $(tests-static)
  
 -- 
-2.35.1
+2.36.1
 

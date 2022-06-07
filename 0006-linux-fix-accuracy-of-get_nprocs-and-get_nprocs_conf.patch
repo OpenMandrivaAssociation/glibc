@@ -1,7 +1,7 @@
 From 491f2ef1f0ff849490f374917957018d07ee0586 Mon Sep 17 00:00:00 2001
 From: "Dmitry V. Levin" <ldv@altlinux.org>
 Date: Sat, 5 Feb 2022 08:00:00 +0000
-Subject: [PATCH 06/18] linux: fix accuracy of get_nprocs and get_nprocs_conf
+Subject: [PATCH 006/127] linux: fix accuracy of get_nprocs and get_nprocs_conf
  [BZ #28865]
 
 get_nprocs() and get_nprocs_conf() use various methods to obtain an
@@ -208,5 +208,5 @@ index c98c8ce3d4..d1ea074f0d 100644
  libc_hidden_def (__get_nprocs_conf)
  weak_alias (__get_nprocs_conf, get_nprocs_conf)
 -- 
-2.35.1
+2.36.1
 

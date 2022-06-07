@@ -1,7 +1,7 @@
 From a787325e8316830f8d9a118aac5afee3c0e75617 Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
 Date: Thu, 24 Feb 2022 07:58:36 -0800
-Subject: [PATCH 16/18] NEWS: Add a bug fix entry for BZ #28688
+Subject: [PATCH 016/127] NEWS: Add a bug fix entry for BZ #28688
 
 ---
  NEWS | 1 +
@@ -20,5 +20,5 @@ index 008941555d..094a979afb 100644
    [28853] libc: tst-spawn6 changes current foreground process group
      (breaks test isolation)
 -- 
-2.35.1
+2.36.1
 

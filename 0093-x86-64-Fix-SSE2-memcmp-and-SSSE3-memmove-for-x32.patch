@@ -1,0 +1,41 @@
+From bc35e22be4ca69f3e2c2e1403ac30d028e092a38 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Fri, 22 Apr 2022 10:53:13 -0700
+Subject: [PATCH 093/127] x86-64: Fix SSE2 memcmp and SSSE3 memmove for x32
+
+Clear the upper 32 bits in RDX (memory size) for x32 to fix
+
+FAIL: string/tst-size_t-memcmp
+FAIL: string/tst-size_t-memcmp-2
+FAIL: string/tst-size_t-memcpy
+FAIL: wcsmbs/tst-size_t-wmemcmp
+
+on x32 introduced by
+
+8804157ad9 x86: Optimize memcmp SSE2 in memcmp.S
+26b2478322 x86: Reduce code size of mem{move|pcpy|cpy}-ssse3
+
+Reviewed-by: Noah Goldstein <goldstein.w.n@gmail.com>
+(cherry picked from commit 8ea20ee5f6145de4bff9481d3e09ac36ba9df8f3)
+---
+ sysdeps/x86_64/memcmp.S | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/sysdeps/x86_64/memcmp.S b/sysdeps/x86_64/memcmp.S
+index b153694048..5718a7da86 100644
+--- a/sysdeps/x86_64/memcmp.S
++++ b/sysdeps/x86_64/memcmp.S
+@@ -46,6 +46,10 @@
+ 
+ 	.text
+ ENTRY(MEMCMP)
++# ifdef __ILP32__
++	/* Clear the upper 32 bits.  */
++	movl	%edx, %edx
++# endif
+ #ifdef USE_AS_WMEMCMP
+ 	/* Use 0xffff to test for mismatches on pmovmskb bitmask. Store
+ 	   in ecx for code size. This is preferable to using `incw` as
+-- 
+2.36.1
+

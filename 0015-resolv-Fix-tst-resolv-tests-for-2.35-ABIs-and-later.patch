@@ -1,7 +1,7 @@
 From 264ad5d7d66c0f18587860d62498b8f2a9001400 Mon Sep 17 00:00:00 2001
 From: Stafford Horne <shorne@gmail.com>
 Date: Sat, 12 Feb 2022 08:17:55 +0900
-Subject: [PATCH 15/18] resolv: Fix tst-resolv tests for 2.35 ABIs and later
+Subject: [PATCH 015/127] resolv: Fix tst-resolv tests for 2.35 ABIs and later
 
 The commit 737e873b30 ("resolv: Do not build libanl.so for ABIs starting
 at 2.35") disabled building libanl for ports supporting only 2.35 and
@@ -80,5 +80,5 @@ index c465479e8b..438672786f 100644
  # is not installed.
  install-lib-ldscripts = libanl.so
 -- 
-2.35.1
+2.36.1
 

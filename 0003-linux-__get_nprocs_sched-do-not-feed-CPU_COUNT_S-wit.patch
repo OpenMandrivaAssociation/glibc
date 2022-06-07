@@ -1,8 +1,8 @@
 From a2f1675634b3513c09c38e55e6766e8c05768b1f Mon Sep 17 00:00:00 2001
 From: Gleb Fotengauer-Malinovskiy <glebfm@altlinux.org>
 Date: Tue, 1 Feb 2022 22:39:02 +0000
-Subject: [PATCH 03/18] linux: __get_nprocs_sched: do not feed CPU_COUNT_S with
- garbage [BZ #28850]
+Subject: [PATCH 003/127] linux: __get_nprocs_sched: do not feed CPU_COUNT_S
+ with garbage [BZ #28850]
 
 Pass the actual number of bytes returned by the kernel.
 
@@ -41,5 +41,5 @@ index 4798cc337e..c98c8ce3d4 100644
      /* The input buffer is still not enough to store the number of cpus.  This
         is an arbitrary values assuming such systems should be rare and there
 -- 
-2.35.1
+2.36.1
 

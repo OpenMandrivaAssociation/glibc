@@ -1,7 +1,7 @@
 From d001088e221ab3f89d78ce3e914e97206a27c94b Mon Sep 17 00:00:00 2001
 From: Noah Goldstein <goldstein.w.n@gmail.com>
 Date: Fri, 18 Feb 2022 14:19:15 -0600
-Subject: [PATCH 10/18] x86: Test wcscmp RTM in the wcsncmp overflow case [BZ
+Subject: [PATCH 010/127] x86: Test wcscmp RTM in the wcsncmp overflow case [BZ
  #28896]
 
 In the overflow fallback strncmp-avx2-rtm and wcsncmp-avx2-rtm would
@@ -144,5 +144,5 @@ index 0000000000..bad3b86378
 +#include <wchar.h>
 +#include "tst-strncmp-rtm.c"
 -- 
-2.35.1
+2.36.1
 

@@ -1,7 +1,7 @@
 From 9e8281add35dde70478464389fab6f0f7e75b880 Mon Sep 17 00:00:00 2001
 From: Andreas Schwab <schwab@linux-m68k.org>
 Date: Thu, 3 Feb 2022 09:37:42 +0100
-Subject: [PATCH 01/18] Regenerate configure
+Subject: [PATCH 001/127] Regenerate configure
 
 ---
  configure | 14 +-------------
@@ -61,5 +61,5 @@ index 00dc638388..8e5bee775a 100755
    --includedir=DIR        C header files [PREFIX/include]
    --oldincludedir=DIR     C header files for non-gcc [/usr/include]
 -- 
-2.35.1
+2.36.1
 
