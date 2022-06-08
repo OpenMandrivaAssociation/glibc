@@ -1903,7 +1903,7 @@ install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 echo '/* GNU ld script */' >%{buildroot}%{_libdir}/libdl.so
 echo '/* GNU ld script */' >%{buildroot}%{_libdir}/libpthread.so
 %if "%{_lib}" != "lib"
-if [ -d %{buildroot}%{_prefix}/lib ]; then
+if [ -e %{buildroot}%{_prefix}/lib/libc.so ]; then
 	echo '/* GNU ld script */' >%{buildroot}%{_prefix}/lib/libdl.so
 	echo '/* GNU ld script */' >%{buildroot}%{_prefix}/lib/libpthread.so
 fi
