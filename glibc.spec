@@ -165,7 +165,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1624,6 +1624,7 @@ for i in %{targets}; do
 
 	# Make legacy build systems that hardcode -ldl and/or -lpthread happy
 	echo '/* GNU ld script */' >${DD}%{_prefix}/${TRIPLET}/lib/libdl.so
+	echo '/* GNU ld script */' >${DD}%{_prefix}/${TRIPLET}/lib/librt.so
 	echo '/* GNU ld script */' >${DD}%{_prefix}/${TRIPLET}/lib/libpthread.so
 
 	# Get rid of object files to be a little friendlier to tmpfs buildroots
@@ -1901,10 +1902,12 @@ install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 # Make legacy Makefiles/build scripts that hardcode
 # -ldl and/or -lpthread happy
 echo '/* GNU ld script */' >%{buildroot}%{_libdir}/libdl.so
+echo '/* GNU ld script */' >%{buildroot}%{_libdir}/librt.so
 echo '/* GNU ld script */' >%{buildroot}%{_libdir}/libpthread.so
 %if "%{_lib}" != "lib"
 if [ -e %{buildroot}%{_prefix}/lib/libc.so ]; then
 	echo '/* GNU ld script */' >%{buildroot}%{_prefix}/lib/libdl.so
+	echo '/* GNU ld script */' >%{buildroot}%{_prefix}/lib/librt.so
 	echo '/* GNU ld script */' >%{buildroot}%{_prefix}/lib/libpthread.so
 fi
 %endif
