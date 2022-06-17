@@ -455,10 +455,6 @@ Provides:	ld.so.1
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
 
-%if %{build_biarch}
-Requires:	%{multilibc} = %{EVRD}
-%endif
-
 %if ! %{with locales}
 # Fake it to keep build roots working with temporary
 # non-locale glibcs during upgrades
