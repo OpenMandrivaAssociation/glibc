@@ -4,28 +4,6 @@
 # it gets the locale name(s) as parameter, and does the needed steps
 # so that the new locale can be used by the system
 
-# check if installing main locales package (just encodings)
-if [ "$1" = 'ENCODINGS' ]; then
-	# update encoding files used by locales
-	ENCODINGS="CP1251 ISO-8859-1 ISO-8859-13 ISO-8859-14 ISO-8859-15 \
-		ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 ISO-8859-7 \
-		ISO-8859-9 KOI8-R KOI8-U UTF-8"
-	for enc in $ENCODINGS; do
-		if [ -r "/usr/share/locale/$enc/LC_CTYPE" ]; then
-			mkdir -p "/etc/locale/$enc/LC_MESSAGES"
-			for i in LC_ADDRESS LC_COLLATE LC_CTYPE \
-			         LC_IDENTIFICATION LC_MEASUREMENT LC_MONETARY \
-			         LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE \
-			         LC_TIME LC_MESSAGES/SYS_LC_MESSAGES
-			do
-				cp -fp "/usr/share/locale/$enc/$i" \
-				       "/etc/locale/$enc/$i"
-			done
-		fi
-	done
-	exit 0
-fi
-
 # the list of languages that rpm installs their translations
 if [ -r /etc/rpm/macros ]; then
 	RPM_INSTALL_LANG="$(grep '^%_install_langs' /etc/rpm/macros | cut -d' ' -f2-)"
@@ -55,19 +33,7 @@ for i in "$@"; do
 		langs="$langs $lng"
 	done
 	for k in $langs; do
-		# copy the LC_* of the all system locales to /etc/locale, so
-		# everything is ok on boot time, even if /usr is not mounted
 		if [ -r "/usr/share/locale/$k/LC_CTYPE" ]; then
-			mkdir -p "/etc/locale/$k/LC_MESSAGES"
-			for j in LC_ADDRESS LC_IDENTIFICATION LC_MONETARY \
-			         LC_PAPER LC_COLLATE LC_MEASUREMENT LC_NAME \
-			         LC_TELEPHONE LC_CTYPE LC_NUMERIC LC_TIME \
-			         LC_MESSAGES/SYS_LC_MESSAGES
-			do
-				cp -fpP "/usr/share/locale/$k/$j" \
-				        "/etc/locale/$k/$j"
-			done
-
 			# maintain updated locale-archive file
 			[ "$update_locarchive" -eq 0 ] || \
 				localedef \

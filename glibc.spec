@@ -2065,10 +2065,4 @@ rm -f %{buildroot}%{_libdir}/libc_malloc_debug.so
 %{_datadir}/locale/CP*
 %{_datadir}/locale/UTF*
 %{_datadir}/locale/KOI*
-
-%post -n locales
-%{_bindir}/locale_install.sh "ENCODINGS"
-
-%preun -n locales
-%{_bindir}/locale_uninstall.sh "ENCODINGS"
 %endif
