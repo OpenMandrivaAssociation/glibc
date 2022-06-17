@@ -26,12 +26,9 @@
 # Don't make /lib/ld-linux-aarch64.so.1 and friends relative
 %define dont_relink 1
 
-%define ver 2.35
-%define fullver 2.35
-
 %define oname glibc
 %define major 6
-%define source_dir %{oname}-%{ver}
+%define source_dir %{oname}-%{version}
 %define checklist %{_builddir}/%{source_dir}/Check.list
 %define libc %mklibname c %{major}
 %define devname %mklibname -d c
@@ -160,12 +157,12 @@ end \
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	%{ver}
-Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz
+Version:	2.35
+Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
-#Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{ver}.tar.xz.sig
+#Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -914,7 +911,10 @@ LANG variable to their preferred language in their
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
-%{_libdir}/gconv/*.so
+%{_libdir}/gconv/UNICODE.so
+%{_libdir}/gconv/UTF-7.so
+%{_libdir}/gconv/UTF-16.so
+%{_libdir}/gconv/UTF-32.so
 %{_libdir}/gconv/gconv-modules
 %ghost %{_libdir}/gconv/gconv-modules.cache
 %{_bindir}/gencat
@@ -952,6 +952,24 @@ LANG variable to their preferred language in their
 %endif
 %endif
 
+%transfiletriggerin -p <lua> -- %{_libdir}/gconv
+os.execute("/usr/sbin/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv")
+
+%package -n locales-extra-charsets
+Summary:	Character set definitions for non-Unicode locales
+Group:		System/Libraries
+Requires:	%{name} = %{EVRD}
+
+%description -n locales-extra-charsets
+Character set definitions for non-Unicode locales
+
+Pretty much everything has moved on to Unicode
+(primarily UTF-8 and UTF-16) - but text files in older encodings
+likely still exist. These modules help working with/converting
+those files.
+
+%files -n locales-extra-charsets -f extra-charsets.list
+
 ########################################################################
 %if %{build_biarch}
 #-----------------------------------------------------------------------
@@ -961,8 +979,8 @@ Group:		System/Libraries
 Conflicts:	glibc < 2.14.90-13
 Requires:	%{name} = %{EVRD}
 
-%transfiletriggerin -p <lua> -- %{_libdir}/gconv
-os.execute("/usr/sbin/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv")
+%transfiletriggerin -p <lua> -- %{_prefix}/lib/gconv
+os.execute("/usr/sbin/iconvconfig -o %{_prefix}/lib/gconv/gconv-modules.cache --nostdlib %{_prefix}/lib/gconv")
 
 %description -n %{multilibc}
 The glibc package contains standard libraries which are used by
@@ -980,7 +998,10 @@ Linux system will not function.
 %dir %{_libdir32}/audit
 %{_libdir32}/audit/sotruss-lib.so
 %dir %{_libdir32}/gconv
-%{_libdir32}/gconv/*.so
+%{_libdir32}/gconv/UNICODE.so
+%{_libdir32}/gconv/UTF-7.so
+%{_libdir32}/gconv/UTF-16.so
+%{_libdir32}/gconv/UTF-32.so
 %{_libdir32}/gconv/gconv-modules
 %ghost %{_libdir32}/gconv/gconv-modules.cache
 %endif
@@ -991,6 +1012,22 @@ Linux system will not function.
 %{_prefix}/libexec/getconf/POSIX_V7_ILP32_OFFBIG
 %{_prefix}/libexec/getconf/XBS5_ILP32_OFF32
 %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
+
+%package -n locales-extra-charsets32
+Summary:	Character set definitions for non-Unicode locales (32-bit)
+Group:		System/Libraries
+Requires:	%{name} = %{EVRD}
+
+%description -n locales-extra-charsets32
+Character set definitions for non-Unicode locales (32-bit)
+
+Pretty much everything has moved on to Unicode
+(primarily UTF-8 and UTF-16) - but text files in older encodings
+likely still exist. These modules help working with/converting
+those files.
+
+%files -n locales-extra-charsets32 -f extra-charsets32.list
+
 #-----------------------------------------------------------------------
 # build_biarch
 %endif
@@ -1001,10 +1038,6 @@ Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Requires:	%{name} = %{EVRD}
 Requires:	pkgconfig(libxcrypt)
-%if %{build_biarch}
-Requires:	%{multilibc} = %{EVRD}
-%endif
-Autoreq:	true
 Requires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
@@ -1837,6 +1870,19 @@ echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
 chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
 mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
 
+# gconv modules
+for i in %{buildroot}%{_libdir}/gconv/*.so; do
+	B=$(basename $i)
+	echo $B |grep -qE '^(UNICODE|UTF)' || echo "%{_libdir}/gconv/$B" >>extra-charsets.list
+done
+
+%if %{build_biarch}
+for i in %{buildroot}%{_prefix}/lib/gconv/*.so; do
+	B=$(basename $i)
+	echo $B |grep -qE '^(UNICODE|UTF)' || echo "%{_prefix}/lib/gconv/$B" >>extra-charsets32.list
+done
+%endif
+
 # gconv-modules.cache
 truncate -s 0 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
 chmod 644 %{buildroot}%{_libdir}/gconv/gconv-modules.cache
@@ -2041,7 +2087,7 @@ ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-
 # This will make the '-g' argument to be passed to eu-strip for these libraries, so that
 # some info is kept that's required to make valgrind work without depending on glibc-debug
 # package to be installed.
-export EXCLUDE_FROM_FULL_STRIP="ld-%{fullver}.so libpthread libc-%{fullver}.so libm-%{fullver}.so"
+export EXCLUDE_FROM_FULL_STRIP="ld-%{version}.so libpthread libc-%{version}.so libm-%{version}.so"
 
 # Disallow linking against libc_malloc_debug.
 %if %{build_biarch}
