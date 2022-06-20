@@ -56,8 +56,6 @@
 %global target_arch %{_arch}
 %define cross_prefix %{nil}
 %define cross_program_prefix %{nil}
-%define _slibdir /%{_lib}
-%define _slibdir32 /lib
 
 # Define target (base) architecture
 %define arch %(echo %{target_cpu}|sed -e "s/\\(i.86\\|athlon\\)/i386/" -e "s/amd64/x86_64/")
@@ -142,7 +140,7 @@ function update_gconv_modules_cache () \
   local iconv_modules = iconv_dir .. "/gconv-modules" \
   if (posix.utime (iconv_modules) == 0) then \
     if (posix.utime (iconv_cache) == 0) then \
-      post_exec ("%{_prefix}/sbin/iconvconfig", \
+      post_exec ("%{_sbindir}/iconvconfig", \
 	 "-o", iconv_cache, \
 	 "--nostdlib", \
 	 iconv_dir) \
@@ -162,7 +160,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -449,6 +447,8 @@ Provides:	ld.so.1
 %rename		ldconfig
 %define		libnssfiles %mklibname nss_files 2
 %rename		%{libnssfiles}
+Provides:	%{_bindir}/ldconfig
+# FIXME remove at some point
 Provides:	/sbin/ldconfig
 Obsoletes:	nss_db
 
@@ -594,12 +594,39 @@ if posix.access (ldsoconf) then
   end
 end
 
+-- Place compat symlink if the system is still split-usr
+local st=posix.stat("/%{_lib}")
+if st.type ~= "link" then
+%ifarch %{ix86}
+  posix.symlink("%{_libdir}/ld-linux.so.2", "/lib/ld-linux.so.2")
+%endif
+%ifarch %{x86_64}
+  posix.symlink("%{_libdir}/ld-linux-x86-64.so.2", "/%{_lib}/ld-linux-x86-64.so.2")
+%endif
+%ifarch armv7l armv8l
+  posix.symlink("%{_libdir}/ld-linux.so.3", "/lib/ld-linux.so.3")
+%endif
+%ifarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
+  posix.symlink("%{_libdir}/ld-linux-armhf.so.3", "/lib/ld-linux-armhf.so.3")
+%endif
+%ifarch aarch64
+  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
+%endif
+%ifarch %{mips}
+  posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
+%endif
+%ifarch riscv64
+  posix.symlink("%{_libdir}/ld-linux-riscv64-lp64d.so.1", "/%{_lib}/ld-linux-riscv64-lp64d.so.1")
+%endif
+  posix.symlink("%{_bindir}/ldconfig", "/sbin/ldconfig")
+end
+
 -- (3) Rebuild ld.so.cache early.
 -- If the format of the cache changes then we need to rebuild
 -- the cache early to avoid any problems running binaries with
 -- the new glibc.
 -- Note: We use _prefix because Fedora's UsrMove says so.
-post_exec ("/sbin/ldconfig")
+post_exec ("%{_bindir}/ldconfig")
 
 -- (4) Update gconv modules cache.
 -- If the /usr/lib/gconv/gconv-modules.cache exists, then update it
@@ -625,11 +652,41 @@ then
 end
 
 %transfiletriggerin -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
-os.execute("/sbin/ldconfig -X")
+os.execute("%{_bindir}/ldconfig -X")
 
 %transfiletriggerpostun -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
-os.execute("/sbin/ldconfig -X")
+os.execute("%{_bindir}/ldconfig -X")
 %endif
+
+%posttrans -p <lua>
+-- Need to repeat it here, deinstallation of an older version
+-- wiped out the files that used to be in the older versions
+-- Place compat symlink if the system is still split-usr
+st=posix.stat("/%{_lib}")
+if st.type ~= "link" then
+%ifarch %{ix86}
+  posix.symlink("%{_libdir}/ld-linux.so.2", "/lib/ld-linux.so.2")
+%endif
+%ifarch %{x86_64}
+  posix.symlink("%{_libdir}/ld-linux-x86-64.so.2", "/%{_lib}/ld-linux-x86-64.so.2")
+%endif
+%ifarch armv7l armv8l
+  posix.symlink("%{_libdir}/ld-linux.so.3", "/lib/ld-linux.so.3")
+%endif
+%ifarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
+  posix.symlink("%{_libdir}/ld-linux-armhf.so.3", "/lib/ld-linux-armhf.so.3")
+%endif
+%ifarch aarch64
+  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
+%endif
+%ifarch %{mips}
+  posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
+%endif
+%ifarch riscv64
+  posix.symlink("%{_libdir}/ld-linux-riscv64-lp64d.so.1", "/%{_lib}/ld-linux-riscv64-lp64d.so.1")
+%endif
+  posix.symlink("%{_bindir}/ldconfig", "/sbin/ldconfig")
+end
 
 %if %{with locales}
 %package -n locales
@@ -855,6 +912,7 @@ LANG variable to their preferred language in their
 %config %{_sysconfdir}/nsswitch.conf
 %verify(not md5 size mtime) %config(noreplace) %{_sysconfdir}/ld.so.conf
 %dir %{_sysconfdir}/ld.so.conf.d
+%{_sysconfdir}/ld.so.conf.d/legacy.conf
 %config(noreplace) %{_sysconfdir}/rpc
 %doc %dir %{_docdir}/glibc
 %doc %{_docdir}/glibc/gai.conf
@@ -871,7 +929,7 @@ LANG variable to their preferred language in their
 %endif
 %endif
 %{_localedir}/locale.alias
-/sbin/sln
+%{_bindir}/sln
 %{_prefix}/libexec/getconf
 %endif
 %if %isarch %{x86_64}
@@ -883,31 +941,29 @@ LANG variable to their preferred language in their
 %exclude %{_prefix}/libexec/getconf/XBS5_ILP32_OFFBIG
 %endif
 %if %isarch %{ix86}
-%{_slibdir}/ld-linux.so.2
+%{_libdir}/ld-linux.so.2
 %endif
 %if %isarch %{x86_64}
-%{_slibdir}/ld-linux-x86-64.so.2
+%{_libdir}/ld-linux-x86-64.so.2
 %endif
 %if %isarch armv7l armv8l
-%{_slibdir}/ld-linux.so.3
+%{_libdir}/ld-linux.so.3
 %endif
 %if %isarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
-%{_slibdir}/ld-linux-armhf.so.3
+%{_libdir}/ld-linux-armhf.so.3
 %endif
 %if %isarch aarch64
-%{_slibdir}/ld-linux-aarch64.so.1
-/lib/ld-linux-aarch64.so.1
+%{_libdir}/ld-linux-aarch64.so.1
 %endif
 %if %isarch %{mips}
-%{_slibdir}/ld.so.1
+%{_libdir}/ld.so.1
 %endif
 %if %isarch riscv64
-%{_slibdir}/ld-linux-riscv64-lp64d.so.1
-/lib/ld-linux-riscv64-lp64d.so.1
-%{_slibdir}/lp64d
+/%{_lib}/ld-linux-riscv64-lp64d.so.1
+%{_libdir}/lp64d
 %{_libdir}/lp64d
 %endif
-%{_slibdir}/lib*.so.[0-9]*
+%{_libdir}/lib*.so.[0-9]*
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
@@ -935,7 +991,7 @@ LANG variable to their preferred language in their
 %{_bindir}/tzselect
 %{_bindir}/zdump
 %{_sbindir}/iconvconfig
-/sbin/ldconfig
+%{_bindir}/ldconfig
 %ghost %{_sysconfdir}/ld.so.cache
 %dir %{_var}/cache/ldconfig
 %ghost %{_var}/cache/ldconfig/aux-cache
@@ -943,17 +999,17 @@ LANG variable to their preferred language in their
 %else
 %if %isarch mips mipsel
 %if %{build_biarch}
-%{_slibdir32}/ld.so.1
-%{_slibdir32}/lib*.so.[0-9]*
-%dir %{_slibdirn32}
-%{_slibdirn32}/ld.so.1
-%{_slibdirn32}/lib*.so.[0-9]*
+%{_libdir32}/ld.so.1
+%{_libdir32}/lib*.so.[0-9]*
+%dir %{_libdirn32}
+%{_libdirn32}/ld.so.1
+%{_libdirn32}/lib*.so.[0-9]*
 %endif
 %endif
 %endif
 
 %transfiletriggerin -p <lua> -- %{_libdir}/gconv
-os.execute("/usr/sbin/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv")
+os.execute("%{_sbindir}/iconvconfig -o %{_libdir}/gconv/gconv-modules.cache --nostdlib %{_libdir}/gconv")
 
 %package -n locales-extra-charsets
 Summary:	Character set definitions for non-Unicode locales
@@ -980,7 +1036,7 @@ Conflicts:	glibc < 2.14.90-13
 Requires:	%{name} = %{EVRD}
 
 %transfiletriggerin -p <lua> -- %{_prefix}/lib/gconv
-os.execute("/usr/sbin/iconvconfig -o %{_prefix}/lib/gconv/gconv-modules.cache --nostdlib %{_prefix}/lib/gconv")
+os.execute("%{_sbindir}/iconvconfig -o %{_prefix}/lib/gconv/gconv-modules.cache --nostdlib %{_prefix}/lib/gconv")
 
 %description -n %{multilibc}
 The glibc package contains standard libraries which are used by
@@ -992,8 +1048,8 @@ library and the standard math library. Without these two libraries, a
 Linux system will not function.
 
 %files -n %{multilibc}
-%{_slibdir32}/ld-linux*.so.2
-%{_slibdir32}/lib*.so.[0-9]*
+%{_libdir32}/ld-linux*.so.2
+%{_libdir32}/lib*.so.[0-9]*
 %if "%{name}" == "glibc"
 %dir %{_libdir32}/audit
 %{_libdir32}/audit/sotruss-lib.so
@@ -1072,8 +1128,8 @@ The glibc-docs package contains docs for %{name}.
 %{_includedir}/*
 %{_libdir}/*.o
 %{_libdir}/*.so
-%exclude %{_slibdir}/ld*-[.0-9]*.so
-%exclude %{_slibdir}/lib*-[.0-9]*.so
+%exclude %{_libdir}/ld*-[.0-9]*.so
+%exclude %{_libdir}/lib*-[.0-9]*.so
 %{_libdir}/libc_nonshared.a
 # Exists for some, but not all arches
 %optional %{_libdir}/libmvec_nonshared.a
@@ -1087,17 +1143,17 @@ The glibc-docs package contains docs for %{name}.
 %{_libdir32}/libg.a
 %{_libdir32}/libmcheck.a
 %if %isarch mips mipsel
-%exclude %{_slibdir32}/ld*-[.0-9]*.so
-%exclude %{_slibdir32}/lib*-[.0-9]*.so
-%exclude %{_slibdirn32}/ld*-[.0-9]*.so
-%exclude %{_slibdirn32}/lib*-[.0-9]*.so
+%exclude %{_libdir32}/ld*-[.0-9]*.so
+%exclude %{_libdir32}/lib*-[.0-9]*.so
+%exclude %{_libdirn32}/ld*-[.0-9]*.so
+%exclude %{_libdirn32}/lib*-[.0-9]*.so
 %{_libdirn32}/*.o
 %{_libdirn32}/*.so
 %{_libdirn32}/libc_nonshared.a
 %{_libdirn32}/libg.a
 %{_libdirn32}/libmcheck.a
-%exclude %{_slibdir}/ld*-[.0-9]*.so
-%exclude %{_slibdir}/lib*-[.0-9]*.so
+%exclude %{_libdir}/ld*-[.0-9]*.so
+%exclude %{_libdir}/lib*-[.0-9]*.so
 %endif
 %endif
 
@@ -1222,11 +1278,11 @@ If unsure if you need this, don't install this package.
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
 %{_bindir}/xtrace
-%{_slibdir}/libmemusage.so
-%{_slibdir}/libpcprofile.so
+%{_libdir}/libmemusage.so
+%{_libdir}/libpcprofile.so
 %if %{build_biarch}
-%{_slibdir32}/libmemusage.so
-%{_slibdir32}/libpcprofile.so
+%{_libdir32}/libmemusage.so
+%{_libdir32}/libpcprofile.so
 %endif
 #-----------------------------------------------------------------------
 # with utils
@@ -1509,7 +1565,6 @@ function BuildGlibc() {
 
   LIB=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_lib})
   LIBDIR=$(rpm --macros %{_usrlibrpm}/macros:%{_usrlibrpm}/platform/${arch}-%{_target_os}/macros --target=${arch} -E %%{_libdir})
-  SLIBDIR=/${LIB}
 
   # Determine library name
   glibc_cv_cc_64bit_output=no
@@ -1529,8 +1584,8 @@ function BuildGlibc() {
   # Force a separate object dir
   mkdir -p build-$arch-linux
   cd  build-$arch-linux
+  export libc_cv_slibdir=${LIBDIR}
   [ "$BuildAltArch" = 'yes' ] && touch ".alt" || touch ".main"
-  export libc_cv_slibdir=${SLIBDIR}
   case $arch in
   znver1)
     configarch=x86_64
@@ -1545,6 +1600,8 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --host=$configarch-%{platform} \
     $BuildCross \
     --prefix=%{_prefix} \
+    --bindir=%{_bindir} \
+    --sbindir=%{_sbindir} \
     --libexecdir=%{_prefix}/libexec \
     --libdir=${LIBDIR} \
     --infodir=%{_infodir} \
@@ -1762,23 +1819,20 @@ make install_root=%{buildroot} install -C build-%{target_cpu}-linux
 	# Dispatch */lib only
 	case "$ALT_ARCH" in
 	    mips32*)
-		LIB="%{_slibdirn32}"
+		LIB="%{_libdirn32}"
 		;;
 	    mips64*)
-		LIB="%{_slibdir}"
+		LIB="%{_libdir}"
 		;;
 	    mips*)
-		LIB="%{_slibdir32}"
+		LIB="%{_libdir32}"
 		;;
 	    *)
-		LIB=/lib
+		LIB=%{_prefix}/lib
 		;;
 	esac
 	mv     %{buildroot}/$ALT_ARCH/$LIB %{buildroot}/$LIB
 	mv     %{buildroot}/$ALT_ARCH%{_libexecdir}/getconf/* %{buildroot}%{_prefix}/libexec/getconf/
-	[ ! -d %{buildroot}%{_prefix}/$LIB/ ] && mkdir -p %{buildroot}%{_prefix}/$LIB/
-	mv     %{buildroot}/$ALT_ARCH%{_prefix}/$LIB/* %{buildroot}%{_prefix}/$LIB/
-
 	rm -rf %{buildroot}/$ALT_ARCH
 	# XXX Dispatch 32-bit stubs
 	(sed '/^@/d' include/stubs-prologue.h; LC_ALL=C sort $(find build-$ALT_ARCH -name stubs)) \
@@ -1792,7 +1846,7 @@ function InstallGlibc() {
   local SubDir="$2"
   local LibDir="$3"
 
-  [ -z "$LibDir" ] && LibDir="%{_slibdir}"
+  [ -z "$LibDir" ] && LibDir="%{_libdir}"
 
   cd $BuildDir
   mkdir -p %{buildroot}$LibDir/$SubDir/
@@ -1859,16 +1913,22 @@ EOF
 install -m755 build-%{_target_cpu}-linux/elf/ldd %{buildroot}%{_bindir}/ldd
 %endif
 
+# usrmerge + binmerge
+mv %{buildroot}/sbin/* %{buildroot}%{_bindir}/
+mv %{buildroot}%{_prefix}/sbin/* %{buildroot}%{_bindir}/
+rmdir %{buildroot}/sbin %{buildroot}%{_prefix}/sbin
+
 # ldconfig cache
 mkdir -p %{buildroot}%{_var}/cache/ldconfig
 truncate -s 0 %{buildroot}%{_var}/cache/ldconfig/aux-cache
 # Note: This has to happen before creating /etc/ld.so.conf.
 # ldconfig is statically linked, so we can use the new version.
-%{buildroot}/sbin/ldconfig -N -r %{buildroot}
+%{buildroot}%{_bindir}/ldconfig -N -r %{buildroot}
 
 echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
 chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
 mkdir -p  %{buildroot}%{_sysconfdir}/ld.so.conf.d
+echo '/%{_lib}' >%{buildroot}%{_sysconfdir}/ld.so.conf.d/legacy.conf
 
 # gconv modules
 for i in %{buildroot}%{_libdir}/gconv/*.so; do
@@ -1901,12 +1961,12 @@ if [ "%{_target_cpu}" != "%{target_cpu}" ]; then
 fi
 
 # Strip debugging info from all static libraries
-cd %{buildroot}%{_slibdir}
+cd %{buildroot}%{_libdir}
 for i in *.a; do
   if [ -f "$i" ]; then
     case "$i" in
     *_p.a) ;;
-    *) $Strip -g -R .comment -R .GCC.command.line         $i ;;
+    *) LC_ALL=C file $i |grep -q archive && $Strip -g -R .comment -R .GCC.command.line $i ;;
     esac
   fi
 done
@@ -1988,20 +2048,19 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
     rm -f %{buildroot}%{_bindir}/mtrace
     rm -f %{buildroot}%{_bindir}/pcprofiledump
     rm -f %{buildroot}%{_bindir}/xtrace
-    rm -f %{buildroot}%{_slibdir}/libmemusage.so
-    rm -f %{buildroot}%{_slibdir}/libpcprofile.so
+    rm -f %{buildroot}%{_libdir}/libmemusage.so
+    rm -f %{buildroot}%{_libdir}/libpcprofile.so
     %if %{build_biarch}
-	rm -f %{buildroot}%{_slibdir32}/libmemusage.so
-	rm -f %{buildroot}%{_slibdir32}/libpcprofile.so
+	rm -f %{buildroot}%{_libdir32}/libmemusage.so
+	rm -f %{buildroot}%{_libdir32}/libpcprofile.so
     %endif
     %if %isarch %{mips} %{mipsel}
-	rm -f %{buildroot}%{_slibdirn32}/libmemusage.so
-	rm -f %{buildroot}%{_slibdirn32}/libpcprofile.so
+	rm -f %{buildroot}%{_libdirn32}/libmemusage.so
+	rm -f %{buildroot}%{_libdirn32}/libpcprofile.so
     %endif
 %endif
 
 %if !%{with timezone}
-    rm -f %{buildroot}%{_sbindir}/zdump
     rm -f %{buildroot}%{_sbindir}/zic
     rm -f %{buildroot}%{_mandir}/man1/zdump.1*
 %endif
@@ -2012,7 +2071,7 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 %if %{with locales}
 # Generate locales...
-export LDSO="$(ls -1 %{buildroot}/%{_lib}/ld-*.so* |head -n1) --library-path %{buildroot}/%{_lib}:%{buildroot}%{_libdir}"
+export LDSO="$(ls -1 %{buildroot}%{_libdir}/ld-*.so* |head -n1) --library-path %{buildroot}%{_libdir}"
 # default charset pseudo-locales
 for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
 	ISO-8859-5 ISO-8859-7 ISO-8859-9 \
@@ -2063,20 +2122,18 @@ rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 %ifarch %{aarch64}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
-ln -s %{_slibdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
+ln -s %{_libdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
 %ifarch riscv64
 # RISC-V ABI wants to install everything in /lib64/lp64d or /usr/lib64/lp64d.
 # Make these be symlinks to /lib64 or /usr/lib64 respectively.  See:
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/DRHT5YTPK4WWVGL3GIN5BF2IKX2ODHZ3/
-for d in %{buildroot}%{_libdir} %{buildroot}/%{_lib}; do
-    mkdir -p $d
-    (cd $d && rm -f lp64d; ln -sf . lp64d)
-done
+mkdir -p %{buildroot}%{_libdir}
+(cd %{buildroot}%{_libdir} && rm -f lp64d; ln -sf . lp64d)
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
-ln -s %{_slibdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s %{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
