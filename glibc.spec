@@ -1038,6 +1038,16 @@ Requires:	%{name} = %{EVRD}
 %transfiletriggerin -p <lua> -- %{_prefix}/lib/gconv
 os.execute("%{_sbindir}/iconvconfig -o %{_prefix}/lib/gconv/gconv-modules.cache --nostdlib %{_prefix}/lib/gconv")
 
+%posttrans -n %{multilibc} -p <lua>
+-- Need to repeat it here, deinstallation of an older version
+-- wiped out the files that used to be in the older versions
+-- Place compat symlink if the system is still split-usr
+st=posix.stat("/%{_lib}")
+if st.type ~= "link" then
+  posix.symlink("%{_libdir32}/ld-linux.so.2", "/lib/ld-linux.so.2")
+end
+
+
 %description -n %{multilibc}
 The glibc package contains standard libraries which are used by
 multiple programs on the system. In order to save disk space and
