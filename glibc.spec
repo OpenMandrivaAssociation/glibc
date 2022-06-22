@@ -2135,7 +2135,7 @@ rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s %{_libdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
+ln -s ..%{_libdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
 %ifarch riscv64
@@ -2147,7 +2147,7 @@ mkdir -p %{buildroot}%{_libdir}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s %{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s ..%{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
