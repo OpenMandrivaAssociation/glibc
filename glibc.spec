@@ -954,12 +954,14 @@ LANG variable to their preferred language in their
 %endif
 %if %isarch aarch64
 %{_libdir}/ld-linux-aarch64.so.1
+/lib/ld-linux-aarch64.so.1
 %endif
 %if %isarch %{mips}
 %{_libdir}/ld.so.1
 %endif
 %if %isarch riscv64
-/%{_lib}/ld-linux-riscv64-lp64d.so.1
+%{_libdir}/ld-linux-riscv64-lp64d.so.1
+/lib/ld-linux-riscv64-lp64d.so.1
 %{_libdir}/lp64d
 %{_libdir}/lp64d
 %endif
@@ -2132,6 +2134,7 @@ rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 %ifarch %{aarch64}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
+mkdir -p %{buildroot}/lib
 ln -s %{_libdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
@@ -2143,6 +2146,7 @@ mkdir -p %{buildroot}%{_libdir}
 (cd %{buildroot}%{_libdir} && rm -f lp64d; ln -sf . lp64d)
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
+mkdir -p %{buildroot}/lib
 ln -s %{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
