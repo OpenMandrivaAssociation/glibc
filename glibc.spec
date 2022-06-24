@@ -160,7 +160,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	7
+Release:	8
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -358,6 +358,13 @@ Patch323:	0124-inet-Use-64-bit-stat-for-ruserpass-BZ-29210.patch
 Patch324:	0125-catgets-Use-64-bit-stat-for-__open_catalog-BZ-29211.patch
 Patch325:	0126-iconv-Use-64-bit-stat-for-gconv_parseconfdir-BZ-2921.patch
 Patch326:	0127-socket-Fix-mistyped-define-statement-in-socket-sys-s.patch
+Patch327:	0128-powerpc-Fix-VSX-register-number-on-__strncpy_power9-.patch
+Patch328:	0129-nptl-Fix-__libc_cleanup_pop_restore-asynchronous-res.patch
+Patch329:	0130-NEWS-Add-a-bug-fix-entry-for-BZ-29225.patch
+Patch330:	0131-hppa-Remove-_dl_skip_args-usage-BZ-29165.patch
+Patch331:	0132-nios2-Remove-_dl_skip_args-usage-BZ-29187.patch
+Patch332:	0133-nss-add-assert-to-DB_LOOKUP_FCT-BZ-28752.patch
+Patch333:	0134-nss-handle-stat-failure-in-check_reload_and_get-BZ-2.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -611,6 +618,7 @@ if st.type ~= "link" then
 %endif
 %ifarch aarch64
   posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
+  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %endif
 %ifarch %{mips}
   posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
@@ -678,6 +686,7 @@ if st.type ~= "link" then
 %endif
 %ifarch aarch64
   posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
+  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %endif
 %ifarch %{mips}
   posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
