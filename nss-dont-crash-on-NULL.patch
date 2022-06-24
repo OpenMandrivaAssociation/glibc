@@ -1,6 +1,7 @@
---- glibc-2.34.orig/nss/XXX-lookup.c	2021-12-02 10:57:55.785033000 +0100
-+++ glibc-2.34/nss/XXX-lookup.c	2021-12-02 10:59:22.796033000 +0100
-@@ -53,6 +53,9 @@
+diff -up glibc-2.35/nss/XXX-lookup.c.185~ glibc-2.35/nss/XXX-lookup.c
+--- glibc-2.35/nss/XXX-lookup.c.185~	2022-06-24 23:19:42.023870561 +0200
++++ glibc-2.35/nss/XXX-lookup.c	2022-06-24 23:20:35.490963277 +0200
+@@ -53,6 +53,9 @@ DB_LOOKUP_FCT (nss_action_list *ni, cons
    if (! __nss_database_get (DATABASE_NAME_ID, &DATABASE_NAME_SYMBOL))
      return -1;
  
@@ -9,4 +10,4 @@
 +
    *ni = DATABASE_NAME_SYMBOL;
  
-   return __nss_lookup (ni, fct_name, fct2_name, fctp);
+   /* We want to know about it if we've somehow got a NULL action list;
