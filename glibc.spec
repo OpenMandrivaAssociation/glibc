@@ -1,4 +1,9 @@
 %bcond_without crosscompilers
+# The test suite should be run after updates, but is very
+# slow especially on arches where we have slow builders.
+# Let's cut build time in half for now (but remember to
+# build "--with tests" tests before throwing updates at abf!)
+%bcond_with tests
 %ifarch %{ix86}
 # FIXME add riscv32-linux when glibc starts supporting it
 # FIXME Determine why (and fix) 32-bit platform to x86_64-linux crosscompilers
@@ -1782,7 +1787,7 @@ export BIARCH_BUILDING=1
 
 #-----------------------------------------------------------------------
 
-%if "%{target_cpu}" != "i686"
+%if %{with tests}
 %check
 # ...
 export PATH=$PWD/bin:$PATH
