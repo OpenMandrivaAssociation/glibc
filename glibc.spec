@@ -606,6 +606,9 @@ if posix.access (ldsoconf) then
   end
 end
 
+-- ABI spec says it lib/ld-linux-aarch64.so.1 even though logic says lib64...
+posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
+
 -- Place compat symlink if the system is still split-usr
 local st=posix.stat("/%{_lib}")
 if st.type ~= "link" then
@@ -621,9 +624,8 @@ if st.type ~= "link" then
 %ifarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
   posix.symlink("%{_libdir}/ld-linux-armhf.so.3", "/lib/ld-linux-armhf.so.3")
 %endif
-%ifarch aarch64
+%ifarch %{aarch64}
   posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
-  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %endif
 %ifarch %{mips}
   posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
@@ -674,6 +676,10 @@ os.execute("%{_bindir}/ldconfig -X")
 %posttrans -p <lua>
 -- Need to repeat it here, deinstallation of an older version
 -- wiped out the files that used to be in the older versions
+
+-- ABI spec says it lib/ld-linux-aarch64.so.1 even though logic says lib64...
+posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
+
 -- Place compat symlink if the system is still split-usr
 st=posix.stat("/%{_lib}")
 if st.type ~= "link" then
@@ -691,7 +697,6 @@ if st.type ~= "link" then
 %endif
 %ifarch aarch64
   posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
-  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %endif
 %ifarch %{mips}
   posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
