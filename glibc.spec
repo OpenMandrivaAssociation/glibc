@@ -165,7 +165,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	8
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -675,7 +675,7 @@ os.execute("%{_bindir}/ldconfig -X")
 os.execute("%{_bindir}/ldconfig -X")
 %endif
 
-%posttrans -p <lua>
+%triggerpostun -- glibc < 6:2.35-9 -p <lua>
 -- Need to repeat it here, deinstallation of an older version
 -- wiped out the files that used to be in the older versions
 
