@@ -715,8 +715,6 @@ end
 %package -n locales
 Summary:	Base files for localization
 Group:		System/Internationalization
-Obsoletes:	locales <= 2.18.90-2
-Obsoletes:	locales < 2.19-13
 # FIXME localedef should be adapted to load
 # just built charmaps instead of hardcoding
 # /usr/share/i18n/charmaps
