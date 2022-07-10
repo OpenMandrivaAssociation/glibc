@@ -922,6 +922,15 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Chinese" "zh" "zh_CN" "zh_HK" "zh_SG" "zh_TW" "cmn_TW" "hak_TW" "lzh_TW" "nan_TW")}
 %{expand:%(sh %{S:1000} "Zulu" "zu" "zu_ZA")}
 
+%ifarch %{aarch64}
+# FIXME Workaround for the %%post script not being
+# able to run /bin/sh because of missing ld-linux-aarch64.so.1
+# symlink while building docker-builder
+# This should really not be necessary, but somehow it is.
+%pre -n locales-en -p <lua>
+posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
+%endif
+
 %endif
 
 %files -f libc.lang
