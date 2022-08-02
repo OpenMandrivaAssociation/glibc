@@ -99,7 +99,7 @@
 %define build_biarch 1
 %endif
 
-%bcond_without nscd
+%bcond_with nscd
 %bcond_without i18ndata
 %bcond_with timezone
 %bcond_without locales
@@ -160,12 +160,12 @@ end \
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.35
+Version:	2.36
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	9
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -190,7 +190,7 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 # fedora patches
 Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
 Patch26:	eglibc-fedora-locale-euro.patch
-Patch27:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedata-rh61908.patch
+Patch27:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-fedora-localedata-rh61908.patch
 # We disagree with
 #		http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-streams-rh436349.patch
 # Therefore we don't package/apply it.
@@ -207,14 +207,7 @@ Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__
 Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
 Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
 Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
-Patch52:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1009145.patch
-Patch54:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1070416.patch
-#Patch55:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1315108.patch
-Patch58:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1324623.patch
-#Patch59:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh1335011.patch
-Patch61:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh697421.patch
-Patch64:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh825061.patch
-Patch65:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-rh827510.patch
+Patch65:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-rh827510.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
@@ -226,7 +219,6 @@ Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_t
 # (tpg) CLR disabled this patch
 #Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
-Patch100:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/spin-smarter.patch
 Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
 
 #
@@ -234,149 +226,16 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.35
+# git format-patch glibc-2.36
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch200:	0001-Regenerate-configure.patch
-Patch201:	0002-posix-Fix-tst-spawn6-terminal-handling-BZ-28853.patch
-Patch202:	0003-linux-__get_nprocs_sched-do-not-feed-CPU_COUNT_S-wit.patch
-Patch203:	0004-linux-Fix-missing-__convert_scm_timestamps-BZ-28860.patch
-Patch204:	0005-Add-BZ-28860-reference-on-NEWS.patch
-Patch205:	0006-linux-fix-accuracy-of-get_nprocs-and-get_nprocs_conf.patch
-Patch206:	0007-linux-Use-socket-constants-time64.h-on-tst-socket-ti.patch
-Patch207:	0008-string-Add-a-testcase-for-wcsncmp-with-SIZE_MAX-BZ-2.patch
-Patch208:	0009-x86-Fallback-str-wcs-cmp-RTM-in-the-ncmp-overflow-ca.patch
-Patch209:	0010-x86-Test-wcscmp-RTM-in-the-wcsncmp-overflow-case-BZ-.patch
-Patch210:	0011-x86-Fix-TEST_NAME-to-make-it-a-string-in-tst-strncmp.patch
-Patch211:	0012-NEWS-Add-a-bug-fix-entry-for-BZ-28896.patch
-Patch212:	0013-elf-Check-invalid-hole-in-PT_LOAD-segments-BZ-28838.patch
-Patch213:	0014-elf-Replace-tst-audit24bmod2.so-with-tst-audit24bmod.patch
-Patch214:	0015-resolv-Fix-tst-resolv-tests-for-2.35-ABIs-and-later.patch
-Patch215:	0016-NEWS-Add-a-bug-fix-entry-for-BZ-28688.patch
-Patch216:	0017-localedef-Update-LC_MONETARY-handling-Bug-28845.patch
-Patch217:	0018-localedata-Do-not-generate-output-if-warnings-were-p.patch
-Patch218:	0019-localedef-Handle-symbolic-links-when-generating-loca.patch
-Patch219:	0020-hppa-Fix-bind-now-audit-BZ-28857.patch
-Patch220:	0021-Fix-elf-tst-audit2-on-hppa.patch
-Patch221:	0022-hppa-Fix-swapcontext.patch
-Patch222:	0023-hppa-Revise-gettext-trampoline-design.patch
-Patch223:	0024-hppa-Fix-warnings-from-_dl_lookup_address.patch
-Patch224:	0025-nptl-Fix-cleanups-for-stack-grows-up-BZ-28899.patch
-Patch225:	0026-io-Add-fsync-call-in-tst-stat.patch
-Patch226:	0027-nss-Do-not-mention-NSS-test-modules-in-gnu-lib-names.patch
-Patch227:	0028-nss-Protect-against-errno-changes-in-function-lookup.patch
-Patch228:	0029-hppa-Implement-swapcontext-in-assembler-bug-28960.patch
-Patch229:	0030-hppa-Use-END-instead-of-PSEUDO_END-in-swapcontext.S.patch
-Patch230:	0031-NEWS-Move-PLT-tracking-slowdown-to-glibc-2.35.patch
-Patch231:	0032-elf-Fix-memory-leak-in-_dl_find_object_update-bug-29.patch
-Patch232:	0033-S390-Add-new-s390-platform-z16.patch
-Patch233:	0034-nptl-Handle-spurious-EINTR-when-thread-cancellation-.patch
-Patch234:	0035-hurd-Fix-arbitrary-error-code.patch
-Patch235:	0036-mips-Fix-mips64n32-64-bit-time_t-stat-support-BZ-290.patch
-Patch236:	0037-nptl-Fix-pthread_cancel-cancelhandling-atomic-operat.patch
-Patch237:	0038-m68k-Handle-fewer-relocations-for-RTLD_BOOTSTRAP-BZ2.patch
-Patch238:	0039-scripts-Add-glibcelf.py-module.patch
-Patch239:	0040-Default-to-with-default-link-no-bug-25812.patch
-Patch240:	0041-misc-Fix-rare-fortify-crash-on-wchar-funcs.-BZ-29030.patch
-Patch241:	0042-INSTALL-Rephrase-with-default-link-documentation.patch
-Patch242:	0043-dlfcn-Do-not-use-rtld_active-to-determine-ld.so-stat.patch
-Patch243:	0044-scripts-glibcelf.py-Mark-as-UNSUPPORTED-on-Python-3..patch
-Patch244:	0045-elf-Fix-DFS-sorting-algorithm-for-LD_TRACE_LOADED_OB.patch
-Patch245:	0046-linux-Fix-missing-internal-64-bit-time_t-stat-usage.patch
-Patch246:	0047-i386-Regenerate-ulps.patch
-Patch247:	0048-linux-Fix-fchmodat-with-AT_SYMLINK_NOFOLLOW-for-64-b.patch
-Patch248:	0049-posix-glob.c-update-from-gnulib.patch
-Patch249:	0050-Update-syscall-lists-for-Linux-5.17.patch
-Patch250:	0051-Update-kernel-version-to-5.16-in-tst-mman-consts.py.patch
-Patch251:	0052-Update-kernel-version-to-5.17-in-tst-mman-consts.py.patch
-Patch252:	0053-Add-SOL_MPTCP-SOL_MCTP-from-Linux-5.16-to-bits-socke.patch
-Patch253:	0054-Add-HWCAP2_AFP-HWCAP2_RPRES-from-Linux-5.17-to-AArch.patch
-Patch254:	0055-manual-Clarify-that-abbreviations-of-long-options-ar.patch
-Patch255:	0056-x86-Optimize-strcmp-avx2.S.patch
-Patch256:	0057-x86-Optimize-strcmp-evex.S.patch
-Patch257:	0058-x86-64-Fix-strcmp-avx2.S.patch
-Patch258:	0059-x86-64-Fix-strcmp-evex.S.patch
-Patch259:	0060-x86-Improve-vec-generation-in-memset-vec-unaligned-e.patch
-Patch260:	0061-x86-Remove-SSSE3-instruction-for-broadcast-in-memset.patch
-Patch261:	0062-x86-64-Optimize-bzero.patch
-Patch262:	0063-x86-Set-.text-section-in-memset-vec-unaligned-erms.patch
-Patch263:	0064-x86-Fix-bug-in-strncmp-evex-and-strncmp-avx2-BZ-2889.patch
-Patch264:	0065-x86-Fix-fallback-for-wcsncmp_avx2-in-strcmp-avx2.S-B.patch
-Patch265:	0066-linux-Fix-posix_spawn-return-code-if-clone-fails-BZ-.patch
-Patch266:	0067-NEWS-Add-a-bug-fix-entry-for-BZ-29109.patch
-Patch267:	0068-manual-Document-the-dlinfo-function.patch
-Patch268:	0069-dlfcn-Implement-the-RTLD_DI_PHDR-request-type-for-dl.patch
-Patch269:	0070-fortify-Ensure-that-__glibc_fortify-condition-is-a-c.patch
-Patch270:	0071-x86-Improve-L-to-support-L-XXX_SYMBOL-YYY-ZZZ.patch
-Patch271:	0072-x86_64-multiarch-Sort-sysdep_routines-and-put-one-en.patch
-Patch272:	0073-x86-64-Remove-bzero-weak-alias-in-SS2-memset.patch
-Patch273:	0074-x86-64-Define-__memcmpeq-in-ld.so.patch
-Patch274:	0075-x86_64-Remove-bcopy-optimizations.patch
-Patch275:	0076-x86-Code-cleanup-in-strchr-avx2-and-comment-justifyi.patch
-Patch276:	0077-x86-Code-cleanup-in-strchr-evex-and-comment-justifyi.patch
-Patch277:	0078-x86-Optimize-strcspn-and-strpbrk-in-strcspn-c.c.patch
-Patch278:	0079-x86-Optimize-strspn-in-strspn-c.c.patch
-Patch279:	0080-x86-Remove-strcspn-sse2.S-and-use-the-generic-implem.patch
-Patch280:	0081-x86-Remove-strpbrk-sse2.S-and-use-the-generic-implem.patch
-Patch281:	0082-x86-Remove-strspn-sse2.S-and-use-the-generic-impleme.patch
-Patch282:	0083-x86-Optimize-str-n-casecmp-TOLOWER-logic-in-strcmp.S.patch
-Patch283:	0084-x86-Optimize-str-n-casecmp-TOLOWER-logic-in-strcmp-s.patch
-Patch284:	0085-x86-Add-AVX2-optimized-str-n-casecmp.patch
-Patch285:	0086-x86-Add-EVEX-optimized-str-n-casecmp.patch
-Patch286:	0087-x86-Remove-AVX-str-n-casecmp.patch
-Patch287:	0088-x86-Small-improvements-for-wcslen.patch
-Patch288:	0089-x86-Optimize-memcmp-SSE2-in-memcmp.S.patch
-Patch289:	0090-x86-Remove-memcmp-sse4.S.patch
-Patch290:	0091-x86-Cleanup-page-cross-code-in-memcmp-avx2-movbe.S.patch
-Patch291:	0092-x86-Fix-missing-__wmemcmp-def-for-disable-multiarch-.patch
-Patch292:	0093-x86-64-Fix-SSE2-memcmp-and-SSSE3-memmove-for-x32.patch
-Patch293:	0094-x86-Optimize-str-wcs-rchr-sse2.patch
-Patch294:	0095-x86-Optimize-str-wcs-rchr-avx2.patch
-Patch295:	0096-x86-Optimize-str-wcs-rchr-evex.patch
-Patch296:	0097-elf-Merge-dl-sysdep.c-into-the-Linux-version.patch
-Patch297:	0098-Linux-Remove-HAVE_AUX_SECURE-HAVE_AUX_XID-HAVE_AUX_P.patch
-Patch298:	0099-Linux-Remove-DL_FIND_ARG_COMPONENTS.patch
-Patch299:	0100-Linux-Assume-that-NEED_DL_SYSINFO_DSO-is-always-defi.patch
-Patch300:	0101-Linux-Consolidate-auxiliary-vector-parsing.patch
-Patch301:	0102-Revert-Linux-Consolidate-auxiliary-vector-parsing.patch
-Patch302:	0103-Linux-Include-dl-auxv.h-in-dl-sysdep.c-only-for-SHAR.patch
-Patch303:	0104-Linux-Consolidate-auxiliary-vector-parsing-redo.patch
-Patch304:	0105-elf-Remove-__libc_init_secure.patch
-Patch305:	0106-i386-Remove-OPTIMIZE_FOR_GCC_5-from-Linux-libc-do-sy.patch
-Patch306:	0107-i386-Honor-I386_USE_SYSENTER-for-6-argument-Linux-sy.patch
-Patch307:	0108-Linux-Define-MMAP_CALL_INTERNAL.patch
-Patch308:	0109-ia64-Always-define-IA64_USE_NEW_STUB-as-a-flag-macro.patch
-Patch309:	0110-Linux-Implement-a-useful-version-of-_startup_fatal.patch
-Patch310:	0111-Linux-Introduce-__brk_call-for-invoking-the-brk-syst.patch
-Patch311:	0112-csu-Implement-and-use-_dl_early_allocate-during-stat.patch
-Patch312:	0113-S390-Enable-static-PIE.patch
-Patch313:	0114-rtld-Use-generic-argv-adjustment-in-ld.so-BZ-23293.patch
-Patch314:	0115-linux-Add-a-getauxval-test-BZ-23293.patch
-Patch315:	0116-string.h-fix-__fortified_attr_access-macro-call-BZ-2.patch
-Patch316:	0117-x86-Fallback-str-wcs-cmp-RTM-in-the-ncmp-overflow-ca.patch
-Patch317:	0118-Fix-deadlock-when-pthread_atfork-handler-calls-pthre.patch
-Patch318:	0119-misc-Use-64-bit-stat-for-daemon-BZ-29203.patch
-Patch319:	0120-misc-Use-64-bit-stat-for-getusershell-BZ-29204.patch
-Patch320:	0121-posix-Use-64-bit-stat-for-posix_fallocate-fallback-B.patch
-Patch321:	0122-posix-Use-64-bit-stat-for-fpathconf-_PC_ASYNC_IO-BZ-.patch
-Patch322:	0123-socket-Use-64-bit-stat-for-isfdtype-BZ-29209.patch
-Patch323:	0124-inet-Use-64-bit-stat-for-ruserpass-BZ-29210.patch
-Patch324:	0125-catgets-Use-64-bit-stat-for-__open_catalog-BZ-29211.patch
-Patch325:	0126-iconv-Use-64-bit-stat-for-gconv_parseconfdir-BZ-2921.patch
-Patch326:	0127-socket-Fix-mistyped-define-statement-in-socket-sys-s.patch
-Patch327:	0128-powerpc-Fix-VSX-register-number-on-__strncpy_power9-.patch
-Patch328:	0129-nptl-Fix-__libc_cleanup_pop_restore-asynchronous-res.patch
-Patch329:	0130-NEWS-Add-a-bug-fix-entry-for-BZ-29225.patch
-Patch330:	0131-hppa-Remove-_dl_skip_args-usage-BZ-29165.patch
-Patch331:	0132-nios2-Remove-_dl_skip_args-usage-BZ-29187.patch
-Patch332:	0133-nss-add-assert-to-DB_LOOKUP_FCT-BZ-28752.patch
-Patch333:	0134-nss-handle-stat-failure-in-check_reload_and_get-BZ-2.patch
+Patch200:	0001-stdlib-Suppress-gcc-diagnostic-that-char8_t-is-a-key.patch
+Patch201:	0002-wcsmbs-Add-missing-test-c8rtomb-test-mbrtoc8-depende.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
-Patch1001:	glibc-2.33-compile.patch
 Patch1002:	glibc-2.34-headers-clang.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
@@ -866,6 +725,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Portuguese" "pt" "pt_BR" "pt_PT")}
 %{expand:%(sh %{S:1000} "Quechua" "quz" "quz_PE")}
 %{expand:%(sh %{S:1000} "Rajasthani" "raj" "raj_IN")}
+%{expand:%(sh %{S:1000} "Tarifit" "rif" "rif_MA")}
 %{expand:%(sh %{S:1000} "Romanian" "ro" "ro_RO")}
 %{expand:%(sh %{S:1000} "Russian" "ru" "ru_RU" "ru_UA")}
 %{expand:%(sh %{S:1000} "Kinyarwanda" "rw" "rw_RW")}
@@ -889,6 +749,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Swedish" "sv" "sv_FI" "sv_SE")}
 # sw_XX?
 %{expand:%(sh %{S:1000} "Swahili" "sw" "sw_KE" "sw_TZ")}
+%{expand:%(sh %{S:1000} "Chaldean-Neo-Aramaic" "syr")}
 %{expand:%(sh %{S:1000} "Silesian" "szl" "szl_PL")}
 %{expand:%(sh %{S:1000} "Tamil" "ta" "ta_IN" "ta_LK")}
 %{expand:%(sh %{S:1000} "Telugu" "te" "te_IN")}
@@ -1654,7 +1515,9 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --disable-nss-crypt \
     --disable-crypt \
     $(WithSelinux) \
-%if !%{with nscd}
+%if %{with nscd}
+    --enable-build-nscd \
+%else
     --disable-build-nscd \
 %endif
     --enable-bind-now \

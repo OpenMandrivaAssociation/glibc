@@ -2,7 +2,7 @@
 langname="$1"
 shift
 locale="$1"
-shift
+[ "$#" -gt 1 ] && shift
 
 cat <<EOF
 %package -n locales-$locale

@@ -1,5 +1,15 @@
-2012-06-14  Jeff Law  <law@redhat.com>
+Short description: Fix newlocale error return.
+Author(s): Fedora glibc team <glibc@lists.fedoraproject.org>
+Origin: PATCH
+Bug-RHEL: #832516
+Bug-Fedora: #827510
+Bug-Upstream: #14247
+Upstream status: not-submitted
 
+This needs to go upstream right away to fix the error case for
+newlocale not correctly returning an error.
+
+2012-06-14  Jeff Law  <law@redhat.com>
 
 	* locale/loadlocale.c (_nl_load_locale): Delay setting
 	file->decided until we have successfully loaded the file's

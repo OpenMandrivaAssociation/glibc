@@ -1,6 +1,6 @@
-diff -up glibc-2.35/csu/Makefile.43~ glibc-2.35/csu/Makefile
---- glibc-2.35/csu/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/csu/Makefile	2022-02-03 11:18:26.334642979 +0100
+diff -up glibc-2.36/csu/Makefile.37~ glibc-2.36/csu/Makefile
+--- glibc-2.36/csu/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/csu/Makefile	2022-08-02 13:12:29.205993485 +0200
 @@ -115,7 +115,7 @@ endif
  asm-CPPFLAGS += -I$(objpfx).
  
@@ -10,20 +10,20 @@ diff -up glibc-2.35/csu/Makefile.43~ glibc-2.35/csu/Makefile
  
  include ../Rules
  
-diff -up glibc-2.35/debug/Makefile.43~ glibc-2.35/debug/Makefile
---- glibc-2.35/debug/Makefile.43~	2022-02-03 11:18:26.334642979 +0100
-+++ glibc-2.35/debug/Makefile	2022-02-03 11:19:26.810872356 +0100
-@@ -110,6 +110,7 @@ CPPFLAGS-tst-longjmp_chk2.c += -D_FORTIF
- CFLAGS-tst-longjmp_chk3.c += -fexceptions -fasynchronous-unwind-tables
+diff -up glibc-2.36/debug/Makefile.37~ glibc-2.36/debug/Makefile
+--- glibc-2.36/debug/Makefile.37~	2022-08-02 13:12:29.205993485 +0200
++++ glibc-2.36/debug/Makefile	2022-08-02 13:12:51.373989783 +0200
+@@ -111,6 +111,7 @@ CFLAGS-tst-longjmp_chk3.c += -fexception
  CPPFLAGS-tst-longjmp_chk3.c += -D_FORTIFY_SOURCE=1
  CPPFLAGS-tst-realpath-chk.c += -D_FORTIFY_SOURCE=2
+ CPPFLAGS-tst-read-chk-cancel.c += -D_FORTIFY_SOURCE=2
 +CFLAGS-longjmp_chk.c += -fno-strict-aliasing
  
  # _FORTIFY_SOURCE tests.
  # Auto-generate tests for _FORTIFY_SOURCE for different levels, compilers and
-diff -up glibc-2.35/inet/Makefile.43~ glibc-2.35/inet/Makefile
---- glibc-2.35/inet/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/inet/Makefile	2022-02-03 11:18:26.334642979 +0100
+diff -up glibc-2.36/inet/Makefile.37~ glibc-2.36/inet/Makefile
+--- glibc-2.36/inet/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/inet/Makefile	2022-08-02 13:12:29.206993485 +0200
 @@ -110,6 +110,20 @@ CFLAGS-getnetgrent_r.c += -fexceptions
  CFLAGS-tst-checks-posix.c += -std=c99
  CFLAGS-tst-sockaddr.c += -fno-strict-aliasing
@@ -45,9 +45,9 @@ diff -up glibc-2.35/inet/Makefile.43~ glibc-2.35/inet/Makefile
  endif
  
  # Install the rpc database file.
-diff -up glibc-2.35/libio/libioP.h.43~ glibc-2.35/libio/libioP.h
---- glibc-2.35/libio/libioP.h.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/libio/libioP.h	2022-02-03 11:18:26.335642983 +0100
+diff -up glibc-2.36/libio/libioP.h.37~ glibc-2.36/libio/libioP.h
+--- glibc-2.36/libio/libioP.h.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/libio/libioP.h	2022-08-02 13:12:29.206993485 +0200
 @@ -841,8 +841,8 @@ extern struct _IO_FILE_plus _IO_stderr_;
  static inline bool
  _IO_legacy_file (FILE *fp)
@@ -70,9 +70,9 @@ diff -up glibc-2.35/libio/libioP.h.43~ glibc-2.35/libio/libioP.h
      return;
  #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
    if (_IO_legacy_file (fp))
-diff -up glibc-2.35/libio/Makefile.43~ glibc-2.35/libio/Makefile
---- glibc-2.35/libio/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/libio/Makefile	2022-02-03 11:18:26.335642983 +0100
+diff -up glibc-2.36/libio/Makefile.37~ glibc-2.36/libio/Makefile
+--- glibc-2.36/libio/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/libio/Makefile	2022-08-02 13:12:29.206993485 +0200
 @@ -154,6 +154,19 @@ CFLAGS-iofopen.c += -fexceptions
  CFLAGS-iofopen64.c += -fexceptions
  CFLAGS-oldtmpfile.c += -fexceptions
@@ -93,9 +93,9 @@ diff -up glibc-2.35/libio/Makefile.43~ glibc-2.35/libio/Makefile
  
  CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
  
-diff -up glibc-2.35/locale/Makefile.43~ glibc-2.35/locale/Makefile
---- glibc-2.35/locale/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/locale/Makefile	2022-02-03 11:18:26.335642983 +0100
+diff -up glibc-2.36/locale/Makefile.37~ glibc-2.36/locale/Makefile
+--- glibc-2.36/locale/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/locale/Makefile	2022-08-02 13:12:29.206993485 +0200
 @@ -106,6 +106,7 @@ CPPFLAGS-locale-programs = -DLOCALE_PATH
  CFLAGS-charmap.c += -Wno-write-strings -Wno-char-subscripts
  CFLAGS-locfile.c += -Wno-write-strings -Wno-char-subscripts
@@ -104,10 +104,10 @@ diff -up glibc-2.35/locale/Makefile.43~ glibc-2.35/locale/Makefile
  
  # Set libof-* for each routine.
  cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
-diff -up glibc-2.35/misc/Makefile.43~ glibc-2.35/misc/Makefile
---- glibc-2.35/misc/Makefile.43~	2022-02-03 11:18:26.335642983 +0100
-+++ glibc-2.35/misc/Makefile	2022-02-03 11:19:49.216957172 +0100
-@@ -154,6 +154,8 @@ CFLAGS-mmap.op = $(no-stack-protector)
+diff -up glibc-2.36/misc/Makefile.37~ glibc-2.36/misc/Makefile
+--- glibc-2.36/misc/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/misc/Makefile	2022-08-02 13:12:29.207993484 +0200
+@@ -156,6 +156,8 @@ CFLAGS-mmap.op = $(no-stack-protector)
  CFLAGS-mmap64.o = $(no-stack-protector)
  CFLAGS-mmap64.op = $(no-stack-protector)
  
@@ -116,9 +116,9 @@ diff -up glibc-2.35/misc/Makefile.43~ glibc-2.35/misc/Makefile
  include ../Rules
  
  $(objpfx)libg.a: $(dep-dummy-lib); $(make-dummy-lib)
-diff -up glibc-2.35/nis/Makefile.43~ glibc-2.35/nis/Makefile
---- glibc-2.35/nis/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/nis/Makefile	2022-02-03 11:18:26.335642983 +0100
+diff -up glibc-2.36/nis/Makefile.37~ glibc-2.36/nis/Makefile
+--- glibc-2.36/nis/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/nis/Makefile	2022-08-02 13:12:29.207993484 +0200
 @@ -52,6 +52,7 @@ endif # have-GLIBC_2.28
  
  include ../Rules
@@ -127,10 +127,10 @@ diff -up glibc-2.35/nis/Makefile.43~ glibc-2.35/nis/Makefile
  
  libnsl-libc = $(common-objpfx)linkobj/libc.so
  # Target-specific variable setting to link objects using deprecated
-diff -up glibc-2.35/nptl/Makefile.43~ glibc-2.35/nptl/Makefile
---- glibc-2.35/nptl/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/nptl/Makefile	2022-02-03 11:18:26.335642983 +0100
-@@ -263,6 +263,22 @@ CFLAGS-sem_clockwait.c = -fexceptions -f
+diff -up glibc-2.36/nptl/Makefile.37~ glibc-2.36/nptl/Makefile
+--- glibc-2.36/nptl/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/nptl/Makefile	2022-08-02 13:12:29.207993484 +0200
+@@ -262,6 +262,22 @@ CFLAGS-sem_clockwait.c = -fexceptions -f
  
  CFLAGS-futex-internal.c += -fexceptions -fasynchronous-unwind-tables
  
@@ -153,9 +153,9 @@ diff -up glibc-2.35/nptl/Makefile.43~ glibc-2.35/nptl/Makefile
  LDLIBS-tst-once5 = -lstdc++
  CFLAGS-tst-thread_local1.o = -std=gnu++11
  LDLIBS-tst-thread_local1 = -lstdc++
-diff -up glibc-2.35/nscd/Makefile.43~ glibc-2.35/nscd/Makefile
---- glibc-2.35/nscd/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/nscd/Makefile	2022-02-03 11:18:26.335642983 +0100
+diff -up glibc-2.36/nscd/Makefile.37~ glibc-2.36/nscd/Makefile
+--- glibc-2.36/nscd/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/nscd/Makefile	2022-08-02 13:12:29.207993484 +0200
 @@ -79,6 +79,14 @@ CFLAGS-nscd_gethst_r.c += -fexceptions
  CFLAGS-nscd_getai.c += -fexceptions
  CFLAGS-nscd_initgroups.c += -fexceptions
@@ -171,10 +171,10 @@ diff -up glibc-2.35/nscd/Makefile.43~ glibc-2.35/nscd/Makefile
  CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
  
  ifeq (yesyes,$(have-fpie)$(build-shared))
-diff -up glibc-2.35/nss/Makefile.43~ glibc-2.35/nss/Makefile
---- glibc-2.35/nss/Makefile.43~	2022-02-03 11:18:26.335642983 +0100
-+++ glibc-2.35/nss/Makefile	2022-02-03 11:20:23.200085652 +0100
-@@ -190,6 +190,9 @@ endif
+diff -up glibc-2.36/nss/Makefile.37~ glibc-2.36/nss/Makefile
+--- glibc-2.36/nss/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/nss/Makefile	2022-08-02 13:12:29.207993484 +0200
+@@ -206,6 +206,9 @@ endif
  $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
  $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so
  
@@ -184,9 +184,9 @@ diff -up glibc-2.35/nss/Makefile.43~ glibc-2.35/nss/Makefile
  # Disable DT_RUNPATH on NSS tests so that the glibc internal NSS
  # functions can load testing NSS modules via DT_RPATH.
  LDFLAGS-tst-nss-test1 = -Wl,--disable-new-dtags
-diff -up glibc-2.35/posix/Makefile.43~ glibc-2.35/posix/Makefile
---- glibc-2.35/posix/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/posix/Makefile	2022-02-03 11:18:26.336642986 +0100
+diff -up glibc-2.36/posix/Makefile.37~ glibc-2.36/posix/Makefile
+--- glibc-2.36/posix/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/posix/Makefile	2022-08-02 13:12:29.208993484 +0200
 @@ -281,6 +281,13 @@ CFLAGS-execlp.os = -fomit-frame-pointer
  CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
  CFLAGS-fork.c = $(libio-mtsafe)
@@ -201,10 +201,10 @@ diff -up glibc-2.35/posix/Makefile.43~ glibc-2.35/posix/Makefile
  tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
  		--none random --col --color --colour
  
-diff -up glibc-2.35/resolv/Makefile.43~ glibc-2.35/resolv/Makefile
---- glibc-2.35/resolv/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/resolv/Makefile	2022-02-03 11:18:26.336642986 +0100
-@@ -214,6 +214,19 @@ include ../gen-locales.mk
+diff -up glibc-2.36/resolv/Makefile.37~ glibc-2.36/resolv/Makefile
+--- glibc-2.36/resolv/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/resolv/Makefile	2022-08-02 13:12:29.208993484 +0200
+@@ -216,6 +216,19 @@ include ../gen-locales.mk
  
  CFLAGS-res_hconf.c += -fexceptions
  
@@ -224,9 +224,9 @@ diff -up glibc-2.35/resolv/Makefile.43~ glibc-2.35/resolv/Makefile
  # The DNS NSS modules needs the resolver.
  $(objpfx)libnss_dns.so: $(objpfx)libresolv.so
  
-diff -up glibc-2.35/rt/Makefile.43~ glibc-2.35/rt/Makefile
---- glibc-2.35/rt/Makefile.43~	2022-02-03 11:18:26.322642933 +0100
-+++ glibc-2.35/rt/Makefile	2022-02-03 11:18:26.336642986 +0100
+diff -up glibc-2.36/rt/Makefile.37~ glibc-2.36/rt/Makefile
+--- glibc-2.36/rt/Makefile.37~	2022-08-02 13:12:29.115993511 +0200
++++ glibc-2.36/rt/Makefile	2022-08-02 13:12:29.208993484 +0200
 @@ -100,6 +100,8 @@ CFLAGS-aio_suspend.c += -fexceptions
  CFLAGS-mq_timedreceive.c += -fexceptions -fasynchronous-unwind-tables
  CFLAGS-mq_timedsend.c += -fexceptions -fasynchronous-unwind-tables
@@ -236,9 +236,9 @@ diff -up glibc-2.35/rt/Makefile.43~ glibc-2.35/rt/Makefile
  LDFLAGS-rt.so = -Wl,--enable-new-dtags,-z,nodelete
  
  $(objpfx)librt.so: $(shared-thread-library)
-diff -up glibc-2.35/setjmp/Makefile.43~ glibc-2.35/setjmp/Makefile
---- glibc-2.35/setjmp/Makefile.43~	2022-02-03 11:18:26.336642986 +0100
-+++ glibc-2.35/setjmp/Makefile	2022-02-03 11:20:41.744155684 +0100
+diff -up glibc-2.36/setjmp/Makefile.37~ glibc-2.36/setjmp/Makefile
+--- glibc-2.36/setjmp/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/setjmp/Makefile	2022-08-02 13:12:29.208993484 +0200
 @@ -36,6 +36,10 @@ tests-internal  := \
  
  gen-as-const-headers += jmp_buf-macros.sym
@@ -250,10 +250,10 @@ diff -up glibc-2.35/setjmp/Makefile.43~ glibc-2.35/setjmp/Makefile
  include ../Rules
  
  $(objpfx)tst-setjmp-fp: $(libm)
-diff -up glibc-2.35/stdio-common/Makefile.43~ glibc-2.35/stdio-common/Makefile
---- glibc-2.35/stdio-common/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/stdio-common/Makefile	2022-02-03 11:18:26.336642986 +0100
-@@ -161,6 +161,10 @@ $(objpfx)tst-errno-manual.out: tst-errno
+diff -up glibc-2.36/stdio-common/Makefile.37~ glibc-2.36/stdio-common/Makefile
+--- glibc-2.36/stdio-common/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/stdio-common/Makefile	2022-08-02 13:12:29.209993484 +0200
+@@ -350,6 +350,10 @@ $(objpfx)tst-errno-manual.out: tst-errno
  
  CFLAGS-vfprintf.c += -Wno-uninitialized
  CFLAGS-vfwprintf.c += -Wno-uninitialized
@@ -264,9 +264,9 @@ diff -up glibc-2.35/stdio-common/Makefile.43~ glibc-2.35/stdio-common/Makefile
  
  CFLAGS-tmpfile.c += -fexceptions
  CFLAGS-tmpfile64.c += -fexceptions
-diff -up glibc-2.35/sunrpc/Makefile.43~ glibc-2.35/sunrpc/Makefile
---- glibc-2.35/sunrpc/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/sunrpc/Makefile	2022-02-03 11:18:26.336642986 +0100
+diff -up glibc-2.36/sunrpc/Makefile.37~ glibc-2.36/sunrpc/Makefile
+--- glibc-2.36/sunrpc/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/sunrpc/Makefile	2022-08-02 13:12:29.209993484 +0200
 @@ -97,6 +97,21 @@ CFLAGS-pmap_rmt.c += -fexceptions
  CFLAGS-clnt_perr.c += -fexceptions
  CFLAGS-openchild.c += -fexceptions
@@ -289,10 +289,10 @@ diff -up glibc-2.35/sunrpc/Makefile.43~ glibc-2.35/sunrpc/Makefile
  $(objpfx)tst-getmyaddr: $(common-objpfx)linkobj/libc.so
  $(objpfx)tst-xdrmem: $(common-objpfx)linkobj/libc.so
  $(objpfx)tst-xdrmem2: $(common-objpfx)linkobj/libc.so
-diff -up glibc-2.35/support/Makefile.43~ glibc-2.35/support/Makefile
---- glibc-2.35/support/Makefile.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/support/Makefile	2022-02-03 11:18:26.336642986 +0100
-@@ -215,6 +215,8 @@ ifeq ($(build-shared),yes)
+diff -up glibc-2.36/support/Makefile.37~ glibc-2.36/support/Makefile
+--- glibc-2.36/support/Makefile.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/support/Makefile	2022-08-02 13:12:29.209993484 +0200
+@@ -217,6 +217,8 @@ ifeq ($(build-shared),yes)
  libsupport-inhibit-o += .o
  endif
  
@@ -301,9 +301,9 @@ diff -up glibc-2.35/support/Makefile.43~ glibc-2.35/support/Makefile
  CFLAGS-support_paths.c = \
  		-DSRCDIR_PATH=\"`cd .. ; pwd`\" \
  		-DOBJDIR_PATH=\"`cd $(objpfx)/..; pwd`\" \
-diff -up glibc-2.35/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.43~ glibc-2.35/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h
---- glibc-2.35/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.43~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h	2022-02-03 11:18:26.337642990 +0100
+diff -up glibc-2.36/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.37~ glibc-2.36/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h
+--- glibc-2.36/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h.37~	2022-07-30 00:03:09.000000000 +0200
++++ glibc-2.36/sysdeps/powerpc/powerpc32/power4/multiarch/init-arch.h	2022-08-02 13:12:29.209993484 +0200
 @@ -17,6 +17,8 @@
  
  #include <ldsodefs.h>
