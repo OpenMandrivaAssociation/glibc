@@ -1,8 +1,8 @@
 From c3fda489cfdb2260f9fec706e6fd7259858c4467 Mon Sep 17 00:00:00 2001
 From: Tom Honermann <tom@honermann.net>
 Date: Sun, 24 Jul 2022 01:11:43 -0400
-Subject: [PATCH 1/2] stdlib: Suppress gcc diagnostic that char8_t is a keyword
- in C++20 in uchar.h.
+Subject: [PATCH 01/15] stdlib: Suppress gcc diagnostic that char8_t is a
+ keyword in C++20 in uchar.h.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -47,5 +47,5 @@ index c37e8619a0..5f7139f279 100644
  
  #ifndef __USE_ISOCXX11
 -- 
-2.37.1
+2.37.2
 

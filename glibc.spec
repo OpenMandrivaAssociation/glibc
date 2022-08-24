@@ -165,7 +165,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -230,6 +230,19 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
 Patch200:	0001-stdlib-Suppress-gcc-diagnostic-that-char8_t-is-a-key.patch
 Patch201:	0002-wcsmbs-Add-missing-test-c8rtomb-test-mbrtoc8-depende.patch
+Patch202:	0003-dlfcn-Pass-caller-pointer-to-static-dlopen-implement.patch
+Patch203:	0004-Update-syscall-lists-for-Linux-5.19.patch
+Patch204:	0005-elf-Replace-strcpy-call-with-memcpy-BZ-29454.patch
+Patch205:	0006-Linux-Terminate-subprocess-on-late-failure-in-tst-pi.patch
+Patch206:	0007-alpha-Fix-generic-brk-system-call-emulation-in-__brk.patch
+Patch207:	0008-socket-Check-lengths-before-advancing-pointer-in-CMS.patch
+Patch208:	0009-NEWS-Add-entry-for-bug-28846.patch
+Patch209:	0010-glibcextract.py-Add-compile_c_snippet.patch
+Patch210:	0011-linux-Use-compile_c_snippet-to-check-linux-pidfd.h-a.patch
+Patch211:	0012-linux-Mimic-kernel-defition-for-BLOCK_SIZE.patch
+Patch212:	0013-linux-Use-compile_c_snippet-to-check-linux-mount.h-a.patch
+Patch213:	0014-linux-Fix-sys-mount.h-usage-with-kernel-headers.patch
+Patch214:	0015-Linux-Fix-enum-fsconfig_command-detection-in-sys-mou.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -267,12 +280,15 @@ Patch1042:	glibc-2.33-gcc-11.1.patch
 Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
 Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-crash-on-NULL.patch
+# https://www.phoronix.com/news/Glibc-2.36-EAC-Problems
+# https://sourceware.org/bugzilla/show_bug.cgi?id=29456
+Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext
-BuildRequires:	kernel-release-headers >= %{enablekernel}
+BuildRequires:	kernel-headers >= %{enablekernel}
 BuildRequires:	patch
 BuildRequires:	hardlink
 BuildRequires:	cap-devel
@@ -997,7 +1013,7 @@ Summary:	Header and object files for development using standard C libraries
 Group:		Development/C
 Requires:	%{name} = %{EVRD}
 Requires:	pkgconfig(libxcrypt)
-Requires:	%{?cross:cross-}kernel-release-headers >= %{enablekernel}
+Requires:	%{?cross:cross-}kernel-headers >= %{enablekernel}
 %if %{with pdf}
 %rename		glibc-doc-pdf
 %endif
@@ -1235,7 +1251,7 @@ These are configuration files that describe possible time zones.
 %endif
 
 %if %{with crosscompilers}
-%global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-release-source)
+%global kernelver %(rpm -q --qf '%%{version}-%%{release}%%{disttag}' kernel-source)
 %(
 for i in %{long_targets}; do
 	[ "$i" = "%{_target_platform}" ] && continue
@@ -1244,8 +1260,8 @@ for i in %{long_targets}; do
 %package -n ${package}
 Summary: Libc for crosscompiling to ${i}
 Group: Development/Other
-BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-release-headers
-BuildRequires: kernel-release-source
+BuildRequires: cross-${i}-binutils cross-${i}-gcc-bootstrap cross-${i}-kernel-headers
+BuildRequires: kernel-source
 Recommends: cross-${i}-binutils cross-${i}-gcc
 %description -n ${package}
 Libc for crosscompiling to ${i}.
