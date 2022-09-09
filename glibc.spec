@@ -165,7 +165,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -243,6 +243,13 @@ Patch211:	0012-linux-Mimic-kernel-defition-for-BLOCK_SIZE.patch
 Patch212:	0013-linux-Use-compile_c_snippet-to-check-linux-mount.h-a.patch
 Patch213:	0014-linux-Fix-sys-mount.h-usage-with-kernel-headers.patch
 Patch214:	0015-Linux-Fix-enum-fsconfig_command-detection-in-sys-mou.patch
+Patch215:	0016-syslog-Fix-large-messages-BZ-29536.patch
+Patch216:	0017-elf-Call-__libc_early_init-for-reused-namespaces-bug.patch
+Patch217:	0018-Apply-asm-redirections-in-wchar.h-before-first-use.patch
+Patch218:	0019-elf-Restore-how-vDSO-dependency-is-printed-with-LD_T.patch
+Patch219:	0020-syslog-Remove-extra-whitespace-between-timestamp-and.patch
+Patch220:	0021-Add-NEWS-entry-for-CVE-2022-39046.patch
+Patch221:	0022-nscd-Fix-netlink-cache-invalidation-if-epoll-is-used.patch
 
 # from IBM release branch (ibm/%{version}/master branch in git)
 # [currently none]
@@ -2044,7 +2051,7 @@ rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s ..%{_libdir}/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
+ln -s /lib64/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 %endif
 
 %ifarch riscv64
@@ -2056,7 +2063,7 @@ mkdir -p %{buildroot}%{_libdir}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s ..%{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s ../lib64/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
