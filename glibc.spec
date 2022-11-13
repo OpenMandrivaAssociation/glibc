@@ -120,41 +120,41 @@
 # Utility functions for pre/post scripts.  Stick them at the beginning of
 # any lua %pre, %post, %postun, etc. sections to have them expand into
 # those scripts.  It only works in lua sections and not anywhere else.
-%define glibc_post_funcs() \
--- We use lua posix.exec because there may be no shell that we can \
--- run during glibc upgrade.  We used to implement much of %%post as a \
--- C program, but from an overall maintenance perspective the lua in \
--- the spec file was simpler and safer given the operations required. \
--- All lua code will be ignored by rpm-ostree; see: \
--- https://github.com/projectatomic/rpm-ostree/pull/1869 \
--- If we add new lua actions to the %%post code we should coordinate \
--- with rpm-ostree and ensure that their glibc install is functional. \
-function post_exec (program, ...) \
-  local pid = posix.fork () \
-  if pid == 0 then \
-    posix.exec (program, ...) \
-    assert (nil) \
-  elseif pid > 0 then \
-    posix.wait (pid) \
-  end \
-end \
-\
-function update_gconv_modules_cache () \
-  local iconv_dir = "%{_libdir}/gconv" \
-  local iconv_cache = iconv_dir .. "/gconv-modules.cache" \
-  local iconv_modules = iconv_dir .. "/gconv-modules" \
-  if (posix.utime (iconv_modules) == 0) then \
-    if (posix.utime (iconv_cache) == 0) then \
-      post_exec ("%{_sbindir}/iconvconfig", \
-	 "-o", iconv_cache, \
-	 "--nostdlib", \
-	 iconv_dir) \
-    else \
-      io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n") \
-    end \
-  end \
-end \
-%{nil}
+%global glibc_post_funcs %{expand:
+-- We use lua because there may be no shell that we can run during
+-- glibc upgrade. We used to implement much of %%post as a C program,
+-- but from an overall maintenance perspective the lua in the spec
+-- file was simpler and safer given the operations required.
+-- All lua code will be ignored by rpm-ostree; see:
+-- https://github.com/projectatomic/rpm-ostree/pull/1869
+-- If we add new lua actions to the %%post code we should coordinate
+-- with rpm-ostree and ensure that their glibc install is functional.
+--
+
+function call_ldconfig ()
+  if not rpm.execute("%{_sbindir}/ldconfig") then
+    io.stdout:write ("Error: call to %{_sbindir}/ldconfig failed.\n")
+  end
+end
+
+function update_gconv_modules_cache ()
+  local iconv_dir = "%{_libdir}/gconv"
+  local iconv_cache = iconv_dir .. "/gconv-modules.cache"
+  local iconv_modules = iconv_dir .. "/gconv-modules"
+  if posix.utime(iconv_modules) == 0 then
+    if posix.utime (iconv_cache) == 0 then
+      if not rpm.execute("%{_sbindir}/iconvconfig",
+	         "-o", iconv_cache,
+	         "--nostdlib",
+	         iconv_dir)
+      then
+    io.stdout:write ("Error: call to %{_sbindir}/iconvconfig failed.\n")
+      end
+    else
+      io.stdout:write ("Error: Missing " .. iconv_cache .. " file.\n")
+    end
+  end
+end}
 
 #-----------------------------------------------------------------------
 Summary:	The GNU libc libraries
@@ -385,7 +385,7 @@ end
 -- Full set of libraries glibc may install.
 install_libs = { "anl", "BrokenLocale", "c", "dl", "m", "mvec",
 	 "nss_compat", "nss_db", "nss_dns", "nss_files",
-	 "nss_hesiod", "pthread", "resolv", "rt",
+	 "nss_hesiod", "pthread", "resolv", "rt", "SegFault",
 	 "thread_db", "util" }
 
 -- We are going to remove these libraries. Generally speaking we remove
@@ -404,8 +404,9 @@ for i = 1, #install_libs do
                                          .. "%%.so%%.[0-9]+$")
 end
 
--- One exception:
+-- Two exceptions:
 remove_regexps[#install_libs + 1] = "libthread_db%%-1%%.0%%.so"
+remove_regexps[#install_libs + 2] = "libSegFault%%.so"
 
 -- We are going to search these directories.
 local remove_dirs = { "%{_libdir}/i686",
@@ -524,8 +525,8 @@ end
 -- If the format of the cache changes then we need to rebuild
 -- the cache early to avoid any problems running binaries with
 -- the new glibc.
--- Note: We use _prefix because Fedora's UsrMove says so.
-post_exec ("%{_bindir}/ldconfig")
+
+call_ldconfig()
 
 -- (4) Update gconv modules cache.
 -- If the /usr/lib/gconv/gconv-modules.cache exists, then update it
@@ -537,24 +538,28 @@ update_gconv_modules_cache()
 
 -- (5) On upgrades, restart systemd if installed.  "systemctl -q" does
 -- not suppress the error message (which is common in chroots), so
--- open-code post_exec with standard error suppressed.
+-- open-code rpm.execute with standard error suppressed.
 if tonumber(arg[2]) >= 2
-   and posix.access("/bin/systemctl", "x")
+   and posix.access("%{_prefix}/bin/systemctl", "x")
 then
   local pid = posix.fork()
   if pid == 0 then
     posix.redirect2null(2)
-    assert(posix.exec("/bin/systemctl", "daemon-reexec"))
+    posix.exec("%{_prefix}/bin/systemctl", "daemon-reexec")
   elseif pid > 0 then
     posix.wait(pid)
   end
 end
 
-%transfiletriggerin -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
-os.execute("%{_bindir}/ldconfig -X")
+%transfiletriggerin -p <lua> -P 2000000 -- /lib /usr/lib /lib64 /usr/lib64 /etc/ld.so.conf.d
+%glibc_post_funcs
+call_ldconfig()
+%end
 
-%transfiletriggerpostun -p <lua> -P 2000000 -- /lib /lib64 /usr/lib /usr/lib64 /etc/ld.so.conf.d
-os.execute("%{_bindir}/ldconfig -X")
+%transfiletriggerpostun -p <lua> -P 2000000 -- /lib /usr/lib /lib64 /usr/lib64 /etc/ld.so.conf.d
+%glibc_post_funcs
+call_ldconfig()
+%end
 %endif
 
 %posttrans -p <lua>
