@@ -160,12 +160,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.36
+Version:	2.37
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -226,33 +226,9 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.36
+# git format-patch glibc-2.37
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch200:	0001-stdlib-Suppress-gcc-diagnostic-that-char8_t-is-a-key.patch
-Patch201:	0002-wcsmbs-Add-missing-test-c8rtomb-test-mbrtoc8-depende.patch
-Patch202:	0003-dlfcn-Pass-caller-pointer-to-static-dlopen-implement.patch
-Patch203:	0004-Update-syscall-lists-for-Linux-5.19.patch
-Patch204:	0005-elf-Replace-strcpy-call-with-memcpy-BZ-29454.patch
-Patch205:	0006-Linux-Terminate-subprocess-on-late-failure-in-tst-pi.patch
-Patch206:	0007-alpha-Fix-generic-brk-system-call-emulation-in-__brk.patch
-Patch207:	0008-socket-Check-lengths-before-advancing-pointer-in-CMS.patch
-Patch208:	0009-NEWS-Add-entry-for-bug-28846.patch
-Patch209:	0010-glibcextract.py-Add-compile_c_snippet.patch
-Patch210:	0011-linux-Use-compile_c_snippet-to-check-linux-pidfd.h-a.patch
-Patch211:	0012-linux-Mimic-kernel-defition-for-BLOCK_SIZE.patch
-Patch212:	0013-linux-Use-compile_c_snippet-to-check-linux-mount.h-a.patch
-Patch213:	0014-linux-Fix-sys-mount.h-usage-with-kernel-headers.patch
-Patch214:	0015-Linux-Fix-enum-fsconfig_command-detection-in-sys-mou.patch
-Patch215:	0016-syslog-Fix-large-messages-BZ-29536.patch
-Patch216:	0017-elf-Call-__libc_early_init-for-reused-namespaces-bug.patch
-Patch217:	0018-Apply-asm-redirections-in-wchar.h-before-first-use.patch
-Patch218:	0019-elf-Restore-how-vDSO-dependency-is-printed-with-LD_T.patch
-Patch219:	0020-syslog-Remove-extra-whitespace-between-timestamp-and.patch
-Patch220:	0021-Add-NEWS-entry-for-CVE-2022-39046.patch
-Patch221:	0022-nscd-Fix-netlink-cache-invalidation-if-epoll-is-used.patch
-
-# from IBM release branch (ibm/%{version}/master branch in git)
-# [currently none]
+# [ currently none ]
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
@@ -281,7 +257,6 @@ Patch1040:	https://github.com/FireBurn/glibc/commit/2efa9591e5e8a129e7b73ad0dad3
 # https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
 # https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=5dbd6a821ff753e3b41324c4fb7c58cf65eeea33
 Patch1041:	glibc-2.33-no-x86-isa-level.patch
-Patch1042:	glibc-2.33-gcc-11.1.patch
 # Fix _Float32/_Float64 assumptions to make it work with
 # clang setting __GNUC__ to something > 6
 Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
