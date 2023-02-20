@@ -165,7 +165,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -1429,7 +1429,7 @@ function BuildGlibc() {
   BuildFlags="$BuildFlags -fno-lto"
 
   if [ "$arch" = 'i586' ] || [ "$arch" = 'i686' ]; then
-    # Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
+# Work around https://sourceware.org/ml/libc-alpha/2015-10/msg00745.html
     BuildCC="$BuildCC -fomit-frame-pointer"
     BuildCXX="$BuildCXX -fomit-frame-pointer"
   fi
@@ -1458,6 +1458,11 @@ function BuildGlibc() {
 %endif
    fi
 %endif
+
+# (tpg) enable Memory Tagging Extension (MTE) for aarch64
+   if [ "$arch" = 'aarch64' ]; then
+    ExtraFlags="$ExtraFlags --enable-memory-tagging"
+   fi
 
   # Add-ons
   AddOns="libidn"
