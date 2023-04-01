@@ -1,4 +1,8 @@
+%if %{cross_compiling}
+%bcond_with crosscompilers
+%else
 %bcond_without crosscompilers
+%endif
 # The test suite should be run after updates, but is very
 # slow especially on arches where we have slow builders.
 # Let's cut build time in half for now (but remember to
@@ -857,7 +861,6 @@ posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %{_libdir}/ld-linux-riscv64-lp64d.so.1
 /lib/ld-linux-riscv64-lp64d.so.1
 %{_libdir}/lp64d
-%{_libdir}/lp64d
 %endif
 %{_libdir}/lib*.so.[0-9]*
 %if "%{name}" == "glibc"
@@ -1179,8 +1182,10 @@ can be helpful during program debugging.
 If unsure if you need this, don't install this package.
 
 %files utils
+%if ! %{cross_compiling}
 %{_bindir}/memusage
 %{_bindir}/memusagestat
+%endif
 %{_bindir}/mtrace
 %{_bindir}/pcprofiledump
 %{_bindir}/xtrace
@@ -1506,6 +1511,25 @@ function BuildGlibc() {
     ;;
   esac
 echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd"
+%if %{cross_compiling}
+	export TRIPLET=%{_target_platform}
+	CC="${TRIPLET}-gcc ${CFLAGS}" \
+	../configure \
+		--prefix=%{_prefix} \
+		--bindir=%{_bindir} \
+		--sbindir=%{_sbindir} \
+		--libexecdir=%{_prefix}/libexec \
+		--libdir=${LIBDIR} \
+		--host=${TRIPLET} \
+		--target=${TRIPLET} \
+    		--with-gnu-ld=${TRIPLET}-ld.bfd \
+%if %{with nscd}
+		--enable-build-nscd \
+%else
+		--disable-build-nscd \
+%endif
+		--enable-add-ons=$AddOns
+%else
   CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
@@ -1537,6 +1561,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --enable-kernel=%{enablekernel} \
     --with-headers=$KernelHeaders ${1+"$@"} \
     --with-bugurl=%{bugurl}
+%endif
 
   # FIXME drop -j1 if the Makefiles ever get fixed for parallel build
   if [ "$BuildAltArch" = "yes" ]; then
@@ -1836,7 +1861,11 @@ mkdir -p %{buildroot}%{_var}/cache/ldconfig
 truncate -s 0 %{buildroot}%{_var}/cache/ldconfig/aux-cache
 # Note: This has to happen before creating /etc/ld.so.conf.
 # ldconfig is statically linked, so we can use the new version.
+%if %{cross_compiling}
+ldconfig -N -r %{buildroot}
+%else
 %{buildroot}%{_bindir}/ldconfig -N -r %{buildroot}
+%endif
 
 echo "include /etc/ld.so.conf.d/*.conf" > %{buildroot}%{_sysconfdir}/ld.so.conf
 chmod 644 %{buildroot}%{_sysconfdir}/ld.so.conf
@@ -1984,14 +2013,19 @@ rm -f %{buildroot}%{_bindir}/rpcgen %{buildroot}%{_mandir}/man1/rpcgen.1*
 
 %if %{with locales}
 # Generate locales...
+%if %{cross_compiling}
+export LOCALEDEF=%{_bindir}/localedef
+%else
 export LDSO="$(ls -1 %{buildroot}%{_libdir}/ld-*.so* |head -n1) --library-path %{buildroot}%{_libdir}"
+export LOCALEDEF=%{buildroot}%{_bindir}/localedef
+%endif
 # default charset pseudo-locales
 for DEF_CHARSET in UTF-8 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 \
 	ISO-8859-5 ISO-8859-7 ISO-8859-9 \
 	ISO-8859-13 ISO-8859-14 ISO-8859-15 KOI8-R KOI8-U CP1251
 do
 	# don't use en_DK because of LC_MONETARY
-	$LDSO %{buildroot}%{_bindir}/localedef -c -f $DEF_CHARSET -i en_US --prefix %{buildroot} %{buildroot}%{_datadir}/locale/$DEF_CHARSET
+	$LDSO $LOCALEDEF -c -f $DEF_CHARSET -i en_US --prefix %{buildroot} %{buildroot}%{_datadir}/locale/$DEF_CHARSET
 done
 
 # Build regular locales
@@ -2000,7 +2034,7 @@ export I18NPATH=%{buildroot}%{_datadir}/i18n
 for l in $LANGS; do
     LNG=$(echo $l |cut -d/ -f1)
     CS=$(echo $l |cut -d/ -f2)
-    $LDSO %{buildroot}%{_bindir}/localedef --prefix %{buildroot} -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
+    $LDSO $LOCALEDEF --prefix %{buildroot} -i "$(echo $LNG |sed 's/\([^.]*\)[^@]*\(.*\)/\1\2/')" -c -f $CS %{buildroot}%{_datadir}/locale/$LNG
 done
 
 # Replace files identical to default locales
@@ -2048,7 +2082,7 @@ mkdir -p %{buildroot}%{_libdir}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s ../lib64/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s ..%{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
