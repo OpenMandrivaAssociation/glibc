@@ -169,7 +169,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -232,7 +232,15 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 # release branch
 # git format-patch glibc-2.37
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-# [ currently none ]
+Patch200:	0001-cdefs-Limit-definition-of-fortification-macros.patch
+Patch201:	0002-LoongArch-Add-new-relocation-types.patch
+Patch202:	0003-Use-64-bit-time_t-interfaces-in-strftime-and-strptim.patch
+Patch203:	0004-Account-for-grouping-in-printf-width-bug-30068.patch
+Patch204:	0005-NEWS-Document-CVE-2023-25139.patch
+Patch205:	0006-elf-Smoke-test-ldconfig-p-against-system-etc-ld.so.c.patch
+Patch206:	0007-stdlib-Undo-post-review-change-to-16adc58e73f3-BZ-27.patch
+Patch207:	0008-elf-Restore-ldconfig-libc6-implicit-soname-logic-BZ-.patch
+Patch208:	0009-stdio-common-tests-don-t-double-define-_FORTIFY_SOUR.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
