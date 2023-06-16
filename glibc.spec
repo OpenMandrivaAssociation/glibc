@@ -169,7 +169,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -241,6 +241,19 @@ Patch205:	0006-elf-Smoke-test-ldconfig-p-against-system-etc-ld.so.c.patch
 Patch206:	0007-stdlib-Undo-post-review-change-to-16adc58e73f3-BZ-27.patch
 Patch207:	0008-elf-Restore-ldconfig-libc6-implicit-soname-logic-BZ-.patch
 Patch208:	0009-stdio-common-tests-don-t-double-define-_FORTIFY_SOUR.patch
+Patch209:	0010-gshadow-Matching-sgetsgent-sgetsgent_r-ERANGE-handli.patch
+Patch210:	0011-x86_64-Fix-asm-constraints-in-feraiseexcept-bug-3030.patch
+Patch211:	0012-posix-Fix-system-blocks-SIGCHLD-erroneously-BZ-30163.patch
+Patch212:	0013-gmon-Fix-allocated-buffer-overflow-bug-29444.patch
+Patch213:	0014-gmon-improve-mcount-overflow-handling-BZ-27576.patch
+Patch214:	0015-gmon-fix-memory-corruption-issues-BZ-30101.patch
+Patch215:	0016-gmon-Revert-addition-of-tunables-to-preserve-GLIBC_P.patch
+Patch216:	0017-gmon-Revert-addition-of-tunables-to-the-manual.patch
+Patch217:	0018-Ignore-MAP_VARIABLE-in-tst-mman-consts.py.patch
+Patch218:	0019-__check_pf-Add-a-cancellation-cleanup-handler-BZ-209.patch
+Patch219:	0020-Document-BZ-20975-fix.patch
+Patch220:	0021-io-Fix-record-locking-contants-on-32-bit-arch-with-6.patch
+Patch221:	0022-io-Fix-F_GETLK-F_SETLK-and-F_SETLKW-for-powerpc64.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches

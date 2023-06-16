@@ -1,7 +1,7 @@
 From 590d0e089b06f158ded713f5e5600eaa66dcea44 Mon Sep 17 00:00:00 2001
 From: Joan Bruguera <joanbrugueram@gmail.com>
 Date: Sat, 18 Feb 2023 21:52:15 +0000
-Subject: [PATCH 8/9] elf: Restore ldconfig libc6 implicit soname logic [BZ
+Subject: [PATCH 08/22] elf: Restore ldconfig libc6 implicit soname logic [BZ
  #30125]
 
 While cleaning up old libc version support, the deprecated libc4 code was
@@ -224,5 +224,5 @@ index 0e1a9a9515..e9e9e19d0f 100644
  extern int process_elf_file (const char *file_name, const char *lib,
  			     int *flag, unsigned int *isa_level, char **soname,
 -- 
-2.40.0.rc2
+2.41.0.rc2
 

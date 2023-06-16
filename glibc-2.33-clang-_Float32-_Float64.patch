@@ -228,3 +228,42 @@ diff -up glibc-2.37/sysdeps/x86/bits/floatn.h.41~ glibc-2.37/sysdeps/x86/bits/fl
  #   define __builtin_signbitf128 __signbitf128
  #  endif
  
+diff -up glibc-2.37/math/math.h.omv~ glibc-2.37/math/math.h
+--- glibc-2.37/math/math.h.omv~	2023-06-16 17:01:19.091562898 +0200
++++ glibc-2.37/math/math.h	2023-06-16 17:02:00.575945197 +0200
+@@ -1391,7 +1391,7 @@ template<> struct __iseqsig_type<long do
+   }
+ };
+ 
+-#  if __HAVE_FLOAT32 && __GNUC_PREREQ (13, 0)
++#  if __HAVE_FLOAT32 && __GNUC_PREREQ (13, 0) && !defined(__clang__)
+ template<> struct __iseqsig_type<_Float32>
+ {
+   static int __call (_Float32 __x, _Float32 __y) throw ()
+@@ -1401,7 +1401,7 @@ template<> struct __iseqsig_type<_Float3
+ };
+ #  endif
+ 
+-#  if __HAVE_FLOAT64 && __GNUC_PREREQ (13, 0)
++#  if __HAVE_FLOAT64 && __GNUC_PREREQ (13, 0) && !defined(__clang__)
+ template<> struct __iseqsig_type<_Float64>
+ {
+   static int __call (_Float64 __x, _Float64 __y) throw ()
+@@ -1427,7 +1427,7 @@ template<> struct __iseqsig_type<_Float1
+ };
+ #  endif
+ 
+-#  if __HAVE_FLOAT32X && __GNUC_PREREQ (13, 0)
++#  if __HAVE_FLOAT32X && __GNUC_PREREQ (13, 0) && !defined(__clang__)
+ template<> struct __iseqsig_type<_Float32x>
+ {
+   static int __call (_Float32x __x, _Float32x __y) throw ()
+@@ -1437,7 +1437,7 @@ template<> struct __iseqsig_type<_Float3
+ };
+ #  endif
+ 
+-#  if __HAVE_FLOAT64X && __GNUC_PREREQ (13, 0)
++#  if __HAVE_FLOAT64X && __GNUC_PREREQ (13, 0) && !defined(__clang__)
+ template<> struct __iseqsig_type<_Float64x>
+ {
+   static int __call (_Float64x __x, _Float64x __y) throw ()

@@ -1,7 +1,7 @@
 From 07b9521fc6369d000216b96562ff7c0ed32a16c4 Mon Sep 17 00:00:00 2001
 From: Carlos O'Donell <carlos@redhat.com>
 Date: Thu, 19 Jan 2023 12:50:20 +0100
-Subject: [PATCH 4/9] Account for grouping in printf width (bug 30068)
+Subject: [PATCH 04/22] Account for grouping in printf width (bug 30068)
 
 This is a partial fix for mishandling of grouping when formatting
 integers.  It properly computes the width in the presence of grouping
@@ -156,5 +156,5 @@ index 24c9125f9f..8c0fcbcf78 100644
        if (octal_marker)
          Xprintf_buffer_putc (buf, L_('0'));
 -- 
-2.40.0.rc2
+2.41.0.rc2
 

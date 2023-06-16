@@ -1,7 +1,7 @@
 From d8e1a7590d375159fb5aac07ad8111ab4699e994 Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Wed, 8 Feb 2023 18:11:04 +0100
-Subject: [PATCH 6/9] elf: Smoke-test ldconfig -p against system
+Subject: [PATCH 06/22] elf: Smoke-test ldconfig -p against system
  /etc/ld.so.cache
 
 The test is sufficient to detect the ldconfig bug fixed in
@@ -124,5 +124,5 @@ index 0000000000..ec937bf4ec
 +
 +exit $errors
 -- 
-2.40.0.rc2
+2.41.0.rc2
 

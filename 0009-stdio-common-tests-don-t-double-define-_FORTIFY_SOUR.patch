@@ -1,7 +1,8 @@
 From 1d63573f81945a489ea169636fa11850bc74716b Mon Sep 17 00:00:00 2001
 From: Sam James <sam@gentoo.org>
 Date: Tue, 21 Feb 2023 09:27:26 +0000
-Subject: [PATCH 9/9] stdio-common: tests: don't double-define _FORTIFY_SOURCE
+Subject: [PATCH 09/22] stdio-common: tests: don't double-define
+ _FORTIFY_SOURCE
 
 Exactly the same as 35bcb08eaa953c9b8bef6ab2486dc4361e1f26c0.
 
@@ -49,5 +50,5 @@ index 652d9e5f95..fdc49f32ea 100644
  CFLAGS-tst-memstream-string.c += -fno-builtin-fprintf
  
 -- 
-2.40.0.rc2
+2.41.0.rc2
 

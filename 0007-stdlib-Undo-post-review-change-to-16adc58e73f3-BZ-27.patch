@@ -1,7 +1,7 @@
 From 790e504a172a5ef7399b3e3f481d76394dce0a23 Mon Sep 17 00:00:00 2001
 From: Vitaly Buka <vitalybuka@google.com>
 Date: Sat, 18 Feb 2023 12:53:41 -0800
-Subject: [PATCH 7/9] stdlib: Undo post review change to 16adc58e73f3 [BZ
+Subject: [PATCH 07/22] stdlib: Undo post review change to 16adc58e73f3 [BZ
  #27749]
 
 Post review removal of "goto restart" from
@@ -138,5 +138,5 @@ index 0000000000..0596b9763b
 +#define TEST_FUNCTION do_test
 +#include <support/test-driver.c>
 -- 
-2.40.0.rc2
+2.41.0.rc2
 
