@@ -169,7 +169,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -254,6 +254,11 @@ Patch218:	0019-__check_pf-Add-a-cancellation-cleanup-handler-BZ-209.patch
 Patch219:	0020-Document-BZ-20975-fix.patch
 Patch220:	0021-io-Fix-record-locking-contants-on-32-bit-arch-with-6.patch
 Patch221:	0022-io-Fix-F_GETLK-F_SETLK-and-F_SETLKW-for-powerpc64.patch
+Patch222:	0023-hppa-xfail-debug-tst-ssp-1-when-have-ssp-is-yes-gcc-.patch
+Patch223:	0024-realloc-Limit-chunk-reuse-to-only-growing-requests-B.patch
+Patch224:	0025-elf-_dl_find_object-may-return-1-during-early-startu.patch
+Patch225:	0026-nptl-Fix-tst-cancel30-on-sparc64.patch
+Patch226:	0027-sparc-Fix-la_symbind-for-bind-now-BZ-23734.patch
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
@@ -261,6 +266,8 @@ Patch1002:	glibc-2.34-headers-clang.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch
 Patch1005:	eglibc-mandriva-xterm-xvt.patch
+# Fixes a compile error when doing #include <cmath> in clang++ 16.0.6+
+Patch1006:	glibc-2.37-aarch64-clang++-16.0.6.patch
 Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
 Patch1010:	eglibc-mandriva-timezone.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
