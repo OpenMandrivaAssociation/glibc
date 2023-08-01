@@ -38,3 +38,15 @@ diff -up glibc-2.34/misc/sys/cdefs.h.omv~ glibc-2.34/misc/sys/cdefs.h
  /* Designates dealloc as a function to call to deallocate objects
     allocated by the declared function.  */
  # define __attr_dealloc(dealloc, argno) \
+diff -up glibc-2.38/sysdeps/aarch64/fpu/bits/math-vector.h.omv~ glibc-2.38/sysdeps/aarch64/fpu/bits/math-vector.h
+--- glibc-2.38/sysdeps/aarch64/fpu/bits/math-vector.h.omv~	2023-08-01 10:59:41.414456245 +0200
++++ glibc-2.38/sysdeps/aarch64/fpu/bits/math-vector.h	2023-08-01 10:59:53.954579445 +0200
+@@ -25,7 +25,7 @@
+ /* Get default empty definitions for simd declarations.  */
+ #include <bits/libm-simd-decl-stubs.h>
+ 
+-#if __GNUC_PREREQ(9, 0)
++#if __GNUC_PREREQ(9, 0) && !defined(__clang__)
+ #  define __ADVSIMD_VEC_MATH_SUPPORTED
+ typedef __Float32x4_t __f32x4_t;
+ typedef __Float64x2_t __f64x2_t;
