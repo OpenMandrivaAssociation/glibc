@@ -55,7 +55,9 @@
 %define _disable_ld_no_undefined 1
 
 # (tpg) optimize it a bit
-%global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing -Wformat
+# --hash-style=both is for https://sourceware.org/bugzilla/show_bug.cgi?id=29456
+%global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing -Wformat -Wl,--hash-style=both
+%global build_ldflags %{build_ldflags} -Wl,--hash-style=both
 %global Werror_cflags %{nil}
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
@@ -164,12 +166,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.37
+Version:	2.38
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	8
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -230,35 +232,9 @@ Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostack
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.37
+# git format-patch glibc-2.38
 # (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch200:	0001-cdefs-Limit-definition-of-fortification-macros.patch
-Patch201:	0002-LoongArch-Add-new-relocation-types.patch
-Patch202:	0003-Use-64-bit-time_t-interfaces-in-strftime-and-strptim.patch
-Patch203:	0004-Account-for-grouping-in-printf-width-bug-30068.patch
-Patch204:	0005-NEWS-Document-CVE-2023-25139.patch
-Patch205:	0006-elf-Smoke-test-ldconfig-p-against-system-etc-ld.so.c.patch
-Patch206:	0007-stdlib-Undo-post-review-change-to-16adc58e73f3-BZ-27.patch
-Patch207:	0008-elf-Restore-ldconfig-libc6-implicit-soname-logic-BZ-.patch
-Patch208:	0009-stdio-common-tests-don-t-double-define-_FORTIFY_SOUR.patch
-Patch209:	0010-gshadow-Matching-sgetsgent-sgetsgent_r-ERANGE-handli.patch
-Patch210:	0011-x86_64-Fix-asm-constraints-in-feraiseexcept-bug-3030.patch
-Patch211:	0012-posix-Fix-system-blocks-SIGCHLD-erroneously-BZ-30163.patch
-Patch212:	0013-gmon-Fix-allocated-buffer-overflow-bug-29444.patch
-Patch213:	0014-gmon-improve-mcount-overflow-handling-BZ-27576.patch
-Patch214:	0015-gmon-fix-memory-corruption-issues-BZ-30101.patch
-Patch215:	0016-gmon-Revert-addition-of-tunables-to-preserve-GLIBC_P.patch
-Patch216:	0017-gmon-Revert-addition-of-tunables-to-the-manual.patch
-Patch217:	0018-Ignore-MAP_VARIABLE-in-tst-mman-consts.py.patch
-Patch218:	0019-__check_pf-Add-a-cancellation-cleanup-handler-BZ-209.patch
-Patch219:	0020-Document-BZ-20975-fix.patch
-Patch220:	0021-io-Fix-record-locking-contants-on-32-bit-arch-with-6.patch
-Patch221:	0022-io-Fix-F_GETLK-F_SETLK-and-F_SETLKW-for-powerpc64.patch
-Patch222:	0023-hppa-xfail-debug-tst-ssp-1-when-have-ssp-is-yes-gcc-.patch
-Patch223:	0024-realloc-Limit-chunk-reuse-to-only-growing-requests-B.patch
-Patch224:	0025-elf-_dl_find_object-may-return-1-during-early-startu.patch
-Patch225:	0026-nptl-Fix-tst-cancel30-on-sparc64.patch
-Patch226:	0027-sparc-Fix-la_symbind-for-bind-now-BZ-23734.patch
+# [currently 2.38 branch is pristine]
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches

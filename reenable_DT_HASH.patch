@@ -1,18 +1,38 @@
-diff -up glibc-2.36/config.make.in.60~ glibc-2.36/config.make.in
---- glibc-2.36/config.make.in.60~	2022-08-24 17:40:34.246826821 +0200
-+++ glibc-2.36/config.make.in	2022-08-24 17:41:45.676352975 +0200
-@@ -69,6 +69,7 @@ have-libaudit = @have_libaudit@
+diff -up glibc-2.38/Makeconfig.45~ glibc-2.38/Makeconfig
+--- glibc-2.38/Makeconfig.45~	2023-08-01 01:02:58.246719027 +0200
++++ glibc-2.38/Makeconfig	2023-08-01 01:02:58.303719582 +0200
+@@ -381,6 +381,15 @@ relro-LDFLAGS = -Wl,-z,relro
+ LDFLAGS.so += $(relro-LDFLAGS)
+ LDFLAGS-rtld += $(relro-LDFLAGS)
+ 
++ifeq (yes,$(have-hash-style))
++# For the time being we unconditionally use 'both'.  At some time we
++# should declare statically linked code as 'out of luck' and compile
++# with --hash-style=gnu only.
++hashstyle-LDFLAGS = -Wl,--hash-style=both
++LDFLAGS.so += $(hashstyle-LDFLAGS)
++LDFLAGS-rtld += $(hashstyle-LDFLAGS)
++endif
++
+ # Linker options to enable and disable DT_RELR.
+ ifeq ($(have-dt-relr),yes)
+ dt-relr-ldflag = -Wl,-z,pack-relative-relocs
+diff -up glibc-2.38/Makerules.45~ glibc-2.38/Makerules
+diff -up glibc-2.38/config.make.in.45~ glibc-2.38/config.make.in
+--- glibc-2.38/config.make.in.45~	2023-08-01 01:02:58.301719562 +0200
++++ glibc-2.38/config.make.in	2023-08-01 01:03:54.721267748 +0200
+@@ -71,6 +71,7 @@ have-libaudit = @have_libaudit@
  have-libcap = @have_libcap@
  have-cc-with-libunwind = @libc_cv_cc_with_libunwind@
  bind-now = @bindnow@
 +have-hash-style = @libc_cv_hashstyle@
- use-default-link = @use_default_link@
  have-cxx-thread_local = @libc_cv_cxx_thread_local@
  have-loop-to-function = @libc_cv_cc_loop_to_function@
-diff -up glibc-2.36/configure.60~ glibc-2.36/configure
---- glibc-2.36/configure.60~	2022-07-30 00:03:09.000000000 +0200
-+++ glibc-2.36/configure	2022-08-24 17:42:09.997531784 +0200
-@@ -621,6 +621,7 @@ libc_cv_cc_submachine
+ have-textrel_ifunc = @libc_cv_textrel_ifunc@
+diff -up glibc-2.38/configure.45~ glibc-2.38/configure
+--- glibc-2.38/configure.45~	2023-07-31 19:54:16.000000000 +0200
++++ glibc-2.38/configure	2023-08-01 01:04:54.904850299 +0200
+@@ -655,6 +655,7 @@ libc_cv_cc_submachine
  libc_cv_cc_nofma
  libc_cv_mtls_dialect_gnu2
  libc_cv_has_glob_dat
@@ -20,8 +40,8 @@ diff -up glibc-2.36/configure.60~ glibc-2.36/configure
  libc_cv_fpie
  libc_cv_z_execstack
  ASFLAGS_config
-@@ -6192,6 +6193,33 @@ $as_echo "$libc_cv_fpie" >&6; }
- 
+@@ -7107,6 +7108,32 @@ fi
+ printf "%s\n" "$libc_cv_fpie" >&6; }
  
  
 +{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for --hash-style option" >&5
@@ -33,8 +53,8 @@ diff -up glibc-2.36/configure.60~ glibc-2.36/configure
 +int _start (void) { return 42; }
 +EOF
 +if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS $no_ssp
-+			    -fPIC -shared -o conftest.so conftest.c
-+			    -Wl,--hash-style=both -nostdlib 1>&5'
++                           -fPIC -shared -o conftest.so conftest.c
++                           -Wl,--hash-style=both -nostdlib 1>&5'
 +  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
 +  (eval $ac_try) 2>&5
 +  ac_status=$?
@@ -50,14 +70,13 @@ diff -up glibc-2.36/configure.60~ glibc-2.36/configure
 +{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_hashstyle" >&5
 +$as_echo "$libc_cv_hashstyle" >&6; }
 +
-+
- { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GLOB_DAT reloc" >&5
- $as_echo_n "checking for GLOB_DAT reloc... " >&6; }
- if ${libc_cv_has_glob_dat+:} false; then :
-diff -up glibc-2.36/configure.ac.60~ glibc-2.36/configure.ac
---- glibc-2.36/configure.ac.60~	2022-07-30 00:03:09.000000000 +0200
-+++ glibc-2.36/configure.ac	2022-08-24 17:40:34.249826843 +0200
-@@ -1360,6 +1360,22 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpi
+ 
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for GLOB_DAT reloc" >&5
+ printf %s "checking for GLOB_DAT reloc... " >&6; }
+diff -up glibc-2.38/configure.ac.45~ glibc-2.38/configure.ac
+--- glibc-2.38/configure.ac.45~	2023-07-31 19:54:16.000000000 +0200
++++ glibc-2.38/configure.ac	2023-08-01 01:02:58.303719582 +0200
+@@ -1339,6 +1339,22 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpi
  
  AC_SUBST(libc_cv_fpie)
  
@@ -80,39 +99,3 @@ diff -up glibc-2.36/configure.ac.60~ glibc-2.36/configure.ac
  AC_CACHE_CHECK(for GLOB_DAT reloc,
  	       libc_cv_has_glob_dat, [dnl
  cat > conftest.c <<EOF
-diff -up glibc-2.36/Makeconfig.60~ glibc-2.36/Makeconfig
---- glibc-2.36/Makeconfig.60~	2022-08-24 17:40:34.246826821 +0200
-+++ glibc-2.36/Makeconfig	2022-08-24 17:41:18.307151554 +0200
-@@ -365,6 +365,15 @@ relro-LDFLAGS = -Wl,-z,relro
- LDFLAGS.so += $(relro-LDFLAGS)
- LDFLAGS-rtld += $(relro-LDFLAGS)
- 
-+ifeq (yes,$(have-hash-style))
-+# For the time being we unconditionally use 'both'.  At some time we
-+# should declare statically linked code as 'out of luck' and compile
-+# with --hash-style=gnu only.
-+hashstyle-LDFLAGS = -Wl,--hash-style=both
-+LDFLAGS.so += $(hashstyle-LDFLAGS)
-+LDFLAGS-rtld += $(hashstyle-LDFLAGS)
-+endif
-+
- # Linker options to enable and disable DT_RELR.
- ifeq ($(have-dt-relr),yes)
- dt-relr-ldflag = -Wl,-z,pack-relative-relocs
-diff -up glibc-2.36/Makerules.60~ glibc-2.36/Makerules
---- glibc-2.36/Makerules.60~	2022-08-24 17:40:34.203826503 +0200
-+++ glibc-2.36/Makerules	2022-08-24 17:40:34.246826821 +0200
-@@ -558,6 +558,13 @@ $(common-objpfx)shlib.lds: $(common-objp
- 		  -Wl,--verbose 2>/dev/null | \
- 	  sed > $@T \
- 	      -e '/^=========/,/^=========/!d;/^=========/d' \
-+	      $(if $(filter yes,$(have-hash-style)), \
-+		   -e 's/^.*\.gnu\.hash[ 	]*:.*$$/  .note.ABI-tag : { *(.note.ABI-tag) } &/' \
-+		   -e '/^[ 	]*\.hash[ 	]*:.*$$/{h;d;}' \
-+		   -e '/DATA_SEGMENT_ALIGN/{H;g}' \
-+		, \
-+		   -e 's/^.*\.hash[ 	]*:.*$$/  .note.ABI-tag : { *(.note.ABI-tag) } &/' \
-+	       ) \
- 	      -e 's/^.*\*(\.dynbss).*$$/& \
- 		 PROVIDE(__start___libc_freeres_ptrs = .); \
- 		 *(__libc_freeres_ptrs) \
