@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -192,49 +192,75 @@ Source1003:	locales.sysconfig
 # Ugly, temporary arch specific (x86_32) hack
 Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 
-#-----------------------------------------------------------------------
-# fedora patches
-Patch25:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
-Patch26:	eglibc-fedora-locale-euro.patch
-Patch27:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-fedora-localedata-rh61908.patch
-# We disagree with
-#		http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-streams-rh436349.patch
-# Therefore we don't package/apply it.
-Patch30:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedef.patch
-Patch31:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-locarchive.patch
-Patch32:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
-Patch35:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
-Patch36:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
-Patch38:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
-Patch41:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
-# We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
-# Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
-Patch44:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__libc_multiple_libcs.patch
-Patch46:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
-Patch47:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
-Patch50:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
-Patch65:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-rh827510.patch
-
-#-----------------------------------------------------------------------
-# Clear Linux patches
-Patch83:	https://github.com/clearlinux-pkgs/glibc/blob/master/alternate_trim.patch
-Patch84:	https://github.com/clearlinux-pkgs/glibc/blob/master/madvise-bss.patch
-Patch86:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
-Patch87:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
-Patch88:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
-# (tpg) CLR disabled this patch
-#Patch90:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
-Patch92:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
-Patch101:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
-
 #
 # Patches from upstream
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
 # git format-patch glibc-2.38
-# (PN=200; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-# [currently 2.38 branch is pristine]
+# (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
+Patch000:	0001-stdlib-Improve-tst-realpath-compatibility-with-sourc.patch
+Patch001:	0002-x86-Fix-for-cache-computation-on-AMD-legacy-cpus.patch
+Patch002:	0003-nscd-Do-not-rebuild-getaddrinfo-bug-30709.patch
+Patch003:	0004-x86-Fix-incorrect-scope-of-setting-shared_per_thread.patch
+Patch004:	0005-x86_64-Fix-build-with-disable-multiarch-BZ-30721.patch
+Patch005:	0006-i686-Fix-build-with-disable-multiarch.patch
+Patch006:	0007-malloc-Enable-merging-of-remainders-in-memalign-bug-.patch
+Patch007:	0008-malloc-Remove-bin-scanning-from-memalign-bug-30723.patch
+Patch008:	0009-sysdeps-tst-bz21269-fix-test-parameter.patch
+Patch009:	0010-sysdeps-tst-bz21269-handle-ENOSYS-skip-appropriately.patch
+Patch010:	0011-sysdeps-tst-bz21269-fix-Wreturn-type.patch
+Patch011:	0012-io-Fix-record-locking-contants-for-powerpc64-with-__.patch
+Patch012:	0013-libio-Fix-oversized-__io_vtables.patch
+Patch013:	0014-elf-Do-not-run-constructors-for-proxy-objects.patch
+Patch014:	0015-elf-Always-call-destructors-in-reverse-constructor-o.patch
+Patch015:	0016-elf-Remove-unused-l_text_end-field-from-struct-link_.patch
+Patch016:	0017-elf-Move-l_init_called_next-to-old-place-of-l_text_e.patch
+Patch017:	0018-NEWS-Add-the-2.38.1-bug-list.patch
+Patch018:	0019-CVE-2023-4527-Stack-read-overflow-with-large-TCP-res.patch
+Patch019:	0020-getaddrinfo-Fix-use-after-free-in-getcanonname-CVE-2.patch
+Patch020:	0021-iconv-restore-verbosity-with-unrecognized-encoding-n.patch
+Patch021:	0022-string-Fix-tester-build-with-fortify-enable-with-gcc.patch
+Patch022:	0023-manual-jobs.texi-Add-missing-item-EPERM-for-getpgid.patch
+Patch023:	0024-Fix-leak-in-getaddrinfo-introduced-by-the-fix-for-CV.patch
+Patch024:	0025-Document-CVE-2023-4806-and-CVE-2023-5156-in-NEWS.patch
+Patch025:	0026-Propagate-GLIBC_TUNABLES-in-setxid-binaries.patch
+Patch026:	0027-tunables-Terminate-if-end-of-input-is-reached-CVE-20.patch
+
+#-----------------------------------------------------------------------
+# fedora patches
+Patch125:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-linux-tcsetattr.patch
+Patch126:	eglibc-fedora-locale-euro.patch
+Patch127:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-fedora-localedata-rh61908.patch
+# We disagree with
+#		http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-streams-rh436349.patch
+# Therefore we don't package/apply it.
+Patch130:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-localedef.patch
+Patch131:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-locarchive.patch
+Patch132:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
+Patch135:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
+Patch136:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
+Patch138:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
+Patch141:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
+# We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
+# Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
+Patch144:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-__libc_multiple_libcs.patch
+Patch146:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
+Patch147:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
+Patch150:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
+Patch165:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-rh827510.patch
+
+#-----------------------------------------------------------------------
+# Clear Linux patches
+Patch184:	https://github.com/clearlinux-pkgs/glibc/blob/master/madvise-bss.patch
+Patch186:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/large-page-huge-page.patch
+Patch187:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/use_madv_free.patch
+Patch188:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_tune.patch
+# (tpg) CLR disabled this patch
+#Patch190:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
+Patch192:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
+Patch201:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
+
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
