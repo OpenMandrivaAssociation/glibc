@@ -302,7 +302,7 @@ Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d8
 
 # Patches needed for widewine on aarch64 boxes like Rock5b
 %ifarch %{aarch64}
-Patch1100: 0001-sys-libs-glibc-add-support-for-SHT_RELR-sections.patch
+#Patch1100: 0001-sys-libs-glibc-add-support-for-SHT_RELR-sections.patch
 Patch1101: 0002-tls-libwidevinecdm.so-since-4.10.2252.0-has-TLS-with.patch
 %endif
 
