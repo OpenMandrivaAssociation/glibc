@@ -300,6 +300,12 @@ Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-cra
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 
+# Patches needed for widewine on aarch64 boxes like Rock5b
+%ifarch %{aarch64}
+Patch1100: 0001-sys-libs-glibc-add-support-for-SHT_RELR-sections.patch
+Patch1101: 0002-tls-libwidevinecdm.so-since-4.10.2252.0-has-TLS-with.patch
+%endif
+
 BuildRequires:	autoconf2.5
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
