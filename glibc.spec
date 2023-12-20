@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -619,7 +619,7 @@ Requires(post,preun):	/bin/sh
 Requires(post,preun):	grep
 Requires(post,preun):	sed
 Requires(post,preun):	coreutils
-Requires(post,preun):	util-linux
+Requires(post,preun):	util-linux-core
 Requires(post,preun):	glibc
 Requires(post,preun):	rpm
 
