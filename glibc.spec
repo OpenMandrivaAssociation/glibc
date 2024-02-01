@@ -166,12 +166,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.38
+Version:	2.39
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -199,45 +199,7 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 # release branch
 # git format-patch glibc-2.38
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch000:	0001-stdlib-Improve-tst-realpath-compatibility-with-sourc.patch
-Patch001:	0002-x86-Fix-for-cache-computation-on-AMD-legacy-cpus.patch
-Patch002:	0003-nscd-Do-not-rebuild-getaddrinfo-bug-30709.patch
-Patch003:	0004-x86-Fix-incorrect-scope-of-setting-shared_per_thread.patch
-Patch004:	0005-x86_64-Fix-build-with-disable-multiarch-BZ-30721.patch
-Patch005:	0006-i686-Fix-build-with-disable-multiarch.patch
-Patch006:	0007-malloc-Enable-merging-of-remainders-in-memalign-bug-.patch
-Patch007:	0008-malloc-Remove-bin-scanning-from-memalign-bug-30723.patch
-Patch008:	0009-sysdeps-tst-bz21269-fix-test-parameter.patch
-Patch009:	0010-sysdeps-tst-bz21269-handle-ENOSYS-skip-appropriately.patch
-Patch010:	0011-sysdeps-tst-bz21269-fix-Wreturn-type.patch
-Patch011:	0012-io-Fix-record-locking-contants-for-powerpc64-with-__.patch
-Patch012:	0013-libio-Fix-oversized-__io_vtables.patch
-Patch013:	0014-elf-Do-not-run-constructors-for-proxy-objects.patch
-Patch014:	0015-elf-Always-call-destructors-in-reverse-constructor-o.patch
-Patch015:	0016-elf-Remove-unused-l_text_end-field-from-struct-link_.patch
-Patch016:	0017-elf-Move-l_init_called_next-to-old-place-of-l_text_e.patch
-Patch017:	0018-NEWS-Add-the-2.38.1-bug-list.patch
-Patch018:	0019-CVE-2023-4527-Stack-read-overflow-with-large-TCP-res.patch
-Patch019:	0020-getaddrinfo-Fix-use-after-free-in-getcanonname-CVE-2.patch
-Patch020:	0021-iconv-restore-verbosity-with-unrecognized-encoding-n.patch
-Patch021:	0022-string-Fix-tester-build-with-fortify-enable-with-gcc.patch
-Patch022:	0023-manual-jobs.texi-Add-missing-item-EPERM-for-getpgid.patch
-Patch023:	0024-Fix-leak-in-getaddrinfo-introduced-by-the-fix-for-CV.patch
-Patch024:	0025-Document-CVE-2023-4806-and-CVE-2023-5156-in-NEWS.patch
-Patch025:	0026-Propagate-GLIBC_TUNABLES-in-setxid-binaries.patch
-Patch026:	0027-tunables-Terminate-if-end-of-input-is-reached-CVE-20.patch
-Patch027:	0028-Revert-elf-Remove-unused-l_text_end-field-from-struc.patch
-Patch028:	0029-Revert-elf-Always-call-destructors-in-reverse-constr.patch
-Patch029:	0030-Revert-elf-Move-l_init_called_next-to-old-place-of-l.patch
-Patch030:	0031-sysdeps-sem_open-Clear-O_CREAT-when-semaphore-file-i.patch
-Patch031:	0032-elf-Fix-wrong-break-removal-from-8ee878592c.patch
-Patch032:	0033-LoongArch-Delete-excessively-allocated-memory.patch
-Patch033:	0034-elf-Fix-TLS-modid-reuse-generation-assignment-BZ-290.patch
-Patch034:	0035-elf-Add-TLS-modid-reuse-test-for-bug-29039.patch
-Patch035:	0036-x86-64-Fix-the-dtv-field-load-for-x32-BZ-31184.patch
-Patch036:	0037-x86-64-Fix-the-tcb-field-load-for-x32-BZ-31185.patch
-Patch037:	0038-NEWS-Mention-bug-fixes-for-29039-30694-30709-30721.patch
-Patch038:	0039-NEWS-Mention-bug-fixes-for-30745-30843.patch
+# [currently none required]
 
 
 #-----------------------------------------------------------------------
@@ -272,7 +234,8 @@ Patch188:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/malloc_
 # (tpg) CLR disabled this patch
 #Patch190:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/ldconfig-Os.patch
 Patch192:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.patch
-Patch201:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
+# Needs porting
+#Patch201:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/nostackshrink.patch
 
 
 #-----------------------------------------------------------------------

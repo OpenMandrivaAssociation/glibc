@@ -1,9 +1,9 @@
-diff -up glibc-2.35/malloc/malloc.c.23~ glibc-2.35/malloc/malloc.c
---- glibc-2.35/malloc/malloc.c.23~	2022-02-03 11:12:21.887241710 +0100
-+++ glibc-2.35/malloc/malloc.c	2022-02-03 11:13:26.221492043 +0100
-@@ -2449,6 +2449,9 @@ sysmalloc_mmap (INTERNAL_SIZE_T nb, size
-     madvise_thp (mm, size);
- #endif
+diff -up glibc-2.39/malloc/malloc.c.17~ glibc-2.39/malloc/malloc.c
+--- glibc-2.39/malloc/malloc.c.17~	2024-01-31 23:41:16.674558991 +0100
++++ glibc-2.39/malloc/malloc.c	2024-01-31 23:41:54.042915557 +0100
+@@ -2431,6 +2431,9 @@ sysmalloc_mmap (INTERNAL_SIZE_T nb, size
+ 
+   __set_vma_name (mm, size, " glibc: malloc");
  
 +  if (size > 8 * 1024 * 1024)
 +    __madvise (mm, size , MADV_HUGEPAGE);
