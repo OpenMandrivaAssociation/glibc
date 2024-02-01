@@ -635,7 +635,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Chechen" "ce" "ce_RU")}
 %{expand:%(sh %{S:1000} "Cherokee" "chr" "chr_US")}
 %{expand:%(sh %{S:1000} "Central Kurdish" "ckb" "ckb_IQ")}
-%{expand:%(sh %{S:1000} "Crimean Tatar" "crh" "crh_UA")}
+%{expand:%(sh %{S:1000} "Crimean Tatar" "crh" "crh_UA" "crh_RU")}
 %{expand:%(sh %{S:1000} "Czech" "cs" "cs_CZ")}
 %{expand:%(sh %{S:1000} "Chuvash" "cv" "cv_RU")}
 %{expand:%(sh %{S:1000} "Welsh" "cy" "cy_GB")}
@@ -659,6 +659,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Friulan" "fur" "fur_IT")}
 %{expand:%(sh %{S:1000} "Frisian" "fy" "fy_DE" "fy_NL")}
 %{expand:%(sh %{S:1000} "Irish" "ga" "ga_IE")}
+%{expand:%(sh %{S:1000} "Gawhwali" "gbm" "gbm_IN")}
 %{expand:%(sh %{S:1000} "Scottish Gaelic" "gd" "gd_GB")}
 %{expand:%(sh %{S:1000} "Galician" "gl" "gl_ES")}
 %{expand:%(sh %{S:1000} "Gujarati" "gu" "gu_IN")}
@@ -693,6 +694,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Konkani" "kok" "kok_IN")}
 %{expand:%(sh %{S:1000} "Kashmiri" "ks" "ks_IN")}
 %{expand:%(sh %{S:1000} "Kurdish" "ku" "ku_TR")}
+%{expand:%(sh %{S:1000} "Komi" "kv" "kv_RU")}
 %{expand:%(sh %{S:1000} "Cornish" "kw" "kw_GB")}
 %{expand:%(sh %{S:1000} "Kyrgyz" "ky" "ky_KG")}
 %{expand:%(sh %{S:1000} "Luxembourgish" "lb" "lb_LU")}
@@ -755,10 +757,12 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Slovenian" "sl" "sl_SI")}
 %{expand:%(sh %{S:1000} "Samoan" "sm" "sm_WS")}
 %{expand:%(sh %{S:1000} "Serbian" "sr" "sr_ME" "sr_RS")}
+%{expand:%(sh %{S:1000} "Saho" "ssy" "ssy_ER")}
 %{expand:%(sh %{S:1000} "Somali" "so" "so_DJ" "so_ET" "so_KE" "so_SO")}
 %{expand:%(sh %{S:1000} "Albanian" "sq" "sq_AL" "sq_MK")}
 %{expand:%(sh %{S:1000} "Swati" "ss" "ss_ZA")}
 %{expand:%(sh %{S:1000} "Sotho" "st" "st_ZA")}
+%{expand:%(sh %{S:1000} "Sundanese" "su" "su_ID")}
 %{expand:%(sh %{S:1000} "Swedish" "sv" "sv_FI" "sv_SE")}
 # sw_XX?
 %{expand:%(sh %{S:1000} "Swahili" "sw" "sw_KE" "sw_TZ")}
@@ -774,6 +778,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Pilipino" "tl" "r:ph" "fil_PH" "tl_PH")}
 %{expand:%(sh %{S:1000} "Tswana" "tn" "tn_ZA")}
 %{expand:%(sh %{S:1000} "Tonga" "to" "to_TO")}
+%{expand:%(sh %{S:1000} "Toki Pona" "tok")}
 %{expand:%(sh %{S:1000} "Turkish" "tr" "tr_CY" "tr_TR")}
 %{expand:%(sh %{S:1000} "Tsonga" "ts" "ts_ZA")}
 %{expand:%(sh %{S:1000} "Tatar" "tt" "tt_RU")}
@@ -793,6 +798,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Yoruba" "yo" "yo_NG")}
 %{expand:%(sh %{S:1000} "Yue Chinese (Cantonese)" "yue" "yue_HK")}
 %{expand:%(sh %{S:1000} "Yau" "yuw" "yuw_PG")}
+%{expand:%(sh %{S:1000} "Tamazight" "zgh" "zgh_MA")}
 %{expand:%(sh %{S:1000} "Chinese" "zh" "zh_CN" "zh_HK" "zh_SG" "zh_TW" "cmn_TW" "hak_TW" "lzh_TW" "nan_TW")}
 %{expand:%(sh %{S:1000} "Zulu" "zu" "zu_ZA")}
 
