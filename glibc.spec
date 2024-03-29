@@ -2097,10 +2097,10 @@ ln -s /lib64/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/DRHT5YTPK4WWVGL3GIN5BF2IKX2ODHZ3/
 mkdir -p %{buildroot}%{_libdir}
 (cd %{buildroot}%{_libdir} && rm -f lp64d; ln -sf . lp64d)
-# Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1
+# Compat symlink -- some versions of ld hardcoded /lib/ld-linux-riscv64-lp64d.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s ..%{_libdir}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s ../%{_lib}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
