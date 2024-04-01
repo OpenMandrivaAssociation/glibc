@@ -2100,7 +2100,7 @@ mkdir -p %{buildroot}%{_libdir}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-riscv64-lp64d.so.1
 # as dynamic loader
 mkdir -p %{buildroot}/lib
-ln -s ../%{_lib}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+ln -s /%{_lib}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
 %endif
 
 %ifarch %{x86_64}
