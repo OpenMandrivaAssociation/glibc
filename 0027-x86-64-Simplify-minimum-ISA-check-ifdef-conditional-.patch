@@ -1,0 +1,67 @@
+From 7b92f46f04c6cbce19d19ae1099628431858996c Mon Sep 17 00:00:00 2001
+From: Sunil K Pandey <skpgkp2@gmail.com>
+Date: Thu, 29 Feb 2024 17:57:02 -0800
+Subject: [PATCH 27/31] x86-64: Simplify minimum ISA check ifdef conditional
+ with if
+
+Replace minimum ISA check ifdef conditional with if.  Since
+MINIMUM_X86_ISA_LEVEL and AVX_X86_ISA_LEVEL are compile time constants,
+compiler will perform constant folding optimization, getting same
+results.
+
+Reviewed-by: H.J. Lu <hjl.tools@gmail.com>
+(cherry picked from commit b6e3898194bbae78910bbe9cd086937014961e45)
+---
+ sysdeps/x86/cpu-features.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/sysdeps/x86/cpu-features.c b/sysdeps/x86/cpu-features.c
+index b8abe733ab..3d7c2819d7 100644
+--- a/sysdeps/x86/cpu-features.c
++++ b/sysdeps/x86/cpu-features.c
+@@ -1199,9 +1199,8 @@ no_cpuid:
+ 	       TUNABLE_CALLBACK (set_x86_shstk));
+ #endif
+ 
+-#if MINIMUM_X86_ISA_LEVEL < AVX_X86_ISA_LEVEL
+-  if (GLRO(dl_x86_cpu_features).xsave_state_size != 0)
+-#endif
++  if (MINIMUM_X86_ISA_LEVEL >= AVX_X86_ISA_LEVEL
++      || (GLRO(dl_x86_cpu_features).xsave_state_size != 0))
+     {
+       if (CPU_FEATURE_USABLE_P (cpu_features, XSAVEC))
+ 	{
+@@ -1222,24 +1221,22 @@ no_cpuid:
+ #endif
+ 	}
+     }
+-#if MINIMUM_X86_ISA_LEVEL < AVX_X86_ISA_LEVEL
+   else
+     {
+-# ifdef __x86_64__
++#ifdef __x86_64__
+       GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_fxsave;
+-#  ifdef SHARED
++# ifdef SHARED
+       GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+-#  endif
+-# else
+-#  ifdef SHARED
++# endif
++#else
++# ifdef SHARED
+       if (CPU_FEATURE_USABLE_P (cpu_features, FXSR))
+ 	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+       else
+ 	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fnsave;
+-#  endif
+ # endif
+-    }
+ #endif
++    }
+ 
+ #ifdef SHARED
+ # ifdef __x86_64__
+-- 
+2.44.0
+

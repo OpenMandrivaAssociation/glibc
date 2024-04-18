@@ -1,0 +1,23 @@
+From 983f34a1252de3ca6f2305c211d86530ea42010e Mon Sep 17 00:00:00 2001
+From: caiyinyu <caiyinyu@loongson.cn>
+Date: Mon, 11 Mar 2024 16:07:48 +0800
+Subject: [PATCH 10/31] LoongArch: Correct {__ieee754, _}_scalb -> {__ieee754,
+ _}_scalbf
+
+---
+ sysdeps/loongarch/fpu/e_scalbf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysdeps/loongarch/fpu/e_scalbf.c b/sysdeps/loongarch/fpu/e_scalbf.c
+index 9f05485236..7c0395fbb5 100644
+--- a/sysdeps/loongarch/fpu/e_scalbf.c
++++ b/sysdeps/loongarch/fpu/e_scalbf.c
+@@ -57,4 +57,4 @@ __ieee754_scalbf (float x, float fn)
+ 
+   return x;
+ }
+-libm_alias_finite (__ieee754_scalb, __scalb)
++libm_alias_finite (__ieee754_scalbf, __scalbf)
+-- 
+2.44.0
+

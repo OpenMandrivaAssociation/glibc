@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -197,10 +197,40 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.38
+# git format-patch glibc-2.39
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
 # [currently none required]
-
+Patch0:		0001-Replace-advisories-directory.patch
+Patch1:		0002-arm-Remove-wrong-ldr-from-_dl_start_user-BZ-31339.patch
+Patch2:		0003-mips-FIx-clone3-implementation-BZ-31325.patch
+Patch3:		0004-math-Update-mips64-ulps.patch
+Patch4:		0005-S390-Do-not-clobber-r7-in-clone-BZ-31402.patch
+Patch5:		0006-Use-gcc-__builtin_stdc_-builtins-in-stdbit.h-if-poss.patch
+Patch6:		0007-linux-Use-rseq-area-unconditionally-in-sched_getcpu-.patch
+Patch7:		0008-powerpc-Add-HWCAP3-HWCAP4-data-to-TCB-for-Power-Arch.patch
+Patch8:		0009-powerpc-Placeholder-and-infrastructure-build-support.patch
+Patch9:		0010-LoongArch-Correct-__ieee754-_-_scalb-__ieee754-_-_sc.patch
+Patch10:	0011-x86-64-Save-APX-registers-in-ld.so-trampoline.patch
+Patch11:	0012-x86-Update-_dl_tlsdesc_dynamic-to-preserve-caller-sa.patch
+Patch12:	0013-x86-64-Update-_dl_tlsdesc_dynamic-to-preserve-AMX-re.patch
+Patch13:	0014-x86-64-Allocate-state-buffer-space-for-RDI-RSI-and-R.patch
+Patch14:	0015-Ignore-undefined-symbols-for-mtls-dialect-gnu2.patch
+Patch15:	0016-arm-Update-_dl_tlsdesc_dynamic-to-preserve-caller-sa.patch
+Patch16:	0017-elf-Enable-TLS-descriptor-tests-on-aarch64.patch
+Patch17:	0018-Add-tst-gnu2-tls2mod1-to-test-internal-extras.patch
+Patch18:	0019-x86-Fix-Zen3-Zen4-ERMS-selection-BZ-30994.patch
+Patch19:	0020-x86-Do-not-prefer-ERMS-for-memset-on-Zen3.patch
+Patch20:	0021-x86-Expand-the-comment-on-when-REP-STOSB-is-used-on-.patch
+Patch21:	0022-i386-Use-generic-memrchr-in-libc-bug-31316.patch
+Patch22:	0023-aarch64-fpu-Sync-libmvec-routines-from-2.39-and-befo.patch
+Patch23:	0024-aarch64-fix-check-for-SVE-support-in-assembler.patch
+Patch24:	0025-AArch64-Check-kernel-version-for-SVE-ifuncs.patch
+Patch25:	0026-x86-64-Don-t-use-SSE-resolvers-for-ISA-level-3-or-ab.patch
+Patch26:	0027-x86-64-Simplify-minimum-ISA-check-ifdef-conditional-.patch
+Patch27:	0028-powerpc-Fix-ld.so-address-determination-for-PCREL-mo.patch
+Patch28:	0029-Apply-the-Makefile-sorting-fix.patch
+Patch29:	0030-x86_64-Exclude-SSE-AVX-and-FMA4-variants-in-libm-mul.patch
+Patch30:	0031-iconv-ISO-2022-CN-EXT-fix-out-of-bound-writes-when-w.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

@@ -1,0 +1,115 @@
+From 9883f4304cfb1558d0f1e6d9f48c4ab0a35355fe Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Wed, 28 Feb 2024 09:51:14 -0800
+Subject: [PATCH 26/31] x86-64: Don't use SSE resolvers for ISA level 3 or
+ above
+
+When glibc is built with ISA level 3 or above enabled, SSE resolvers
+aren't available and glibc fails to build:
+
+ld: .../elf/librtld.os: in function `init_cpu_features':
+.../elf/../sysdeps/x86/cpu-features.c:1200:(.text+0x1445f): undefined reference to `_dl_runtime_resolve_fxsave'
+ld: .../elf/librtld.os: relocation R_X86_64_PC32 against undefined hidden symbol `_dl_runtime_resolve_fxsave' can not be used when making a shared object
+/usr/local/bin/ld: final link failed: bad value
+
+For ISA level 3 or above, don't use _dl_runtime_resolve_fxsave nor
+_dl_tlsdesc_dynamic_fxsave.
+
+This fixes BZ #31429.
+Reviewed-by: Noah Goldstein <goldstein.w.n@gmail.com>
+
+(cherry picked from commit befe2d3c4dec8be2cdd01a47132e47bdb7020922)
+---
+ sysdeps/x86/cpu-features.c  | 17 +++++++++++------
+ sysdeps/x86_64/dl-tlsdesc.S | 15 +++++++++------
+ 2 files changed, 20 insertions(+), 12 deletions(-)
+
+diff --git a/sysdeps/x86/cpu-features.c b/sysdeps/x86/cpu-features.c
+index 6fe1b728c6..b8abe733ab 100644
+--- a/sysdeps/x86/cpu-features.c
++++ b/sysdeps/x86/cpu-features.c
+@@ -18,6 +18,7 @@
+ 
+ #include <dl-hwcap.h>
+ #include <libc-pointer-arith.h>
++#include <isa-level.h>
+ #include <get-isa-level.h>
+ #include <cacheinfo.h>
+ #include <dl-cacheinfo.h>
+@@ -1198,7 +1199,9 @@ no_cpuid:
+ 	       TUNABLE_CALLBACK (set_x86_shstk));
+ #endif
+ 
++#if MINIMUM_X86_ISA_LEVEL < AVX_X86_ISA_LEVEL
+   if (GLRO(dl_x86_cpu_features).xsave_state_size != 0)
++#endif
+     {
+       if (CPU_FEATURE_USABLE_P (cpu_features, XSAVEC))
+ 	{
+@@ -1219,22 +1222,24 @@ no_cpuid:
+ #endif
+ 	}
+     }
++#if MINIMUM_X86_ISA_LEVEL < AVX_X86_ISA_LEVEL
+   else
+     {
+-#ifdef __x86_64__
++# ifdef __x86_64__
+       GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_fxsave;
+-# ifdef SHARED
++#  ifdef SHARED
+       GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+-# endif
+-#else
+-# ifdef SHARED
++#  endif
++# else
++#  ifdef SHARED
+       if (CPU_FEATURE_USABLE_P (cpu_features, FXSR))
+ 	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+       else
+ 	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fnsave;
++#  endif
+ # endif
+-#endif
+     }
++#endif
+ 
+ #ifdef SHARED
+ # ifdef __x86_64__
+diff --git a/sysdeps/x86_64/dl-tlsdesc.S b/sysdeps/x86_64/dl-tlsdesc.S
+index ea69f5223a..057a10862a 100644
+--- a/sysdeps/x86_64/dl-tlsdesc.S
++++ b/sysdeps/x86_64/dl-tlsdesc.S
+@@ -20,6 +20,7 @@
+ #include <tls.h>
+ #include <cpu-features-offsets.h>
+ #include <features-offsets.h>
++#include <isa-level.h>
+ #include "tlsdesc.h"
+ #include "dl-trampoline-save.h"
+ 
+@@ -79,12 +80,14 @@ _dl_tlsdesc_undefweak:
+ 	.size	_dl_tlsdesc_undefweak, .-_dl_tlsdesc_undefweak
+ 
+ #ifdef SHARED
+-# define USE_FXSAVE
+-# define STATE_SAVE_ALIGNMENT	16
+-# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_fxsave
+-# include "dl-tlsdesc-dynamic.h"
+-# undef _dl_tlsdesc_dynamic
+-# undef USE_FXSAVE
++# if MINIMUM_X86_ISA_LEVEL < AVX_X86_ISA_LEVEL
++#  define USE_FXSAVE
++#  define STATE_SAVE_ALIGNMENT	16
++#  define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_fxsave
++#  include "dl-tlsdesc-dynamic.h"
++#  undef _dl_tlsdesc_dynamic
++#  undef USE_FXSAVE
++# endif
+ 
+ # define USE_XSAVE
+ # define STATE_SAVE_ALIGNMENT	64
+-- 
+2.44.0
+

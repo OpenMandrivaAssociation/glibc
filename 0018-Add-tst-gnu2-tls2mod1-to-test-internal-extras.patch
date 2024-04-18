@@ -1,0 +1,29 @@
+From 5a461f2949ded98d8211939f84988bc464c7b4fe Mon Sep 17 00:00:00 2001
+From: Andreas Schwab <schwab@suse.de>
+Date: Tue, 19 Mar 2024 13:49:50 +0100
+Subject: [PATCH 18/31] Add tst-gnu2-tls2mod1 to test-internal-extras
+
+That allows sysdeps/x86_64/tst-gnu2-tls2mod1.S to use internal headers.
+
+Fixes: 717ebfa85c ("x86-64: Allocate state buffer space for RDI, RSI and RBX")
+(cherry picked from commit fd7ee2e6c5eb49e4a630a9978b4d668bff6354ee)
+---
+ sysdeps/x86_64/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/sysdeps/x86_64/Makefile b/sysdeps/x86_64/Makefile
+index e8babc9a4e..9d374a3299 100644
+--- a/sysdeps/x86_64/Makefile
++++ b/sysdeps/x86_64/Makefile
+@@ -210,6 +210,8 @@ tst-plt-rewrite2-ENV = GLIBC_TUNABLES=glibc.cpu.plt_rewrite=2
+ $(objpfx)tst-plt-rewrite2: $(objpfx)tst-plt-rewritemod2.so
+ endif
+ 
++test-internal-extras += tst-gnu2-tls2mod1
++
+ endif # $(subdir) == elf
+ 
+ ifeq ($(subdir),csu)
+-- 
+2.44.0
+

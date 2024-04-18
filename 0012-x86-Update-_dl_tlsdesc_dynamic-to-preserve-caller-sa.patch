@@ -1,0 +1,1493 @@
+From a364304718725a31ab141936322855c76c73e35e Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Mon, 26 Feb 2024 06:37:03 -0800
+Subject: [PATCH 12/31] x86: Update _dl_tlsdesc_dynamic to preserve
+ caller-saved registers
+
+Compiler generates the following instruction sequence for GNU2 dynamic
+TLS access:
+
+	leaq	tls_var@TLSDESC(%rip), %rax
+	call	*tls_var@TLSCALL(%rax)
+
+or
+
+	leal	tls_var@TLSDESC(%ebx), %eax
+	call	*tls_var@TLSCALL(%eax)
+
+CALL instruction is transparent to compiler which assumes all registers,
+except for EFLAGS and RAX/EAX, are unchanged after CALL.  When
+_dl_tlsdesc_dynamic is called, it calls __tls_get_addr on the slow
+path.  __tls_get_addr is a normal function which doesn't preserve any
+caller-saved registers.  _dl_tlsdesc_dynamic saved and restored integer
+caller-saved registers, but didn't preserve any other caller-saved
+registers.  Add _dl_tlsdesc_dynamic IFUNC functions for FNSAVE, FXSAVE,
+XSAVE and XSAVEC to save and restore all caller-saved registers.  This
+fixes BZ #31372.
+
+Add GLRO(dl_x86_64_runtime_resolve) with GLRO(dl_x86_tlsdesc_dynamic)
+to optimize elf_machine_runtime_setup.
+Reviewed-by: Noah Goldstein <goldstein.w.n@gmail.com>
+
+(cherry picked from commit 0aac205a814a8511e98d02b91a8dc908f1c53cde)
+---
+ elf/Makefile                                 |  18 ++
+ elf/tst-gnu2-tls2.c                          | 122 ++++++++++++
+ elf/tst-gnu2-tls2.h                          |  36 ++++
+ elf/tst-gnu2-tls2mod0.c                      |  31 +++
+ elf/tst-gnu2-tls2mod1.c                      |  31 +++
+ elf/tst-gnu2-tls2mod2.c                      |  31 +++
+ sysdeps/i386/dl-machine.h                    |   2 +-
+ sysdeps/i386/dl-tlsdesc-dynamic.h            | 190 +++++++++++++++++++
+ sysdeps/i386/dl-tlsdesc.S                    | 115 +++++------
+ sysdeps/x86/Makefile                         |   7 +-
+ sysdeps/x86/cpu-features.c                   |  56 +++++-
+ sysdeps/x86/dl-procinfo.c                    |  16 ++
+ sysdeps/{x86_64 => x86}/features-offsets.sym |   2 +
+ sysdeps/x86/sysdep.h                         |   6 +
+ sysdeps/x86/tst-gnu2-tls2.c                  |  20 ++
+ sysdeps/x86_64/Makefile                      |   2 +-
+ sysdeps/x86_64/dl-machine.h                  |  19 +-
+ sysdeps/x86_64/dl-procinfo.c                 |  16 ++
+ sysdeps/x86_64/dl-tlsdesc-dynamic.h          | 166 ++++++++++++++++
+ sysdeps/x86_64/dl-tlsdesc.S                  | 108 ++++-------
+ sysdeps/x86_64/dl-trampoline-save.h          |  34 ++++
+ sysdeps/x86_64/dl-trampoline-state.h         |  51 +++++
+ sysdeps/x86_64/dl-trampoline.S               |  20 +-
+ sysdeps/x86_64/dl-trampoline.h               |  34 +---
+ 24 files changed, 920 insertions(+), 213 deletions(-)
+ create mode 100644 elf/tst-gnu2-tls2.c
+ create mode 100644 elf/tst-gnu2-tls2.h
+ create mode 100644 elf/tst-gnu2-tls2mod0.c
+ create mode 100644 elf/tst-gnu2-tls2mod1.c
+ create mode 100644 elf/tst-gnu2-tls2mod2.c
+ create mode 100644 sysdeps/i386/dl-tlsdesc-dynamic.h
+ rename sysdeps/{x86_64 => x86}/features-offsets.sym (89%)
+ create mode 100644 sysdeps/x86/tst-gnu2-tls2.c
+ create mode 100644 sysdeps/x86_64/dl-tlsdesc-dynamic.h
+ create mode 100644 sysdeps/x86_64/dl-trampoline-save.h
+ create mode 100644 sysdeps/x86_64/dl-trampoline-state.h
+
+diff --git a/elf/Makefile b/elf/Makefile
+index 5d78b659ce..c5c37a9147 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -424,6 +424,7 @@ tests += \
+   tst-glibc-hwcaps-prepend \
+   tst-global1 \
+   tst-global2 \
++  tst-gnu2-tls2 \
+   tst-initfinilazyfail \
+   tst-initorder \
+   tst-initorder2 \
+@@ -846,6 +847,9 @@ modules-names += \
+   tst-filterobj-flt \
+   tst-finilazyfailmod \
+   tst-globalmod2 \
++  tst-gnu2-tls2mod0 \
++  tst-gnu2-tls2mod1 \
++  tst-gnu2-tls2mod2 \
+   tst-initlazyfailmod \
+   tst-initorder2a \
+   tst-initorder2b \
+@@ -3044,8 +3048,22 @@ $(objpfx)tst-tlsgap.out: \
+   $(objpfx)tst-tlsgap-mod0.so \
+   $(objpfx)tst-tlsgap-mod1.so \
+   $(objpfx)tst-tlsgap-mod2.so
++
++$(objpfx)tst-gnu2-tls2: $(shared-thread-library)
++$(objpfx)tst-gnu2-tls2.out: \
++  $(objpfx)tst-gnu2-tls2mod0.so \
++  $(objpfx)tst-gnu2-tls2mod1.so \
++  $(objpfx)tst-gnu2-tls2mod2.so
++
+ ifeq (yes,$(have-mtls-dialect-gnu2))
++# This test fails if dl_tlsdesc_dynamic doesn't preserve all caller-saved
++# registers.  See https://sourceware.org/bugzilla/show_bug.cgi?id=31372
++test-xfail-tst-gnu2-tls2 = yes
++
+ CFLAGS-tst-tlsgap-mod0.c += -mtls-dialect=gnu2
+ CFLAGS-tst-tlsgap-mod1.c += -mtls-dialect=gnu2
+ CFLAGS-tst-tlsgap-mod2.c += -mtls-dialect=gnu2
++CFLAGS-tst-gnu2-tls2mod0.c += -mtls-dialect=gnu2
++CFLAGS-tst-gnu2-tls2mod1.c += -mtls-dialect=gnu2
++CFLAGS-tst-gnu2-tls2mod2.c += -mtls-dialect=gnu2
+ endif
+diff --git a/elf/tst-gnu2-tls2.c b/elf/tst-gnu2-tls2.c
+new file mode 100644
+index 0000000000..7ac04d7f33
+--- /dev/null
++++ b/elf/tst-gnu2-tls2.c
+@@ -0,0 +1,122 @@
++/* Test TLSDESC relocation.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <http://www.gnu.org/licenses/>.  */
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <dlfcn.h>
++#include <pthread.h>
++#include <support/xdlfcn.h>
++#include <support/xthread.h>
++#include <support/check.h>
++#include <support/test-driver.h>
++#include "tst-gnu2-tls2.h"
++
++#ifndef IS_SUPPORTED
++# define IS_SUPPORTED() true
++#endif
++
++/* An architecture can define it to clobber caller-saved registers in
++   malloc below to verify that the implicit TLSDESC call won't change
++   caller-saved registers.  */
++#ifndef PREPARE_MALLOC
++# define PREPARE_MALLOC()
++#endif
++
++extern void * __libc_malloc (size_t);
++
++size_t malloc_counter = 0;
++
++void *
++malloc (size_t n)
++{
++  PREPARE_MALLOC ();
++  malloc_counter++;
++  return __libc_malloc (n);
++}
++
++static void *mod[3];
++#ifndef MOD
++# define MOD(i) "tst-gnu2-tls2mod" #i ".so"
++#endif
++static const char *modname[3] = { MOD(0), MOD(1), MOD(2) };
++#undef MOD
++
++static void
++open_mod (int i)
++{
++  mod[i] = xdlopen (modname[i], RTLD_LAZY);
++  printf ("open %s\n", modname[i]);
++}
++
++static void
++close_mod (int i)
++{
++  xdlclose (mod[i]);
++  mod[i] = NULL;
++  printf ("close %s\n", modname[i]);
++}
++
++static void
++access_mod (int i, const char *sym)
++{
++  struct tls var = { -1, -1, -1, -1 };
++  struct tls *(*f) (struct tls *) = xdlsym (mod[i], sym);
++  /* Check that our malloc is called.  */
++  malloc_counter = 0;
++  struct tls *p = f (&var);
++  TEST_VERIFY (malloc_counter != 0);
++  printf ("access %s: %s() = %p\n", modname[i], sym, p);
++  TEST_VERIFY_EXIT (memcmp (p, &var, sizeof (var)) == 0);
++  ++(p->a);
++}
++
++static void *
++start (void *arg)
++{
++  /* The DTV generation is at the last dlopen of mod0 and the
++     entry for mod1 is NULL.  */
++
++  open_mod (1); /* Reuse modid of mod1. Uses dynamic TLS.  */
++
++  /* Force the slow path in GNU2 TLS descriptor call.  */
++  access_mod (1, "apply_tls");
++
++  return arg;
++}
++
++static int
++do_test (void)
++{
++  if (!IS_SUPPORTED ())
++    return EXIT_UNSUPPORTED;
++
++  open_mod (0);
++  open_mod (1);
++  open_mod (2);
++  close_mod (0);
++  close_mod (1); /* Create modid gap at mod1.  */
++  open_mod (0); /* Reuse modid of mod0, bump generation count.  */
++
++  /* Create a thread where DTV of mod1 is NULL.  */
++  pthread_t t = xpthread_create (NULL, start, NULL);
++  xpthread_join (t);
++  return 0;
++}
++
++#include <support/test-driver.c>
+diff --git a/elf/tst-gnu2-tls2.h b/elf/tst-gnu2-tls2.h
+new file mode 100644
+index 0000000000..77964a57a3
+--- /dev/null
++++ b/elf/tst-gnu2-tls2.h
+@@ -0,0 +1,36 @@
++/* Test TLSDESC relocation.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <stdint.h>
++
++struct tls
++{
++  int64_t a, b, c, d;
++};
++
++extern struct tls *apply_tls (struct tls *);
++
++/* An architecture can define them to verify that clobber caller-saved
++   registers aren't changed by the implicit TLSDESC call.  */
++#ifndef BEFORE_TLSDESC_CALL
++# define BEFORE_TLSDESC_CALL()
++#endif
++
++#ifndef AFTER_TLSDESC_CALL
++# define AFTER_TLSDESC_CALL()
++#endif
+diff --git a/elf/tst-gnu2-tls2mod0.c b/elf/tst-gnu2-tls2mod0.c
+new file mode 100644
+index 0000000000..45556a0e17
+--- /dev/null
++++ b/elf/tst-gnu2-tls2mod0.c
+@@ -0,0 +1,31 @@
++/* DSO used by tst-gnu2-tls2.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-gnu2-tls2.h"
++
++__thread struct tls tls_var0 __attribute__ ((visibility ("hidden")));
++
++struct tls *
++apply_tls (struct tls *p)
++{
++  BEFORE_TLSDESC_CALL ();
++  tls_var0 = *p;
++  struct tls *ret = &tls_var0;
++  AFTER_TLSDESC_CALL ();
++  return ret;
++}
+diff --git a/elf/tst-gnu2-tls2mod1.c b/elf/tst-gnu2-tls2mod1.c
+new file mode 100644
+index 0000000000..e10b9dbc0a
+--- /dev/null
++++ b/elf/tst-gnu2-tls2mod1.c
+@@ -0,0 +1,31 @@
++/* DSO used by tst-gnu2-tls2.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-gnu2-tls2.h"
++
++__thread struct tls tls_var1[100] __attribute__ ((visibility ("hidden")));
++
++struct tls *
++apply_tls (struct tls *p)
++{
++  BEFORE_TLSDESC_CALL ();
++  tls_var1[1] = *p;
++  struct tls *ret = &tls_var1[1];
++  AFTER_TLSDESC_CALL ();
++  return ret;
++}
+diff --git a/elf/tst-gnu2-tls2mod2.c b/elf/tst-gnu2-tls2mod2.c
+new file mode 100644
+index 0000000000..141af51e55
+--- /dev/null
++++ b/elf/tst-gnu2-tls2mod2.c
+@@ -0,0 +1,31 @@
++/* DSO used by tst-gnu2-tls2.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-gnu2-tls2.h"
++
++__thread struct tls tls_var2 __attribute__ ((visibility ("hidden")));
++
++struct tls *
++apply_tls (struct tls *p)
++{
++  BEFORE_TLSDESC_CALL ();
++  tls_var2 = *p;
++  struct tls *ret = &tls_var2;
++  AFTER_TLSDESC_CALL ();
++  return ret;
++}
+diff --git a/sysdeps/i386/dl-machine.h b/sysdeps/i386/dl-machine.h
+index fc1ef96587..50d74fe6e9 100644
+--- a/sysdeps/i386/dl-machine.h
++++ b/sysdeps/i386/dl-machine.h
+@@ -347,7 +347,7 @@ and creates an unsatisfiable circular dependency.\n",
+ 		  {
+ 		    td->arg = _dl_make_tlsdesc_dynamic
+ 		      (sym_map, sym->st_value + (ElfW(Word))td->arg);
+-		    td->entry = _dl_tlsdesc_dynamic;
++		    td->entry = GLRO(dl_x86_tlsdesc_dynamic);
+ 		  }
+ 		else
+ #  endif
+diff --git a/sysdeps/i386/dl-tlsdesc-dynamic.h b/sysdeps/i386/dl-tlsdesc-dynamic.h
+new file mode 100644
+index 0000000000..3627028577
+--- /dev/null
++++ b/sysdeps/i386/dl-tlsdesc-dynamic.h
+@@ -0,0 +1,190 @@
++/* Thread-local storage handling in the ELF dynamic linker.  i386 version.
++   Copyright (C) 2004-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#undef REGISTER_SAVE_AREA
++
++#if !defined USE_FNSAVE && (STATE_SAVE_ALIGNMENT % 16) != 0
++# error STATE_SAVE_ALIGNMENT must be multiple of 16
++#endif
++
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++# ifdef USE_FNSAVE
++#  error USE_FNSAVE shouldn't be defined
++# endif
++# ifdef USE_FXSAVE
++/* Use fxsave to save all registers.  */
++#  define REGISTER_SAVE_AREA	512
++# endif
++#else
++# ifdef USE_FNSAVE
++/* Use fnsave to save x87 FPU stack registers.  */
++#  define REGISTER_SAVE_AREA	108
++# else
++#  ifndef USE_FXSAVE
++#   error USE_FXSAVE must be defined
++#  endif
++/* Use fxsave to save all registers.  Add 12 bytes to align the stack
++   to 16 bytes.  */
++#  define REGISTER_SAVE_AREA	(512 + 12)
++# endif
++#endif
++
++	.hidden _dl_tlsdesc_dynamic
++	.global	_dl_tlsdesc_dynamic
++	.type	_dl_tlsdesc_dynamic,@function
++
++     /* This function is used for symbols that need dynamic TLS.
++
++	%eax points to the TLS descriptor, such that 0(%eax) points to
++	_dl_tlsdesc_dynamic itself, and 4(%eax) points to a struct
++	tlsdesc_dynamic_arg object.  It must return in %eax the offset
++	between the thread pointer and the object denoted by the
++	argument, without clobbering any registers.
++
++	The assembly code that follows is a rendition of the following
++	C code, hand-optimized a little bit.
++
++ptrdiff_t
++__attribute__ ((__regparm__ (1)))
++_dl_tlsdesc_dynamic (struct tlsdesc *tdp)
++{
++  struct tlsdesc_dynamic_arg *td = tdp->arg;
++  dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer + DTV_OFFSET);
++  if (__builtin_expect (td->gen_count <= dtv[0].counter
++			&& (dtv[td->tlsinfo.ti_module].pointer.val
++			    != TLS_DTV_UNALLOCATED),
++			1))
++    return dtv[td->tlsinfo.ti_module].pointer.val + td->tlsinfo.ti_offset
++      - __thread_pointer;
++
++  return ___tls_get_addr (&td->tlsinfo) - __thread_pointer;
++}
++*/
++	cfi_startproc
++	.align 16
++_dl_tlsdesc_dynamic:
++	/* Like all TLS resolvers, preserve call-clobbered registers.
++	   We need two scratch regs anyway.  */
++	subl	$32, %esp
++	cfi_adjust_cfa_offset (32)
++	movl	%ecx, 20(%esp)
++	movl	%edx, 24(%esp)
++	movl	TLSDESC_ARG(%eax), %eax
++	movl	%gs:DTV_OFFSET, %edx
++	movl	TLSDESC_GEN_COUNT(%eax), %ecx
++	cmpl	(%edx), %ecx
++	ja	2f
++	movl	TLSDESC_MODID(%eax), %ecx
++	movl	(%edx,%ecx,8), %edx
++	cmpl	$-1, %edx
++	je	2f
++	movl	TLSDESC_MODOFF(%eax), %eax
++	addl	%edx, %eax
++1:
++	movl	20(%esp), %ecx
++	subl	%gs:0, %eax
++	movl	24(%esp), %edx
++	addl	$32, %esp
++	cfi_adjust_cfa_offset (-32)
++	ret
++	.p2align 4,,7
++2:
++	cfi_adjust_cfa_offset (32)
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++	movl	%ebx, -28(%esp)
++	movl	%esp, %ebx
++	cfi_def_cfa_register(%ebx)
++	and	$-STATE_SAVE_ALIGNMENT, %esp
++#endif
++#ifdef REGISTER_SAVE_AREA
++	subl	$REGISTER_SAVE_AREA, %esp
++# if !DL_RUNTIME_RESOLVE_REALIGN_STACK
++	cfi_adjust_cfa_offset(REGISTER_SAVE_AREA)
++# endif
++#else
++# if !DL_RUNTIME_RESOLVE_REALIGN_STACK
++#  error DL_RUNTIME_RESOLVE_REALIGN_STACK must be true
++# endif
++	/* Allocate stack space of the required size to save the state.  */
++	LOAD_PIC_REG (cx)
++	subl	RTLD_GLOBAL_RO_DL_X86_CPU_FEATURES_OFFSET+XSAVE_STATE_SIZE_OFFSET+_rtld_local_ro@GOTOFF(%ecx), %esp
++#endif
++#ifdef USE_FNSAVE
++	fnsave	(%esp)
++#elif defined USE_FXSAVE
++	fxsave	(%esp)
++#else
++	/* Save the argument for ___tls_get_addr in EAX.  */
++	movl	%eax, %ecx
++	movl	$TLSDESC_CALL_STATE_SAVE_MASK, %eax
++	xorl	%edx, %edx
++	/* Clear the XSAVE Header.  */
++# ifdef USE_XSAVE
++	movl	%edx, (512)(%esp)
++	movl	%edx, (512 + 4 * 1)(%esp)
++	movl	%edx, (512 + 4 * 2)(%esp)
++	movl	%edx, (512 + 4 * 3)(%esp)
++# endif
++	movl	%edx, (512 + 4 * 4)(%esp)
++	movl	%edx, (512 + 4 * 5)(%esp)
++	movl	%edx, (512 + 4 * 6)(%esp)
++	movl	%edx, (512 + 4 * 7)(%esp)
++	movl	%edx, (512 + 4 * 8)(%esp)
++	movl	%edx, (512 + 4 * 9)(%esp)
++	movl	%edx, (512 + 4 * 10)(%esp)
++	movl	%edx, (512 + 4 * 11)(%esp)
++	movl	%edx, (512 + 4 * 12)(%esp)
++	movl	%edx, (512 + 4 * 13)(%esp)
++	movl	%edx, (512 + 4 * 14)(%esp)
++	movl	%edx, (512 + 4 * 15)(%esp)
++# ifdef USE_XSAVE
++	xsave	(%esp)
++# else
++	xsavec	(%esp)
++# endif
++	/* Restore the argument for ___tls_get_addr in EAX.  */
++	movl	%ecx, %eax
++#endif
++	call	HIDDEN_JUMPTARGET (___tls_get_addr)
++	/* Get register content back.  */
++#ifdef USE_FNSAVE
++	frstor	(%esp)
++#elif defined USE_FXSAVE
++	fxrstor	(%esp)
++#else
++	/* Save and retore ___tls_get_addr return value stored in EAX.  */
++	movl	%eax, %ecx
++	movl	$TLSDESC_CALL_STATE_SAVE_MASK, %eax
++	xorl	%edx, %edx
++	xrstor	(%esp)
++	movl	%ecx, %eax
++#endif
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++	mov	%ebx, %esp
++	cfi_def_cfa_register(%esp)
++	movl	-28(%esp), %ebx
++	cfi_restore(%ebx)
++#else
++	addl	$REGISTER_SAVE_AREA, %esp
++	cfi_adjust_cfa_offset(-REGISTER_SAVE_AREA)
++#endif
++	jmp	1b
++	cfi_endproc
++	.size	_dl_tlsdesc_dynamic, .-_dl_tlsdesc_dynamic
++
++#undef STATE_SAVE_ALIGNMENT
+diff --git a/sysdeps/i386/dl-tlsdesc.S b/sysdeps/i386/dl-tlsdesc.S
+index 90d93caa0c..f002feee56 100644
+--- a/sysdeps/i386/dl-tlsdesc.S
++++ b/sysdeps/i386/dl-tlsdesc.S
+@@ -18,8 +18,27 @@
+ 
+ #include <sysdep.h>
+ #include <tls.h>
++#include <cpu-features-offsets.h>
++#include <features-offsets.h>
+ #include "tlsdesc.h"
+ 
++#ifndef DL_STACK_ALIGNMENT
++/* Due to GCC bug:
++
++   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58066
++
++   __tls_get_addr may be called with 4-byte stack alignment.  Although
++   this bug has been fixed in GCC 4.9.4, 5.3 and 6, we can't assume
++   that stack will be always aligned at 16 bytes.  */
++# define DL_STACK_ALIGNMENT 4
++#endif
++
++/* True if _dl_tlsdesc_dynamic should align stack for STATE_SAVE or align
++   stack to MINIMUM_ALIGNMENT bytes before calling ___tls_get_addr.  */
++#define DL_RUNTIME_RESOLVE_REALIGN_STACK \
++  (STATE_SAVE_ALIGNMENT > DL_STACK_ALIGNMENT \
++   || MINIMUM_ALIGNMENT > DL_STACK_ALIGNMENT)
++
+ 	.text
+ 
+      /* This function is used to compute the TP offset for symbols in
+@@ -65,69 +84,35 @@ _dl_tlsdesc_undefweak:
+ 	.size	_dl_tlsdesc_undefweak, .-_dl_tlsdesc_undefweak
+ 
+ #ifdef SHARED
+-	.hidden _dl_tlsdesc_dynamic
+-	.global	_dl_tlsdesc_dynamic
+-	.type	_dl_tlsdesc_dynamic,@function
+-
+-     /* This function is used for symbols that need dynamic TLS.
+-
+-	%eax points to the TLS descriptor, such that 0(%eax) points to
+-	_dl_tlsdesc_dynamic itself, and 4(%eax) points to a struct
+-	tlsdesc_dynamic_arg object.  It must return in %eax the offset
+-	between the thread pointer and the object denoted by the
+-	argument, without clobbering any registers.
+-
+-	The assembly code that follows is a rendition of the following
+-	C code, hand-optimized a little bit.
+-
+-ptrdiff_t
+-__attribute__ ((__regparm__ (1)))
+-_dl_tlsdesc_dynamic (struct tlsdesc *tdp)
+-{
+-  struct tlsdesc_dynamic_arg *td = tdp->arg;
+-  dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer + DTV_OFFSET);
+-  if (__builtin_expect (td->gen_count <= dtv[0].counter
+-			&& (dtv[td->tlsinfo.ti_module].pointer.val
+-			    != TLS_DTV_UNALLOCATED),
+-			1))
+-    return dtv[td->tlsinfo.ti_module].pointer.val + td->tlsinfo.ti_offset
+-      - __thread_pointer;
+-
+-  return ___tls_get_addr (&td->tlsinfo) - __thread_pointer;
+-}
+-*/
+-	cfi_startproc
+-	.align 16
+-_dl_tlsdesc_dynamic:
+-	/* Like all TLS resolvers, preserve call-clobbered registers.
+-	   We need two scratch regs anyway.  */
+-	subl	$28, %esp
+-	cfi_adjust_cfa_offset (28)
+-	movl	%ecx, 20(%esp)
+-	movl	%edx, 24(%esp)
+-	movl	TLSDESC_ARG(%eax), %eax
+-	movl	%gs:DTV_OFFSET, %edx
+-	movl	TLSDESC_GEN_COUNT(%eax), %ecx
+-	cmpl	(%edx), %ecx
+-	ja	.Lslow
+-	movl	TLSDESC_MODID(%eax), %ecx
+-	movl	(%edx,%ecx,8), %edx
+-	cmpl	$-1, %edx
+-	je	.Lslow
+-	movl	TLSDESC_MODOFF(%eax), %eax
+-	addl	%edx, %eax
+-.Lret:
+-	movl	20(%esp), %ecx
+-	subl	%gs:0, %eax
+-	movl	24(%esp), %edx
+-	addl	$28, %esp
+-	cfi_adjust_cfa_offset (-28)
+-	ret
+-	.p2align 4,,7
+-.Lslow:
+-	cfi_adjust_cfa_offset (28)
+-	call	HIDDEN_JUMPTARGET (___tls_get_addr)
+-	jmp	.Lret
+-	cfi_endproc
+-	.size	_dl_tlsdesc_dynamic, .-_dl_tlsdesc_dynamic
++# define USE_FNSAVE
++# define MINIMUM_ALIGNMENT	4
++# define STATE_SAVE_ALIGNMENT	4
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_fnsave
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef MINIMUM_ALIGNMENT
++# undef USE_FNSAVE
++
++# define MINIMUM_ALIGNMENT	16
++
++# define USE_FXSAVE
++# define STATE_SAVE_ALIGNMENT	16
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_fxsave
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_FXSAVE
++
++# define USE_XSAVE
++# define STATE_SAVE_ALIGNMENT	64
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_xsave
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_XSAVE
++
++# define USE_XSAVEC
++# define STATE_SAVE_ALIGNMENT	64
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_xsavec
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_XSAVEC
+ #endif /* SHARED */
+diff --git a/sysdeps/x86/Makefile b/sysdeps/x86/Makefile
+index 4d50b327b5..992aabe43e 100644
+--- a/sysdeps/x86/Makefile
++++ b/sysdeps/x86/Makefile
+@@ -1,5 +1,5 @@
+ ifeq ($(subdir),csu)
+-gen-as-const-headers += cpu-features-offsets.sym
++gen-as-const-headers += cpu-features-offsets.sym features-offsets.sym
+ endif
+ 
+ ifeq ($(subdir),elf)
+@@ -86,6 +86,11 @@ endif
+ tst-ifunc-isa-2-ENV = GLIBC_TUNABLES=glibc.cpu.hwcaps=-SSE4_2,-AVX,-AVX2,-AVX512F
+ tst-ifunc-isa-2-static-ENV = $(tst-ifunc-isa-2-ENV)
+ tst-hwcap-tunables-ARGS = -- $(host-test-program-cmd)
++
++CFLAGS-tst-gnu2-tls2.c += -msse
++CFLAGS-tst-gnu2-tls2mod0.c += -msse2 -mtune=haswell
++CFLAGS-tst-gnu2-tls2mod1.c += -msse2 -mtune=haswell
++CFLAGS-tst-gnu2-tls2mod2.c += -msse2 -mtune=haswell
+ endif
+ 
+ ifeq ($(subdir),math)
+diff --git a/sysdeps/x86/cpu-features.c b/sysdeps/x86/cpu-features.c
+index 25e6622a79..835113b42f 100644
+--- a/sysdeps/x86/cpu-features.c
++++ b/sysdeps/x86/cpu-features.c
+@@ -27,8 +27,13 @@
+ extern void TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *)
+   attribute_hidden;
+ 
+-#if defined SHARED && defined __x86_64__
+-# include <dl-plt-rewrite.h>
++#if defined SHARED
++extern void _dl_tlsdesc_dynamic_fxsave (void) attribute_hidden;
++extern void _dl_tlsdesc_dynamic_xsave (void) attribute_hidden;
++extern void _dl_tlsdesc_dynamic_xsavec (void) attribute_hidden;
++
++# ifdef __x86_64__
++#  include <dl-plt-rewrite.h>
+ 
+ static void
+ TUNABLE_CALLBACK (set_plt_rewrite) (tunable_val_t *valp)
+@@ -47,6 +52,15 @@ TUNABLE_CALLBACK (set_plt_rewrite) (tunable_val_t *valp)
+ 		 : plt_rewrite_jmp);
+     }
+ }
++# else
++extern void _dl_tlsdesc_dynamic_fnsave (void) attribute_hidden;
++# endif
++#endif
++
++#ifdef __x86_64__
++extern void _dl_runtime_resolve_fxsave (void) attribute_hidden;
++extern void _dl_runtime_resolve_xsave (void) attribute_hidden;
++extern void _dl_runtime_resolve_xsavec (void) attribute_hidden;
+ #endif
+ 
+ #ifdef __LP64__
+@@ -1130,6 +1144,44 @@ no_cpuid:
+ 	       TUNABLE_CALLBACK (set_x86_shstk));
+ #endif
+ 
++  if (GLRO(dl_x86_cpu_features).xsave_state_size != 0)
++    {
++      if (CPU_FEATURE_USABLE_P (cpu_features, XSAVEC))
++	{
++#ifdef __x86_64__
++	  GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_xsavec;
++#endif
++#ifdef SHARED
++	  GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_xsavec;
++#endif
++	}
++      else
++	{
++#ifdef __x86_64__
++	  GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_xsave;
++#endif
++#ifdef SHARED
++	  GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_xsave;
++#endif
++	}
++    }
++  else
++    {
++#ifdef __x86_64__
++      GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_fxsave;
++# ifdef SHARED
++      GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
++# endif
++#else
++# ifdef SHARED
++      if (CPU_FEATURE_USABLE_P (cpu_features, FXSR))
++	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
++      else
++	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fnsave;
++# endif
++#endif
++    }
++
+ #ifdef SHARED
+ # ifdef __x86_64__
+   TUNABLE_GET (plt_rewrite, tunable_val_t *,
+diff --git a/sysdeps/x86/dl-procinfo.c b/sysdeps/x86/dl-procinfo.c
+index ee957b4d70..5920d4b320 100644
+--- a/sysdeps/x86/dl-procinfo.c
++++ b/sysdeps/x86/dl-procinfo.c
+@@ -86,3 +86,19 @@ PROCINFO_CLASS const char _dl_x86_platforms[4][9]
+ #else
+ ,
+ #endif
++
++#if defined SHARED && !IS_IN (ldconfig)
++# if !defined PROCINFO_DECL
++  ._dl_x86_tlsdesc_dynamic
++# else
++PROCINFO_CLASS void * _dl_x86_tlsdesc_dynamic
++# endif
++# ifndef PROCINFO_DECL
++= NULL
++# endif
++# ifdef PROCINFO_DECL
++;
++# else
++,
++# endif
++#endif
+diff --git a/sysdeps/x86_64/features-offsets.sym b/sysdeps/x86/features-offsets.sym
+similarity index 89%
+rename from sysdeps/x86_64/features-offsets.sym
+rename to sysdeps/x86/features-offsets.sym
+index 9e4be3393a..77e990c705 100644
+--- a/sysdeps/x86_64/features-offsets.sym
++++ b/sysdeps/x86/features-offsets.sym
+@@ -3,4 +3,6 @@
+ #include <ldsodefs.h>
+ 
+ RTLD_GLOBAL_RO_DL_X86_CPU_FEATURES_OFFSET offsetof (struct rtld_global_ro, _dl_x86_cpu_features)
++#ifdef __x86_64__
+ RTLD_GLOBAL_DL_X86_FEATURE_1_OFFSET offsetof (struct rtld_global, _dl_x86_feature_1)
++#endif
+diff --git a/sysdeps/x86/sysdep.h b/sysdeps/x86/sysdep.h
+index 837fd28734..485cad9c02 100644
+--- a/sysdeps/x86/sysdep.h
++++ b/sysdeps/x86/sysdep.h
+@@ -70,6 +70,12 @@
+    | (1 << X86_XSTATE_ZMM_H_ID))
+ #endif
+ 
++/* States which should be saved for TLSDESC_CALL and TLS_DESC_CALL.
++   Compiler assumes that all registers, including x87 FPU stack registers,
++   are unchanged after CALL, except for EFLAGS and RAX/EAX.  */
++#define TLSDESC_CALL_STATE_SAVE_MASK	\
++  (STATE_SAVE_MASK | (1 << X86_XSTATE_X87_ID))
++
+ /* Constants for bits in __x86_string_control:  */
+ 
+ /* Avoid short distance REP MOVSB.  */
+diff --git a/sysdeps/x86/tst-gnu2-tls2.c b/sysdeps/x86/tst-gnu2-tls2.c
+new file mode 100644
+index 0000000000..de900a423b
+--- /dev/null
++++ b/sysdeps/x86/tst-gnu2-tls2.c
+@@ -0,0 +1,20 @@
++#ifndef __x86_64__
++#include <sys/platform/x86.h>
++
++#define IS_SUPPORTED() CPU_FEATURE_ACTIVE (SSE2)
++#endif
++
++/* Clear XMM0...XMM7  */
++#define PREPARE_MALLOC()				\
++{							\
++  asm volatile ("xorps %%xmm0, %%xmm0" : : : "xmm0" );	\
++  asm volatile ("xorps %%xmm1, %%xmm1" : : : "xmm1" );	\
++  asm volatile ("xorps %%xmm2, %%xmm2" : : : "xmm2" );	\
++  asm volatile ("xorps %%xmm3, %%xmm3" : : : "xmm3" );	\
++  asm volatile ("xorps %%xmm4, %%xmm4" : : : "xmm4" );	\
++  asm volatile ("xorps %%xmm5, %%xmm5" : : : "xmm5" );	\
++  asm volatile ("xorps %%xmm6, %%xmm6" : : : "xmm6" );	\
++  asm volatile ("xorps %%xmm7, %%xmm7" : : : "xmm7" );	\
++}
++
++#include <elf/tst-gnu2-tls2.c>
+diff --git a/sysdeps/x86_64/Makefile b/sysdeps/x86_64/Makefile
+index 90f4ecfd26..e8babc9a4e 100644
+--- a/sysdeps/x86_64/Makefile
++++ b/sysdeps/x86_64/Makefile
+@@ -10,7 +10,7 @@ LDFLAGS-rtld += -Wl,-z,nomark-plt
+ endif
+ 
+ ifeq ($(subdir),csu)
+-gen-as-const-headers += features-offsets.sym link-defines.sym
++gen-as-const-headers += link-defines.sym
+ endif
+ 
+ ifeq ($(subdir),gmon)
+diff --git a/sysdeps/x86_64/dl-machine.h b/sysdeps/x86_64/dl-machine.h
+index 6d605d0d32..ff5d45f7cb 100644
+--- a/sysdeps/x86_64/dl-machine.h
++++ b/sysdeps/x86_64/dl-machine.h
+@@ -71,9 +71,6 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
+ 			   int lazy, int profile)
+ {
+   Elf64_Addr *got;
+-  extern void _dl_runtime_resolve_fxsave (ElfW(Word)) attribute_hidden;
+-  extern void _dl_runtime_resolve_xsave (ElfW(Word)) attribute_hidden;
+-  extern void _dl_runtime_resolve_xsavec (ElfW(Word)) attribute_hidden;
+   extern void _dl_runtime_profile_sse (ElfW(Word)) attribute_hidden;
+   extern void _dl_runtime_profile_avx (ElfW(Word)) attribute_hidden;
+   extern void _dl_runtime_profile_avx512 (ElfW(Word)) attribute_hidden;
+@@ -96,8 +93,6 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
+       /* Identify this shared object.  */
+       *(ElfW(Addr) *) (got + 1) = (ElfW(Addr)) l;
+ 
+-      const struct cpu_features* cpu_features = __get_cpu_features ();
+-
+ #ifdef SHARED
+       /* The got[2] entry contains the address of a function which gets
+ 	 called to get the address of a so far unresolved function and
+@@ -107,6 +102,7 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
+ 	 end in this function.  */
+       if (__glibc_unlikely (profile))
+ 	{
++	  const struct cpu_features* cpu_features = __get_cpu_features ();
+ 	  if (X86_ISA_CPU_FEATURE_USABLE_P (cpu_features, AVX512F))
+ 	    *(ElfW(Addr) *) (got + 2) = (ElfW(Addr)) &_dl_runtime_profile_avx512;
+ 	  else if (X86_ISA_CPU_FEATURE_USABLE_P (cpu_features, AVX))
+@@ -126,15 +122,8 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
+ 	  /* This function will get called to fix up the GOT entry
+ 	     indicated by the offset on the stack, and then jump to
+ 	     the resolved address.  */
+-	  if (MINIMUM_X86_ISA_LEVEL >= AVX_X86_ISA_LEVEL
+-	      || GLRO(dl_x86_cpu_features).xsave_state_size != 0)
+-	    *(ElfW(Addr) *) (got + 2)
+-	      = (CPU_FEATURE_USABLE_P (cpu_features, XSAVEC)
+-		 ? (ElfW(Addr)) &_dl_runtime_resolve_xsavec
+-		 : (ElfW(Addr)) &_dl_runtime_resolve_xsave);
+-	  else
+-	    *(ElfW(Addr) *) (got + 2)
+-	      = (ElfW(Addr)) &_dl_runtime_resolve_fxsave;
++	  *(ElfW(Addr) *) (got + 2)
++	    = (ElfW(Addr)) GLRO(dl_x86_64_runtime_resolve);
+ 	}
+     }
+ 
+@@ -383,7 +372,7 @@ and creates an unsatisfiable circular dependency.\n",
+ 		  {
+ 		    td->arg = _dl_make_tlsdesc_dynamic
+ 		      (sym_map, sym->st_value + reloc->r_addend);
+-		    td->entry = _dl_tlsdesc_dynamic;
++		    td->entry = GLRO(dl_x86_tlsdesc_dynamic);
+ 		  }
+ 		else
+ #  endif
+diff --git a/sysdeps/x86_64/dl-procinfo.c b/sysdeps/x86_64/dl-procinfo.c
+index 4d1d790fbb..06637a8154 100644
+--- a/sysdeps/x86_64/dl-procinfo.c
++++ b/sysdeps/x86_64/dl-procinfo.c
+@@ -41,5 +41,21 @@
+ 
+ #include <sysdeps/x86/dl-procinfo.c>
+ 
++#if !IS_IN (ldconfig)
++# if !defined PROCINFO_DECL && defined SHARED
++  ._dl_x86_64_runtime_resolve
++# else
++PROCINFO_CLASS void * _dl_x86_64_runtime_resolve
++# endif
++# ifndef PROCINFO_DECL
++= NULL
++# endif
++# if !defined SHARED || defined PROCINFO_DECL
++;
++# else
++,
++# endif
++#endif
++
+ #undef PROCINFO_DECL
+ #undef PROCINFO_CLASS
+diff --git a/sysdeps/x86_64/dl-tlsdesc-dynamic.h b/sysdeps/x86_64/dl-tlsdesc-dynamic.h
+new file mode 100644
+index 0000000000..0c2e8d5320
+--- /dev/null
++++ b/sysdeps/x86_64/dl-tlsdesc-dynamic.h
+@@ -0,0 +1,166 @@
++/* Thread-local storage handling in the ELF dynamic linker.  x86_64 version.
++   Copyright (C) 2004-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef SECTION
++# define SECTION(p)	p
++#endif
++
++#undef REGISTER_SAVE_AREA
++#undef LOCAL_STORAGE_AREA
++#undef BASE
++
++#include "dl-trampoline-state.h"
++
++	.section SECTION(.text),"ax",@progbits
++
++	.hidden _dl_tlsdesc_dynamic
++	.global	_dl_tlsdesc_dynamic
++	.type	_dl_tlsdesc_dynamic,@function
++
++     /* %rax points to the TLS descriptor, such that 0(%rax) points to
++	_dl_tlsdesc_dynamic itself, and 8(%rax) points to a struct
++	tlsdesc_dynamic_arg object.  It must return in %rax the offset
++	between the thread pointer and the object denoted by the
++	argument, without clobbering any registers.
++
++	The assembly code that follows is a rendition of the following
++	C code, hand-optimized a little bit.
++
++ptrdiff_t
++_dl_tlsdesc_dynamic (register struct tlsdesc *tdp asm ("%rax"))
++{
++  struct tlsdesc_dynamic_arg *td = tdp->arg;
++  dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer + DTV_OFFSET);
++  if (__builtin_expect (td->gen_count <= dtv[0].counter
++			&& (dtv[td->tlsinfo.ti_module].pointer.val
++			    != TLS_DTV_UNALLOCATED),
++			1))
++    return dtv[td->tlsinfo.ti_module].pointer.val + td->tlsinfo.ti_offset
++      - __thread_pointer;
++
++  return __tls_get_addr_internal (&td->tlsinfo) - __thread_pointer;
++}
++*/
++	cfi_startproc
++	.align 16
++_dl_tlsdesc_dynamic:
++	_CET_ENDBR
++	/* Preserve call-clobbered registers that we modify.
++	   We need two scratch regs anyway.  */
++	movq	%rsi, -16(%rsp)
++	mov	%fs:DTV_OFFSET, %RSI_LP
++	movq	%rdi, -8(%rsp)
++	movq	TLSDESC_ARG(%rax), %rdi
++	movq	(%rsi), %rax
++	cmpq	%rax, TLSDESC_GEN_COUNT(%rdi)
++	ja	2f
++	movq	TLSDESC_MODID(%rdi), %rax
++	salq	$4, %rax
++	movq	(%rax,%rsi), %rax
++	cmpq	$-1, %rax
++	je	2f
++	addq	TLSDESC_MODOFF(%rdi), %rax
++1:
++	movq	-16(%rsp), %rsi
++	sub	%fs:0, %RAX_LP
++	movq	-8(%rsp), %rdi
++	ret
++2:
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++	movq	%rbx, -24(%rsp)
++	mov	%RSP_LP, %RBX_LP
++	cfi_def_cfa_register(%rbx)
++	and	$-STATE_SAVE_ALIGNMENT, %RSP_LP
++#endif
++#ifdef REGISTER_SAVE_AREA
++# if DL_RUNTIME_RESOLVE_REALIGN_STACK
++	/* STATE_SAVE_OFFSET has space for 8 integer registers.  But we
++	   need space for RCX, RDX, RSI, RDI, R8, R9, R10 and R11, plus
++	   RBX above.  */
++	sub	$(REGISTER_SAVE_AREA + STATE_SAVE_ALIGNMENT), %RSP_LP
++# else
++	sub	$REGISTER_SAVE_AREA, %RSP_LP
++	cfi_adjust_cfa_offset(REGISTER_SAVE_AREA)
++# endif
++#else
++	/* Allocate stack space of the required size to save the state.  */
++	sub	_rtld_local_ro+RTLD_GLOBAL_RO_DL_X86_CPU_FEATURES_OFFSET+XSAVE_STATE_SIZE_OFFSET(%rip), %RSP_LP
++#endif
++	/* Besides rdi and rsi, saved above, save rcx, rdx, r8, r9,
++	   r10 and r11.  */
++	movq	%rcx, REGISTER_SAVE_RCX(%rsp)
++	movq	%rdx, REGISTER_SAVE_RDX(%rsp)
++	movq	%r8, REGISTER_SAVE_R8(%rsp)
++	movq	%r9, REGISTER_SAVE_R9(%rsp)
++	movq	%r10, REGISTER_SAVE_R10(%rsp)
++	movq	%r11, REGISTER_SAVE_R11(%rsp)
++#ifdef USE_FXSAVE
++	fxsave	STATE_SAVE_OFFSET(%rsp)
++#else
++	movl	$TLSDESC_CALL_STATE_SAVE_MASK, %eax
++	xorl	%edx, %edx
++	/* Clear the XSAVE Header.  */
++# ifdef USE_XSAVE
++	movq	%rdx, (STATE_SAVE_OFFSET + 512)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8)(%rsp)
++# endif
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 2)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 3)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 4)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 5)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 6)(%rsp)
++	movq	%rdx, (STATE_SAVE_OFFSET + 512 + 8 * 7)(%rsp)
++# ifdef USE_XSAVE
++	xsave	STATE_SAVE_OFFSET(%rsp)
++# else
++	xsavec	STATE_SAVE_OFFSET(%rsp)
++# endif
++#endif
++	/* %rdi already points to the tlsinfo data structure.  */
++	call	HIDDEN_JUMPTARGET (__tls_get_addr)
++	# Get register content back.
++#ifdef USE_FXSAVE
++	fxrstor	STATE_SAVE_OFFSET(%rsp)
++#else
++	/* Save and retore __tls_get_addr return value stored in RAX.  */
++	mov	%RAX_LP, %RCX_LP
++	movl	$TLSDESC_CALL_STATE_SAVE_MASK, %eax
++	xorl	%edx, %edx
++	xrstor	STATE_SAVE_OFFSET(%rsp)
++	mov	%RCX_LP, %RAX_LP
++#endif
++	movq	REGISTER_SAVE_R11(%rsp), %r11
++	movq	REGISTER_SAVE_R10(%rsp), %r10
++	movq	REGISTER_SAVE_R9(%rsp), %r9
++	movq	REGISTER_SAVE_R8(%rsp), %r8
++	movq	REGISTER_SAVE_RDX(%rsp), %rdx
++	movq	REGISTER_SAVE_RCX(%rsp), %rcx
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++	mov	%RBX_LP, %RSP_LP
++	cfi_def_cfa_register(%rsp)
++	movq	-24(%rsp), %rbx
++	cfi_restore(%rbx)
++#else
++	add	$REGISTER_SAVE_AREA, %RSP_LP
++	cfi_adjust_cfa_offset(-REGISTER_SAVE_AREA)
++#endif
++	jmp	1b
++	cfi_endproc
++	.size	_dl_tlsdesc_dynamic, .-_dl_tlsdesc_dynamic
++
++#undef STATE_SAVE_ALIGNMENT
+diff --git a/sysdeps/x86_64/dl-tlsdesc.S b/sysdeps/x86_64/dl-tlsdesc.S
+index f748af2ece..ea69f5223a 100644
+--- a/sysdeps/x86_64/dl-tlsdesc.S
++++ b/sysdeps/x86_64/dl-tlsdesc.S
+@@ -18,7 +18,19 @@
+ 
+ #include <sysdep.h>
+ #include <tls.h>
++#include <cpu-features-offsets.h>
++#include <features-offsets.h>
+ #include "tlsdesc.h"
++#include "dl-trampoline-save.h"
++
++/* Area on stack to save and restore registers used for parameter
++   passing when calling _dl_tlsdesc_dynamic.  */
++#define REGISTER_SAVE_RCX	0
++#define REGISTER_SAVE_RDX	(REGISTER_SAVE_RCX + 8)
++#define REGISTER_SAVE_R8	(REGISTER_SAVE_RDX + 8)
++#define REGISTER_SAVE_R9	(REGISTER_SAVE_R8 + 8)
++#define REGISTER_SAVE_R10	(REGISTER_SAVE_R9 + 8)
++#define REGISTER_SAVE_R11	(REGISTER_SAVE_R10 + 8)
+ 
+ 	.text
+ 
+@@ -67,80 +79,24 @@ _dl_tlsdesc_undefweak:
+ 	.size	_dl_tlsdesc_undefweak, .-_dl_tlsdesc_undefweak
+ 
+ #ifdef SHARED
+-	.hidden _dl_tlsdesc_dynamic
+-	.global	_dl_tlsdesc_dynamic
+-	.type	_dl_tlsdesc_dynamic,@function
+-
+-     /* %rax points to the TLS descriptor, such that 0(%rax) points to
+-	_dl_tlsdesc_dynamic itself, and 8(%rax) points to a struct
+-	tlsdesc_dynamic_arg object.  It must return in %rax the offset
+-	between the thread pointer and the object denoted by the
+-	argument, without clobbering any registers.
+-
+-	The assembly code that follows is a rendition of the following
+-	C code, hand-optimized a little bit.
+-
+-ptrdiff_t
+-_dl_tlsdesc_dynamic (register struct tlsdesc *tdp asm ("%rax"))
+-{
+-  struct tlsdesc_dynamic_arg *td = tdp->arg;
+-  dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer + DTV_OFFSET);
+-  if (__builtin_expect (td->gen_count <= dtv[0].counter
+-			&& (dtv[td->tlsinfo.ti_module].pointer.val
+-			    != TLS_DTV_UNALLOCATED),
+-			1))
+-    return dtv[td->tlsinfo.ti_module].pointer.val + td->tlsinfo.ti_offset
+-      - __thread_pointer;
+-
+-  return __tls_get_addr_internal (&td->tlsinfo) - __thread_pointer;
+-}
+-*/
+-	cfi_startproc
+-	.align 16
+-_dl_tlsdesc_dynamic:
+-	_CET_ENDBR
+-	/* Preserve call-clobbered registers that we modify.
+-	   We need two scratch regs anyway.  */
+-	movq	%rsi, -16(%rsp)
+-	mov	%fs:DTV_OFFSET, %RSI_LP
+-	movq	%rdi, -8(%rsp)
+-	movq	TLSDESC_ARG(%rax), %rdi
+-	movq	(%rsi), %rax
+-	cmpq	%rax, TLSDESC_GEN_COUNT(%rdi)
+-	ja	.Lslow
+-	movq	TLSDESC_MODID(%rdi), %rax
+-	salq	$4, %rax
+-	movq	(%rax,%rsi), %rax
+-	cmpq	$-1, %rax
+-	je	.Lslow
+-	addq	TLSDESC_MODOFF(%rdi), %rax
+-.Lret:
+-	movq	-16(%rsp), %rsi
+-	sub	%fs:0, %RAX_LP
+-	movq	-8(%rsp), %rdi
+-	ret
+-.Lslow:
+-	/* Besides rdi and rsi, saved above, save rdx, rcx, r8, r9,
+-	   r10 and r11.  Also, align the stack, that's off by 8 bytes.	*/
+-	subq	$72, %rsp
+-	cfi_adjust_cfa_offset (72)
+-	movq	%rdx, 8(%rsp)
+-	movq	%rcx, 16(%rsp)
+-	movq	%r8, 24(%rsp)
+-	movq	%r9, 32(%rsp)
+-	movq	%r10, 40(%rsp)
+-	movq	%r11, 48(%rsp)
+-	/* %rdi already points to the tlsinfo data structure.  */
+-	call	HIDDEN_JUMPTARGET (__tls_get_addr)
+-	movq	8(%rsp), %rdx
+-	movq	16(%rsp), %rcx
+-	movq	24(%rsp), %r8
+-	movq	32(%rsp), %r9
+-	movq	40(%rsp), %r10
+-	movq	48(%rsp), %r11
+-	addq	$72, %rsp
+-	cfi_adjust_cfa_offset (-72)
+-	jmp	.Lret
+-	cfi_endproc
+-	.size	_dl_tlsdesc_dynamic, .-_dl_tlsdesc_dynamic
++# define USE_FXSAVE
++# define STATE_SAVE_ALIGNMENT	16
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_fxsave
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_FXSAVE
++
++# define USE_XSAVE
++# define STATE_SAVE_ALIGNMENT	64
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_xsave
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_XSAVE
++
++# define USE_XSAVEC
++# define STATE_SAVE_ALIGNMENT	64
++# define _dl_tlsdesc_dynamic	_dl_tlsdesc_dynamic_xsavec
++# include "dl-tlsdesc-dynamic.h"
++# undef _dl_tlsdesc_dynamic
++# undef USE_XSAVEC
+ #endif /* SHARED */
+diff --git a/sysdeps/x86_64/dl-trampoline-save.h b/sysdeps/x86_64/dl-trampoline-save.h
+new file mode 100644
+index 0000000000..84eac4a8ac
+--- /dev/null
++++ b/sysdeps/x86_64/dl-trampoline-save.h
+@@ -0,0 +1,34 @@
++/* x86-64 PLT trampoline register save macros.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#ifndef DL_STACK_ALIGNMENT
++/* Due to GCC bug:
++
++   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58066
++
++   __tls_get_addr may be called with 8-byte stack alignment.  Although
++   this bug has been fixed in GCC 4.9.4, 5.3 and 6, we can't assume
++   that stack will be always aligned at 16 bytes.  */
++# define DL_STACK_ALIGNMENT 8
++#endif
++
++/* True if _dl_runtime_resolve should align stack for STATE_SAVE or align
++   stack to 16 bytes before calling _dl_fixup.  */
++#define DL_RUNTIME_RESOLVE_REALIGN_STACK \
++  (STATE_SAVE_ALIGNMENT > DL_STACK_ALIGNMENT \
++   || 16 > DL_STACK_ALIGNMENT)
+diff --git a/sysdeps/x86_64/dl-trampoline-state.h b/sysdeps/x86_64/dl-trampoline-state.h
+new file mode 100644
+index 0000000000..575f120797
+--- /dev/null
++++ b/sysdeps/x86_64/dl-trampoline-state.h
+@@ -0,0 +1,51 @@
++/* x86-64 PLT dl-trampoline state macros.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#if (STATE_SAVE_ALIGNMENT % 16) != 0
++# error STATE_SAVE_ALIGNMENT must be multiple of 16
++#endif
++
++#if (STATE_SAVE_OFFSET % STATE_SAVE_ALIGNMENT) != 0
++# error STATE_SAVE_OFFSET must be multiple of STATE_SAVE_ALIGNMENT
++#endif
++
++#if DL_RUNTIME_RESOLVE_REALIGN_STACK
++/* Local stack area before jumping to function address: RBX.  */
++# define LOCAL_STORAGE_AREA	8
++# define BASE			rbx
++# ifdef USE_FXSAVE
++/* Use fxsave to save XMM registers.  */
++#  define REGISTER_SAVE_AREA	(512 + STATE_SAVE_OFFSET)
++#  if (REGISTER_SAVE_AREA % 16) != 0
++#   error REGISTER_SAVE_AREA must be multiple of 16
++#  endif
++# endif
++#else
++# ifndef USE_FXSAVE
++#  error USE_FXSAVE must be defined
++# endif
++/* Use fxsave to save XMM registers.  */
++# define REGISTER_SAVE_AREA	(512 + STATE_SAVE_OFFSET + 8)
++/* Local stack area before jumping to function address:  All saved
++   registers.  */
++# define LOCAL_STORAGE_AREA	REGISTER_SAVE_AREA
++# define BASE			rsp
++# if (REGISTER_SAVE_AREA % 16) != 8
++#  error REGISTER_SAVE_AREA must be odd multiple of 8
++# endif
++#endif
+diff --git a/sysdeps/x86_64/dl-trampoline.S b/sysdeps/x86_64/dl-trampoline.S
+index b2e7e0f69b..87c5137837 100644
+--- a/sysdeps/x86_64/dl-trampoline.S
++++ b/sysdeps/x86_64/dl-trampoline.S
+@@ -22,25 +22,7 @@
+ #include <features-offsets.h>
+ #include <link-defines.h>
+ #include <isa-level.h>
+-
+-#ifndef DL_STACK_ALIGNMENT
+-/* Due to GCC bug:
+-
+-   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58066
+-
+-   __tls_get_addr may be called with 8-byte stack alignment.  Although
+-   this bug has been fixed in GCC 4.9.4, 5.3 and 6, we can't assume
+-   that stack will be always aligned at 16 bytes.  We use unaligned
+-   16-byte move to load and store SSE registers, which has no penalty
+-   on modern processors if stack is 16-byte aligned.  */
+-# define DL_STACK_ALIGNMENT 8
+-#endif
+-
+-/* True if _dl_runtime_resolve should align stack for STATE_SAVE or align
+-   stack to 16 bytes before calling _dl_fixup.  */
+-#define DL_RUNTIME_RESOLVE_REALIGN_STACK \
+-  (STATE_SAVE_ALIGNMENT > DL_STACK_ALIGNMENT \
+-   || 16 > DL_STACK_ALIGNMENT)
++#include "dl-trampoline-save.h"
+ 
+ /* Area on stack to save and restore registers used for parameter
+    passing when calling _dl_fixup.  */
+diff --git a/sysdeps/x86_64/dl-trampoline.h b/sysdeps/x86_64/dl-trampoline.h
+index f55c6ea040..d9ccfb40d4 100644
+--- a/sysdeps/x86_64/dl-trampoline.h
++++ b/sysdeps/x86_64/dl-trampoline.h
+@@ -27,39 +27,7 @@
+ # undef LOCAL_STORAGE_AREA
+ # undef BASE
+ 
+-# if (STATE_SAVE_ALIGNMENT % 16) != 0
+-#  error STATE_SAVE_ALIGNMENT must be multiple of 16
+-# endif
+-
+-# if (STATE_SAVE_OFFSET % STATE_SAVE_ALIGNMENT) != 0
+-#  error STATE_SAVE_OFFSET must be multiple of STATE_SAVE_ALIGNMENT
+-# endif
+-
+-# if DL_RUNTIME_RESOLVE_REALIGN_STACK
+-/* Local stack area before jumping to function address: RBX.  */
+-#  define LOCAL_STORAGE_AREA	8
+-#  define BASE			rbx
+-#  ifdef USE_FXSAVE
+-/* Use fxsave to save XMM registers.  */
+-#   define REGISTER_SAVE_AREA	(512 + STATE_SAVE_OFFSET)
+-#   if (REGISTER_SAVE_AREA % 16) != 0
+-#    error REGISTER_SAVE_AREA must be multiple of 16
+-#   endif
+-#  endif
+-# else
+-#  ifndef USE_FXSAVE
+-#   error USE_FXSAVE must be defined
+-#  endif
+-/* Use fxsave to save XMM registers.  */
+-#  define REGISTER_SAVE_AREA	(512 + STATE_SAVE_OFFSET + 8)
+-/* Local stack area before jumping to function address:  All saved
+-   registers.  */
+-#  define LOCAL_STORAGE_AREA	REGISTER_SAVE_AREA
+-#  define BASE			rsp
+-#  if (REGISTER_SAVE_AREA % 16) != 8
+-#   error REGISTER_SAVE_AREA must be odd multiple of 8
+-#  endif
+-# endif
++# include "dl-trampoline-state.h"
+ 
+ 	.globl _dl_runtime_resolve
+ 	.hidden _dl_runtime_resolve
+-- 
+2.44.0
+
