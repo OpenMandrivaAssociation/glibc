@@ -557,13 +557,7 @@ update_gconv_modules_cache()
 if tonumber(arg[2]) >= 2
    and posix.access("%{_prefix}/bin/systemctl", "x")
 then
-  local pid = posix.fork()
-  if pid == 0 then
-    posix.redirect2null(2)
-    posix.exec("%{_prefix}/bin/systemctl", "daemon-reexec")
-  elseif pid > 0 then
-    posix.wait(pid)
-  end
+  rpm.execute('%{_prefix}/bin/systemctl', 'daemon-reexec')
 end
 
 %transfiletriggerin -p <lua> -P 2000000 -- /lib /usr/lib /lib64 /usr/lib64 /etc/ld.so.conf.d
