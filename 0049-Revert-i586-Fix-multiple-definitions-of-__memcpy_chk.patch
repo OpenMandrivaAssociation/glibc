@@ -1,0 +1,33 @@
+From 5141d4d83c17406f0eaea3e345ef2b52e10f386e Mon Sep 17 00:00:00 2001
+From: Sam James <sam@gentoo.org>
+Date: Sat, 4 May 2024 13:28:54 +0100
+Subject: [PATCH 49/57] Revert "i586: Fix multiple definitions of __memcpy_chk
+ and __mempcpy_chk"
+
+This reverts commit 3148714ab61ad61281bae5a30f530d637034ac3b.
+
+I had the wrong cherry-pick reference (the commit content is right; it's
+just referring to a base that isn't upstream), but let's revert and reapply
+for clarity.
+
+Signed-off-by: Sam James <sam@gentoo.org>
+---
+ sysdeps/i386/i586/memcpy.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysdeps/i386/i586/memcpy.S b/sysdeps/i386/i586/memcpy.S
+index 79856d498a..3e26f112d6 100644
+--- a/sysdeps/i386/i586/memcpy.S
++++ b/sysdeps/i386/i586/memcpy.S
+@@ -26,7 +26,7 @@
+ #define LEN	SRC+4
+ 
+         .text
+-#if defined SHARED && IS_IN (libc)
++#if defined PIC && IS_IN (libc)
+ ENTRY (__memcpy_chk)
+ 	movl	12(%esp), %eax
+ 	cmpl	%eax, 16(%esp)
+-- 
+2.45.0
+

@@ -1,7 +1,7 @@
 From 423099a03264ea28298f47355d7811b8efe03c97 Mon Sep 17 00:00:00 2001
 From: Sunil K Pandey <skpgkp2@gmail.com>
 Date: Tue, 13 Feb 2024 12:23:14 -0800
-Subject: [PATCH 30/31] x86_64: Exclude SSE, AVX and FMA4 variants in libm
+Subject: [PATCH 30/57] x86_64: Exclude SSE, AVX and FMA4 variants in libm
  multiarch
 
 When glibc is built with ISA level 3 or higher by default, the resulting
@@ -2218,5 +2218,5 @@ index b50c1988de..d5fcc4f871 100644
 +# include <sysdeps/../math/w_pow.c>
 +#endif
 -- 
-2.44.0
+2.45.0
 

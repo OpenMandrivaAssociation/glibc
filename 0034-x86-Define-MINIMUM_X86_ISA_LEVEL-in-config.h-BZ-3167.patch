@@ -1,0 +1,101 @@
+From 2f8f157eb0cc7f1d8d9a3fcaa8c55bed53b092a8 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Tue, 23 Apr 2024 13:59:50 -0700
+Subject: [PATCH 34/57] x86: Define MINIMUM_X86_ISA_LEVEL in config.h [BZ
+ #31676]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Define MINIMUM_X86_ISA_LEVEL at configure time to avoid
+
+/usr/bin/ld: …/build/elf/librtld.os: in function `init_cpu_features':
+…/git/elf/../sysdeps/x86/cpu-features.c:1202: undefined reference to `_dl_runtime_resolve_fxsave'
+/usr/bin/ld: …/build/elf/librtld.os: relocation R_X86_64_PC32 against undefined hidden symbol `_dl_runtime_resolve_fxsave' can not be used when making a shared object
+/usr/bin/ld: final link failed: bad value
+collect2: error: ld returned 1 exit status
+
+when glibc is built with -march=x86-64-v3 and configured with
+--with-rtld-early-cflags=-march=x86-64, which is used to allow ld.so to
+print an error message on unsupported CPUs:
+
+Fatal glibc error: CPU does not support x86-64-v3
+
+This fixes BZ #31676.
+Reviewed-by: Sunil K Pandey <skpgkp2@gmail.com>
+
+(cherry picked from commit 46c999741340ea559784c20a45077955b50aca43)
+---
+ config.h.in              | 3 +++
+ sysdeps/x86/configure    | 7 +++++++
+ sysdeps/x86/configure.ac | 5 +++++
+ sysdeps/x86/isa-level.h  | 4 +++-
+ 4 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/config.h.in b/config.h.in
+index 4d33c63a84..1e647de585 100644
+--- a/config.h.in
++++ b/config.h.in
+@@ -286,6 +286,9 @@
+ /* Define if x86 ISA level should be included in shared libraries.  */
+ #undef INCLUDE_X86_ISA_LEVEL
+ 
++/* The x86 ISA level.  1 for baseline.  Undefined on non-x86.  */
++#undef MINIMUM_X86_ISA_LEVEL
++
+ /* Define if -msahf is enabled by default on x86.  */
+ #undef HAVE_X86_LAHF_SAHF
+ 
+diff --git a/sysdeps/x86/configure b/sysdeps/x86/configure
+index 2a5421bb31..d28d9bcb29 100644
+--- a/sysdeps/x86/configure
++++ b/sysdeps/x86/configure
+@@ -151,6 +151,13 @@ printf "%s\n" "$libc_cv_have_x86_isa_level" >&6; }
+ else
+   libc_cv_have_x86_isa_level=baseline
+ fi
++if test $libc_cv_have_x86_isa_level = baseline; then
++  printf "%s\n" "#define MINIMUM_X86_ISA_LEVEL 1" >>confdefs.h
++
++else
++  printf "%s\n" "#define MINIMUM_X86_ISA_LEVEL $libc_cv_have_x86_isa_level" >>confdefs.h
++
++fi
+ config_vars="$config_vars
+ have-x86-isa-level = $libc_cv_have_x86_isa_level"
+ config_vars="$config_vars
+diff --git a/sysdeps/x86/configure.ac b/sysdeps/x86/configure.ac
+index 78ff7c8f41..5b0acd03d2 100644
+--- a/sysdeps/x86/configure.ac
++++ b/sysdeps/x86/configure.ac
+@@ -105,6 +105,11 @@ EOF
+ else
+   libc_cv_have_x86_isa_level=baseline
+ fi
++if test $libc_cv_have_x86_isa_level = baseline; then
++  AC_DEFINE_UNQUOTED(MINIMUM_X86_ISA_LEVEL, 1)
++else
++  AC_DEFINE_UNQUOTED(MINIMUM_X86_ISA_LEVEL, $libc_cv_have_x86_isa_level)
++fi
+ LIBC_CONFIG_VAR([have-x86-isa-level], [$libc_cv_have_x86_isa_level])
+ LIBC_CONFIG_VAR([x86-isa-level-3-or-above], [3 4])
+ LIBC_CONFIG_VAR([enable-x86-isa-level], [$libc_cv_include_x86_isa_level])
+diff --git a/sysdeps/x86/isa-level.h b/sysdeps/x86/isa-level.h
+index 11fe1ca90c..2c7f74212b 100644
+--- a/sysdeps/x86/isa-level.h
++++ b/sysdeps/x86/isa-level.h
+@@ -61,8 +61,10 @@
+ # define __X86_ISA_V4 0
+ #endif
+ 
+-#define MINIMUM_X86_ISA_LEVEL                                                 \
++#ifndef MINIMUM_X86_ISA_LEVEL
++# define MINIMUM_X86_ISA_LEVEL                                                 \
+   (__X86_ISA_V1 + __X86_ISA_V2 + __X86_ISA_V3 + __X86_ISA_V4)
++#endif
+ 
+ /* Depending on the minimum ISA level, a feature check result can be a
+    compile-time constant.. */
+-- 
+2.45.0
+

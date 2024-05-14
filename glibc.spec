@@ -19,7 +19,7 @@
 %global targets armv7hnl-linux
 %else
 # FIXME add riscv32-linux when glibc starts supporting it
-%global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux
+%global targets aarch64-linux armv7hnl-linux i686-linux x86_64-linux x32-linux riscv64-linux ppc64-linux ppc64le-linux loongarch64-linux
 %endif
 %endif
 %global long_targets %(
@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -231,6 +231,32 @@ Patch27:	0028-powerpc-Fix-ld.so-address-determination-for-PCREL-mo.patch
 Patch28:	0029-Apply-the-Makefile-sorting-fix.patch
 Patch29:	0030-x86_64-Exclude-SSE-AVX-and-FMA4-variants-in-libm-mul.patch
 Patch30:	0031-iconv-ISO-2022-CN-EXT-fix-out-of-bound-writes-when-w.patch
+Patch31:	0032-nptl-Fix-tst-cancel30-on-kernels-without-ppoll_time6.patch
+Patch32:	0033-i386-ulp-update-for-SSE2-disable-multi-arch-configur.patch
+Patch33:	0034-x86-Define-MINIMUM_X86_ISA_LEVEL-in-config.h-BZ-3167.patch
+Patch34:	0035-CVE-2024-33599-nscd-Stack-based-buffer-overflow-in-n.patch
+Patch35:	0036-CVE-2024-33600-nscd-Do-not-send-missing-not-found-re.patch
+Patch36:	0037-CVE-2024-33600-nscd-Avoid-null-pointer-crashes-after.patch
+Patch37:	0038-CVE-2024-33601-CVE-2024-33602-nscd-netgroup-Use-two-.patch
+Patch38:	0039-elf-Also-compile-dl-misc.os-with-rtld-early-cflags.patch
+Patch39:	0040-login-Check-default-sizes-of-structs-utmp-utmpx-last.patch
+Patch40:	0041-login-structs-utmp-utmpx-lastlog-_TIME_BITS-independ.patch
+Patch41:	0042-nscd-Use-time_t-for-return-type-of-addgetnetgrentX.patch
+Patch42:	0043-time-Allow-later-version-licensing.patch
+Patch43:	0044-i586-Fix-multiple-definitions-of-__memcpy_chk-and-__.patch
+Patch44:	0045-i686-Fix-multiple-definitions-of-__memmove_chk-and-_.patch
+Patch45:	0046-Add-a-test-to-check-for-duplicate-definitions-in-the.patch
+Patch46:	0047-Revert-Add-a-test-to-check-for-duplicate-definitions.patch
+Patch47:	0048-Revert-i686-Fix-multiple-definitions-of-__memmove_ch.patch
+Patch48:	0049-Revert-i586-Fix-multiple-definitions-of-__memcpy_chk.patch
+Patch49:	0050-i586-Fix-multiple-definitions-of-__memcpy_chk-and-__.patch
+Patch50:	0051-i686-Fix-multiple-definitions-of-__memmove_chk-and-_.patch
+Patch51:	0052-Add-a-test-to-check-for-duplicate-definitions-in-the.patch
+Patch52:	0053-elf-Only-process-multiple-tunable-once-BZ-31686.patch
+Patch53:	0054-Force-DT_RPATH-for-enable-hardcoded-path-in-tests.patch
+Patch54:	0055-x86_64-Fix-missing-wcsncat-function-definition-witho.patch
+Patch55:	0056-libsupport-Add-xgetpeername.patch
+Patch56:	0057-socket-Add-new-test-for-connect.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

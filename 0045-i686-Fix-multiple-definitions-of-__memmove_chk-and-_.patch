@@ -1,0 +1,64 @@
+From ad92c483a4bd34db1cfb3eb625212ea64848244f Mon Sep 17 00:00:00 2001
+From: Gabi Falk <gabifalk@gmx.com>
+Date: Tue, 30 Apr 2024 20:05:03 +0000
+Subject: [PATCH 45/57] i686: Fix multiple definitions of __memmove_chk and
+ __memset_chk
+
+Commit c73c96a4a1af1326df7f96eec58209e1e04066d8 updated memcpy.S and
+mempcpy.S, but omitted memmove.S and memset.S.  As a result, the static
+library built as PIC, whether with or without multiarch support,
+contains two definitions for each of the __memmove_chk and __memset_chk
+symbols.
+
+/usr/lib/gcc/i686-pc-linux-gnu/14/../../../../i686-pc-linux-gnu/bin/ld: /usr/lib/gcc/i686-pc-linux-gnu/14/../../../../lib/libc.a(memset-ia32.o): in function `__memset_chk':
+/var/tmp/portage/sys-libs/glibc-2.39-r3/work/glibc-2.39/string/../sysdeps/i386/i686/memset.S:32: multiple definition of `__memset_chk'; /usr/lib/gcc/i686-pc-linux-gnu/14/../../../../lib/libc.a(memset_chk.o):/var/tmp/portage/sys-libs/glibc-2.39-r3/work/glibc-2.39/debug/../sysdeps/i386/i686/multiarch/memset_chk.c:24: first defined here
+
+After this change, regardless of PIC options, the static library, built
+for i686 with multiarch contains implementations of these functions
+respectively from debug/memmove_chk.c and debug/memset_chk.c, and
+without multiarch contains implementations of these functions
+respectively from sysdeps/i386/memmove_chk.S and
+sysdeps/i386/memset_chk.S.  This ensures that memmove and memset won't
+pull in __chk_fail and the routines it calls.
+
+Reported-by: Sam James <sam@gentoo.org>
+Tested-by: Sam James <sam@gentoo.org>
+Fixes: c73c96a4a1 ("i686: Fix build with --disable-multiarch")
+Signed-off-by: Gabi Falk <gabifalk@gmx.com>
+Reviewed-by: H.J. Lu <hjl.tools@gmail.com>
+Reviewed-by: Dmitry V. Levin <ldv@altlinux.org>
+(cherry picked from commit 5a2cf833f5772d6c37c7adac388dd9af9cc1c4b9)
+---
+ sysdeps/i386/i686/memmove.S | 2 +-
+ sysdeps/i386/i686/memset.S  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sysdeps/i386/i686/memmove.S b/sysdeps/i386/i686/memmove.S
+index f230359ad6..effd958120 100644
+--- a/sysdeps/i386/i686/memmove.S
++++ b/sysdeps/i386/i686/memmove.S
+@@ -29,7 +29,7 @@
+ #define SRC	DEST+4
+ #define LEN	SRC+4
+ 
+-#if defined PIC && IS_IN (libc)
++#if defined SHARED && IS_IN (libc)
+ ENTRY_CHK (__memmove_chk)
+ 	movl	12(%esp), %eax
+ 	cmpl	%eax, 16(%esp)
+diff --git a/sysdeps/i386/i686/memset.S b/sysdeps/i386/i686/memset.S
+index f02f5a6df7..ab06771ea0 100644
+--- a/sysdeps/i386/i686/memset.S
++++ b/sysdeps/i386/i686/memset.S
+@@ -27,7 +27,7 @@
+ #define LEN	CHR+4
+ 
+         .text
+-#if defined PIC && IS_IN (libc)
++#if defined SHARED && IS_IN (libc)
+ ENTRY_CHK (__memset_chk)
+ 	movl	12(%esp), %eax
+ 	cmpl	%eax, 16(%esp)
+-- 
+2.45.0
+

@@ -1,0 +1,44 @@
+From ab4ef4421f85ea7afeb482ded51003658b08de7e Mon Sep 17 00:00:00 2001
+From: Gabi Falk <gabifalk@gmx.com>
+Date: Tue, 7 May 2024 18:25:00 +0000
+Subject: [PATCH 55/57] x86_64: Fix missing wcsncat function definition without
+ multiarch (x86-64-v4)
+
+This code expects the WCSCAT preprocessor macro to be predefined in case
+the evex implementation of the function should be defined with a name
+different from __wcsncat_evex.  However, when glibc is built for
+x86-64-v4 without multiarch support, sysdeps/x86_64/wcsncat.S defines
+WCSNCAT variable instead of WCSCAT to build it as wcsncat.  Rename the
+variable to WCSNCAT, as it is actually a better naming choice for the
+variable in this case.
+
+Reported-by: Kenton Groombridge
+Link: https://bugs.gentoo.org/921945
+Fixes: 64b8b6516b ("x86: Add evex optimized functions for the wchar_t strcpy family")
+Signed-off-by: Gabi Falk <gabifalk@gmx.com>
+Reviewed-by: Sunil K Pandey <skpgkp2@gmail.com>
+(cherry picked from commit dd5f891c1ad9f1b43b9db93afe2a55cbb7a6194e)
+---
+ sysdeps/x86_64/multiarch/wcsncat-evex.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/sysdeps/x86_64/multiarch/wcsncat-evex.S b/sysdeps/x86_64/multiarch/wcsncat-evex.S
+index 392215950a..10bfb0a531 100644
+--- a/sysdeps/x86_64/multiarch/wcsncat-evex.S
++++ b/sysdeps/x86_64/multiarch/wcsncat-evex.S
+@@ -1,9 +1,9 @@
+-#ifndef WCSCAT
+-# define WCSCAT	__wcsncat_evex
++#ifndef WCSNCAT
++# define WCSNCAT	__wcsncat_evex
+ #endif
+ 
+ #define USE_AS_WCSCPY
+ #define USE_AS_STRCAT
+ 
+-#define STRNCAT	WCSCAT
++#define STRNCAT	WCSNCAT
+ #include "strncat-evex.S"
+-- 
+2.45.0
+

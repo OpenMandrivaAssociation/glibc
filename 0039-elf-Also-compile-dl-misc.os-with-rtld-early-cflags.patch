@@ -1,0 +1,54 @@
+From fd658f026f25cf59e8db243bc3b3e09cd5a20ba0 Mon Sep 17 00:00:00 2001
+From: "H.J. Lu" <hjl.tools@gmail.com>
+Date: Thu, 25 Apr 2024 08:06:52 -0700
+Subject: [PATCH 39/57] elf: Also compile dl-misc.os with $(rtld-early-cflags)
+
+Also compile dl-misc.os with $(rtld-early-cflags) to avoid
+
+Program received signal SIGILL, Illegal instruction.
+0x00007ffff7fd36ea in _dl_strtoul (nptr=nptr@entry=0x7fffffffe2c9 "2",
+    endptr=endptr@entry=0x7fffffffd728) at dl-misc.c:156
+156	  bool positive = true;
+(gdb) bt
+ #0  0x00007ffff7fd36ea in _dl_strtoul (nptr=nptr@entry=0x7fffffffe2c9 "2",
+    endptr=endptr@entry=0x7fffffffd728) at dl-misc.c:156
+ #1  0x00007ffff7fdb1a9 in tunable_initialize (
+    cur=cur@entry=0x7ffff7ffbc00 <tunable_list+2176>,
+    strval=strval@entry=0x7fffffffe2c9 "2", len=len@entry=1)
+    at dl-tunables.c:131
+ #2  0x00007ffff7fdb3a2 in parse_tunables (valstring=<optimized out>)
+    at dl-tunables.c:258
+ #3  0x00007ffff7fdb5d9 in __GI___tunables_init (envp=0x7fffffffdd58)
+    at dl-tunables.c:288
+ #4  0x00007ffff7fe44c3 in _dl_sysdep_start (
+    start_argptr=start_argptr@entry=0x7fffffffdcb0,
+    dl_main=dl_main@entry=0x7ffff7fe5f80 <dl_main>)
+    at ../sysdeps/unix/sysv/linux/dl-sysdep.c:110
+ #5  0x00007ffff7fe5cae in _dl_start_final (arg=0x7fffffffdcb0) at rtld.c:494
+ #6  _dl_start (arg=0x7fffffffdcb0) at rtld.c:581
+ #7  0x00007ffff7fe4b38 in _start ()
+(gdb)
+
+when setting GLIBC_TUNABLES in glibc compiled with APX.
+Reviewed-by: Florian Weimer <fweimer@redhat.com>
+
+(cherry picked from commit 049b7684c912dd32b67b1b15b0f43bf07d5f512e)
+---
+ elf/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/elf/Makefile b/elf/Makefile
+index 69aa423c4b..a50a988e73 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -170,6 +170,7 @@ CFLAGS-.op += $(call elide-stack-protector,.op,$(elide-routines.os))
+ CFLAGS-.os += $(call elide-stack-protector,.os,$(all-rtld-routines))
+ 
+ # Add the requested compiler flags to the early startup code.
++CFLAGS-dl-misc.os += $(rtld-early-cflags)
+ CFLAGS-dl-printf.os += $(rtld-early-cflags)
+ CFLAGS-dl-setup_hash.os += $(rtld-early-cflags)
+ CFLAGS-dl-sysdep.os += $(rtld-early-cflags)
+-- 
+2.45.0
+
