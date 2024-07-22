@@ -1,6 +1,6 @@
-diff -up glibc-2.33/elf/dl-init.c.12~ glibc-2.33/elf/dl-init.c
---- glibc-2.33/elf/dl-init.c.12~	2021-02-01 18:15:33.000000000 +0100
-+++ glibc-2.33/elf/dl-init.c	2021-02-02 00:10:07.506005790 +0100
+diff -up glibc-2.40/elf/dl-init.c.11~ glibc-2.40/elf/dl-init.c
+--- glibc-2.40/elf/dl-init.c.11~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/elf/dl-init.c	2024-07-22 15:21:35.829497362 +0200
 @@ -120,8 +120,6 @@ _dl_init (struct link_map *main_map, int
    while (i-- > 0)
      call_init (main_map->l_initfini[i], argc, argv, env);
@@ -10,10 +10,10 @@ diff -up glibc-2.33/elf/dl-init.c.12~ glibc-2.33/elf/dl-init.c
    _dl_starting_up = 0;
 -#endif
  }
-diff -up glibc-2.33/elf/dl-support.c.12~ glibc-2.33/elf/dl-support.c
---- glibc-2.33/elf/dl-support.c.12~	2021-02-01 18:15:33.000000000 +0100
-+++ glibc-2.33/elf/dl-support.c	2021-02-02 00:10:07.506005790 +0100
-@@ -126,10 +126,8 @@ struct r_scope_elem _dl_initial_searchli
+diff -up glibc-2.40/elf/dl-support.c.11~ glibc-2.40/elf/dl-support.c
+--- glibc-2.40/elf/dl-support.c.11~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/elf/dl-support.c	2024-07-22 15:21:35.829497362 +0200
+@@ -123,10 +123,8 @@ struct r_scope_elem _dl_initial_searchli
      .r_nlist = 1,
    };
  
@@ -24,10 +24,10 @@ diff -up glibc-2.33/elf/dl-support.c.12~ glibc-2.33/elf/dl-support.c
  
  /* Random data provided by the kernel.  */
  void *_dl_random;
-diff -up glibc-2.33/elf/rtld.c.12~ glibc-2.33/elf/rtld.c
---- glibc-2.33/elf/rtld.c.12~	2021-02-01 18:15:33.000000000 +0100
-+++ glibc-2.33/elf/rtld.c	2021-02-02 00:11:06.989150813 +0100
-@@ -299,7 +299,6 @@ dl_main_state_init (struct dl_main_state
+diff -up glibc-2.40/elf/rtld.c.11~ glibc-2.40/elf/rtld.c
+--- glibc-2.40/elf/rtld.c.11~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/elf/rtld.c	2024-07-22 15:23:21.583874657 +0200
+@@ -303,7 +303,6 @@ dl_main_state_init (struct dl_main_state
    state->version_info = false;
  }
  
@@ -35,7 +35,7 @@ diff -up glibc-2.33/elf/rtld.c.12~ glibc-2.33/elf/rtld.c
  /* Set nonzero during loading and initialization of executable and
     libraries, cleared before the executable's entry point runs.  This
     must not be initialized to nonzero, because the unused dynamic
-@@ -309,7 +308,6 @@ dl_main_state_init (struct dl_main_state
+@@ -313,7 +312,6 @@ dl_main_state_init (struct dl_main_state
     never be called.  */
  int _dl_starting_up = 0;
  rtld_hidden_def (_dl_starting_up)
@@ -43,9 +43,9 @@ diff -up glibc-2.33/elf/rtld.c.12~ glibc-2.33/elf/rtld.c
  
  /* This is the structure which defines all variables global to ld.so
     (except those which cannot be added for some reason).  */
-@@ -1159,10 +1157,8 @@ dl_main (const ElfW(Phdr) *phdr,
+@@ -1368,10 +1366,8 @@ dl_main (const ElfW(Phdr) *phdr,
    /* Process the environment variable which control the behaviour.  */
-   process_envvars (&state);
+   skip_env = process_envvars (&state);
  
 -#ifndef HAVE_INLINED_SYSCALLS
    /* Set up a flag which tells we are just starting.  */

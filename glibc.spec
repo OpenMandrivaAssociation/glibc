@@ -166,12 +166,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.39
+Version:	2.40
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		http://www.gnu.org/software/libc/
@@ -200,63 +200,6 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 # git format-patch glibc-2.39
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
 # [currently none required]
-Patch0:		0001-Replace-advisories-directory.patch
-Patch1:		0002-arm-Remove-wrong-ldr-from-_dl_start_user-BZ-31339.patch
-Patch2:		0003-mips-FIx-clone3-implementation-BZ-31325.patch
-Patch3:		0004-math-Update-mips64-ulps.patch
-Patch4:		0005-S390-Do-not-clobber-r7-in-clone-BZ-31402.patch
-Patch5:		0006-Use-gcc-__builtin_stdc_-builtins-in-stdbit.h-if-poss.patch
-Patch6:		0007-linux-Use-rseq-area-unconditionally-in-sched_getcpu-.patch
-Patch7:		0008-powerpc-Add-HWCAP3-HWCAP4-data-to-TCB-for-Power-Arch.patch
-Patch8:		0009-powerpc-Placeholder-and-infrastructure-build-support.patch
-Patch9:		0010-LoongArch-Correct-__ieee754-_-_scalb-__ieee754-_-_sc.patch
-Patch10:	0011-x86-64-Save-APX-registers-in-ld.so-trampoline.patch
-Patch11:	0012-x86-Update-_dl_tlsdesc_dynamic-to-preserve-caller-sa.patch
-Patch12:	0013-x86-64-Update-_dl_tlsdesc_dynamic-to-preserve-AMX-re.patch
-Patch13:	0014-x86-64-Allocate-state-buffer-space-for-RDI-RSI-and-R.patch
-Patch14:	0015-Ignore-undefined-symbols-for-mtls-dialect-gnu2.patch
-Patch15:	0016-arm-Update-_dl_tlsdesc_dynamic-to-preserve-caller-sa.patch
-Patch16:	0017-elf-Enable-TLS-descriptor-tests-on-aarch64.patch
-Patch17:	0018-Add-tst-gnu2-tls2mod1-to-test-internal-extras.patch
-Patch18:	0019-x86-Fix-Zen3-Zen4-ERMS-selection-BZ-30994.patch
-Patch19:	0020-x86-Do-not-prefer-ERMS-for-memset-on-Zen3.patch
-Patch20:	0021-x86-Expand-the-comment-on-when-REP-STOSB-is-used-on-.patch
-Patch21:	0022-i386-Use-generic-memrchr-in-libc-bug-31316.patch
-Patch22:	0023-aarch64-fpu-Sync-libmvec-routines-from-2.39-and-befo.patch
-Patch23:	0024-aarch64-fix-check-for-SVE-support-in-assembler.patch
-Patch24:	0025-AArch64-Check-kernel-version-for-SVE-ifuncs.patch
-Patch25:	0026-x86-64-Don-t-use-SSE-resolvers-for-ISA-level-3-or-ab.patch
-Patch26:	0027-x86-64-Simplify-minimum-ISA-check-ifdef-conditional-.patch
-Patch27:	0028-powerpc-Fix-ld.so-address-determination-for-PCREL-mo.patch
-Patch28:	0029-Apply-the-Makefile-sorting-fix.patch
-Patch29:	0030-x86_64-Exclude-SSE-AVX-and-FMA4-variants-in-libm-mul.patch
-Patch30:	0031-iconv-ISO-2022-CN-EXT-fix-out-of-bound-writes-when-w.patch
-Patch31:	0032-nptl-Fix-tst-cancel30-on-kernels-without-ppoll_time6.patch
-Patch32:	0033-i386-ulp-update-for-SSE2-disable-multi-arch-configur.patch
-Patch33:	0034-x86-Define-MINIMUM_X86_ISA_LEVEL-in-config.h-BZ-3167.patch
-Patch34:	0035-CVE-2024-33599-nscd-Stack-based-buffer-overflow-in-n.patch
-Patch35:	0036-CVE-2024-33600-nscd-Do-not-send-missing-not-found-re.patch
-Patch36:	0037-CVE-2024-33600-nscd-Avoid-null-pointer-crashes-after.patch
-Patch37:	0038-CVE-2024-33601-CVE-2024-33602-nscd-netgroup-Use-two-.patch
-Patch38:	0039-elf-Also-compile-dl-misc.os-with-rtld-early-cflags.patch
-Patch39:	0040-login-Check-default-sizes-of-structs-utmp-utmpx-last.patch
-Patch40:	0041-login-structs-utmp-utmpx-lastlog-_TIME_BITS-independ.patch
-Patch41:	0042-nscd-Use-time_t-for-return-type-of-addgetnetgrentX.patch
-Patch42:	0043-time-Allow-later-version-licensing.patch
-Patch43:	0044-i586-Fix-multiple-definitions-of-__memcpy_chk-and-__.patch
-Patch44:	0045-i686-Fix-multiple-definitions-of-__memmove_chk-and-_.patch
-Patch45:	0046-Add-a-test-to-check-for-duplicate-definitions-in-the.patch
-Patch46:	0047-Revert-Add-a-test-to-check-for-duplicate-definitions.patch
-Patch47:	0048-Revert-i686-Fix-multiple-definitions-of-__memmove_ch.patch
-Patch48:	0049-Revert-i586-Fix-multiple-definitions-of-__memcpy_chk.patch
-Patch49:	0050-i586-Fix-multiple-definitions-of-__memcpy_chk-and-__.patch
-Patch50:	0051-i686-Fix-multiple-definitions-of-__memmove_chk-and-_.patch
-Patch51:	0052-Add-a-test-to-check-for-duplicate-definitions-in-the.patch
-Patch52:	0053-elf-Only-process-multiple-tunable-once-BZ-31686.patch
-Patch53:	0054-Force-DT_RPATH-for-enable-hardcoded-path-in-tests.patch
-Patch54:	0055-x86_64-Fix-missing-wcsncat-function-definition-witho.patch
-Patch55:	0056-libsupport-Add-xgetpeername.patch
-Patch56:	0057-socket-Add-new-test-for-connect.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -279,7 +222,6 @@ Patch144:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-_
 Patch146:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-nscd.patch
 Patch147:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-gcc-PR69537.patch
 Patch150:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-nscd-sysconfig.patch
-Patch165:	https://src.fedoraproject.org/rpms/glibc/raw/rawhide/f/glibc-rh827510.patch
 
 #-----------------------------------------------------------------------
 # Clear Linux patches
@@ -755,12 +697,14 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Laotian" "lo" "lo_LA")}
 %{expand:%(sh %{S:1000} "Lithuanian" "lt" "lt_LT")}
 %{expand:%(sh %{S:1000} "Latvian" "lv" "lv_LV")}
+%{expand:%(sh %{S:1000} "Latgalian" "ltg" "ltg_LV")}
 %{expand:%(sh %{S:1000} "Magahi" "mag" "mag_IN")}
 %{expand:%(sh %{S:1000} "Maithili" "mai" "mai_IN" "mai_NP")}
 %{expand:%(sh %{S:1000} "Mauritian Creole" "mfe" "mfe_MU")}
 %{expand:%(sh %{S:1000} "Malagasy" "mg" "mg_MG")}
 %{expand:%(sh %{S:1000} "Mari" "mhr" "mhr_RU")}
 %{expand:%(sh %{S:1000} "Maori" "mi" "mi_NZ")}
+%{expand:%(sh %{S:1000} "Moksha" "mdf" "mdf_RU")}
 %{expand:%(sh %{S:1000} "Miskito" "miq" "miq_NI")}
 %{expand:%(sh %{S:1000} "Karbi" "mjw" "mjw_IN")}
 %{expand:%(sh %{S:1000} "Macedonian" "mk" "mk_MK")}
@@ -800,6 +744,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Sindhi" "sd" "sd_IN")}
 %{expand:%(sh %{S:1000} "Saami" "se" "se_NO")}
 %{expand:%(sh %{S:1000} "Samogitian" "sgs" "sgs_LT")}
+%{expand:%(sh %{S:1000} "Sicilian" "scn" "scn_IT")}
 %{expand:%(sh %{S:1000} "Shan" "shn" "shn_MM")}
 %{expand:%(sh %{S:1000} "Secwepemctsin" "shs" "shs_CA")}
 %{expand:%(sh %{S:1000} "Sinhala" "si" "si_LK")}

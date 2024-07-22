@@ -1,7 +1,7 @@
-diff -up glibc-2.35/sysdeps/x86/configure.48~ glibc-2.35/sysdeps/x86/configure
---- glibc-2.35/sysdeps/x86/configure.48~	2022-02-03 11:26:20.165426217 +0100
-+++ glibc-2.35/sysdeps/x86/configure	2022-02-03 11:27:41.422729679 +0100
-@@ -134,7 +134,7 @@ if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS
+diff -up glibc-2.40/sysdeps/x86/configure.38~ glibc-2.40/sysdeps/x86/configure
+--- glibc-2.40/sysdeps/x86/configure.38~	2024-07-22 15:27:52.768847933 +0200
++++ glibc-2.40/sysdeps/x86/configure	2024-07-22 15:29:02.168446986 +0200
+@@ -67,7 +67,7 @@ if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS
    test $ac_status = 0; }; }; then
    count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
    if test "$count" = 1; then
@@ -9,11 +9,11 @@ diff -up glibc-2.35/sysdeps/x86/configure.48~ glibc-2.35/sysdeps/x86/configure
 +    libc_cv_include_x86_isa_level=no # workaround for vbox bug https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
    fi
  fi
- rm -f conftest*
-diff -up glibc-2.35/sysdeps/x86/configure.ac.48~ glibc-2.35/sysdeps/x86/configure.ac
---- glibc-2.35/sysdeps/x86/configure.ac.48~	2022-02-03 11:26:20.165426217 +0100
-+++ glibc-2.35/sysdeps/x86/configure.ac	2022-02-03 11:28:02.375807855 +0100
-@@ -101,7 +101,7 @@ libc_cv_include_x86_isa_level=no
+ rm -f conftest* ;;
+diff -up glibc-2.40/sysdeps/x86/configure.ac.38~ glibc-2.40/sysdeps/x86/configure.ac
+--- glibc-2.40/sysdeps/x86/configure.ac.38~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/sysdeps/x86/configure.ac	2024-07-22 15:27:52.768847933 +0200
+@@ -58,7 +58,7 @@ libc_cv_include_x86_isa_level=no
  if AC_TRY_COMMAND(${CC-cc} $CFLAGS $CPPFLAGS -nostartfiles -nostdlib -r -o conftest conftest1.S conftest2.S); then
    count=`LC_ALL=C $READELF -n conftest | grep NT_GNU_PROPERTY_TYPE_0 | wc -l`
    if test "$count" = 1; then

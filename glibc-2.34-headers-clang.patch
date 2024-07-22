@@ -1,7 +1,7 @@
-diff -up glibc-2.39/misc/sys/cdefs.h.21~ glibc-2.39/misc/sys/cdefs.h
---- glibc-2.39/misc/sys/cdefs.h.21~	2024-01-31 01:34:58.000000000 +0100
-+++ glibc-2.39/misc/sys/cdefs.h	2024-01-31 23:43:38.315917000 +0100
-@@ -542,7 +542,7 @@
+diff -up glibc-2.40/misc/sys/cdefs.h.20~ glibc-2.40/misc/sys/cdefs.h
+--- glibc-2.40/misc/sys/cdefs.h.20~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/misc/sys/cdefs.h	2024-07-22 15:24:46.761941033 +0200
+@@ -696,7 +696,7 @@
  # endif
  #endif
  
@@ -10,7 +10,7 @@ diff -up glibc-2.39/misc/sys/cdefs.h.21~ glibc-2.39/misc/sys/cdefs.h
  /* Describes a char array whose address can safely be passed as the first
     argument to strncpy and strncat, as the char array is not necessarily
     a NUL-terminated string.  */
-@@ -553,7 +553,7 @@
+@@ -707,7 +707,7 @@
  
  /* Undefine (also defined in libc-symbols.h).  */
  #undef __attribute_copy__
@@ -19,7 +19,7 @@ diff -up glibc-2.39/misc/sys/cdefs.h.21~ glibc-2.39/misc/sys/cdefs.h
  /* Copies attributes from the declaration or type referenced by
     the argument.  */
  # define __attribute_copy__(arg) __attribute__ ((__copy__ (arg)))
-@@ -674,7 +674,7 @@ _Static_assert (0, "IEEE 128-bits long d
+@@ -828,7 +828,7 @@ _Static_assert (0, "IEEE 128-bits long d
  # define __HAVE_GENERIC_SELECTION 0
  #endif
  
@@ -28,7 +28,7 @@ diff -up glibc-2.39/misc/sys/cdefs.h.21~ glibc-2.39/misc/sys/cdefs.h
  /* Designates a 1-based positional argument ref-index of pointer type
     that can be used to access size-index elements of the pointed-to
     array according to access mode, or at least one element when
-@@ -701,7 +701,7 @@ _Static_assert (0, "IEEE 128-bits long d
+@@ -855,7 +855,7 @@ _Static_assert (0, "IEEE 128-bits long d
  #  define __attr_access_none(argno)
  #endif
  
@@ -37,11 +37,11 @@ diff -up glibc-2.39/misc/sys/cdefs.h.21~ glibc-2.39/misc/sys/cdefs.h
  /* Designates dealloc as a function to call to deallocate objects
     allocated by the declared function.  */
  # define __attr_dealloc(dealloc, argno) \
-diff -up glibc-2.39/sysdeps/aarch64/fpu/bits/math-vector.h.21~ glibc-2.39/sysdeps/aarch64/fpu/bits/math-vector.h
---- glibc-2.39/sysdeps/aarch64/fpu/bits/math-vector.h.21~	2024-01-31 23:43:38.315917000 +0100
-+++ glibc-2.39/sysdeps/aarch64/fpu/bits/math-vector.h	2024-01-31 23:44:19.720316997 +0100
-@@ -91,7 +91,7 @@
- # define __DECL_SIMD_tanf __DECL_SIMD_aarch64
+diff -up glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h.20~ glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h
+--- glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h.20~	2024-07-22 15:24:46.762941100 +0200
++++ glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h	2024-07-22 15:25:58.526014542 +0200
+@@ -135,7 +135,7 @@
+ # define __DECL_SIMD_tanhf __DECL_SIMD_aarch64
  #endif
  
 -#if __GNUC_PREREQ(9, 0)

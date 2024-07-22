@@ -1,6 +1,6 @@
-diff -up glibc-2.35/nptl/pthread_mutex_lock_any.c.46~ glibc-2.35/nptl/pthread_mutex_lock_any.c
---- glibc-2.35/nptl/pthread_mutex_lock_any.c.46~	2022-02-03 11:21:15.315282335 +0100
-+++ glibc-2.35/nptl/pthread_mutex_lock_any.c	2022-02-03 11:21:15.315282335 +0100
+diff -up glibc-2.40/nptl/pthread_mutex_lock_any.c.36~ glibc-2.40/nptl/pthread_mutex_lock_any.c
+--- glibc-2.40/nptl/pthread_mutex_lock_any.c.36~	2024-07-22 15:26:23.220864358 +0200
++++ glibc-2.40/nptl/pthread_mutex_lock_any.c	2024-07-22 15:26:23.220864358 +0200
 @@ -0,0 +1,37 @@
 +/* Copyright (C) 2002-2019 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -39,9 +39,9 @@ diff -up glibc-2.35/nptl/pthread_mutex_lock_any.c.46~ glibc-2.35/nptl/pthread_mu
 +}
 +
 +weak_alias (__pthread_mutex_lock_any, pthread_mutex_lock_any)
-diff -up glibc-2.35/nptl/pthread_mutex_timedlock_any.c.46~ glibc-2.35/nptl/pthread_mutex_timedlock_any.c
---- glibc-2.35/nptl/pthread_mutex_timedlock_any.c.46~	2022-02-03 11:21:15.316282339 +0100
-+++ glibc-2.35/nptl/pthread_mutex_timedlock_any.c	2022-02-03 11:21:15.316282339 +0100
+diff -up glibc-2.40/nptl/pthread_mutex_timedlock_any.c.36~ glibc-2.40/nptl/pthread_mutex_timedlock_any.c
+--- glibc-2.40/nptl/pthread_mutex_timedlock_any.c.36~	2024-07-22 15:26:23.220864358 +0200
++++ glibc-2.40/nptl/pthread_mutex_timedlock_any.c	2024-07-22 15:26:23.220864358 +0200
 @@ -0,0 +1,193 @@
 +/* Copyright (C) 2002-2019 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -236,9 +236,9 @@ diff -up glibc-2.35/nptl/pthread_mutex_timedlock_any.c.46~ glibc-2.35/nptl/pthre
 +}
 +
 +weak_alias (__pthread_mutex_timedlock_any, pthread_mutex_timedlock_any)
-diff -up glibc-2.35/sysdeps/nptl/lowlevellock-futex.h.46~ glibc-2.35/sysdeps/nptl/lowlevellock-futex.h
---- glibc-2.35/sysdeps/nptl/lowlevellock-futex.h.46~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/sysdeps/nptl/lowlevellock-futex.h	2022-02-03 11:25:49.314310869 +0100
+diff -up glibc-2.40/sysdeps/nptl/lowlevellock-futex.h.36~ glibc-2.40/sysdeps/nptl/lowlevellock-futex.h
+--- glibc-2.40/sysdeps/nptl/lowlevellock-futex.h.36~	2024-07-21 18:33:37.000000000 +0200
++++ glibc-2.40/sysdeps/nptl/lowlevellock-futex.h	2024-07-22 15:26:23.221864434 +0200
 @@ -39,6 +39,7 @@
  #define FUTEX_WAIT_REQUEUE_PI   11
  #define FUTEX_CMP_REQUEUE_PI    12
@@ -274,9 +274,9 @@ diff -up glibc-2.35/sysdeps/nptl/lowlevellock-futex.h.46~ glibc-2.35/sysdeps/npt
  /* Verify whether the supplied clockid is supported by
     lll_futex_clock_wait_bitset.  */
  # define lll_futex_supported_clockid(clockid)			\
-diff -up glibc-2.35/sysdeps/nptl/pthread.h.46~ glibc-2.35/sysdeps/nptl/pthread.h
---- glibc-2.35/sysdeps/nptl/pthread.h.46~	2022-02-03 06:27:54.000000000 +0100
-+++ glibc-2.35/sysdeps/nptl/pthread.h	2022-02-03 11:21:15.316282339 +0100
+diff -up glibc-2.40/sysdeps/nptl/pthread.h.36~ glibc-2.40/sysdeps/nptl/pthread.h
+--- glibc-2.40/sysdeps/nptl/pthread.h.36~	2024-07-22 15:26:23.221864434 +0200
++++ glibc-2.40/sysdeps/nptl/pthread.h	2024-07-22 15:27:31.185133836 +0200
 @@ -794,7 +794,17 @@ extern int pthread_mutex_trylock (pthrea
  extern int pthread_mutex_lock (pthread_mutex_t *__mutex)
       __THROWNL __nonnull ((1));
@@ -285,13 +285,13 @@ diff -up glibc-2.35/sysdeps/nptl/pthread.h.46~ glibc-2.35/sysdeps/nptl/pthread.h
 +extern int pthread_mutex_lock_any (pthread_mutex_t *__mutexlist,
 +				   int mutexcount, int *outlocked);
 +
-+
  #ifdef __USE_XOPEN2K
 +/* Lock any one of several mutexes, with timeout.  */
 +extern int pthread_mutex_timedlock_any (pthread_mutex_t *__mutexlist,
 +					int mutexcount,
 +					const struct timespec *__restrict
 +					__abstime, int *outlocked);
++
  /* Wait until lock becomes available, or specified time passes. */
- # ifndef __USE_TIME_BITS64
+ # ifndef __USE_TIME64_REDIRECTS
  extern int pthread_mutex_timedlock (pthread_mutex_t *__restrict __mutex,
