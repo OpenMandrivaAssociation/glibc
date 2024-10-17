@@ -174,7 +174,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
-Url:		http://www.gnu.org/software/libc/
+Url:		https://www.gnu.org/software/libc/
 
 # From Fedora
 Source3:	glibc-manpages.tar.bz2
