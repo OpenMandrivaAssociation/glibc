@@ -166,7 +166,7 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.40
+Version:	2.41
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
@@ -272,9 +272,10 @@ Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-crash-on-NULL.patch
 # https://www.phoronix.com/news/Glibc-2.36-EAC-Problems
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
+# Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 
-BuildRequires:	autoconf2.5
+BuildRequires:	autoconf
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
 BuildRequires:	gettext

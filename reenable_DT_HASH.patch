@@ -1,7 +1,7 @@
-diff -up glibc-2.39/Makeconfig.74~ glibc-2.39/Makeconfig
---- glibc-2.39/Makeconfig.74~	2024-04-18 16:39:26.102289336 +0200
-+++ glibc-2.39/Makeconfig	2024-04-18 16:39:26.162289984 +0200
-@@ -381,6 +381,15 @@ relro-LDFLAGS = -Wl,-z,relro
+diff -up glibc-2.41/Makeconfig.42~ glibc-2.41/Makeconfig
+--- glibc-2.41/Makeconfig.42~	2025-02-03 20:07:33.264348032 +0100
++++ glibc-2.41/Makeconfig	2025-02-03 20:07:33.331273705 +0100
+@@ -383,6 +383,15 @@ relro-LDFLAGS = -Wl,-z,relro
  LDFLAGS.so += $(relro-LDFLAGS)
  LDFLAGS-rtld += $(relro-LDFLAGS)
  
@@ -17,9 +17,9 @@ diff -up glibc-2.39/Makeconfig.74~ glibc-2.39/Makeconfig
  # Linker options to enable and disable DT_RELR.
  ifeq ($(have-dt-relr),yes)
  dt-relr-ldflag = -Wl,-z,pack-relative-relocs
-diff -up glibc-2.39/config.make.in.74~ glibc-2.39/config.make.in
---- glibc-2.39/config.make.in.74~	2024-01-31 01:34:58.000000000 +0100
-+++ glibc-2.39/config.make.in	2024-04-18 16:39:26.162289984 +0200
+diff -up glibc-2.41/config.make.in.42~ glibc-2.41/config.make.in
+--- glibc-2.41/config.make.in.42~	2025-01-28 18:31:33.000000000 +0100
++++ glibc-2.41/config.make.in	2025-02-03 20:07:33.331391281 +0100
 @@ -70,6 +70,7 @@ have-libaudit = @have_libaudit@
  have-libcap = @have_libcap@
  have-cc-with-libunwind = @libc_cv_cc_with_libunwind@
@@ -28,18 +28,18 @@ diff -up glibc-2.39/config.make.in.74~ glibc-2.39/config.make.in
  have-cxx-thread_local = @libc_cv_cxx_thread_local@
  have-loop-to-function = @libc_cv_cc_loop_to_function@
  have-textrel_ifunc = @libc_cv_textrel_ifunc@
-diff -up glibc-2.39/configure.74~ glibc-2.39/configure
---- glibc-2.39/configure.74~	2024-04-18 16:39:25.826286363 +0200
-+++ glibc-2.39/configure	2024-04-18 16:40:52.127216895 +0200
-@@ -655,6 +655,7 @@ libc_cv_cc_submachine
+diff -up glibc-2.41/configure.42~ glibc-2.41/configure
+--- glibc-2.41/configure.42~	2025-01-28 18:31:33.000000000 +0100
++++ glibc-2.41/configure	2025-02-03 20:07:59.068272091 +0100
+@@ -656,6 +656,7 @@ libc_cv_cc_submachine
  libc_cv_cc_nofma
- libc_cv_mtls_descriptor
+ libc_cv_test_wno_ignored_attributes
  libc_cv_has_glob_dat
 +libc_cv_hashstyle
  libc_cv_fpie
+ libc_cv_test_static_pie
  libc_cv_z_execstack
- ASFLAGS_config
-@@ -6974,6 +6975,32 @@ fi
+@@ -7374,6 +7375,32 @@ fi
  printf "%s\n" "$libc_cv_fpie" >&6; }
  
  
@@ -72,10 +72,10 @@ diff -up glibc-2.39/configure.74~ glibc-2.39/configure
  
  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for GLOB_DAT reloc" >&5
  printf %s "checking for GLOB_DAT reloc... " >&6; }
-diff -up glibc-2.39/configure.ac.74~ glibc-2.39/configure.ac
---- glibc-2.39/configure.ac.74~	2024-04-18 16:39:25.826286363 +0200
-+++ glibc-2.39/configure.ac	2024-04-18 16:39:26.166290027 +0200
-@@ -1267,6 +1267,22 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpi
+diff -up glibc-2.41/configure.ac.42~ glibc-2.41/configure.ac
+--- glibc-2.41/configure.ac.42~	2025-01-28 18:31:33.000000000 +0100
++++ glibc-2.41/configure.ac	2025-02-03 20:07:33.332416024 +0100
+@@ -1356,6 +1356,22 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpi
  
  AC_SUBST(libc_cv_fpie)
  

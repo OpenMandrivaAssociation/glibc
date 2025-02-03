@@ -1,6 +1,6 @@
-diff -up glibc-2.40/misc/sys/cdefs.h.20~ glibc-2.40/misc/sys/cdefs.h
---- glibc-2.40/misc/sys/cdefs.h.20~	2024-07-21 18:33:37.000000000 +0200
-+++ glibc-2.40/misc/sys/cdefs.h	2024-07-22 15:24:46.761941033 +0200
+diff -up glibc-2.41/misc/sys/cdefs.h.20~ glibc-2.41/misc/sys/cdefs.h
+--- glibc-2.41/misc/sys/cdefs.h.20~	2025-01-28 18:31:33.000000000 +0100
++++ glibc-2.41/misc/sys/cdefs.h	2025-02-03 15:48:02.399451414 +0100
 @@ -696,7 +696,7 @@
  # endif
  #endif
@@ -37,11 +37,11 @@ diff -up glibc-2.40/misc/sys/cdefs.h.20~ glibc-2.40/misc/sys/cdefs.h
  /* Designates dealloc as a function to call to deallocate objects
     allocated by the declared function.  */
  # define __attr_dealloc(dealloc, argno) \
-diff -up glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h.20~ glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h
---- glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h.20~	2024-07-22 15:24:46.762941100 +0200
-+++ glibc-2.40/sysdeps/aarch64/fpu/bits/math-vector.h	2024-07-22 15:25:58.526014542 +0200
-@@ -135,7 +135,7 @@
- # define __DECL_SIMD_tanhf __DECL_SIMD_aarch64
+diff -up glibc-2.41/sysdeps/aarch64/fpu/bits/math-vector.h.20~ glibc-2.41/sysdeps/aarch64/fpu/bits/math-vector.h
+--- glibc-2.41/sysdeps/aarch64/fpu/bits/math-vector.h.20~	2025-02-03 15:48:02.399545557 +0100
++++ glibc-2.41/sysdeps/aarch64/fpu/bits/math-vector.h	2025-02-03 15:51:30.964785192 +0100
+@@ -151,7 +151,7 @@
+ # define __DECL_SIMD_tanpif __DECL_SIMD_aarch64
  #endif
  
 -#if __GNUC_PREREQ(9, 0)
