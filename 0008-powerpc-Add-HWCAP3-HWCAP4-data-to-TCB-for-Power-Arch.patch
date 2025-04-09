@@ -1,0 +1,304 @@
+From ee7f4c54e19738c2c27d3846e1e9b3595c89221f Mon Sep 17 00:00:00 2001
+From: Manjunath Matti <mmatti@linux.ibm.com>
+Date: Tue, 19 Mar 2024 15:29:48 -0500
+Subject: [PATCH 08/57] =?UTF-8?q?=EF=BB=BFpowerpc:=20Add=20HWCAP3/HWCAP4?=
+ =?UTF-8?q?=20data=20to=20TCB=20for=20Power=20Architecture.?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch adds a new feature for powerpc.  In order to get faster
+access to the HWCAP3/HWCAP4 masks, similar to HWCAP/HWCAP2 (i.e. for
+implementing __builtin_cpu_supports() in GCC) without the overhead of
+reading them from the auxiliary vector, we now reserve space for them
+in the TCB.
+
+Suggested-by: Peter Bergner <bergner@linux.ibm.com>
+Reviewed-by: Peter Bergner <bergner@linux.ibm.com>
+(cherry picked from commit 3ab9b88e2ac91062b6d493fe32bd101a55006c6a)
+---
+ elf/dl-diagnostics.c                          |  2 +
+ elf/dl-support.c                              |  2 +
+ elf/elf.h                                     |  4 ++
+ sysdeps/generic/ldsodefs.h                    |  2 +
+ sysdeps/powerpc/dl-procinfo.c                 |  6 ++-
+ sysdeps/powerpc/dl-procinfo.h                 | 52 +++++++++++++------
+ sysdeps/powerpc/hwcapinfo.c                   | 11 ++--
+ sysdeps/unix/sysv/linux/dl-parse_auxv.h       |  2 +
+ sysdeps/unix/sysv/linux/dl-sysdep.c           |  2 +
+ .../unix/sysv/linux/powerpc/cpu-features.c    |  2 +
+ .../unix/sysv/linux/powerpc/cpu-features.h    |  2 +
+ sysdeps/unix/sysv/linux/powerpc/libc-start.c  |  6 +++
+ 12 files changed, 74 insertions(+), 19 deletions(-)
+
+diff --git a/elf/dl-diagnostics.c b/elf/dl-diagnostics.c
+index 7345ebc4e5..aaf67b87e8 100644
+--- a/elf/dl-diagnostics.c
++++ b/elf/dl-diagnostics.c
+@@ -235,6 +235,8 @@ _dl_print_diagnostics (char **environ)
+   _dl_diagnostics_print_labeled_value ("dl_hwcap", GLRO (dl_hwcap));
+   _dl_diagnostics_print_labeled_value ("dl_hwcap_important", HWCAP_IMPORTANT);
+   _dl_diagnostics_print_labeled_value ("dl_hwcap2", GLRO (dl_hwcap2));
++  _dl_diagnostics_print_labeled_value ("dl_hwcap3", GLRO (dl_hwcap3));
++  _dl_diagnostics_print_labeled_value ("dl_hwcap4", GLRO (dl_hwcap4));
+   _dl_diagnostics_print_labeled_string
+     ("dl_hwcaps_subdirs", _dl_hwcaps_subdirs);
+   _dl_diagnostics_print_labeled_value
+diff --git a/elf/dl-support.c b/elf/dl-support.c
+index 2f502c8b0d..451932dd03 100644
+--- a/elf/dl-support.c
++++ b/elf/dl-support.c
+@@ -158,6 +158,8 @@ const ElfW(Phdr) *_dl_phdr;
+ size_t _dl_phnum;
+ uint64_t _dl_hwcap;
+ uint64_t _dl_hwcap2;
++uint64_t _dl_hwcap3;
++uint64_t _dl_hwcap4;
+ 
+ enum dso_sort_algorithm _dl_dso_sort_algo;
+ 
+diff --git a/elf/elf.h b/elf/elf.h
+index 455731663c..1c394c64cd 100644
+--- a/elf/elf.h
++++ b/elf/elf.h
+@@ -1234,6 +1234,10 @@ typedef struct
+ #define AT_RSEQ_FEATURE_SIZE	27	/* rseq supported feature size.  */
+ #define AT_RSEQ_ALIGN	28		/* rseq allocation alignment.  */
+ 
++/* More machine-dependent hints about processor capabilities.  */
++#define AT_HWCAP3	29		/* extension of AT_HWCAP.  */
++#define AT_HWCAP4	30		/* extension of AT_HWCAP.  */
++
+ #define AT_EXECFN	31		/* Filename of executable.  */
+ 
+ /* Pointer to the global system page used for system calls and other
+diff --git a/sysdeps/generic/ldsodefs.h b/sysdeps/generic/ldsodefs.h
+index 117c901ccc..50f58a60e3 100644
+--- a/sysdeps/generic/ldsodefs.h
++++ b/sysdeps/generic/ldsodefs.h
+@@ -646,6 +646,8 @@ struct rtld_global_ro
+   /* Mask for more hardware capabilities that are available on some
+      platforms.  */
+   EXTERN uint64_t _dl_hwcap2;
++  EXTERN uint64_t _dl_hwcap3;
++  EXTERN uint64_t _dl_hwcap4;
+ 
+   EXTERN enum dso_sort_algorithm _dl_dso_sort_algo;
+ 
+diff --git a/sysdeps/powerpc/dl-procinfo.c b/sysdeps/powerpc/dl-procinfo.c
+index a76bb6e5b0..8cf00aa7e3 100644
+--- a/sysdeps/powerpc/dl-procinfo.c
++++ b/sysdeps/powerpc/dl-procinfo.c
+@@ -38,6 +38,10 @@
+        needed.
+   */
+ 
++/* The total number of available bits (including those prior to
++   _DL_HWCAP_FIRST).  Some of these bits might not be used.  */
++#define _DL_HWCAP_COUNT         128
++
+ #ifndef PROCINFO_CLASS
+ # define PROCINFO_CLASS
+ #endif
+@@ -61,7 +65,7 @@ PROCINFO_CLASS struct cpu_features _dl_powerpc_cpu_features
+ #if !defined PROCINFO_DECL && defined SHARED
+   ._dl_powerpc_cap_flags
+ #else
+-PROCINFO_CLASS const char _dl_powerpc_cap_flags[64][15]
++PROCINFO_CLASS const char _dl_powerpc_cap_flags[_DL_HWCAP_COUNT][15]
+ #endif
+ #ifndef PROCINFO_DECL
+ = {
+diff --git a/sysdeps/powerpc/dl-procinfo.h b/sysdeps/powerpc/dl-procinfo.h
+index 68f4241095..f8cb343877 100644
+--- a/sysdeps/powerpc/dl-procinfo.h
++++ b/sysdeps/powerpc/dl-procinfo.h
+@@ -22,16 +22,17 @@
+ #include <ldsodefs.h>
+ #include <sysdep.h>	/* This defines the PPC_FEATURE[2]_* macros.  */
+ 
+-/* The total number of available bits (including those prior to
+-   _DL_HWCAP_FIRST).  Some of these bits might not be used.  */
+-#define _DL_HWCAP_COUNT		64
++/* Feature masks are all 32-bits in size.  */
++#define _DL_HWCAP_SIZE		32
+ 
+-/* Features started at bit 31 and decremented as new features were added.  */
+-#define _DL_HWCAP_LAST		31
++/* AT_HWCAP2 feature strings follow the AT_HWCAP feature strings.  */
++#define _DL_HWCAP2_OFFSET	_DL_HWCAP_SIZE
+ 
+-/* AT_HWCAP2 features started at bit 31 and decremented as new features were
+-   added.  HWCAP2 feature bits start at bit 0.  */
+-#define _DL_HWCAP2_LAST		31
++/* AT_HWCAP3 feature strings follow the AT_HWCAP2 feature strings.  */
++#define _DL_HWCAP3_OFFSET	(_DL_HWCAP2_OFFSET + _DL_HWCAP_SIZE)
++
++/* AT_HWCAP4 feature strings follow the AT_HWCAP3 feature strings.  */
++#define _DL_HWCAP4_OFFSET	(_DL_HWCAP3_OFFSET + _DL_HWCAP_SIZE)
+ 
+ /* These bits influence library search.  */
+ #define HWCAP_IMPORTANT		(PPC_FEATURE_HAS_ALTIVEC \
+@@ -187,21 +188,42 @@ _dl_procinfo (unsigned int type, unsigned long int word)
+     case AT_HWCAP:
+       _dl_printf ("AT_HWCAP:            ");
+ 
+-      for (int i = 0; i <= _DL_HWCAP_LAST; ++i)
++      for (int i = 0; i < _DL_HWCAP_SIZE; ++i)
+        if (word & (1 << i))
+          _dl_printf (" %s", _dl_hwcap_string (i));
+       break;
+     case AT_HWCAP2:
+       {
+-       unsigned int offset = _DL_HWCAP_LAST + 1;
+ 
+        _dl_printf ("AT_HWCAP2:           ");
+ 
+-        /* We have to go through them all because the kernel added the
+-          AT_HWCAP2 features starting with the high bits.  */
+-       for (int i = 0; i <= _DL_HWCAP2_LAST; ++i)
+-         if (word & (1 << i))
+-           _dl_printf (" %s", _dl_hwcap_string (offset + i));
++       /* We have to go through them all because the kernel added the
++	  AT_HWCAP2 features starting with the high bits.  */
++       for (int i = 0; i < _DL_HWCAP_SIZE; ++i)
++	 if (word & (1 << i))
++	   _dl_printf (" %s", _dl_hwcap_string (_DL_HWCAP2_OFFSET + i));
++       break;
++      }
++    case AT_HWCAP3:
++      {
++       _dl_printf ("AT_HWCAP3:           ");
++
++       /* We have to go through them all because the kernel added the
++	  AT_HWCAP3 features starting with the high bits.  */
++       for (int i = 0; i < _DL_HWCAP_SIZE; ++i)
++	 if (word & (1 << i))
++	   _dl_printf (" %s", _dl_hwcap_string (_DL_HWCAP3_OFFSET + i));
++       break;
++      }
++    case AT_HWCAP4:
++      {
++       _dl_printf ("AT_HWCAP4:           ");
++
++       /* We have to go through them all because the kernel added the
++	  AT_HWCAP4 features starting with the high bits.  */
++       for (int i = 0; i <= _DL_HWCAP_SIZE; ++i)
++	 if (word & (1 << i))
++	   _dl_printf (" %s", _dl_hwcap_string (_DL_HWCAP4_OFFSET + i));
+        break;
+       }
+     case AT_L1I_CACHEGEOMETRY:
+diff --git a/sysdeps/powerpc/hwcapinfo.c b/sysdeps/powerpc/hwcapinfo.c
+index 76344f285a..f6fede15a7 100644
+--- a/sysdeps/powerpc/hwcapinfo.c
++++ b/sysdeps/powerpc/hwcapinfo.c
+@@ -31,7 +31,7 @@ void
+ __tcb_parse_hwcap_and_convert_at_platform (void)
+ {
+ 
+-  uint64_t h1, h2;
++  uint64_t h1, h2, h3, h4;
+ 
+   /* Read AT_PLATFORM string from auxv and convert it to a number.  */
+   __tcb.at_platform = _dl_string_platform (GLRO (dl_platform));
+@@ -39,6 +39,8 @@ __tcb_parse_hwcap_and_convert_at_platform (void)
+   /* Read HWCAP and HWCAP2 from auxv.  */
+   h1 = GLRO (dl_hwcap);
+   h2 = GLRO (dl_hwcap2);
++  h3 = GLRO (dl_hwcap3);
++  h4 = GLRO (dl_hwcap4);
+ 
+   /* hwcap contains only the latest supported ISA, the code checks which is
+      and fills the previous supported ones.  */
+@@ -64,13 +66,16 @@ __tcb_parse_hwcap_and_convert_at_platform (void)
+   else if (h1 & PPC_FEATURE_POWER5)
+     h1 |= PPC_FEATURE_POWER4;
+ 
+-  uint64_t array_hwcaps[] = { h1, h2 };
++  uint64_t array_hwcaps[] = { h1, h2, h3, h4 };
+   init_cpu_features (&GLRO(dl_powerpc_cpu_features), array_hwcaps);
+ 
+   /* Consolidate both HWCAP and HWCAP2 into a single doubleword so that
+      we can read both in a single load later.  */
+   __tcb.hwcap = (h1 << 32) | (h2 & 0xffffffff);
+-  __tcb.hwcap_extn = 0x0;
++
++  /* Consolidate both HWCAP3 and HWCAP4 into a single doubleword so that
++     we can read both in a single load later.  */
++  __tcb.hwcap_extn = (h3 << 32) | (h4 & 0xffffffff);
+ 
+ }
+ #if IS_IN (rtld)
+diff --git a/sysdeps/unix/sysv/linux/dl-parse_auxv.h b/sysdeps/unix/sysv/linux/dl-parse_auxv.h
+index e3d758b163..ea2a58ecb1 100644
+--- a/sysdeps/unix/sysv/linux/dl-parse_auxv.h
++++ b/sysdeps/unix/sysv/linux/dl-parse_auxv.h
+@@ -47,6 +47,8 @@ void _dl_parse_auxv (ElfW(auxv_t) *av, dl_parse_auxv_t auxv_values)
+   GLRO(dl_platform) = (void *) auxv_values[AT_PLATFORM];
+   GLRO(dl_hwcap) = auxv_values[AT_HWCAP];
+   GLRO(dl_hwcap2) = auxv_values[AT_HWCAP2];
++  GLRO(dl_hwcap3) = auxv_values[AT_HWCAP3];
++  GLRO(dl_hwcap4) = auxv_values[AT_HWCAP4];
+   GLRO(dl_clktck) = auxv_values[AT_CLKTCK];
+   GLRO(dl_fpu_control) = auxv_values[AT_FPUCW];
+   _dl_random = (void *) auxv_values[AT_RANDOM];
+diff --git a/sysdeps/unix/sysv/linux/dl-sysdep.c b/sysdeps/unix/sysv/linux/dl-sysdep.c
+index ad3692d738..e1b14e9eb3 100644
+--- a/sysdeps/unix/sysv/linux/dl-sysdep.c
++++ b/sysdeps/unix/sysv/linux/dl-sysdep.c
+@@ -197,6 +197,8 @@ _dl_show_auxv (void)
+ 	  [AT_SYSINFO_EHDR - 2] =	{ "SYSINFO_EHDR:      0x", hex },
+ 	  [AT_RANDOM - 2] =		{ "RANDOM:            0x", hex },
+ 	  [AT_HWCAP2 - 2] =		{ "HWCAP2:            0x", hex },
++	  [AT_HWCAP3 - 2] =		{ "HWCAP3:            0x", hex },
++	  [AT_HWCAP4 - 2] =		{ "HWCAP4:            0x", hex },
+ 	  [AT_MINSIGSTKSZ - 2] =	{ "MINSIGSTKSZ:       ", dec },
+ 	  [AT_L1I_CACHESIZE - 2] =	{ "L1I_CACHESIZE:     ", dec },
+ 	  [AT_L1I_CACHEGEOMETRY - 2] =	{ "L1I_CACHEGEOMETRY: 0x", hex },
+diff --git a/sysdeps/unix/sysv/linux/powerpc/cpu-features.c b/sysdeps/unix/sysv/linux/powerpc/cpu-features.c
+index 8e8a5ec2ea..a947d62db6 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/cpu-features.c
++++ b/sysdeps/unix/sysv/linux/powerpc/cpu-features.c
+@@ -94,6 +94,8 @@ init_cpu_features (struct cpu_features *cpu_features, uint64_t hwcaps[])
+      which are set by __tcb_parse_hwcap_and_convert_at_platform.  */
+   cpu_features->hwcap = hwcaps[0];
+   cpu_features->hwcap2 = hwcaps[1];
++  cpu_features->hwcap3 = hwcaps[2];
++  cpu_features->hwcap4 = hwcaps[3];
+   /* Default is to use aligned memory access on optimized function unless
+      tunables is enable, since for this case user can explicit disable
+      unaligned optimizations.  */
+diff --git a/sysdeps/unix/sysv/linux/powerpc/cpu-features.h b/sysdeps/unix/sysv/linux/powerpc/cpu-features.h
+index 1294f0b601..e9eb6a13c8 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/cpu-features.h
++++ b/sysdeps/unix/sysv/linux/powerpc/cpu-features.h
+@@ -26,6 +26,8 @@ struct cpu_features
+   bool use_cached_memopt;
+   unsigned long int hwcap;
+   unsigned long int hwcap2;
++  unsigned long int hwcap3;
++  unsigned long int hwcap4;
+ };
+ 
+ static const char hwcap_names[] = {
+diff --git a/sysdeps/unix/sysv/linux/powerpc/libc-start.c b/sysdeps/unix/sysv/linux/powerpc/libc-start.c
+index a4705daf1c..6a00cd88cd 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/libc-start.c
++++ b/sysdeps/unix/sysv/linux/powerpc/libc-start.c
+@@ -87,6 +87,12 @@ __libc_start_main_impl (int argc, char **argv,
+       case AT_HWCAP2:
+ 	_dl_hwcap2 = (unsigned long int) av->a_un.a_val;
+ 	break;
++      case AT_HWCAP3:
++	_dl_hwcap3 = (unsigned long int) av->a_un.a_val;
++	break;
++      case AT_HWCAP4:
++	_dl_hwcap4 = (unsigned long int) av->a_un.a_val;
++	break;
+       case AT_PLATFORM:
+ 	_dl_platform = (void *) av->a_un.a_val;
+ 	break;
+-- 
+2.45.0
+

@@ -1,0 +1,207 @@
+From aad45c8ac30aa1072e54903ce6aead22702f244a Mon Sep 17 00:00:00 2001
+From: Amrita H S <amritahs@linux.ibm.com>
+Date: Tue, 19 Mar 2024 19:08:47 -0500
+Subject: [PATCH 09/57] =?UTF-8?q?=EF=BB=BFpowerpc:=20Placeholder=20and=20i?=
+ =?UTF-8?q?nfrastructure/build=20support=20to=20add=20Power11=20related=20?=
+ =?UTF-8?q?changes.?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The following three changes have been added to provide initial Power11 support.
+    1. Add the directories to hold Power11 files.
+    2. Add support to select Power11 libraries based on AT_PLATFORM.
+    3. Let submachine=power11 be set automatically.
+
+Reviewed-by: Florian Weimer <fweimer@redhat.com>
+Reviewed-by: Peter Bergner <bergner@linux.ibm.com>
+(cherry picked from commit 1ea051145612f199d8716ecdf78b084b00b5a727)
+---
+ sysdeps/powerpc/dl-procinfo.h                             | 8 +++++++-
+ sysdeps/powerpc/powerpc32/power11/Implies                 | 2 ++
+ sysdeps/powerpc/powerpc32/power11/fpu/multiarch/Implies   | 1 +
+ sysdeps/powerpc/powerpc32/power11/multiarch/Implies       | 1 +
+ sysdeps/powerpc/powerpc64/be/power11/Implies              | 2 ++
+ sysdeps/powerpc/powerpc64/be/power11/fpu/Implies          | 1 +
+ .../powerpc/powerpc64/be/power11/fpu/multiarch/Implies    | 1 +
+ sysdeps/powerpc/powerpc64/be/power11/multiarch/Implies    | 1 +
+ sysdeps/powerpc/powerpc64/le/power11/Implies              | 2 ++
+ sysdeps/powerpc/powerpc64/le/power11/fpu/Implies          | 1 +
+ .../powerpc/powerpc64/le/power11/fpu/multiarch/Implies    | 1 +
+ sysdeps/powerpc/powerpc64/le/power11/multiarch/Implies    | 1 +
+ sysdeps/powerpc/powerpc64/le/tst-glibc-hwcaps.c           | 6 ++++--
+ sysdeps/powerpc/preconfigure                              | 2 +-
+ sysdeps/powerpc/preconfigure.ac                           | 2 +-
+ 15 files changed, 27 insertions(+), 5 deletions(-)
+ create mode 100644 sysdeps/powerpc/powerpc32/power11/Implies
+ create mode 100644 sysdeps/powerpc/powerpc32/power11/fpu/multiarch/Implies
+ create mode 100644 sysdeps/powerpc/powerpc32/power11/multiarch/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/be/power11/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/be/power11/fpu/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/be/power11/fpu/multiarch/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/be/power11/multiarch/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/le/power11/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/le/power11/fpu/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/le/power11/fpu/multiarch/Implies
+ create mode 100644 sysdeps/powerpc/powerpc64/le/power11/multiarch/Implies
+
+diff --git a/sysdeps/powerpc/dl-procinfo.h b/sysdeps/powerpc/dl-procinfo.h
+index f8cb343877..b36697ba44 100644
+--- a/sysdeps/powerpc/dl-procinfo.h
++++ b/sysdeps/powerpc/dl-procinfo.h
+@@ -38,7 +38,7 @@
+ #define HWCAP_IMPORTANT		(PPC_FEATURE_HAS_ALTIVEC \
+ 				+ PPC_FEATURE_HAS_DFP)
+ 
+-#define _DL_PLATFORMS_COUNT	16
++#define _DL_PLATFORMS_COUNT	17
+ 
+ #define _DL_FIRST_PLATFORM	32
+ /* Mask to filter out platforms.  */
+@@ -62,6 +62,7 @@
+ #define PPC_PLATFORM_POWER8		13
+ #define PPC_PLATFORM_POWER9		14
+ #define PPC_PLATFORM_POWER10		15
++#define PPC_PLATFORM_POWER11		16
+ 
+ static inline const char *
+ __attribute__ ((unused))
+@@ -89,6 +90,11 @@ _dl_string_platform (const char *str)
+ 	      ret = _DL_FIRST_PLATFORM + PPC_PLATFORM_POWER10;
+ 	      str++;
+ 	    }
++	  else if (str[1] == '1')
++	    {
++	      ret = _DL_FIRST_PLATFORM + PPC_PLATFORM_POWER11;
++	      str++;
++	    }
+ 	  else
+ 	    return -1;
+ 	  break;
+diff --git a/sysdeps/powerpc/powerpc32/power11/Implies b/sysdeps/powerpc/powerpc32/power11/Implies
+new file mode 100644
+index 0000000000..051cbe0f79
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc32/power11/Implies
+@@ -0,0 +1,2 @@
++powerpc/powerpc32/power10/fpu
++powerpc/powerpc32/power10
+diff --git a/sysdeps/powerpc/powerpc32/power11/fpu/multiarch/Implies b/sysdeps/powerpc/powerpc32/power11/fpu/multiarch/Implies
+new file mode 100644
+index 0000000000..58edb2861d
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc32/power11/fpu/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc32/power10/fpu/multiarch
+diff --git a/sysdeps/powerpc/powerpc32/power11/multiarch/Implies b/sysdeps/powerpc/powerpc32/power11/multiarch/Implies
+new file mode 100644
+index 0000000000..c70f0428ba
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc32/power11/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc32/power10/multiarch
+diff --git a/sysdeps/powerpc/powerpc64/be/power11/Implies b/sysdeps/powerpc/powerpc64/be/power11/Implies
+new file mode 100644
+index 0000000000..de481d1c13
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/be/power11/Implies
+@@ -0,0 +1,2 @@
++powerpc/powerpc64/be/power10/fpu
++powerpc/powerpc64/be/power10
+diff --git a/sysdeps/powerpc/powerpc64/be/power11/fpu/Implies b/sysdeps/powerpc/powerpc64/be/power11/fpu/Implies
+new file mode 100644
+index 0000000000..dff0e13064
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/be/power11/fpu/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/be/power10/fpu
+diff --git a/sysdeps/powerpc/powerpc64/be/power11/fpu/multiarch/Implies b/sysdeps/powerpc/powerpc64/be/power11/fpu/multiarch/Implies
+new file mode 100644
+index 0000000000..c3f259e009
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/be/power11/fpu/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/be/power10/fpu/multiarch
+diff --git a/sysdeps/powerpc/powerpc64/be/power11/multiarch/Implies b/sysdeps/powerpc/powerpc64/be/power11/multiarch/Implies
+new file mode 100644
+index 0000000000..9491a394c9
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/be/power11/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/be/power10/multiarch
+diff --git a/sysdeps/powerpc/powerpc64/le/power11/Implies b/sysdeps/powerpc/powerpc64/le/power11/Implies
+new file mode 100644
+index 0000000000..e18182dcc1
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/le/power11/Implies
+@@ -0,0 +1,2 @@
++powerpc/powerpc64/le/power10/fpu
++powerpc/powerpc64/le/power10
+diff --git a/sysdeps/powerpc/powerpc64/le/power11/fpu/Implies b/sysdeps/powerpc/powerpc64/le/power11/fpu/Implies
+new file mode 100644
+index 0000000000..e41bd55684
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/le/power11/fpu/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/le/power10/fpu
+diff --git a/sysdeps/powerpc/powerpc64/le/power11/fpu/multiarch/Implies b/sysdeps/powerpc/powerpc64/le/power11/fpu/multiarch/Implies
+new file mode 100644
+index 0000000000..c838d50931
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/le/power11/fpu/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/le/power10/fpu/multiarch
+diff --git a/sysdeps/powerpc/powerpc64/le/power11/multiarch/Implies b/sysdeps/powerpc/powerpc64/le/power11/multiarch/Implies
+new file mode 100644
+index 0000000000..687248c3c2
+--- /dev/null
++++ b/sysdeps/powerpc/powerpc64/le/power11/multiarch/Implies
+@@ -0,0 +1 @@
++powerpc/powerpc64/le/power10/multiarch
+diff --git a/sysdeps/powerpc/powerpc64/le/tst-glibc-hwcaps.c b/sysdeps/powerpc/powerpc64/le/tst-glibc-hwcaps.c
+index 77465d9133..65d3e69303 100644
+--- a/sysdeps/powerpc/powerpc64/le/tst-glibc-hwcaps.c
++++ b/sysdeps/powerpc/powerpc64/le/tst-glibc-hwcaps.c
+@@ -36,9 +36,11 @@ compute_level (void)
+     return 9;
+   if (strcmp (platform, "power10") == 0)
+     return 10;
++  if (strcmp (platform, "power11") == 0)
++    return 11;
+   printf ("warning: unrecognized AT_PLATFORM value: %s\n", platform);
+-  /* Assume that the new platform supports POWER10.  */
+-  return 10;
++  /* Assume that the new platform supports POWER11.  */
++  return 11;
+ }
+ 
+ static int
+diff --git a/sysdeps/powerpc/preconfigure b/sysdeps/powerpc/preconfigure
+index 4de94089a3..9e5a07ab6d 100644
+--- a/sysdeps/powerpc/preconfigure
++++ b/sysdeps/powerpc/preconfigure
+@@ -58,7 +58,7 @@ fi
+ 
+     ;;
+ 
+-  a2|970|power[4-9]|power5x|power6+|power10)
++  a2|970|power[4-9]|power5x|power6+|power10|power11)
+     submachine=${archcpu}
+     if test ${libc_cv_cc_submachine+y}
+ then :
+diff --git a/sysdeps/powerpc/preconfigure.ac b/sysdeps/powerpc/preconfigure.ac
+index 6c63bd8257..14b6dafd4a 100644
+--- a/sysdeps/powerpc/preconfigure.ac
++++ b/sysdeps/powerpc/preconfigure.ac
+@@ -46,7 +46,7 @@ case "${machine}:${submachine}" in
+     AC_CACHE_VAL(libc_cv_cc_submachine,libc_cv_cc_submachine="")
+     ;;
+ 
+-  a2|970|power[[4-9]]|power5x|power6+|power10)
++  a2|970|power[[4-9]]|power5x|power6+|power10|power11)
+     submachine=${archcpu}
+     AC_CACHE_VAL(libc_cv_cc_submachine,libc_cv_cc_submachine="")
+     ;;
+-- 
+2.45.0
+

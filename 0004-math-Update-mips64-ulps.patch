@@ -1,0 +1,50 @@
+From d0724994de40934c552f1f68de89053848a44927 Mon Sep 17 00:00:00 2001
+From: Xi Ruoyao <xry111@xry111.site>
+Date: Thu, 22 Feb 2024 21:26:55 +0100
+Subject: [PATCH 04/57] math: Update mips64 ulps
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Andreas K. Hüttel <dilfridge@gentoo.org>
+(cherry picked from commit e2a65ecc4b30a797df7dc6529f09b712aa256029)
+---
+ sysdeps/mips/mips64/libm-test-ulps | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/sysdeps/mips/mips64/libm-test-ulps b/sysdeps/mips/mips64/libm-test-ulps
+index 78969745b2..933aba4735 100644
+--- a/sysdeps/mips/mips64/libm-test-ulps
++++ b/sysdeps/mips/mips64/libm-test-ulps
+@@ -1066,17 +1066,17 @@ double: 1
+ ldouble: 1
+ 
+ Function: "j0":
+-double: 2
++double: 3
+ float: 9
+ ldouble: 2
+ 
+ Function: "j0_downward":
+-double: 5
++double: 6
+ float: 9
+ ldouble: 9
+ 
+ Function: "j0_towardzero":
+-double: 6
++double: 7
+ float: 9
+ ldouble: 9
+ 
+@@ -1146,6 +1146,7 @@ float: 6
+ ldouble: 8
+ 
+ Function: "log":
++double: 1
+ float: 1
+ ldouble: 1
+ 
+-- 
+2.45.0
+

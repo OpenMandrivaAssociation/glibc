@@ -197,9 +197,52 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.39
+# git format-patch glibc-2.41
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-# [currently none required]
+Patch0:		0001-Remove-advisories-from-release-branch.patch
+Patch1:		0002-NEWS-start-new-section.patch
+Patch2:		0003-math-Fix-log10p1f-internal-table-value-BZ-32626.patch
+Patch3:		0004-math-Fix-sinhf-for-some-inputs-BZ-32627.patch
+Patch4:		0005-nptl-Correct-stack-size-attribute-when-stack-grows-u.patch
+Patch5:		0006-math-Fix-tanf-for-some-inputs-BZ-32630.patch
+Patch6:		0007-assert-Add-test-for-CVE-2025-0395.patch
+Patch7:		0008-Fix-tst-aarch64-pkey-to-handle-ENOSPC-as-not-support.patch
+Patch8:		0009-x86-__HAVE_FLOAT128-Defined-to-0-for-Intel-SYCL-comp.patch
+Patch9:		0010-math-Fix-unknown-type-name-__float128-for-clang-3.4-.patch
+Patch10:	0011-math-Add-optimization-barrier-to-ensure-a1-u.d-is-no.patch
+Patch11:	0012-RISC-V-Fix-IFUNC-resolver-cannot-access-gp-pointer.patch
+Patch12:	0013-Aarch64-Improve-codegen-in-SVE-asinh.patch
+Patch13:	0014-Aarch64-Improve-codegen-in-SVE-exp-and-users-and-upd.patch
+Patch14:	0015-AArch64-Improve-codegen-for-SVE-erfcf.patch
+Patch15:	0016-AArch64-Improve-codegen-for-SVE-pow.patch
+Patch16:	0017-AArch64-Improve-codegen-for-SVE-powf.patch
+Patch17:	0018-aarch64-Add-configure-checks-for-GCS-support.patch
+Patch18:	0019-aarch64-Add-tests-for-Guarded-Control-Stack.patch
+Patch19:	0020-aarch64-Add-GCS-tests-for-transitive-dependencies.patch
+Patch20:	0021-aarch64-Add-GCS-tests-for-dlopen.patch
+Patch21:	0022-aarch64-Add-GCS-test-with-signal-handler.patch
+Patch22:	0023-math-Improve-layout-of-exp-exp10-data.patch
+Patch23:	0024-AArch64-Add-SVE-memset.patch
+Patch24:	0025-AArch64-Use-prefer_sve_ifuncs-for-SVE-memset.patch
+Patch25:	0026-Pass-Wl-no-error-execstack-for-tests-where-Wl-z-exec.patch
+Patch26:	0027-static-pie-Skip-the-empty-PT_LOAD-segment-at-offset-.patch
+Patch27:	0028-elf-Check-if-__attribute__-aligned-65536-is-supporte.patch
+Patch28:	0029-configure-Fix-spelling-of-Wl-no-error-execstack-opti.patch
+Patch29:	0030-posix-Move-environ-helper-variables-next-to-environ-.patch
+Patch30:	0031-math-Remove-an-extra-semicolon-in-math-function-decl.patch
+Patch31:	0032-Linux-Remove-attribute-access-from-sched_getattr-bug.patch
+Patch32:	0033-nptl-clear-the-whole-rseq-area-before-registration.patch
+Patch33:	0034-nptl-PTHREAD_COND_INITIALIZER-compatibility-with-pre.patch
+Patch34:	0035-nptl-Check-if-thread-is-already-terminated-in-sigcan.patch
+Patch35:	0036-x86_64-Add-tanh-with-FMA.patch
+Patch36:	0037-x86_64-Add-sinh-with-FMA.patch
+Patch37:	0038-x86_64-Add-atanh-with-FMA.patch
+Patch38:	0039-x86-Skip-XSAVE-state-size-reset-if-ISA-level-require.patch
+Patch39:	0040-x86-Use-separate-variable-for-TLSDESC-XSAVE-XSAVEC-s.patch
+Patch40:	0041-x86-Link-tst-gnu2-tls2-x86-noxsave-c-xsavec-with-lib.patch
+
+# Patches from upstream master
+Patch50:	https://sourceware.org/git?p=glibc.git;a=patch;h=12a497c716f0a06be5946cabb8c3ec22a079771e;hp=5b132ec2b7712dbc055838b3b538b83ad1196414#/glibc-workaround-for-execstack-compat.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

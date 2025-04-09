@@ -1,0 +1,38 @@
+From 31c7d69af59da0da80caa74b2ec6ae149013384d Mon Sep 17 00:00:00 2001
+From: Florian Weimer <fweimer@redhat.com>
+Date: Fri, 16 Feb 2024 07:40:37 +0100
+Subject: [PATCH 22/57] i386: Use generic memrchr in libc (bug 31316)
+
+Before this change, we incorrectly used the SSE2 variant in the
+implementation, without checking that the system actually supports
+SSE2.
+
+Tested-by: Sam James <sam@gentoo.org>
+(cherry picked from commit 0d9166c2245cad4ac520b337dee40c9a583872b6)
+---
+ sysdeps/i386/i686/multiarch/memrchr-c.c    | 1 +
+ sysdeps/i386/i686/multiarch/memrchr-sse2.S | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysdeps/i386/i686/multiarch/memrchr-c.c b/sysdeps/i386/i686/multiarch/memrchr-c.c
+index ef7bbbe792..20bfdf3af3 100644
+--- a/sysdeps/i386/i686/multiarch/memrchr-c.c
++++ b/sysdeps/i386/i686/multiarch/memrchr-c.c
+@@ -5,3 +5,4 @@ extern void *__memrchr_ia32 (const void *, int, size_t);
+ #endif
+ 
+ #include "string/memrchr.c"
++strong_alias (__memrchr_ia32, __GI___memrchr)
+diff --git a/sysdeps/i386/i686/multiarch/memrchr-sse2.S b/sysdeps/i386/i686/multiarch/memrchr-sse2.S
+index d9dae04171..e123f87435 100644
+--- a/sysdeps/i386/i686/multiarch/memrchr-sse2.S
++++ b/sysdeps/i386/i686/multiarch/memrchr-sse2.S
+@@ -720,5 +720,4 @@ L(ret_null):
+ 	ret
+ 
+ END (__memrchr_sse2)
+-strong_alias (__memrchr_sse2, __GI___memrchr)
+ #endif
+-- 
+2.45.0
+

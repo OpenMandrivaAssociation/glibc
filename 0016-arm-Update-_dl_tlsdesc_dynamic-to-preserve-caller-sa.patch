@@ -1,0 +1,462 @@
+From a8ba52bde58c69f2b31da62ad2311f119adf6cb9 Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Tue, 12 Mar 2024 13:21:19 -0300
+Subject: [PATCH 16/57] arm: Update _dl_tlsdesc_dynamic to preserve
+ caller-saved registers (BZ 31372)
+
+ARM _dl_tlsdesc_dynamic slow path has two issues:
+
+  * The ip/r12 is defined by AAPCS as a scratch register, and gcc is
+    used to save the stack pointer before on some function calls.  So it
+    should also be saved/restored as well.  It fixes the tst-gnu2-tls2.
+
+  * None of the possible VFP registers are saved/restored.  ARM has the
+    additional complexity to have different VFP bank sizes (depending of
+    VFP support by the chip).
+
+The tst-gnu2-tls2 test is extended to check for VFP registers, although
+only for hardfp builds.  Different than setcontext, _dl_tlsdesc_dynamic
+does not have  HWCAP_ARM_IWMMXT (I don't have a way to properly test
+it and it is almost a decade since newer hardware was released).
+
+With this patch there is no need to mark tst-gnu2-tls2 as XFAIL.
+
+Checked on arm-linux-gnueabihf.
+Reviewed-by: H.J. Lu <hjl.tools@gmail.com>
+
+(cherry picked from commit 64c7e344289ed085517c2227d8e3b06388242c13)
+---
+ config.h.in                 |   3 +
+ elf/Makefile                |   4 --
+ elf/tst-gnu2-tls2.h         |   4 ++
+ elf/tst-gnu2-tls2mod0.c     |   3 +-
+ elf/tst-gnu2-tls2mod1.c     |   3 +-
+ elf/tst-gnu2-tls2mod2.c     |   3 +-
+ sysdeps/arm/configure       |  32 +++++++++
+ sysdeps/arm/configure.ac    |  15 +++++
+ sysdeps/arm/dl-tlsdesc.S    |  70 +++++++++++++++++---
+ sysdeps/arm/tst-gnu2-tls2.h | 128 ++++++++++++++++++++++++++++++++++++
+ 10 files changed, 250 insertions(+), 15 deletions(-)
+ create mode 100644 sysdeps/arm/tst-gnu2-tls2.h
+
+diff --git a/config.h.in b/config.h.in
+index 44a34072a4..4d33c63a84 100644
+--- a/config.h.in
++++ b/config.h.in
+@@ -141,6 +141,9 @@
+ /* LOONGARCH floating-point ABI for ld.so.  */
+ #undef LOONGARCH_ABI_FRLEN
+ 
++/* Define whether ARM used hard-float and support VFPvX-D32.  */
++#undef HAVE_ARM_PCS_VFP_D32
++
+ /* Linux specific: minimum supported kernel version.  */
+ #undef	__LINUX_KERNEL_VERSION
+ 
+diff --git a/elf/Makefile b/elf/Makefile
+index c5c37a9147..030db4d207 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -3056,10 +3056,6 @@ $(objpfx)tst-gnu2-tls2.out: \
+   $(objpfx)tst-gnu2-tls2mod2.so
+ 
+ ifeq (yes,$(have-mtls-dialect-gnu2))
+-# This test fails if dl_tlsdesc_dynamic doesn't preserve all caller-saved
+-# registers.  See https://sourceware.org/bugzilla/show_bug.cgi?id=31372
+-test-xfail-tst-gnu2-tls2 = yes
+-
+ CFLAGS-tst-tlsgap-mod0.c += -mtls-dialect=gnu2
+ CFLAGS-tst-tlsgap-mod1.c += -mtls-dialect=gnu2
+ CFLAGS-tst-tlsgap-mod2.c += -mtls-dialect=gnu2
+diff --git a/elf/tst-gnu2-tls2.h b/elf/tst-gnu2-tls2.h
+index 77964a57a3..1ade8151e2 100644
+--- a/elf/tst-gnu2-tls2.h
++++ b/elf/tst-gnu2-tls2.h
+@@ -27,6 +27,10 @@ extern struct tls *apply_tls (struct tls *);
+ 
+ /* An architecture can define them to verify that clobber caller-saved
+    registers aren't changed by the implicit TLSDESC call.  */
++#ifndef INIT_TLSDESC_CALL
++# define INIT_TLSDESC_CALL()
++#endif
++
+ #ifndef BEFORE_TLSDESC_CALL
+ # define BEFORE_TLSDESC_CALL()
+ #endif
+diff --git a/elf/tst-gnu2-tls2mod0.c b/elf/tst-gnu2-tls2mod0.c
+index 45556a0e17..3fe3c14277 100644
+--- a/elf/tst-gnu2-tls2mod0.c
++++ b/elf/tst-gnu2-tls2mod0.c
+@@ -16,13 +16,14 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-#include "tst-gnu2-tls2.h"
++#include <tst-gnu2-tls2.h>
+ 
+ __thread struct tls tls_var0 __attribute__ ((visibility ("hidden")));
+ 
+ struct tls *
+ apply_tls (struct tls *p)
+ {
++  INIT_TLSDESC_CALL ();
+   BEFORE_TLSDESC_CALL ();
+   tls_var0 = *p;
+   struct tls *ret = &tls_var0;
+diff --git a/elf/tst-gnu2-tls2mod1.c b/elf/tst-gnu2-tls2mod1.c
+index e10b9dbc0a..e210538468 100644
+--- a/elf/tst-gnu2-tls2mod1.c
++++ b/elf/tst-gnu2-tls2mod1.c
+@@ -16,13 +16,14 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-#include "tst-gnu2-tls2.h"
++#include <tst-gnu2-tls2.h>
+ 
+ __thread struct tls tls_var1[100] __attribute__ ((visibility ("hidden")));
+ 
+ struct tls *
+ apply_tls (struct tls *p)
+ {
++  INIT_TLSDESC_CALL ();
+   BEFORE_TLSDESC_CALL ();
+   tls_var1[1] = *p;
+   struct tls *ret = &tls_var1[1];
+diff --git a/elf/tst-gnu2-tls2mod2.c b/elf/tst-gnu2-tls2mod2.c
+index 141af51e55..6d3031dc5f 100644
+--- a/elf/tst-gnu2-tls2mod2.c
++++ b/elf/tst-gnu2-tls2mod2.c
+@@ -16,13 +16,14 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-#include "tst-gnu2-tls2.h"
++#include <tst-gnu2-tls2.h>
+ 
+ __thread struct tls tls_var2 __attribute__ ((visibility ("hidden")));
+ 
+ struct tls *
+ apply_tls (struct tls *p)
+ {
++  INIT_TLSDESC_CALL ();
+   BEFORE_TLSDESC_CALL ();
+   tls_var2 = *p;
+   struct tls *ret = &tls_var2;
+diff --git a/sysdeps/arm/configure b/sysdeps/arm/configure
+index 35e2918922..4ef4d46cbd 100644
+--- a/sysdeps/arm/configure
++++ b/sysdeps/arm/configure
+@@ -187,6 +187,38 @@ else
+ default-abi = soft"
+ fi
+ 
++{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether VFP supports 32 registers" >&5
++printf %s "checking whether VFP supports 32 registers... " >&6; }
++if test ${libc_cv_arm_pcs_vfp_d32+y}
++then :
++  printf %s "(cached) " >&6
++else $as_nop
++
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++
++void foo (void)
++{
++  asm volatile ("vldr d16,=17" : : : "d16");
++}
++
++_ACEOF
++if ac_fn_c_try_compile "$LINENO"
++then :
++  libc_cv_arm_pcs_vfp_d32=yes
++else $as_nop
++  libc_cv_arm_pcs_vfp_d32=no
++fi
++rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
++fi
++{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_arm_pcs_vfp_d32" >&5
++printf "%s\n" "$libc_cv_arm_pcs_vfp_d32" >&6; }
++if test "$libc_cv_arm_pcs_vfp_d32" = yes ;
++then
++  printf "%s\n" "#define HAVE_ARM_PCS_VFP_D32 1" >>confdefs.h
++
++fi
++
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether PC-relative relocs in movw/movt work properly" >&5
+ printf %s "checking whether PC-relative relocs in movw/movt work properly... " >&6; }
+ if test ${libc_cv_arm_pcrel_movw+y}
+diff --git a/sysdeps/arm/configure.ac b/sysdeps/arm/configure.ac
+index 5172e30bbe..cd00ddc9d9 100644
+--- a/sysdeps/arm/configure.ac
++++ b/sysdeps/arm/configure.ac
+@@ -21,6 +21,21 @@ else
+   LIBC_CONFIG_VAR([default-abi], [soft])
+ fi
+ 
++AC_CACHE_CHECK([whether VFP supports 32 registers],
++		libc_cv_arm_pcs_vfp_d32, [
++AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
++void foo (void)
++{
++  asm volatile ("vldr d16,=17" : : : "d16");
++}
++]])],
++                [libc_cv_arm_pcs_vfp_d32=yes],
++                [libc_cv_arm_pcs_vfp_d32=no])])
++if test "$libc_cv_arm_pcs_vfp_d32" = yes ;
++then
++  AC_DEFINE(HAVE_ARM_PCS_VFP_D32)
++fi
++
+ AC_CACHE_CHECK([whether PC-relative relocs in movw/movt work properly],
+ 	       libc_cv_arm_pcrel_movw, [
+ cat > conftest.s <<\EOF
+diff --git a/sysdeps/arm/dl-tlsdesc.S b/sysdeps/arm/dl-tlsdesc.S
+index 764c56e70f..ada106521d 100644
+--- a/sysdeps/arm/dl-tlsdesc.S
++++ b/sysdeps/arm/dl-tlsdesc.S
+@@ -19,6 +19,7 @@
+ #include <sysdep.h>
+ #include <arm-features.h>
+ #include <tls.h>
++#include <rtld-global-offsets.h>
+ #include "tlsdesc.h"
+ 
+ 	.text
+@@ -83,14 +84,20 @@ _dl_tlsdesc_dynamic(struct tlsdesc *tdp)
+ 	.align 2
+ _dl_tlsdesc_dynamic:
+ 	/* Our calling convention is to clobber r0, r1 and the processor
+-	   flags.  All others that are modified must be saved */
+-	eabi_save ({r2,r3,r4,lr})
+-	push	{r2,r3,r4,lr}
+-	cfi_adjust_cfa_offset (16)
++	   flags.  All others that are modified must be saved.  r5 is
++	   used as the hwcap value to avoid reload after __tls_get_addr
++	   call.  If required we will save the vector register on the slow
++	   path.  */
++	eabi_save ({r2,r3,r4,r5,ip,lr})
++	push	{r2,r3,r4,r5,ip,lr}
++	cfi_adjust_cfa_offset (24)
+ 	cfi_rel_offset (r2,0)
+ 	cfi_rel_offset (r3,4)
+ 	cfi_rel_offset (r4,8)
+-	cfi_rel_offset (lr,12)
++	cfi_rel_offset (r5,12)
++	cfi_rel_offset (ip,16)
++	cfi_rel_offset (lr,20)
++
+ 	ldr	r1, [r0] /* td */
+ 	GET_TLS (lr)
+ 	mov	r4, r0 /* r4 = tp */
+@@ -113,22 +120,69 @@ _dl_tlsdesc_dynamic:
+ 	rsbne	r0, r4, r3
+ 	bne	2f
+ 1:	mov	r0, r1
++
++	/* Load the hwcap to check for vector support.  */
++	ldr     r2, 3f
++	ldr     r1, .Lrtld_global_ro
++0:	add     r2, pc, r2
++	ldr     r2, [r2, r1]
++	ldr     r5, [r2, #RTLD_GLOBAL_RO_DL_HWCAP_OFFSET]
++
++#ifdef __SOFTFP__
++	tst     r5, #HWCAP_ARM_VFP
++	beq     .Lno_vfp
++#endif
++
++	/* Store the VFP registers.  Don't use VFP instructions directly
++	   because this code is used in non-VFP multilibs.  */
++#define VFP_STACK_REQ (32*8 + 8)
++	sub	sp, sp, VFP_STACK_REQ
++	cfi_adjust_cfa_offset (VFP_STACK_REQ)
++	mov	r3, sp
++	.inst	0xeca30b20	/* vstmia r3!, {d0-d15} */
++	tst	r5, #HWCAP_ARM_VFPD32
++	beq	4f
++	.inst	0xece30b20	/* vstmia r3!, {d16-d31}  */
++	/* Store the floating-point status register.  */
++4:	.inst	0xeef12a10	/* vmrs	r2, fpscr */
++	str	r2, [r3]
++.Lno_vfp:
+ 	bl	__tls_get_addr
+ 	rsb	r0, r4, r0
++#ifdef __SOFTFP__
++	tst     r5, #HWCAP_ARM_VFP
++	beq     2f
++#endif
++	mov	r3, sp
++	.inst	0xecb30b20	/* vldmia r3!, {d0-d15}  */
++	tst	r5, #HWCAP_ARM_VFPD32
++	beq	5f
++	.inst	0xecf30b20	/* vldmia r3!, {d16-d31}  */
++	ldr	r4, [r3]
++5:	.inst	0xeee14a10	/* vmsr	fpscr, r4  */
++	add	sp, sp, VFP_STACK_REQ
++	cfi_adjust_cfa_offset (-VFP_STACK_REQ)
++
+ 2:
+ #if ((defined (__ARM_ARCH_4T__) && defined (__THUMB_INTERWORK__)) \
+      || defined (ARM_ALWAYS_BX))
+-	pop	{r2,r3,r4, lr}
+-	cfi_adjust_cfa_offset (-16)
++	pop	{r2,r3,r4,r5,ip, lr}
++	cfi_adjust_cfa_offset (-20)
+ 	cfi_restore (lr)
++	cfi_restore (ip)
++	cfi_restore (r5)
+ 	cfi_restore (r4)
+ 	cfi_restore (r3)
+ 	cfi_restore (r2)
+ 	bx	lr
+ #else
+-	pop	{r2,r3,r4, pc}
++	pop	{r2,r3,r4,r5,ip, pc}
+ #endif
+ 	eabi_fnend
+ 	cfi_endproc
+ 	.size	_dl_tlsdesc_dynamic, .-_dl_tlsdesc_dynamic
++
++3:      .long   _GLOBAL_OFFSET_TABLE_ - 0b - PC_OFS
++.Lrtld_global_ro:
++	.long   C_SYMBOL_NAME(_rtld_global_ro)(GOT)
+ #endif /* SHARED */
+diff --git a/sysdeps/arm/tst-gnu2-tls2.h b/sysdeps/arm/tst-gnu2-tls2.h
+new file mode 100644
+index 0000000000..e413ac21fb
+--- /dev/null
++++ b/sysdeps/arm/tst-gnu2-tls2.h
+@@ -0,0 +1,128 @@
++/* Test TLSDESC relocation.  ARM version.
++   Copyright (C) 2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <config.h>
++#include <sys/auxv.h>
++#include <string.h>
++#include <stdlib.h>
++#include <endian.h>
++
++#ifndef __SOFTFP__
++
++# ifdef HAVE_ARM_PCS_VFP_D32
++#  define SAVE_VFP_D32					\
++      asm volatile ("vldr d16,=17" : : : "d16");	\
++      asm volatile ("vldr d17,=18" : : : "d17");	\
++      asm volatile ("vldr d18,=19" : : : "d18");	\
++      asm volatile ("vldr d19,=20" : : : "d19");	\
++      asm volatile ("vldr d20,=21" : : : "d20");	\
++      asm volatile ("vldr d21,=22" : : : "d21");	\
++      asm volatile ("vldr d22,=23" : : : "d22");	\
++      asm volatile ("vldr d23,=24" : : : "d23");	\
++      asm volatile ("vldr d24,=25" : : : "d24");	\
++      asm volatile ("vldr d25,=26" : : : "d25");	\
++      asm volatile ("vldr d26,=27" : : : "d26");	\
++      asm volatile ("vldr d27,=28" : : : "d27");	\
++      asm volatile ("vldr d28,=29" : : : "d28");	\
++      asm volatile ("vldr d29,=30" : : : "d29");	\
++      asm volatile ("vldr d30,=31" : : : "d30");	\
++      asm volatile ("vldr d31,=32" : : : "d31");
++# else
++#  define SAVE_VFP_D32
++# endif
++
++# define INIT_TLSDESC_CALL()				\
++  unsigned long hwcap = getauxval (AT_HWCAP)
++
++/* Set each vector register to a value from 1 to 32 before the TLS access,
++   dump to memory after TLS access, and compare with the expected values.  */
++
++# define BEFORE_TLSDESC_CALL()				\
++  if (hwcap & HWCAP_ARM_VFP)				\
++    {							\
++      asm volatile ("vldr  d0,=1" : : : "d0");		\
++      asm volatile ("vldr  d1,=2" : : : "d1");		\
++      asm volatile ("vldr  d2,=3" : : : "d1");		\
++      asm volatile ("vldr  d3,=4" : : : "d3");		\
++      asm volatile ("vldr  d4,=5" : : : "d4");		\
++      asm volatile ("vldr  d5,=6" : : : "d5");		\
++      asm volatile ("vldr  d6,=7" : : : "d6");		\
++      asm volatile ("vldr  d7,=8" : : : "d7");		\
++      asm volatile ("vldr  d8,=9" : : : "d8");		\
++      asm volatile ("vldr  d9,=10" : : : "d9");		\
++      asm volatile ("vldr d10,=11" : : : "d10");	\
++      asm volatile ("vldr d11,=12" : : : "d11");	\
++      asm volatile ("vldr d12,=13" : : : "d12");	\
++      asm volatile ("vldr d13,=14" : : : "d13");	\
++      asm volatile ("vldr d14,=15" : : : "d14");	\
++      asm volatile ("vldr d15,=16" : : : "d15");	\
++    }							\
++  if (hwcap & HWCAP_ARM_VFPD32)				\
++    {							\
++      SAVE_VFP_D32					\
++    }
++
++# define VFP_STACK_REQ (16*8)
++# if __BYTE_ORDER == __BIG_ENDIAN
++#  define DISP 7
++# else
++#  define DISP 0
++# endif
++
++# ifdef HAVE_ARM_PCS_VFP_D32
++#  define CHECK_VFP_D32							\
++      char vfp[VFP_STACK_REQ];						\
++      asm volatile ("vstmia %0, {d16-d31}\n"				\
++		    :							\
++		    : "r" (vfp)						\
++		    : "memory");					\
++									\
++      char expected[VFP_STACK_REQ] = { 0 };				\
++      for (int i = 0; i < 16; ++i)					\
++	expected[i * 8 + DISP] = i + 17;				\
++									\
++      if (memcmp (vfp, expected, VFP_STACK_REQ) != 0)			\
++        abort ();
++# else
++#  define CHECK_VFP_D32
++# endif
++
++# define AFTER_TLSDESC_CALL()						\
++  if (hwcap & HWCAP_ARM_VFP)						\
++    {									\
++      char vfp[VFP_STACK_REQ];						\
++      asm volatile ("vstmia %0, {d0-d15}\n"				\
++		    :							\
++		    : "r" (vfp)						\
++		    : "memory");					\
++									\
++      char expected[VFP_STACK_REQ] = { 0 };				\
++      for (int i = 0; i < 16; ++i)					\
++	expected[i * 8 + DISP] = i + 1;					\
++									\
++      if (memcmp (vfp, expected, VFP_STACK_REQ) != 0)			\
++        abort ();							\
++    }									\
++  if (hwcap & HWCAP_ARM_VFPD32)						\
++    {									\
++      CHECK_VFP_D32							\
++    }
++
++#endif /* __SOFTFP__ */
++
++#include_next <tst-gnu2-tls2.h>
+-- 
+2.45.0
+
