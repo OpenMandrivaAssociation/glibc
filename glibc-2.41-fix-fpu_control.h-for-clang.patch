@@ -1,0 +1,12 @@
+diff -up glibc-2.41/sysdeps/aarch64/fpu/fpu_control.h.omv~ glibc-2.41/sysdeps/aarch64/fpu/fpu_control.h
+--- glibc-2.41/sysdeps/aarch64/fpu/fpu_control.h.omv~	2025-06-08 13:52:54.873974490 +0200
++++ glibc-2.41/sysdeps/aarch64/fpu/fpu_control.h	2025-06-08 13:53:16.375111390 +0200
+@@ -23,7 +23,7 @@
+ 
+ /* Macros for accessing the FPCR and FPSR.  */
+ 
+-#if __GNUC_PREREQ (6,0)
++#if __GNUC_PREREQ (6,0) && !defined (__clang__)
+ # define _FPU_GETCW(fpcr) (fpcr = __builtin_aarch64_get_fpcr ())
+ # define _FPU_SETCW(fpcr) __builtin_aarch64_set_fpcr (fpcr)
+ # define _FPU_GETFPSR(fpsr) (fpsr = __builtin_aarch64_get_fpsr ())

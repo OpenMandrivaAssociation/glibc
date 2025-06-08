@@ -1,7 +1,7 @@
 From 200d20123cb8ee15ad5d15c9a4adcd2999acb9f1 Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Mon, 31 Mar 2025 21:33:18 +0200
-Subject: [PATCH 41/41] x86: Link tst-gnu2-tls2-x86-noxsave{,c,xsavec} with
+Subject: [PATCH 41/56] x86: Link tst-gnu2-tls2-x86-noxsave{,c,xsavec} with
  libpthread
 
 This fixes a test build failure on Hurd.

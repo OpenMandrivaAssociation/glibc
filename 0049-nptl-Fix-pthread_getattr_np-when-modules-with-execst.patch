@@ -1,0 +1,294 @@
+From 5b4c4617016d28569106549dff6f9fec73eed5ce Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Thu, 24 Apr 2025 12:27:44 -0300
+Subject: [PATCH 49/56] nptl: Fix pthread_getattr_np when modules with
+ execstack are allowed (BZ 32897)
+
+The BZ 32653 fix (12a497c716f0a06be5946cabb8c3ec22a079771e) kept the
+stack pointer zeroing from make_main_stack_executable on
+_dl_make_stack_executable.  However, previously the 'stack_endp'
+pointed to temporary variable created before the call of
+_dl_map_object_from_fd; while now we use the __libc_stack_end
+directly.
+
+Since pthread_getattr_np relies on correct __libc_stack_end, if
+_dl_make_stack_executable is called (for instance, when
+glibc.rtld.execstack=2 is set) __libc_stack_end will be set to zero,
+and the call will always fail.
+
+The __libc_stack_end zero was used a mitigation hardening, but since
+52a01100ad011293197637e42b5be1a479a2f4ae it is used solely on
+pthread_getattr_np code.  So there is no point in zeroing anymore.
+
+Checked on x86_64-linux-gnu and i686-linux-gnu.
+Reviewed-by: Sam James <sam@gentoo.org>
+
+(cherry picked from commit 0c3425942374e72c3bcac28b2578117d36b0f9df)
+---
+ NEWS                                   |  2 ++
+ elf/dl-execstack-tunable.c             |  2 +-
+ elf/dl-execstack.c                     |  2 +-
+ elf/dl-load.c                          |  4 +--
+ sysdeps/generic/ldsodefs.h             |  2 +-
+ sysdeps/mach/hurd/dl-execstack.c       |  5 ++-
+ sysdeps/pthread/Makefile               |  9 +++++
+ sysdeps/pthread/tst-stack2-mod.c       | 39 +++++++++++++++++++++
+ sysdeps/pthread/tst-stack2.c           | 47 ++++++++++++++++++++++++++
+ sysdeps/unix/sysv/linux/dl-execstack.c |  7 ++--
+ 10 files changed, 106 insertions(+), 13 deletions(-)
+ create mode 100644 sysdeps/pthread/tst-stack2-mod.c
+ create mode 100644 sysdeps/pthread/tst-stack2.c
+
+diff --git a/NEWS b/NEWS
+index 4dfec9c635..51586aaad7 100644
+--- a/NEWS
++++ b/NEWS
+@@ -27,6 +27,8 @@ The following bugs were resolved with this release:
+   [32786] nptl: PTHREAD_COND_INITIALIZER compatibility with pre-2.41 versions
+   [32810] Crash on x86-64 if XSAVEC disable via tunable
+   [32882] tst-audit10 fails with SIGILL on CPUs without AVX
++  [32897] dynamic-link: pthread_getattr_np fails when executable stack
++    tunable is set
+ 
+ Version 2.41
+ 
+diff --git a/elf/dl-execstack-tunable.c b/elf/dl-execstack-tunable.c
+index 6cef1a3036..e3b638aeaa 100644
+--- a/elf/dl-execstack-tunable.c
++++ b/elf/dl-execstack-tunable.c
+@@ -31,7 +31,7 @@ _dl_handle_execstack_tunable (void)
+       break;
+ 
+     case stack_tunable_mode_force:
+-      if (_dl_make_stack_executable (&__libc_stack_end) != 0)
++      if (_dl_make_stack_executable (__libc_stack_end) != 0)
+ 	_dl_fatal_printf (
+ "Fatal glibc error: cannot enable executable stack as tunable requires");
+       break;
+diff --git a/elf/dl-execstack.c b/elf/dl-execstack.c
+index e4d7dbe7f8..ceec5b2def 100644
+--- a/elf/dl-execstack.c
++++ b/elf/dl-execstack.c
+@@ -23,7 +23,7 @@
+    so as to mprotect it.  */
+ 
+ int
+-_dl_make_stack_executable (void **stack_endp)
++_dl_make_stack_executable (const void *stack_endp)
+ {
+   return ENOSYS;
+ }
+diff --git a/elf/dl-load.c b/elf/dl-load.c
+index f905578a65..945dd8a231 100644
+--- a/elf/dl-load.c
++++ b/elf/dl-load.c
+@@ -945,7 +945,7 @@ struct link_map *
+ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
+ 			struct filebuf *fbp, char *realname,
+ 			struct link_map *loader, int l_type, int mode,
+-			void **stack_endp, Lmid_t nsid)
++			const void *stack_endp, Lmid_t nsid)
+ {
+   struct link_map *l = NULL;
+   const ElfW(Ehdr) *header;
+@@ -2180,7 +2180,7 @@ _dl_map_object (struct link_map *loader, const char *name,
+ 
+   void *stack_end = __libc_stack_end;
+   return _dl_map_object_from_fd (name, origname, fd, &fb, realname, loader,
+-				 type, mode, &stack_end, nsid);
++				 type, mode, stack_end, nsid);
+ }
+ 
+ struct add_path_state
+diff --git a/sysdeps/generic/ldsodefs.h b/sysdeps/generic/ldsodefs.h
+index 4b44beb3f4..ddb34a1588 100644
+--- a/sysdeps/generic/ldsodefs.h
++++ b/sysdeps/generic/ldsodefs.h
+@@ -711,7 +711,7 @@ void _dl_handle_execstack_tunable (void) attribute_hidden;
+ /* This function changes the permission of the memory region pointed
+    by STACK_ENDP to executable and update the internal memory protection
+    flags for future thread stack creation.  */
+-int _dl_make_stack_executable (void **stack_endp) attribute_hidden;
++int _dl_make_stack_executable (const void *stack_endp) attribute_hidden;
+ 
+ /* Variable pointing to the end of the stack (or close to it).  This value
+    must be constant over the runtime of the application.  Some programs
+diff --git a/sysdeps/mach/hurd/dl-execstack.c b/sysdeps/mach/hurd/dl-execstack.c
+index 0617d3a161..dc4719bd38 100644
+--- a/sysdeps/mach/hurd/dl-execstack.c
++++ b/sysdeps/mach/hurd/dl-execstack.c
+@@ -26,12 +26,11 @@ extern struct hurd_startup_data *_dl_hurd_data attribute_hidden;
+    so as to mprotect it.  */
+ 
+ int
+-_dl_make_stack_executable (void **stack_endp)
++_dl_make_stack_executable (const void *stack_endp)
+ {
+   /* Challenge the caller.  */
+-  if (__builtin_expect (*stack_endp != __libc_stack_end, 0))
++  if (__glibc_unlikely (stack_endp != __libc_stack_end))
+     return EPERM;
+-  *stack_endp = NULL;
+ 
+ #if IS_IN (rtld)
+   if (__mprotect ((void *)_dl_hurd_data->stack_base, _dl_hurd_data->stack_size,
+diff --git a/sysdeps/pthread/Makefile b/sysdeps/pthread/Makefile
+index 2e0ce773a0..17bdd6f49d 100644
+--- a/sysdeps/pthread/Makefile
++++ b/sysdeps/pthread/Makefile
+@@ -272,6 +272,7 @@ tests += \
+   tst-spin4 \
+   tst-spin5 \
+   tst-stack1 \
++  tst-stack2 \
+   tst-stdio1 \
+   tst-stdio2 \
+   tst-thrd-detach \
+@@ -367,6 +368,7 @@ modules-names += \
+   tst-atfork4mod \
+   tst-create1mod \
+   tst-fini1mod \
++  tst-stack2-mod \
+   tst-tls4moda \
+   tst-tls4modb \
+   # modules-names
+@@ -540,4 +542,11 @@ LDFLAGS-tst-create1 = -Wl,-export-dynamic
+ $(objpfx)tst-create1: $(shared-thread-library)
+ $(objpfx)tst-create1.out: $(objpfx)tst-create1mod.so
+ 
++$(objpfx)tst-stack2.out: $(objpfx)tst-stack2-mod.so
++LDFLAGS-tst-stack2-mod.so = -Wl,-z,execstack
++ifeq ($(have-no-error-execstack),yes)
++LDFLAGS-tst-stack2-mod.so += -Wl,--no-error-execstack
++endif
++tst-stack2-ENV = GLIBC_TUNABLES=glibc.rtld.execstack=2
++
+ endif
+diff --git a/sysdeps/pthread/tst-stack2-mod.c b/sysdeps/pthread/tst-stack2-mod.c
+new file mode 100644
+index 0000000000..806fdbcd8d
+--- /dev/null
++++ b/sysdeps/pthread/tst-stack2-mod.c
+@@ -0,0 +1,39 @@
++/* Check if pthread_getattr_np works within modules with non-exectuble
++   stacks (BZ 32897).
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <pthread.h>
++
++bool init_result;
++
++void
++__attribute__ ((constructor))
++init (void)
++{
++  pthread_t me = pthread_self ();
++  pthread_attr_t attr;
++  init_result = pthread_getattr_np (me, &attr) == 0;
++}
++
++int
++mod_func (void)
++{
++  pthread_t me = pthread_self ();
++  pthread_attr_t attr;
++  return pthread_getattr_np (me, &attr);
++}
+diff --git a/sysdeps/pthread/tst-stack2.c b/sysdeps/pthread/tst-stack2.c
+new file mode 100644
+index 0000000000..20ab5af166
+--- /dev/null
++++ b/sysdeps/pthread/tst-stack2.c
+@@ -0,0 +1,47 @@
++/* Check if pthread_getattr_np works within modules with non-exectuble
++   stacks (BZ 32897).
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <pthread.h>
++#include <stdbool.h>
++#include <support/xdlfcn.h>
++#include <support/check.h>
++
++static int
++do_test (void)
++{
++  {
++    pthread_t me = pthread_self ();
++    pthread_attr_t attr;
++    TEST_COMPARE (pthread_getattr_np (me, &attr), 0);
++  }
++
++  void *h = xdlopen ("tst-stack2-mod.so", RTLD_NOW);
++
++  bool *init_result = xdlsym (h, "init_result");
++  TEST_COMPARE (*init_result, true);
++
++  int (*mod_func)(void) = xdlsym (h, "mod_func");
++  TEST_COMPARE (mod_func (), 0);
++
++  xdlclose (h);
++
++  return 0;
++}
++
++#include <support/test-driver.c>
+diff --git a/sysdeps/unix/sysv/linux/dl-execstack.c b/sysdeps/unix/sysv/linux/dl-execstack.c
+index 9791b339ca..6db9601656 100644
+--- a/sysdeps/unix/sysv/linux/dl-execstack.c
++++ b/sysdeps/unix/sysv/linux/dl-execstack.c
+@@ -19,10 +19,10 @@
+ #include <ldsodefs.h>
+ 
+ int
+-_dl_make_stack_executable (void **stack_endp)
++_dl_make_stack_executable (const void *stack_endp)
+ {
+   /* This gives us the highest/lowest page that needs to be changed.  */
+-  uintptr_t page = ((uintptr_t) *stack_endp
++  uintptr_t page = ((uintptr_t) stack_endp
+ 		    & -(intptr_t) GLRO(dl_pagesize));
+ 
+   if (__mprotect ((void *) page, GLRO(dl_pagesize),
+@@ -35,9 +35,6 @@ _dl_make_stack_executable (void **stack_endp)
+ 		  ) != 0)
+     return errno;
+ 
+-  /* Clear the address.  */
+-  *stack_endp = NULL;
+-
+   /* Remember that we changed the permission.  */
+   GL(dl_stack_flags) |= PF_X;
+ 
+-- 
+2.49.0
+

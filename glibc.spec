@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -240,9 +240,21 @@ Patch37:	0038-x86_64-Add-atanh-with-FMA.patch
 Patch38:	0039-x86-Skip-XSAVE-state-size-reset-if-ISA-level-require.patch
 Patch39:	0040-x86-Use-separate-variable-for-TLSDESC-XSAVE-XSAVEC-s.patch
 Patch40:	0041-x86-Link-tst-gnu2-tls2-x86-noxsave-c-xsavec-with-lib.patch
-
-# Patches from upstream master
-Patch50:	https://sourceware.org/git?p=glibc.git;a=patch;h=12a497c716f0a06be5946cabb8c3ec22a079771e;hp=5b132ec2b7712dbc055838b3b538b83ad1196414#/glibc-workaround-for-execstack-compat.patch
+Patch41:	0042-elf-Extend-glibc.rtld.execstack-tunable-to-force-exe.patch
+Patch42:	0043-elf-Fix-arm-linux-gnueabihf-build-break-from-b861755.patch
+Patch43:	0044-x86-Optimize-xstate-size-calculation.patch
+Patch44:	0045-x86-Add-ARL-PTL-CWF-model-detection-support.patch
+Patch45:	0046-x86-Handle-unknown-Intel-processor-with-default-tuni.patch
+Patch46:	0047-x86-Detect-Intel-Diamond-Rapids.patch
+Patch47:	0048-elf-tst-audit10-split-AVX512F-code-into-dedicated-fu.patch
+Patch48:	0049-nptl-Fix-pthread_getattr_np-when-modules-with-execst.patch
+Patch49:	0050-hurd-Fix-tst-stack2-test-build-on-Hurd.patch
+Patch50:	0051-elf-Keep-using-minimal-malloc-after-early-DTV-resize.patch
+Patch51:	0052-support-Use-const-char-argument-in-support_capture_s.patch
+Patch52:	0053-elf-Test-case-for-bug-32976-CVE-2025-4802.patch
+Patch53:	0054-x86_64-Fix-typo-in-ifunc-impl-list.c.patch
+Patch54:	0055-elf-Fix-subprocess-status-handling-for-tst-dlopen-sg.patch
+Patch55:	0056-sparc-Fix-argument-passing-to-__libc_start_main-BZ-3.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -281,6 +293,7 @@ Patch192:	https://raw.githubusercontent.com/clearlinux-pkgs/glibc/master/pause.p
 
 #-----------------------------------------------------------------------
 # OpenMandriva patches
+Patch1001:	glibc-2.41-fix-fpu_control.h-for-clang.patch
 Patch1002:	glibc-2.34-headers-clang.patch
 Patch1003:	eglibc-mandriva-share-locale.patch
 Patch1004:	eglibc-mandriva-nsswitch.conf.patch

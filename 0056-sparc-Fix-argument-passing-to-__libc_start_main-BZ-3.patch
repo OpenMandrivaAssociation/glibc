@@ -1,0 +1,71 @@
+From d952c6efaa87c6973819bcb74712b86fc35a033e Mon Sep 17 00:00:00 2001
+From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+Date: Fri, 30 May 2025 12:40:04 -0300
+Subject: [PATCH 56/56] sparc: Fix argument passing to __libc_start_main (BZ
+ 32981)
+
+sparc start.S does not provide the final argument for
+__libc_start_main, which is the highest stack address used to
+update the __libc_stack_end.A
+
+This fixes elf/tst-execstack-prog-static-tunable on sparc64.
+On sparcv9 this does not happen because the kernel puts an
+auxv value, which turns to point to a value in the stack itself.
+
+Checked on sparc64-linux-gnu.
+
+Reviewed-by: Florian Weimer <fweimer@redhat.com>
+
+(cherry picked from commit 404526ee2e58f3c075253943ddc9988f4bd6b80c)
+---
+ NEWS                          | 2 ++
+ sysdeps/sparc/sparc32/start.S | 4 ++++
+ sysdeps/sparc/sparc64/start.S | 4 ++++
+ 3 files changed, 10 insertions(+)
+
+diff --git a/NEWS b/NEWS
+index e5d4a83048..90d090ea77 100644
+--- a/NEWS
++++ b/NEWS
+@@ -29,6 +29,8 @@ The following bugs were resolved with this release:
+   [32882] tst-audit10 fails with SIGILL on CPUs without AVX
+   [32897] dynamic-link: pthread_getattr_np fails when executable stack
+     tunable is set
++  [32981] ports: elf/tst-execstack-prog-static-tunable fails on
++    sparc64-linux-gnu
+   [32987] elf: Fix subprocess status handling for tst-dlopen-sgid
+ 
+ Version 2.41
+diff --git a/sysdeps/sparc/sparc32/start.S b/sysdeps/sparc/sparc32/start.S
+index 694b020ce0..cef7c96cac 100644
+--- a/sysdeps/sparc/sparc32/start.S
++++ b/sysdeps/sparc/sparc32/start.S
+@@ -73,6 +73,10 @@ _start:
+      be NULL.  */
+ 	mov	%g1, %o5
+ 
++  /* Provide the highest stack address to update the __libc_stack_end (used
++     to enable executable stacks if required).  */
++	st	%sp, [%sp+23*4]
++
+   /* Let libc do the rest of the initialization, and call main.  */
+ 	call	__libc_start_main
+ 	 nop
+diff --git a/sysdeps/sparc/sparc64/start.S b/sysdeps/sparc/sparc64/start.S
+index c9c25c2e47..08e1e77210 100644
+--- a/sysdeps/sparc/sparc64/start.S
++++ b/sysdeps/sparc/sparc64/start.S
+@@ -74,6 +74,10 @@ _start:
+      be NULL.  */
+ 	mov     %g1, %o5
+ 
++  /* Provide the highest stack address to update the __libc_stack_end (used
++     to enable executable stacks if required).  */
++	stx	%sp, [%sp+STACK_BIAS+22*8]
++
+   /* Let libc do the rest of the initialization, and call main.  */
+ 	call    __libc_start_main
+ 	 nop
+-- 
+2.49.0
+
