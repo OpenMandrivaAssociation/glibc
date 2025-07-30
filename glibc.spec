@@ -166,12 +166,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.41
+Version:	2.42
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -197,64 +197,11 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.41
+# git format-patch glibc-2.42
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch0:		0001-Remove-advisories-from-release-branch.patch
-Patch1:		0002-NEWS-start-new-section.patch
-Patch2:		0003-math-Fix-log10p1f-internal-table-value-BZ-32626.patch
-Patch3:		0004-math-Fix-sinhf-for-some-inputs-BZ-32627.patch
-Patch4:		0005-nptl-Correct-stack-size-attribute-when-stack-grows-u.patch
-Patch5:		0006-math-Fix-tanf-for-some-inputs-BZ-32630.patch
-Patch6:		0007-assert-Add-test-for-CVE-2025-0395.patch
-Patch7:		0008-Fix-tst-aarch64-pkey-to-handle-ENOSPC-as-not-support.patch
-Patch8:		0009-x86-__HAVE_FLOAT128-Defined-to-0-for-Intel-SYCL-comp.patch
-Patch9:		0010-math-Fix-unknown-type-name-__float128-for-clang-3.4-.patch
-Patch10:	0011-math-Add-optimization-barrier-to-ensure-a1-u.d-is-no.patch
-Patch11:	0012-RISC-V-Fix-IFUNC-resolver-cannot-access-gp-pointer.patch
-Patch12:	0013-Aarch64-Improve-codegen-in-SVE-asinh.patch
-Patch13:	0014-Aarch64-Improve-codegen-in-SVE-exp-and-users-and-upd.patch
-Patch14:	0015-AArch64-Improve-codegen-for-SVE-erfcf.patch
-Patch15:	0016-AArch64-Improve-codegen-for-SVE-pow.patch
-Patch16:	0017-AArch64-Improve-codegen-for-SVE-powf.patch
-Patch17:	0018-aarch64-Add-configure-checks-for-GCS-support.patch
-Patch18:	0019-aarch64-Add-tests-for-Guarded-Control-Stack.patch
-Patch19:	0020-aarch64-Add-GCS-tests-for-transitive-dependencies.patch
-Patch20:	0021-aarch64-Add-GCS-tests-for-dlopen.patch
-Patch21:	0022-aarch64-Add-GCS-test-with-signal-handler.patch
-Patch22:	0023-math-Improve-layout-of-exp-exp10-data.patch
-Patch23:	0024-AArch64-Add-SVE-memset.patch
-Patch24:	0025-AArch64-Use-prefer_sve_ifuncs-for-SVE-memset.patch
-Patch25:	0026-Pass-Wl-no-error-execstack-for-tests-where-Wl-z-exec.patch
-Patch26:	0027-static-pie-Skip-the-empty-PT_LOAD-segment-at-offset-.patch
-Patch27:	0028-elf-Check-if-__attribute__-aligned-65536-is-supporte.patch
-Patch28:	0029-configure-Fix-spelling-of-Wl-no-error-execstack-opti.patch
-Patch29:	0030-posix-Move-environ-helper-variables-next-to-environ-.patch
-Patch30:	0031-math-Remove-an-extra-semicolon-in-math-function-decl.patch
-Patch31:	0032-Linux-Remove-attribute-access-from-sched_getattr-bug.patch
-Patch32:	0033-nptl-clear-the-whole-rseq-area-before-registration.patch
-Patch33:	0034-nptl-PTHREAD_COND_INITIALIZER-compatibility-with-pre.patch
-Patch34:	0035-nptl-Check-if-thread-is-already-terminated-in-sigcan.patch
-Patch35:	0036-x86_64-Add-tanh-with-FMA.patch
-Patch36:	0037-x86_64-Add-sinh-with-FMA.patch
-Patch37:	0038-x86_64-Add-atanh-with-FMA.patch
-Patch38:	0039-x86-Skip-XSAVE-state-size-reset-if-ISA-level-require.patch
-Patch39:	0040-x86-Use-separate-variable-for-TLSDESC-XSAVE-XSAVEC-s.patch
-Patch40:	0041-x86-Link-tst-gnu2-tls2-x86-noxsave-c-xsavec-with-lib.patch
-Patch41:	0042-elf-Extend-glibc.rtld.execstack-tunable-to-force-exe.patch
-Patch42:	0043-elf-Fix-arm-linux-gnueabihf-build-break-from-b861755.patch
-Patch43:	0044-x86-Optimize-xstate-size-calculation.patch
-Patch44:	0045-x86-Add-ARL-PTL-CWF-model-detection-support.patch
-Patch45:	0046-x86-Handle-unknown-Intel-processor-with-default-tuni.patch
-Patch46:	0047-x86-Detect-Intel-Diamond-Rapids.patch
-Patch47:	0048-elf-tst-audit10-split-AVX512F-code-into-dedicated-fu.patch
-Patch48:	0049-nptl-Fix-pthread_getattr_np-when-modules-with-execst.patch
-Patch49:	0050-hurd-Fix-tst-stack2-test-build-on-Hurd.patch
-Patch50:	0051-elf-Keep-using-minimal-malloc-after-early-DTV-resize.patch
-Patch51:	0052-support-Use-const-char-argument-in-support_capture_s.patch
-Patch52:	0053-elf-Test-case-for-bug-32976-CVE-2025-4802.patch
-Patch53:	0054-x86_64-Fix-typo-in-ifunc-impl-list.c.patch
-Patch54:	0055-elf-Fix-subprocess-status-handling-for-tst-dlopen-sg.patch
-Patch55:	0056-sparc-Fix-argument-passing-to-__libc_start_main-BZ-3.patch
+Patch0:		0001-Replace-advisories-directory-with-pointer-file.patch
+Patch1:		0002-NEWS-add-new-section.patch
+Patch2:		0003-inet-fortified-fix-namespace-violation-bug-33227.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -269,7 +216,6 @@ Patch131:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-l
 Patch132:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-manual-dircategory.patch
 Patch135:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-fedora-ppc-unwind.patch
 Patch136:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-aarch64-tls-fixes.patch
-Patch138:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-arm-hardfloat-3.patch
 Patch141:	http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-cs-path.patch
 # We disagree with http://pkgs.fedoraproject.org/cgit/rpms/glibc.git/plain/glibc-disable-rwlock-elision.patch
 # Patch 131 is a much nicer solution that disables rwlock elision only on CPUs that can't handle it.
@@ -1426,7 +1372,8 @@ function BuildGlibc() {
 	BuildFlags="$BuildFlags -march=x86-64 -mtune=generic"
 %endif
 	BuildAltArch="yes"
-	BuildCompFlags="-m32"
+	# The -isystem flag is a workaround for the i686 build not finding stddef.h
+	BuildCompFlags="-m32 -isystem %{_libdir}/gcc/i686-openmandriva-linux-gnu/15.1.0/include/"
 %endif
 %ifarch %{ix86}
 	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic -mstackrealign"

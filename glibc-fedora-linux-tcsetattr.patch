@@ -1,19 +1,20 @@
---- glibc-2.25.51/sysdeps/unix/sysv/linux/tcsetattr.c.0025~	2017-07-11 16:44:14.000000000 +0200
-+++ glibc-2.25.51/sysdeps/unix/sysv/linux/tcsetattr.c	2017-07-11 18:32:38.167537430 +0200
-@@ -45,6 +45,7 @@ __tcsetattr (int fd, int optional_action
+diff -up glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c.1~ glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c
+--- glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c.1~	2025-07-28 20:22:55.000000000 +0200
++++ glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c	2025-07-29 23:36:43.339587551 +0200
+@@ -25,6 +25,7 @@ __tcsetattr (int fd, int optional_action
  {
-   struct __kernel_termios k_termios;
-   unsigned long int cmd;
+   struct termios2 k_termios;
+   unsigned long cmd;
 +  int retval;
  
-   switch (optional_actions)
-     {
-@@ -75,7 +76,36 @@ __tcsetattr (int fd, int optional_action
-   memcpy (&k_termios.c_cc[0], &termios_p->c_cc[0],
- 	  __KERNEL_NCCS * sizeof (cc_t));
+   memset (&k_termios, 0, sizeof k_termios);
  
--  return INLINE_SYSCALL (ioctl, 3, fd, cmd, &k_termios);
-+  retval = INLINE_SYSCALL (ioctl, 3, fd, cmd, &k_termios);
+@@ -74,7 +75,36 @@ __tcsetattr (int fd, int optional_action
+       k_termios.c_cflag &= ~CIBAUD;
+     }
+ 
+-  return INLINE_SYSCALL_CALL (ioctl, fd, cmd, &k_termios);
++  retval = INLINE_SYSCALL_CALL (ioctl, fd, cmd, &k_termios);
 +
 +  if (retval == 0 && cmd == TCSETS)
 +    {
@@ -44,5 +45,5 @@
 +
 +  return retval;
  }
- weak_alias (__tcsetattr, tcsetattr)
- libc_hidden_def (tcsetattr)
+ libc_hidden_def (__tcsetattr)
+ 

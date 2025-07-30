@@ -1,7 +1,7 @@
-From 9f48a8abb2b2762bf2fc8449bc5871a5b986f508 Mon Sep 17 00:00:00 2001
+From bdea6c37197a3c9bd976911cce5f580dea1c28dd Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Andreas=20K=2E=20H=C3=BCttel?= <dilfridge@gentoo.org>
-Date: Tue, 28 Jan 2025 18:45:20 +0100
-Subject: [PATCH 01/41] Remove advisories from release branch
+Date: Mon, 28 Jul 2025 20:35:38 +0200
+Subject: [PATCH 1/3] Replace advisories directory with pointer file
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,9 +22,13 @@ Signed-off-by: Andreas K. Hüttel <dilfridge@gentoo.org>
  advisories/GLIBC-SA-2024-0006 | 32 ---------------
  advisories/GLIBC-SA-2024-0007 | 28 -------------
  advisories/GLIBC-SA-2024-0008 | 26 ------------
- advisories/GLIBC-SA-2025-0001 | 25 ------------
+ advisories/GLIBC-SA-2025-0001 | 40 ------------------
+ advisories/GLIBC-SA-2025-0002 | 23 -----------
+ advisories/GLIBC-SA-2025-0003 | 30 --------------
+ advisories/GLIBC-SA-2025-0004 | 29 -------------
+ advisories/GLIBC-SA-2025-0005 | 14 -------
  advisories/README             | 77 -----------------------------------
- 16 files changed, 2 insertions(+), 359 deletions(-)
+ 20 files changed, 2 insertions(+), 470 deletions(-)
  create mode 100644 ADVISORIES
  delete mode 100644 advisories/GLIBC-SA-2023-0001
  delete mode 100644 advisories/GLIBC-SA-2023-0002
@@ -40,6 +44,10 @@ Signed-off-by: Andreas K. Hüttel <dilfridge@gentoo.org>
  delete mode 100644 advisories/GLIBC-SA-2024-0007
  delete mode 100644 advisories/GLIBC-SA-2024-0008
  delete mode 100644 advisories/GLIBC-SA-2025-0001
+ delete mode 100644 advisories/GLIBC-SA-2025-0002
+ delete mode 100644 advisories/GLIBC-SA-2025-0003
+ delete mode 100644 advisories/GLIBC-SA-2025-0004
+ delete mode 100644 advisories/GLIBC-SA-2025-0005
  delete mode 100644 advisories/README
 
 diff --git a/ADVISORIES b/ADVISORIES
@@ -387,10 +395,10 @@ index d93e2a6f0b..0000000000
 -Fix-Commit: bbf5a58ccb55679217f94de706164d15372fbbc0 (2.31-158)
 diff --git a/advisories/GLIBC-SA-2025-0001 b/advisories/GLIBC-SA-2025-0001
 deleted file mode 100644
-index 45f8b8f181..0000000000
+index b053d32e91..0000000000
 --- a/advisories/GLIBC-SA-2025-0001
 +++ /dev/null
-@@ -1,25 +0,0 @@
+@@ -1,40 +0,0 @@
 -assert: Buffer overflow when printing assertion failure message
 -
 -When the assert() function fails, it does not allocate enough space for the
@@ -414,8 +422,143 @@ index 45f8b8f181..0000000000
 -Public-Date: 2025-01-22
 -Vulnerable-Commit: f8a3b5bf8fa1d0c43d2458e03cc109a04fdef194 (2.13-175)
 -Fix-Commit: 68ee0f704cb81e9ad0a78c644a83e1e9cd2ee578 (2.41)
+-Fix-Commit: cdb9ba84191ce72e86346fb8b1d906e7cd930ea2 (2.42)
+-Fix-Commit: 69fda28279b497bd405fdd442a6d8e4d3d5f681b (2.41-7)
 -Fix-Commit: 7d4b6bcae91f29d7b4daf15bab06b66cf1d2217c (2.40-66)
+-Fix-Commit: d6c156c326999f144cb5b73d29982108d549ad8a (2.40-71)
+-Fix-Commit: 808a84a8b81468b517a4d721fdc62069cb8c211f (2.39-146)
+-Fix-Commit: f6d48470aef9264d2d56f4c4533eb76db7f9c2e4 (2.39-150)
+-Fix-Commit: c32fd59314c343db88c3ea4a203870481d33c3d2 (2.38-122)
+-Fix-Commit: f984e2d7e8299726891a1a497a3c36cd5542a0bf (2.38-124)
+-Fix-Commit: a3d7865b098a3a67c44f7812208d9ce4718873ba (2.37-143)
+-Fix-Commit: b989519fe1683c204ac24ec92830e3fe3bfaccad (2.37-146)
+-Fix-Commit: 7971add7ee4171fdd8dfd17e7c04c4ed77a18845 (2.36-216)
+-Fix-Commit: 0487893d5c5bc6710d83d7c3152d888a0339559e (2.36-219)
+-Fix-Commit: 8b5d4be762419c4f6176261c6fea40ac559b88dc (2.35-370)
+-Fix-Commit: 8b3d09dc0d350191985f9d291cc30ce96f034b49 (2.35-373)
+-Fix-Commit: df4e1f4a5096b385c9bcc94424cf2eaa227b3761 (2.34-500)
+-Fix-Commit: 31eb872cb21449832ab47ad5db83281d240e1d03 (2.34-503)
 -Reported-By: Qualys Security Advisory
+diff --git a/advisories/GLIBC-SA-2025-0002 b/advisories/GLIBC-SA-2025-0002
+deleted file mode 100644
+index 161da13dd4..0000000000
+--- a/advisories/GLIBC-SA-2025-0002
++++ /dev/null
+@@ -1,23 +0,0 @@
+-elf: static setuid binary dlopen may incorrectly search LD_LIBRARY_PATH
+-
+-A statically linked setuid binary that calls dlopen (including internal
+-dlopen calls after setlocale or calls to NSS functions such as getaddrinfo)
+-may incorrectly search LD_LIBRARY_PATH to determine which library to load,
+-leading to the execution of library code that is attacker controlled.
+-
+-The only viable vector for exploitation of this bug is local, if a static
+-setuid program exists, and that program calls dlopen, then it may search
+-LD_LIBRARY_PATH to locate the SONAME to load. No such program has been
+-discovered at the time of publishing this advisory, but the presence of
+-custom setuid programs, although strongly discouraged as a security
+-practice, cannot be discounted.
+-
+-CVE-Id: CVE-2025-4802
+-Public-Date: 2025-05-16
+-Vulnerable-Commit: 10e93d968716ab82931d593bada121c17c0a4b93 (2.27)
+-Fix-Commit: 5451fa962cd0a90a0e2ec1d8910a559ace02bba0 (2.39)
+-Fix-Commit: 3be3728df2f1912c80abd3288bc6e3a25ad679e4 (2.38-132)
+-Fix-Commit: 7403ede2d7752e59e0c47d5d33d73c2bf850e7be (2.37-154)
+-Fix-Commit: 2ef7850279b2931caf6d6d6743ebaa91839e1cf7 (2.36-227)
+-Fix-Commit: 621c65ccf12ddd415ceeb2234423bd1acd0fabb3 (2.35-387)
+-Fix-Commit: 35018c0fd20eac9ceaf60060fed2745b3177359d (2.34-517)
+diff --git a/advisories/GLIBC-SA-2025-0003 b/advisories/GLIBC-SA-2025-0003
+deleted file mode 100644
+index 2adeb3ce00..0000000000
+--- a/advisories/GLIBC-SA-2025-0003
++++ /dev/null
+@@ -1,30 +0,0 @@
+-power10: strcmp fails to save and restore nonvolatile vector registers
+-
+-The Power 10 implementation of strcmp in
+-sysdeps/powerpc/powerpc64/le/power10/strcmp.S failed to save/restore
+-nonvolatile vector registers in the 32-byte aligned loop path.  This
+-results in callers reading content from those registers in a different
+-context, potentially altering program logic.
+-
+-There could be a program context where a user controlled string could
+-leak through strcmp into program code, thus altering its logic.  There
+-is also a potential for sensitive strings passed into strcmp leaking
+-through the clobbered registers into parts of the calling program that
+-should otherwise not have had access to those strings.
+-
+-The impact of this flaw is limited to applications running on Power 10
+-hardware that use the nonvolatile vector registers, i.e. v20 to v31
+-assuming that they have been treated in accordance with the OpenPower
+-psABI.  It is possible to work around the issue for those specific
+-applications by setting the glibc.cpu.hwcaps tunable to "-arch_3_1" like
+-so:
+-
+-    export GLIBC_TUNABLES=glibc.cpu.hwcaps=-arch_3_1
+-
+-CVE-Id: CVE-2025-5702
+-Public-Date: 2025-06-04
+-Vulnerable-Commit: 3367d8e180848030d1646f088759f02b8dfe0d6f (2.39)
+-Fix-Commit: 15808c77b35319e67ee0dc8f984a9a1a434701bc (2.42)
+-Fix-Commit: 0c76c951620f9e12df2a89b2c684878b55bb6795 (2.41-60)
+-Fix-Commit: 7e12550b8e3a11764a4a9090ce6bd3fc23fc8a8e (2.40-139)
+-Fix-Commit: 06a70769fd0b2e1f2a3085ad50ab620282bd77b3 (2.39-209)
+diff --git a/advisories/GLIBC-SA-2025-0004 b/advisories/GLIBC-SA-2025-0004
+deleted file mode 100644
+index 9409ca27c4..0000000000
+--- a/advisories/GLIBC-SA-2025-0004
++++ /dev/null
+@@ -1,29 +0,0 @@
+-power10: strncmp fails to save and restore nonvolatile vector registers
+-
+-The Power 10 implementation of strncmp in
+-sysdeps/powerpc/powerpc64/le/power10/strncmp.S failed to save/restore
+-nonvolatile vector registers in the 32-byte aligned loop path.  This
+-results in callers reading content from those registers in a different
+-context, potentially altering program logic.
+-
+-There could be a program context where a user controlled string could
+-leak through strncmp into program code, thus altering its logic.  There
+-is also a potential for sensitive strings passed into strncmp leaking
+-through the clobbered registers into parts of the calling program that
+-should otherwise not have had access to those strings.
+-
+-The impact of this flaw is limited to applications running on Power 10
+-hardware that use the nonvolatile vector registers, i.e. v20 to v31
+-assuming that they have been treated in accordance with the OpenPower
+-psABI.  It is possible to work around the issue for those specific
+-applications by setting the glibc.cpu.hwcaps tunable to "-arch_3_1" like
+-so:
+-
+-    export GLIBC_TUNABLES=glibc.cpu.hwcaps=-arch_3_1
+-
+-CVE-Id: CVE-2025-5745
+-Public-Date: 2025-06-05
+-Vulnerable-Commit: 23f0d81608d0ca6379894ef81670cf30af7fd081 (2.40)
+-Fix-Commit: 63c60101ce7c5eac42be90f698ba02099b41b965 (2.42)
+-Fix-Commit: 84bdbf8a6f2fdafd3661489dbb7f79835a52da82 (2.41-57)
+-Fix-Commit: 42a5a940c974d02540c8da26d6374c744d148cb9 (2.40-136)
+diff --git a/advisories/GLIBC-SA-2025-0005 b/advisories/GLIBC-SA-2025-0005
+deleted file mode 100644
+index 8bcccc59a5..0000000000
+--- a/advisories/GLIBC-SA-2025-0005
++++ /dev/null
+@@ -1,14 +0,0 @@
+-posix: Fix double-free after allocation failure in regcomp
+-
+-The regcomp function in the GNU C library version from 2.4 to 2.41 is
+-subject to a double free if some previous allocation fails. It can be
+-accomplished either by a malloc failure or by using an interposed
+-malloc that injects random malloc failures. The double free can allow
+-buffer manipulation depending of how the regex is constructed.
+-This issue affects all architectures and ABIs supported by the GNU C
+-library.
+-
+-CVE-Id: CVE-2025-8058
+-Public-Date: 2025-07-22
+-Vulnerable-Commit: 963d8d782fc98fb6dc3a66f0068795f9920c269d (2.3.3-1596)
+-Fix-Commit: 7ea06e994093fa0bcca0d0ee2c1db271d8d7885d (2.42)
 diff --git a/advisories/README b/advisories/README
 deleted file mode 100644
 index b8f8a829ca..0000000000
@@ -500,5 +643,5 @@ index b8f8a829ca..0000000000
 -
 -and copy the content into the NEWS file.
 -- 
-2.49.0
+2.50.1
 

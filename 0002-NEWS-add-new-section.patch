@@ -1,7 +1,7 @@
-From 0a7c7a3e283a55d1bfaa48fdef063a32a4689a2b Mon Sep 17 00:00:00 2001
+From 3ec4dd77f648da031bba4d3fa14825e057b5a40d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Andreas=20K=2E=20H=C3=BCttel?= <dilfridge@gentoo.org>
-Date: Tue, 28 Jan 2025 21:11:22 +0100
-Subject: [PATCH 02/41] NEWS: start new section
+Date: Mon, 28 Jul 2025 23:39:48 +0200
+Subject: [PATCH 2/3] NEWS: add new section
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -12,22 +12,22 @@ Signed-off-by: Andreas K. Hüttel <dilfridge@gentoo.org>
  1 file changed, 6 insertions(+)
 
 diff --git a/NEWS b/NEWS
-index b11422b060..0fef024e7f 100644
+index f0b0e924a4..9cb8de11f9 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,12 @@ See the end for copying conditions.
- 
+@@ -5,6 +5,12 @@ See the end for copying conditions.
  Please send GNU C library bug reports via <https://sourceware.org/bugzilla/>
  using `glibc' in the "product" field.
-+
-+Version 2.41.1
+ 
++Version 2.42.1
 +
 +The following bugs were resolved with this release:
 +
-+
- 
- Version 2.41
++  [insert bugs here]
++
+ Version 2.42
  
+ Major new features:
 -- 
-2.49.0
+2.50.1
 
