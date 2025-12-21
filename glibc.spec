@@ -277,6 +277,10 @@ Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-cra
 # Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	autoconf
 BuildRequires:	%{cross_prefix}binutils >= 2.30-7
 BuildRequires:	%{cross_prefix}gcc
