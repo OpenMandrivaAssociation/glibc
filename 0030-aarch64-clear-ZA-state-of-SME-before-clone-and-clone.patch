@@ -1,0 +1,230 @@
+From 256030b9842a10b1f22851b1de0c119761417544 Mon Sep 17 00:00:00 2001
+From: Yury Khrustalev <yury.khrustalev@arm.com>
+Date: Thu, 25 Sep 2025 15:54:36 +0100
+Subject: [PATCH 30/48] aarch64: clear ZA state of SME before clone and clone3
+ syscalls
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This change adds a call to the __arm_za_disable() function immediately
+before the SVC instruction inside clone() and clone3() wrappers. It also
+adds a macro for inline clone() used in fork() and adds the same call to
+the vfork implementation. This sets the ZA state of SME to "off" on return
+from these functions (for both the child and the parent).
+
+The __arm_za_disable() function is described in [1] (8.1.3). Note that
+the internal Glibc name for this function is __libc_arm_za_disable().
+
+When this change was originally proposed [2,3], it generated a long
+discussion where several questions and concerns were raised. Here we
+will address these concerns and explain why this change is useful and,
+in fact, necessary.
+
+In a nutshell, a C library that conforms to the AAPCS64 spec [1] (pertinent
+to this change, mainly, the chapters 6.2 and 6.6), should have a call to the
+__arm_za_disable() function in clone() and clone3() wrappers. The following
+explains in detail why this is the case.
+
+When we consider using the __arm_za_disable() function inside the clone()
+and clone3() libc wrappers, we talk about the C library subroutines clone()
+and clone3() rather than the syscalls with similar names. In the current
+version of Glibc, clone() is public and clone3() is private, but it being
+private is not pertinent to this discussion.
+
+We will begin with stating that this change is NOT a bug fix for something
+in the kernel. The requirement to call __arm_za_disable() does NOT come from
+the kernel. It also is NOT needed to satisfy a contract between the kernel
+and userspace. This is why it is not for the kernel documentation to describe
+this requirement. This requirement is instead needed to satisfy a pure userspace
+scheme outlined in [1] and to make sure that software that uses Glibc (or any
+other C library that has correct handling of SME states (see below)) conforms
+to [1] without having to unnecessarily become SME-aware thus losing portability.
+
+To recap (see [1] (6.2)), SME extension defines SME state which is part of
+processor state. Part of this SME state is ZA state that is necessary to
+manage ZA storage register in the context of the ZA lazy saving scheme [1]
+(6.6). This scheme exists because it would be challenging to handle ZA
+storage of SME in either callee-saved or caller-saved manner.
+
+There are 3 kinds of ZA state that are defined in terms of the PSTATE.ZA
+bit and the TPIDR2_EL0 register (see [1] (6.6.3)):
+
+- "off":       PSTATE.ZA == 0
+- "active":    PSTATE.ZA == 1 TPIDR2_EL0 == null
+- "dormant":   PSTATE.ZA == 1 TPIDR2_EL0 != null
+
+As [1] (6.7.2) outlines, every subroutine has exactly one SME-interface
+depending on the permitted ZA-states on entry and on normal return from
+a call to this subroutine. Callers of a subroutine must know and respect
+the ZA-interface of the subroutines they are using. Using a subroutine
+in a way that is not permitted by its ZA-interface is undefined behaviour.
+
+In particular, clone() and clone3() (the C library functions) have the
+ZA-private interface. This means that the permitted ZA-states on entry
+are "off" and "dormant" and that the permitted states on return are "off"
+or "dormant" (but if and only if it was "dormant" on entry).
+
+This means that both functions in question should correctly handle both
+"off" and "dormant" ZA-states on entry. The conforming states on return
+are "off" and "dormant" (if inbound state was already "dormant").
+
+This change ensures that the ZA-state on return is always "off". Note,
+that, in the context of clone() and clone3(), "on return" means a point
+when execution resumes at certain address after transferring from clone()
+or clone3(). For the caller (we may refer to it as "parent") this is the
+return address in the link register where the RET instruction jumps. For
+the "child", this is the target branch address.
+
+So, the "off" state on return is permitted and conformant. Why can't we
+retain the "dormant" state? In theory, we can, but we shouldn't, here is
+why.
+
+Every subroutine with a private-ZA interface, including clone() and clone3(),
+must comply with the lazy saving scheme [1] (6.7.2). This puts additional
+responsibility on a subroutine if ZA-state on return is "dormant" because
+this state has special meaning. The "caller" (that is the place in code
+where execution is transferred to, so this include both "parent" and "child")
+may check the ZA-state and use it as per the spec of the "dormant" state that
+is outlined in [1] (6.6.6 and 6.6.7).
+
+Conforming to this would require more code inside of clone() and clone3()
+which hardly is desirable.
+
+For the return to "parent" this could be achieved in theory, but given that
+neither clone() nor clone3() are supposed to be used in the middle of an
+SME operation, if wouldn't be useful. For the "return" to "child" this
+would be particularly difficult to achieve given the complexity of these
+functions and their interfaces. Most importantly, it would be illegal
+and somewhat meaningless to allow a "child" to start execution in the
+"dormant" ZA-state because the very essence of the "dormant" state implies
+that there is a place to return and that there is some outer context that
+we are allowed to interact with.
+
+To sum up, calling __arm_za_disable() to ensure the "off" ZA-state when the
+execution resumes after a call to clone() or clone3() is correct and also
+the most simple way to conform to [1].
+
+Can there be situations when we can avoid calling __arm_za_disable()?
+
+Calling __arm_za_disable() implies certain (sufficiently small) overhead,
+so one might rightly ponder avoiding making a call to this function when
+we can afford not to. The most trivial cases like this (e.g. when the
+calling thread doesn't have access to SME or to the TPIDR2_EL0 register)
+are already handled by this function (see [1] (8.1.3 and 8.1.2)). Reasoning
+about other possible use cases would require making code inside clone() and
+clone3() more complicated and it would defeat the point of trying to make
+an optimisation of not calling __arm_za_disable().
+
+Why can't the kernel do this instead?
+
+The handling of SME state by the kernel is described in [4]. In short,
+kernel must not impose a specific ZA-interface onto a userspace function.
+Interaction with the kernel happens (among other thing) via system calls.
+In Glibc many of the system calls (notably, including SYS_clone and
+SYS_clone3) are used via wrappers, and the kernel has no control of them
+and, moreover, it cannot dictate how these wrappers should behave because
+it is simply outside of the kernel's remit.
+
+However, in certain cases, the kernel may ensure that a "child" doesn't
+start in an incorrect state. This is what is done by the recent change
+included in 6.16 kernel [5]. This is not enough to ensure that code that
+uses clone() and clone3() function conforms to [1] when it runs on a
+system that provides SME, hence this change.
+
+[1]: https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst
+[2]: https://inbox.sourceware.org/libc-alpha/20250522114828.2291047-1-yury.khrustalev@arm.com
+[3]: https://inbox.sourceware.org/libc-alpha/20250609121407.3316070-1-yury.khrustalev@arm.com
+[4]: https://www.kernel.org/doc/html/v6.16/arch/arm64/sme.html
+[5]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=cde5c32db55740659fca6d56c09b88800d88fd29
+
+Reviewed-by: Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+(cherry picked from commit 27effb3d50424fb9634be77a2acd614b0386ff25)
+---
+ sysdeps/unix/sysv/linux/aarch64/clone.S  |  3 +++
+ sysdeps/unix/sysv/linux/aarch64/clone3.S |  3 +++
+ sysdeps/unix/sysv/linux/aarch64/sysdep.h | 25 ++++++++++++++++++++++++
+ sysdeps/unix/sysv/linux/aarch64/vfork.S  |  3 +++
+ 4 files changed, 34 insertions(+)
+
+diff --git a/sysdeps/unix/sysv/linux/aarch64/clone.S b/sysdeps/unix/sysv/linux/aarch64/clone.S
+index 40015c6933..53f1efd728 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/clone.S
++++ b/sysdeps/unix/sysv/linux/aarch64/clone.S
+@@ -45,6 +45,9 @@ ENTRY(__clone)
+ 	and	x1, x1, -16
+ 	cbz	x1, .Lsyscall_error
+ 
++	/* Clear ZA state of SME.  */
++	CALL_LIBC_ARM_ZA_DISABLE
++
+ 	/* Do the system call.  */
+ 	/* X0:flags, x1:newsp, x2:parenttidptr, x3:newtls, x4:childtid.  */
+ 	mov	x0, x2                  /* flags  */
+diff --git a/sysdeps/unix/sysv/linux/aarch64/clone3.S b/sysdeps/unix/sysv/linux/aarch64/clone3.S
+index c9ca845ef2..bc978b7e10 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/clone3.S
++++ b/sysdeps/unix/sysv/linux/aarch64/clone3.S
+@@ -46,6 +46,9 @@ ENTRY(__clone3)
+ 	cbz	x10, .Lsyscall_error	/* No NULL cl_args pointer.  */
+ 	cbz	x2, .Lsyscall_error	/* No NULL function pointer.  */
+ 
++    /* Clear ZA state of SME.  */
++	CALL_LIBC_ARM_ZA_DISABLE
++
+ 	/* Do the system call, the kernel expects:
+ 	   x8: system call number
+ 	   x0: cl_args
+diff --git a/sysdeps/unix/sysv/linux/aarch64/sysdep.h b/sysdeps/unix/sysv/linux/aarch64/sysdep.h
+index fa01386b25..30003c0145 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/sysdep.h
++++ b/sysdeps/unix/sysv/linux/aarch64/sysdep.h
+@@ -242,6 +242,31 @@
+ #undef HAVE_INTERNAL_BRK_ADDR_SYMBOL
+ #define HAVE_INTERNAL_BRK_ADDR_SYMBOL 1
+ 
++/* Clear ZA state of SME (C version).  */
++/* The __libc_arm_za_disable function has special calling convention
++   that allows to call it without stack manipulation and preserving
++   most of the registers.  */
++#define CALL_LIBC_ARM_ZA_DISABLE()			\
++({							\
++  unsigned long int __tmp;				\
++  asm volatile (					\
++  "	mov		%0, x30\n"			\
++  "	.cfi_register	x30, %0\n"			\
++  "	bl		__libc_arm_za_disable\n"	\
++  "	mov		x30, %0\n"			\
++  "	.cfi_register	%0, x30\n"			\
++  : "=r" (__tmp)					\
++  :							\
++  : "x14", "x15", "x16", "x17", "x18", "memory" );	\
++})
++
++/* Do clear ZA state of SME before making normal clone syscall.  */
++#define INLINE_CLONE_SYSCALL(a0, a1, a2, a3, a4)	\
++({							\
++  CALL_LIBC_ARM_ZA_DISABLE ();				\
++  INLINE_SYSCALL_CALL (clone, a0, a1, a2, a3, a4);	\
++})
++
+ #endif	/* __ASSEMBLER__ */
+ 
+ #endif /* linux/aarch64/sysdep.h */
+diff --git a/sysdeps/unix/sysv/linux/aarch64/vfork.S b/sysdeps/unix/sysv/linux/aarch64/vfork.S
+index d5943a7485..2600bc9be3 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/vfork.S
++++ b/sysdeps/unix/sysv/linux/aarch64/vfork.S
+@@ -27,6 +27,9 @@
+ 
+ ENTRY (__vfork)
+ 
++	/* Clear ZA state of SME.  */
++	CALL_LIBC_ARM_ZA_DISABLE
++
+ 	mov	x0, #0x4111	/* CLONE_VM | CLONE_VFORK | SIGCHLD */
+ 	mov	x1, sp
+ 	DO_CALL (clone, 2)
+-- 
+2.51.2
+

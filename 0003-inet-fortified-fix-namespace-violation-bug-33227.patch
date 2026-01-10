@@ -1,7 +1,7 @@
 From bc13db73937730401d592b33092db6df806d193e Mon Sep 17 00:00:00 2001
 From: Sam James <sam@gentoo.org>
 Date: Mon, 28 Jul 2025 21:55:30 +0100
-Subject: [PATCH 3/3] inet-fortified: fix namespace violation (bug 33227)
+Subject: [PATCH 03/48] inet-fortified: fix namespace violation (bug 33227)
 
 We need to use __sz, not sz, as we do elsewhere.
 
@@ -36,5 +36,5 @@ index 6738221a54..cc476ebcfd 100644
  			  __af, __src, __dst);
  };
 -- 
-2.50.1
+2.51.2
 

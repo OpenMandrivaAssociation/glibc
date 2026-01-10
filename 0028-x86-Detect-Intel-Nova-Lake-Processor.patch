@@ -1,0 +1,55 @@
+From ab8c1b5d62d7be2c3c23f535bea3d7fff19c53ae Mon Sep 17 00:00:00 2001
+From: Sunil K Pandey <sunil.k.pandey@intel.com>
+Date: Wed, 24 Sep 2025 09:38:17 -0700
+Subject: [PATCH 28/48] x86: Detect Intel Nova Lake Processor
+
+Detect Intel Nova Lake Processor and tune it similar to Intel Panther
+Lake.  https://cdrdv2.intel.com/v1/dl/getContent/671368 Section 1.2.
+
+Reviewed-by: H.J. Lu <hjl.tools@gmail.com>
+(cherry picked from commit a114e29ddd530962d2b44aa9d89f1f6075abe7fa)
+---
+ sysdeps/x86/cpu-features.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/sysdeps/x86/cpu-features.c b/sysdeps/x86/cpu-features.c
+index 4bdade883e..b67ef541dd 100644
+--- a/sysdeps/x86/cpu-features.c
++++ b/sysdeps/x86/cpu-features.c
+@@ -544,6 +544,7 @@ enum intel_microarch
+   INTEL_BIGCORE_GRANITERAPIDS,
+   INTEL_BIGCORE_DIAMONDRAPIDS,
+   INTEL_BIGCORE_WILDCATLAKE,
++  INTEL_BIGCORE_NOVALAKE,
+ 
+   /* Mixed (bigcore + atom SOC).  */
+   INTEL_MIXED_LAKEFIELD,
+@@ -821,6 +822,17 @@ disable_tsx:
+ 	      break;
+ 	    }
+ 	}
++      else if (family == 18)
++	switch (model)
++	  {
++	  case 0x01:
++	  case 0x03:
++	    microarch = INTEL_BIGCORE_NOVALAKE;
++	    break;
++
++	  default:
++	    break;
++	  }
+       else if (family == 19)
+ 	switch (model)
+ 	  {
+@@ -938,6 +950,7 @@ disable_tsx:
+ 	case INTEL_BIGCORE_ARROWLAKE:
+ 	case INTEL_BIGCORE_PANTHERLAKE:
+ 	case INTEL_BIGCORE_WILDCATLAKE:
++	case INTEL_BIGCORE_NOVALAKE:
+ 	case INTEL_BIGCORE_SAPPHIRERAPIDS:
+ 	case INTEL_BIGCORE_EMERALDRAPIDS:
+ 	case INTEL_BIGCORE_GRANITERAPIDS:
+-- 
+2.51.2
+

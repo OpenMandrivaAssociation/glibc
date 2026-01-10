@@ -1,0 +1,696 @@
+From 71874f167aa5bb1538ff7e394beaacee28ebe65f Mon Sep 17 00:00:00 2001
+From: Yury Khrustalev <yury.khrustalev@arm.com>
+Date: Fri, 26 Sep 2025 10:03:45 +0100
+Subject: [PATCH 31/48] aarch64: tests for SME
+
+This commit adds tests for the following use cases relevant to handing of
+the SME state:
+
+ - fork() and vfork()
+ - clone() and clone3()
+ - signal handler
+
+While most cases are trivial, the case of clone3() is more complicated since
+the clone3() symbol is not public in Glibc.
+
+To avoid having to check all possible ways clone3() may be called via other
+public functions (e.g. vfork() or pthread_create()), we put together a test
+that links directly with clone3.o. All the existing functions that have calls
+to clone3() may not actually use it, in which case the outcome of such tests
+would be unexpected. Having a direct call to the clone3() symbol in the test
+allows to check precisely what we need to test: that the __arm_za_disable()
+function is indeed called and has the desired effect.
+
+Linking to clone3.o also requires linking to __arm_za_disable.o that in
+turn requires the _dl_hwcap2 hidden symbol which to provide in the test
+and initialise it before using.
+
+Co-authored-by: Adhemerval Zanella Netto <adhemerval.zanella@linaro.org>
+Reviewed-by: Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+(cherry picked from commit ecb0fc2f0f839f36cd2a106283142c9df8ea8214)
+---
+ sysdeps/aarch64/Makefile           |  10 +++
+ sysdeps/aarch64/tst-sme-clone.c    |  53 +++++++++++++
+ sysdeps/aarch64/tst-sme-clone3.c   |  84 +++++++++++++++++++++
+ sysdeps/aarch64/tst-sme-fork.c     |  43 +++++++++++
+ sysdeps/aarch64/tst-sme-helper.h   |   7 +-
+ sysdeps/aarch64/tst-sme-jmp.c      |   7 +-
+ sysdeps/aarch64/tst-sme-signal.c   | 115 +++++++++++++++++++++++++++++
+ sysdeps/aarch64/tst-sme-skeleton.c | 101 +++++++++++++++++++++++++
+ sysdeps/aarch64/tst-sme-vfork.c    |  43 +++++++++++
+ sysdeps/aarch64/tst-sme-za-state.c |  71 +-----------------
+ 10 files changed, 458 insertions(+), 76 deletions(-)
+ create mode 100644 sysdeps/aarch64/tst-sme-clone.c
+ create mode 100644 sysdeps/aarch64/tst-sme-clone3.c
+ create mode 100644 sysdeps/aarch64/tst-sme-fork.c
+ create mode 100644 sysdeps/aarch64/tst-sme-signal.c
+ create mode 100644 sysdeps/aarch64/tst-sme-skeleton.c
+ create mode 100644 sysdeps/aarch64/tst-sme-vfork.c
+
+diff --git a/sysdeps/aarch64/Makefile b/sysdeps/aarch64/Makefile
+index bb97d31355..9479fb9679 100644
+--- a/sysdeps/aarch64/Makefile
++++ b/sysdeps/aarch64/Makefile
+@@ -79,8 +79,18 @@ sysdep_routines += \
+ 
+ tests += \
+   tst-sme-jmp \
++  tst-sme-signal \
+   tst-sme-za-state \
+   # tests
++tests-internal += \
++  tst-sme-clone \
++  tst-sme-clone3 \
++  tst-sme-fork \
++  tst-sme-vfork \
++  # tests-internal
++
++$(objpfx)tst-sme-clone3: $(objpfx)clone3.o $(objpfx)__arm_za_disable.o
++
+ endif
+ 
+ ifeq ($(subdir),malloc)
+diff --git a/sysdeps/aarch64/tst-sme-clone.c b/sysdeps/aarch64/tst-sme-clone.c
+new file mode 100644
+index 0000000000..7106ec7926
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-clone.c
+@@ -0,0 +1,53 @@
++/* Test that ZA state of SME is cleared in both parent and child
++   when clone() syscall is used.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-sme-skeleton.c"
++
++#include <support/xsched.h>
++
++static int
++fun (void * const arg)
++{
++  printf ("in child: %s\n", (const char *)arg);
++  /* Check that ZA state of SME was disabled in child.  */
++  check_sme_za_state ("after clone in child", /* Clear.  */ true);
++  return 0;
++}
++
++static char __attribute__((aligned(16)))
++stack[1024 * 1024];
++
++static void
++run (struct blk *ptr)
++{
++  char *syscall_name = (char *)"clone";
++  printf ("in parent: before %s\n", syscall_name);
++
++  /* Enabled ZA state so that effect of disabling be observable.  */
++  enable_sme_za_state (ptr);
++  check_sme_za_state ("before clone", /* Clear.  */ false);
++
++  pid_t pid = xclone (fun, syscall_name, stack, sizeof (stack),
++		      CLONE_NEWUSER | CLONE_NEWNS | SIGCHLD);
++
++  /* Check that ZA state of SME was disabled in parent.  */
++  check_sme_za_state ("after clone in parent", /* Clear.  */ true);
++
++  TEST_VERIFY (xwaitpid (pid, NULL, 0) == pid);
++}
+diff --git a/sysdeps/aarch64/tst-sme-clone3.c b/sysdeps/aarch64/tst-sme-clone3.c
+new file mode 100644
+index 0000000000..402b040cfd
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-clone3.c
+@@ -0,0 +1,84 @@
++/* Test that ZA state of SME is cleared in both parent and child
++   when clone3() syscall is used.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-sme-skeleton.c"
++
++#include <clone3.h>
++
++#include <errno.h>
++#include <sys/wait.h>
++#include <support/xsched.h>
++
++/* Since clone3 is not a public symbol, we link this test explicitly
++   with clone3.o and have to provide this declaration.  */
++int __clone3 (struct clone_args *cl_args, size_t size,
++	    int (*func)(void *arg), void *arg);
++
++static int
++fun (void * const arg)
++{
++  printf ("in child: %s\n", (const char *)arg);
++  /* Check that ZA state of SME was disabled in child.  */
++  check_sme_za_state ("after clone3 in child", /* Clear.  */ true);
++  return 0;
++}
++
++static char __attribute__((aligned(16)))
++stack[1024 * 1024];
++
++/* Required by __arm_za_disable.o and provided by the startup code
++   as a hidden symbol.  */
++uint64_t _dl_hwcap2;
++
++static void
++run (struct blk *ptr)
++{
++  _dl_hwcap2 = getauxval (AT_HWCAP2);
++
++  char *syscall_name = (char *)"clone3";
++  struct clone_args args = {
++    .flags = CLONE_VM | CLONE_VFORK,
++    .exit_signal = SIGCHLD,
++    .stack = (uintptr_t) stack,
++    .stack_size = sizeof (stack),
++  };
++  printf ("in parent: before %s\n", syscall_name);
++
++  /* Enabled ZA state so that effect of disabling be observable.  */
++  enable_sme_za_state (ptr);
++  check_sme_za_state ("before clone3", /* Clear.  */ false);
++
++  pid_t pid = __clone3 (&args, sizeof (args), fun, syscall_name);
++
++  /* Check that ZA state of SME was disabled in parent.  */
++  check_sme_za_state ("after clone3 in parent", /* Clear.  */ true);
++
++  printf ("%s child pid: %d\n", syscall_name, pid);
++
++  xwaitpid (pid, NULL, 0);
++  printf ("in parent: after %s\n", syscall_name);
++}
++
++/* Workaround to simplify linking with clone3.o.  */
++void __syscall_error(int code)
++{
++  int err = -code;
++  fprintf (stderr, "syscall error %d (%s)\n", err, strerror (err));
++  exit (err);
++}
+diff --git a/sysdeps/aarch64/tst-sme-fork.c b/sysdeps/aarch64/tst-sme-fork.c
+new file mode 100644
+index 0000000000..b003b08884
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-fork.c
+@@ -0,0 +1,43 @@
++/* Test that ZA state of SME is cleared in both parent and child
++   when fork() function is used.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-sme-skeleton.c"
++
++static void
++run (struct blk *blk)
++{
++  /* Enabled ZA state so that effect of disabling be observable.  */
++  enable_sme_za_state (blk);
++  check_sme_za_state ("before fork", /* Clear.  */ false);
++  fflush (stdout);
++
++  pid_t pid = xfork ();
++
++  if (pid == 0)
++    {
++      /* Check that ZA state of SME was disabled in child.  */
++      check_sme_za_state ("after fork in child", /* Clear.  */ true);
++      exit (0);
++    }
++
++  /* Check that ZA state of SME was disabled in parent.  */
++  check_sme_za_state ("after fork in parent", /* Clear.  */ true);
++
++  TEST_VERIFY (xwaitpid (pid, NULL, 0) == pid);
++}
+diff --git a/sysdeps/aarch64/tst-sme-helper.h b/sysdeps/aarch64/tst-sme-helper.h
+index f049416c2b..ab9c503e45 100644
+--- a/sysdeps/aarch64/tst-sme-helper.h
++++ b/sysdeps/aarch64/tst-sme-helper.h
+@@ -16,9 +16,6 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-/* Streaming SVE vector register size.  */
+-static unsigned long svl;
+-
+ struct blk {
+   void *za_save_buffer;
+   uint16_t num_za_save_slices;
+@@ -68,10 +65,10 @@ start_za (void)
+ 
+ /* Load data into ZA byte by byte from p.  */
+ static void __attribute__ ((noinline))
+-load_za (const void *p)
++load_za (const void *buf, unsigned long svl)
+ {
+   register unsigned long x15 asm ("x15") = 0;
+-  register unsigned long x16 asm ("x16") = (unsigned long)p;
++  register unsigned long x16 asm ("x16") = (unsigned long)buf;
+   register unsigned long x17 asm ("x17") = svl;
+ 
+   asm volatile (
+diff --git a/sysdeps/aarch64/tst-sme-jmp.c b/sysdeps/aarch64/tst-sme-jmp.c
+index 103897ad36..b2d21c6e1a 100644
+--- a/sysdeps/aarch64/tst-sme-jmp.c
++++ b/sysdeps/aarch64/tst-sme-jmp.c
+@@ -29,6 +29,9 @@
+ 
+ #include "tst-sme-helper.h"
+ 
++/* Streaming SVE vector register size.  */
++static unsigned long svl;
++
+ static uint8_t *za_orig;
+ static uint8_t *za_dump;
+ static uint8_t *za_save;
+@@ -82,7 +85,7 @@ longjmp_test (void)
+     FAIL_EXIT1 ("svcr != 0: %lu", svcr);
+   set_tpidr2 (&blk);
+   start_za ();
+-  load_za (za_orig);
++  load_za (za_orig, svl);
+ 
+   print_data ("za save space", za_save);
+   p = get_tpidr2 ();
+@@ -131,7 +134,7 @@ setcontext_test (void)
+     FAIL_EXIT1 ("svcr != 0: %lu", svcr);
+   set_tpidr2 (&blk);
+   start_za ();
+-  load_za (za_orig);
++  load_za (za_orig, svl);
+ 
+   print_data ("za save space", za_save);
+   p = get_tpidr2 ();
+diff --git a/sysdeps/aarch64/tst-sme-signal.c b/sysdeps/aarch64/tst-sme-signal.c
+new file mode 100644
+index 0000000000..b4b07bcc44
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-signal.c
+@@ -0,0 +1,115 @@
++/* Test handling of SME state in a signal handler.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-sme-skeleton.c"
++
++#include <support/xsignal.h>
++
++static struct _aarch64_ctx *
++extension (void *p)
++{
++  return p;
++}
++
++#ifndef TPIDR2_MAGIC
++#define TPIDR2_MAGIC 0x54504902
++#endif
++
++#ifndef ZA_MAGIC
++#define ZA_MAGIC 0x54366345
++#endif
++
++#ifndef ZT_MAGIC
++#define ZT_MAGIC 0x5a544e01
++#endif
++
++#ifndef EXTRA_MAGIC
++#define EXTRA_MAGIC 0x45585401
++#endif
++
++/* We use a pipe to make sure that the final check of the SME state
++   happens after signal handler finished.  */
++static int pipefd[2];
++
++#define WRITE(msg) xwrite (1, msg, sizeof (msg));
++
++static void
++handler (int signo, siginfo_t *si, void *ctx)
++{
++  TEST_VERIFY (signo == SIGUSR1);
++  WRITE ("in the handler\n");
++  check_sme_za_state ("during signal", true /* State is clear.  */);
++  ucontext_t *uc = ctx;
++  void *p = uc->uc_mcontext.__reserved;
++  unsigned int found = 0;
++  uint32_t m;
++  while ((m = extension (p)->magic))
++    {
++      if (m == TPIDR2_MAGIC)
++        {
++          WRITE ("found TPIDR2_MAGIC\n");
++          found += 1;
++        }
++      if (m == ZA_MAGIC)
++        {
++          WRITE ("found ZA_MAGIC\n");
++          found += 1;
++        }
++      if (m == ZT_MAGIC)
++        {
++          WRITE ("found ZT_MAGIC\n");
++          found += 1;
++        }
++      if (m == EXTRA_MAGIC)
++        {
++          WRITE ("found EXTRA_MAGIC\n");
++          struct { struct _aarch64_ctx h; uint64_t data; } *e = p;
++          p = (char *)e->data;
++          continue;
++        }
++      p = (char *)p + extension (p)->size;
++    }
++  TEST_COMPARE (found, 3);
++
++  /* Signal that the wait is over (see below).  */
++  char message = '\0';
++  xwrite (pipefd[1], &message, 1);
++}
++
++static void
++run (struct blk *blk)
++{
++  xpipe (pipefd);
++
++  struct sigaction sigact;
++  sigemptyset (&sigact.sa_mask);
++  sigact.sa_flags = 0;
++  sigact.sa_flags |= SA_SIGINFO;
++  sigact.sa_sigaction = handler;
++  xsigaction (SIGUSR1, &sigact, NULL);
++
++  enable_sme_za_state (blk);
++  check_sme_za_state ("before signal", false /* State is not clear.  */);
++  xraise (SIGUSR1);
++
++  /* Wait for signal handler to complete.  */
++  char response;
++  xread (pipefd[0], &response, 1);
++
++  check_sme_za_state ("after signal", false /* State is not clear.  */);
++}
+diff --git a/sysdeps/aarch64/tst-sme-skeleton.c b/sysdeps/aarch64/tst-sme-skeleton.c
+new file mode 100644
+index 0000000000..ba84dda1cb
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-skeleton.c
+@@ -0,0 +1,101 @@
++/* Template for SME tests.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <stdio.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <string.h>
++#include <sys/auxv.h>
++
++#include <support/check.h>
++#include <support/support.h>
++#include <support/xstdlib.h>
++#include <support/xunistd.h>
++#include <support/test-driver.h>
++
++#include "tst-sme-helper.h"
++
++/* Streaming SVE vector register size.  */
++static unsigned long svl;
++
++static uint8_t *state;
++
++static void
++enable_sme_za_state (struct blk *blk)
++{
++  start_za ();
++  set_tpidr2 (blk);
++  load_za (blk, svl);
++}
++
++/* Check if SME state is disabled (when CLEAR is true) or
++   enabled (when CLEAR is false).  */
++static void
++check_sme_za_state (const char msg[], bool clear)
++{
++  unsigned long svcr = get_svcr ();
++  void *tpidr2 = get_tpidr2 ();
++  printf ("[%s]\n", msg);
++  printf ("svcr = %016lx\n", svcr);
++  printf ("tpidr2 = %016lx\n", (unsigned long)tpidr2);
++  if (clear)
++    {
++      TEST_VERIFY (svcr == 0);
++      TEST_VERIFY (tpidr2 == NULL);
++    }
++  else
++    {
++      TEST_VERIFY (svcr != 0);
++      TEST_VERIFY (tpidr2 != NULL);
++    }
++}
++
++/* Should be defined in actual test that includes this
++   skeleton file. */
++static void
++run (struct blk *ptr);
++
++static int
++do_test (void)
++{
++  unsigned long hwcap2 = getauxval (AT_HWCAP2);
++  if ((hwcap2 & HWCAP2_SME) == 0)
++    return EXIT_UNSUPPORTED;
++
++  /* Get current streaming SVE vector length in bytes.  */
++  svl = get_svl ();
++  printf ("svl: %lu\n", svl);
++
++  TEST_VERIFY_EXIT (!(svl < 16 || svl % 16 != 0 || svl >= (1 << 16)));
++
++  /* Initialise buffer for ZA state of SME.  */
++  state = xmalloc (svl * svl);
++  memset (state, 1, svl * svl);
++  struct blk blk = {
++    .za_save_buffer = state,
++    .num_za_save_slices = svl,
++    .__reserved = {0},
++  };
++
++  run (&blk);
++
++  free (state);
++  return 0;
++}
++
++#include <support/test-driver.c>
+diff --git a/sysdeps/aarch64/tst-sme-vfork.c b/sysdeps/aarch64/tst-sme-vfork.c
+new file mode 100644
+index 0000000000..3feea065e5
+--- /dev/null
++++ b/sysdeps/aarch64/tst-sme-vfork.c
+@@ -0,0 +1,43 @@
++/* Test that ZA state of SME is cleared in both parent and child
++   when vfork() function is used.
++   Copyright (C) 2025 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include "tst-sme-skeleton.c"
++
++static void
++run (struct blk *blk)
++{
++  /* Enabled ZA state so that effect of disabling be observable.  */
++  enable_sme_za_state (blk);
++  check_sme_za_state ("before vfork", /* Clear.  */ false);
++  fflush (stdout);
++
++  pid_t pid = vfork ();
++
++  if (pid == 0)
++    {
++      /* Check that ZA state of SME was disabled in child.  */
++      check_sme_za_state ("after vfork in child", /* Clear.  */ true);
++      _exit (0);
++    }
++
++  /* Check that ZA state of SME was disabled in parent.  */
++  check_sme_za_state ("after vfork in parent", /* Clear.  */ true);
++
++  TEST_VERIFY (xwaitpid (pid, NULL, 0) == pid);
++}
+diff --git a/sysdeps/aarch64/tst-sme-za-state.c b/sysdeps/aarch64/tst-sme-za-state.c
+index 63f6eebeb4..00118ef506 100644
+--- a/sysdeps/aarch64/tst-sme-za-state.c
++++ b/sysdeps/aarch64/tst-sme-za-state.c
+@@ -16,47 +16,9 @@
+    License along with the GNU C Library; if not, see
+    <https://www.gnu.org/licenses/>.  */
+ 
+-#include <stdio.h>
+-#include <setjmp.h>
+-#include <stdlib.h>
+-#include <string.h>
+-#include <sys/auxv.h>
+-
+-#include <support/check.h>
+-#include <support/support.h>
+-#include <support/test-driver.h>
+-
+-#include "tst-sme-helper.h"
+-
+-static uint8_t *state;
+-
+-static void
+-enable_sme_za_state (struct blk *ptr)
+-{
+-  set_tpidr2 (ptr);
+-  start_za ();
+-  load_za (state);
+-}
++#include "tst-sme-skeleton.c"
+ 
+-static void
+-check_sme_za_state (const char msg[], bool clear)
+-{
+-  unsigned long svcr = get_svcr ();
+-  void *tpidr2 = get_tpidr2 ();
+-  printf ("[%s]\n", msg);
+-  printf ("svcr = %016lx\n", svcr);
+-  printf ("tpidr2 = %016lx\n", (unsigned long)tpidr2);
+-  if (clear)
+-    {
+-      TEST_VERIFY (svcr == 0);
+-      TEST_VERIFY (tpidr2 == NULL);
+-    }
+-  else
+-    {
+-      TEST_VERIFY (svcr != 0);
+-      TEST_VERIFY (tpidr2 != NULL);
+-    }
+-}
++#include <setjmp.h>
+ 
+ static void
+ run (struct blk *ptr)
+@@ -88,32 +50,3 @@ run (struct blk *ptr)
+   TEST_COMPARE (ret, 42);
+   check_sme_za_state ("after longjmp", /* Clear.  */ true);
+ }
+-
+-static int
+-do_test (void)
+-{
+-  unsigned long hwcap2 = getauxval (AT_HWCAP2);
+-  if ((hwcap2 & HWCAP2_SME) == 0)
+-    return EXIT_UNSUPPORTED;
+-
+-  /* Get current streaming SVE vector register size.  */
+-  svl = get_svl ();
+-  printf ("svl: %lu\n", svl);
+-  TEST_VERIFY_EXIT (!(svl < 16 || svl % 16 != 0 || svl >= (1 << 16)));
+-
+-  /* Initialise buffer for ZA state of SME.  */
+-  state = xmalloc (svl * svl);
+-  memset (state, 1, svl * svl);
+-  struct blk blk = {
+-    .za_save_buffer = state,
+-    .num_za_save_slices = svl,
+-    .__reserved = {0},
+-  };
+-
+-  run (&blk);
+-
+-  free (state);
+-  return 0;
+-}
+-
+-#include <support/test-driver.c>
+-- 
+2.51.2
+

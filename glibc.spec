@@ -171,7 +171,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -202,6 +202,51 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 Patch0:		0001-Replace-advisories-directory-with-pointer-file.patch
 Patch1:		0002-NEWS-add-new-section.patch
 Patch2:		0003-inet-fortified-fix-namespace-violation-bug-33227.patch
+Patch3:		0004-stdlib-resolve-a-double-lock-init-issue-after-fork-B.patch
+Patch4:		0005-elf-Extract-rtld_setup_phdr-function-from-dl_main.patch
+Patch5:		0006-elf-Handle-ld.so-with-LOAD-segment-gaps-in-_dl_find_.patch
+Patch6:		0007-nptl-Fix-SYSCALL_CANCEL-for-return-values-larger-tha.patch
+Patch7:		0008-Delete-temporary-files-in-support_subprocess.patch
+Patch8:		0009-tst-fopen-threaded.c-Delete-temporary-file.patch
+Patch9:		0010-tst-freopen4-main.c-Call-support_capture_subprocess-.patch
+Patch10:	0011-tst-env-setuid-Delete-LD_DEBUG_OUTPUT-output.patch
+Patch11:	0012-Revert-tst-freopen4-main.c-Call-support_capture_subp.patch
+Patch12:	0013-hurd-support-Fix-running-SGID-tests.patch
+Patch13:	0014-malloc-Remove-redundant-NULL-check.patch
+Patch14:	0015-malloc-Fix-MAX_TCACHE_SMALL_SIZE.patch
+Patch15:	0016-malloc-Make-sure-tcache_key-is-odd-enough.patch
+Patch16:	0017-malloc-Fix-checking-for-small-negative-values-of-tca.patch
+Patch17:	0018-Use-TLS-initial-exec-model-for-__libc_tsd_CTYPE_-thr.patch
+Patch18:	0019-i386-Add-GLIBC_ABI_GNU_TLS-version-BZ-33221.patch
+Patch19:	0020-x86-64-Add-GLIBC_ABI_GNU2_TLS-version-BZ-33129.patch
+Patch20:	0021-x86-64-Add-GLIBC_ABI_DT_X86_64_PLT-BZ-33212.patch
+Patch21:	0022-i386-Also-add-GLIBC_ABI_GNU2_TLS-version-BZ-33129.patch
+Patch22:	0023-AArch64-Fix-SVE-powf-routine-BZ-33299.patch
+Patch23:	0024-libio-Define-AT_RENAME_-with-the-same-tokens-as-Linu.patch
+Patch24:	0025-nss-Group-merge-does-not-react-to-ERANGE-during-merg.patch
+Patch25:	0026-nptl-Fix-MADV_GUARD_INSTALL-logic-for-thread-without.patch
+Patch26:	0027-x86-Detect-Intel-Wildcat-Lake-Processor.patch
+Patch27:	0028-x86-Detect-Intel-Nova-Lake-Processor.patch
+Patch28:	0029-aarch64-define-macro-for-calling-__libc_arm_za_disab.patch
+Patch29:	0030-aarch64-clear-ZA-state-of-SME-before-clone-and-clone.patch
+Patch30:	0031-aarch64-tests-for-SME.patch
+Patch31:	0032-x86-fix-wmemset-ifunc-stray-bug-33542.patch
+Patch32:	0033-aarch64-fix-cfi-directives-around-__libc_arm_za_disa.patch
+Patch33:	0034-aarch64-fix-includes-in-SME-tests.patch
+Patch34:	0035-AArch64-Optimise-SVE-scalar-callbacks.patch
+Patch35:	0036-AArch64-Fix-instability-in-AdvSIMD-tan.patch
+Patch36:	0037-AArch64-Fix-instability-in-AdvSIMD-sinh.patch
+Patch37:	0038-AArch64-fix-SVE-tanpi-f-BZ-33642.patch
+Patch38:	0039-AArch64-Fix-and-improve-SVE-pow-f-special-cases.patch
+Patch39:	0040-ppc64le-Restore-optimized-strcmp-for-power10.patch
+Patch40:	0041-ppc64le-Restore-optimized-strncmp-for-power10.patch
+Patch41:	0042-ppc64le-Power-10-rawmemchr-clobbers-v20-bug-33091.patch
+Patch42:	0043-posix-Fix-invalid-flags-test-for-p-write-read-v2.patch
+Patch43:	0044-sprof-check-pread-size-and-offset-for-overflow.patch
+Patch44:	0045-sprof-fix-Wformat-warnings-on-32-bit-hosts.patch
+Patch45:	0046-support-Fix-FILE-leak-in-check_for_unshare_hints-in-.patch
+Patch46:	0047-support-Exit-on-consistency-check-failure-in-resolv_.patch
+Patch47:	0048-nptl-Optimize-trylock-for-high-cache-contention-work.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -483,33 +528,6 @@ end
 -- ABI spec says it lib/ld-linux-aarch64.so.1 even though logic says lib64...
 posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %endif
-
--- Place compat symlink if the system is still split-usr
-local st=posix.stat("/%{_lib}")
-if st.type ~= "link" then
-%ifarch %{ix86}
-  posix.symlink("%{_libdir}/ld-linux.so.2", "/lib/ld-linux.so.2")
-%endif
-%ifarch %{x86_64}
-  posix.symlink("%{_libdir}/ld-linux-x86-64.so.2", "/%{_lib}/ld-linux-x86-64.so.2")
-%endif
-%ifarch armv7l armv8l
-  posix.symlink("%{_libdir}/ld-linux.so.3", "/lib/ld-linux.so.3")
-%endif
-%ifarch armv7hl armv7hnl armv8hl armv8hnl armv8hcnl armv6j
-  posix.symlink("%{_libdir}/ld-linux-armhf.so.3", "/lib/ld-linux-armhf.so.3")
-%endif
-%ifarch %{aarch64}
-  posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/%{_lib}/ld-linux-aarch64.so.1")
-%endif
-%ifarch %{mips}
-  posix.symlink("%{_libdir}/ld.so.1", "/%{_lib}/ld.so.1")
-%endif
-%ifarch riscv64
-  posix.symlink("%{_libdir}/ld-linux-riscv64-lp64d.so.1", "/%{_lib}/ld-linux-riscv64-lp64d.so.1")
-%endif
-  posix.symlink("%{_bindir}/ldconfig", "/sbin/ldconfig")
-end
 
 -- (3) Rebuild ld.so.cache early.
 -- If the format of the cache changes then we need to rebuild
@@ -879,6 +897,9 @@ posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 /lib/ld-linux-riscv64-lp64d.so.1
 %{_libdir}/lp64d
 %endif
+%if %isarch loongarch64
+%{_libdir}/ld-linux-loongarch-lp64d.so.1
+%endif
 %{_libdir}/lib*.so.[0-9]*
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
@@ -1101,7 +1122,9 @@ library.
 
 %files static-devel
 %{_libdir}/libBrokenLocale.a
+%ifnarch %{loongarch64}
 %{_libdir}/libanl.a
+%endif
 %{_libdir}/libc.a
 %{_libdir}/libdl.a
 %{_libdir}/libm.a
@@ -1113,7 +1136,9 @@ library.
 %{_libdir}/libutil.a
 %if %{build_biarch}
 %{_libdir32}/libBrokenLocale.a
+%ifnarch %{loongarch64}
 %{_libdir32}/libanl.a
+%endif
 %{_libdir32}/libc.a
 %{_libdir32}/libdl.a
 %{_libdir32}/libm.a

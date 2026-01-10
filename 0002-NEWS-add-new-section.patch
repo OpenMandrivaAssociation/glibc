@@ -1,7 +1,7 @@
 From 3ec4dd77f648da031bba4d3fa14825e057b5a40d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Andreas=20K=2E=20H=C3=BCttel?= <dilfridge@gentoo.org>
 Date: Mon, 28 Jul 2025 23:39:48 +0200
-Subject: [PATCH 2/3] NEWS: add new section
+Subject: [PATCH 02/48] NEWS: add new section
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -29,5 +29,5 @@ index f0b0e924a4..9cb8de11f9 100644
  
  Major new features:
 -- 
-2.50.1
+2.51.2
 

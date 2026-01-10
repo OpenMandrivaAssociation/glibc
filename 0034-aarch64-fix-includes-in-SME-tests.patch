@@ -1,0 +1,42 @@
+From 17c3eab387c3ceb6972e57888a89b1480793f81a Mon Sep 17 00:00:00 2001
+From: Yury Khrustalev <yury.khrustalev@arm.com>
+Date: Tue, 11 Nov 2025 11:40:25 +0000
+Subject: [PATCH 34/48] aarch64: fix includes in SME tests
+
+Use the correct include for the SIGCHLD macro: signal.h
+
+Reviewed-by: Wilco Dijkstra  <Wilco.Dijkstra@arm.com>
+(cherry picked from commit a9c426bcca59a9e228c4fbe75e75154217ec4ada)
+---
+ sysdeps/aarch64/tst-sme-clone.c  | 1 +
+ sysdeps/aarch64/tst-sme-clone3.c | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/sysdeps/aarch64/tst-sme-clone.c b/sysdeps/aarch64/tst-sme-clone.c
+index 7106ec7926..b6ad54fa37 100644
+--- a/sysdeps/aarch64/tst-sme-clone.c
++++ b/sysdeps/aarch64/tst-sme-clone.c
+@@ -19,6 +19,7 @@
+ 
+ #include "tst-sme-skeleton.c"
+ 
++#include <signal.h>
+ #include <support/xsched.h>
+ 
+ static int
+diff --git a/sysdeps/aarch64/tst-sme-clone3.c b/sysdeps/aarch64/tst-sme-clone3.c
+index 402b040cfd..f420d5984d 100644
+--- a/sysdeps/aarch64/tst-sme-clone3.c
++++ b/sysdeps/aarch64/tst-sme-clone3.c
+@@ -22,7 +22,7 @@
+ #include <clone3.h>
+ 
+ #include <errno.h>
+-#include <sys/wait.h>
++#include <signal.h>
+ #include <support/xsched.h>
+ 
+ /* Since clone3 is not a public symbol, we link this test explicitly
+-- 
+2.51.2
+
