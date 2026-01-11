@@ -292,6 +292,7 @@ Patch1005:	eglibc-mandriva-xterm-xvt.patch
 # Fixes a compile error when doing #include <cmath> in clang++ 16.0.6+
 Patch1006:	glibc-2.37-aarch64-clang++-16.0.6.patch
 Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
+Patch1008:	glibc-loongarch64.patch
 Patch1010:	eglibc-mandriva-timezone.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
 Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch

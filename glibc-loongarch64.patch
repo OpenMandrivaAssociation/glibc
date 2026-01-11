@@ -1,0 +1,13 @@
+diff -up glibc-2.42/include/math.h.omv~ glibc-2.42/include/math.h
+diff -up glibc-2.42/math/math.h.omv~ glibc-2.42/math/math.h
+--- glibc-2.42/math/math.h.omv~	2026-01-11 01:32:13.228946837 +0100
++++ glibc-2.42/math/math.h	2026-01-11 01:33:07.092332986 +0100
+@@ -1381,7 +1381,7 @@ template<> struct __iseqsig_type<_Float6
+ };
+ #  endif
+ 
+-#  if __HAVE_FLOAT128_UNLIKE_LDBL || (__HAVE_FLOAT128 && __GNUC_PREREQ (13, 0)) && (!defined(__clang__) || !defined(__cplusplus) || (!defined(__aarch64__) && !defined(__riscv)))
++#  if __HAVE_FLOAT128_UNLIKE_LDBL || (__HAVE_FLOAT128 && __GNUC_PREREQ (13, 0)) && (!defined(__clang__) || !defined(__cplusplus) || (!defined(__aarch64__) && !defined(__riscv) && !defined(__loongarch64)))
+   /* When using an IEEE 128-bit long double, _Float128 is defined as long double
+      in C++.  */
+ template<> struct __iseqsig_type<_Float128>
