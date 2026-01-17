@@ -247,6 +247,8 @@ Patch44:	0045-sprof-fix-Wformat-warnings-on-32-bit-hosts.patch
 Patch45:	0046-support-Fix-FILE-leak-in-check_for_unshare_hints-in-.patch
 Patch46:	0047-support-Exit-on-consistency-check-failure-in-resolv_.patch
 Patch47:	0048-nptl-Optimize-trylock-for-high-cache-contention-work.patch
+Patch48:	0049-memalign-reinstate-alignment-overflow-check-CVE-2026.patch
+Patch49:	0050-resolv-Fix-NSS-DNS-backend-for-getnetbyaddr-CVE-2026.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -1294,6 +1296,27 @@ These are configuration files that describe possible time zones.
 for i in %{long_targets}; do
 	[ "$i" = "%{_target_platform}" ] && continue
 	package=cross-${i}-libc
+	ldname="$(echo $i |cut -d- -f1)"
+	if [[ "$ldname" = "x86_64" ]]; then
+		if echo $i |grep -q x32; then
+			ldname="ld-linux-x32"
+		else
+			ldname="ld-linux-x86-64"
+		fi
+	elif [[ "$ldname" = "loongarch64" ]]; then
+		ldname="ld-linux-loongarch-lp64d"
+	elif [[ "$ldname" = "riscv64" ]]; then
+		ldname="ld-linux-riscv64-lp64d"
+	elif [[ "$ldname" =~ "arm" ]]; then
+		ldname="ld-linux-armhf"
+	elif [[ "$ldname" =~ "ppc" ]]; then
+		ldname="ld64"
+	elif [[ "$ldname" = "loongarch64" ]]; then
+		ldname="ld-linux"
+	else
+		# most common pattern...
+		ldname="ld-linux-${ldname}"
+	fi
 	cat <<EOF
 %package -n ${package}
 Summary: Libc for crosscompiling to ${i}
@@ -1322,6 +1345,8 @@ Libc for crosscompiling to ${i}.
 %{_prefix}/${i}/share/info
 %dir %{_prefix}/${i}/share/locale
 %{_prefix}/${i}/share/locale/locale.alias
+%optional /lib/${ldname}.so*
+%optional /lib64/${ldname}.so*
 EOF
 done
 )
@@ -1692,6 +1717,43 @@ for i in %{targets}; do
 	DD="${TOP}/instroot-${TRIPLET}"
 	%make_install DESTDIR="${DD}"
 	cd ..
+
+	ldname="$(echo $TRIPLET |cut -d- -f1)"
+	case "$ldname" in
+	x86_64)
+		if echo $i |grep -q x32; then
+			ldname="ld-linux-x32"
+		else
+			ldname="ld-linux-x86-64"
+		fi
+		;;
+	loongarch64)
+		ldname="ld-linux-loongarch-lp64d"
+		;;
+	riscv64*)
+		ldname="ld-linux-riscv64-lp64d"
+		;;
+	arm*)
+		ldname="ld-linux-armhf"
+		;;
+	ppc*)
+		ldname="ld64"
+		;;
+	i.86*)
+		ldname="ld-linux"
+		;;
+	*)
+		# most common pattern...
+		ldname="ld-linux-${ldname}"
+		;;
+	esac
+
+	for i in "%{buildroot}/usr/$TRIPLET/lib/$ldname.so"*; do
+		[ -e "$i" ] && ln -s $(echo $i |sed -e 's,^%{buildroot},,') %{buildroot}/lib/
+	done
+	for i in "%{buildroot}/usr/$TRIPLET/lib64/$ldname.so"*; do
+		[ -e "$i" ] && ln -s $(echo $i |sed -e 's,^%{buildroot},,') %{buildroot}/lib64/
+	done
 
 	# Make legacy build systems that hardcode -ldl and/or -lpthread happy
 	echo '/* GNU ld script */' >${DD}%{_prefix}/${TRIPLET}/lib/libdl.so
