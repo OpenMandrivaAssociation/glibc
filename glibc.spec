@@ -166,12 +166,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.42
+Version:	2.43
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -197,58 +197,16 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.42
+# git format-patch glibc-2.43
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch0:		0001-Replace-advisories-directory-with-pointer-file.patch
-Patch1:		0002-NEWS-add-new-section.patch
-Patch2:		0003-inet-fortified-fix-namespace-violation-bug-33227.patch
-Patch3:		0004-stdlib-resolve-a-double-lock-init-issue-after-fork-B.patch
-Patch4:		0005-elf-Extract-rtld_setup_phdr-function-from-dl_main.patch
-Patch5:		0006-elf-Handle-ld.so-with-LOAD-segment-gaps-in-_dl_find_.patch
-Patch6:		0007-nptl-Fix-SYSCALL_CANCEL-for-return-values-larger-tha.patch
-Patch7:		0008-Delete-temporary-files-in-support_subprocess.patch
-Patch8:		0009-tst-fopen-threaded.c-Delete-temporary-file.patch
-Patch9:		0010-tst-freopen4-main.c-Call-support_capture_subprocess-.patch
-Patch10:	0011-tst-env-setuid-Delete-LD_DEBUG_OUTPUT-output.patch
-Patch11:	0012-Revert-tst-freopen4-main.c-Call-support_capture_subp.patch
-Patch12:	0013-hurd-support-Fix-running-SGID-tests.patch
-Patch13:	0014-malloc-Remove-redundant-NULL-check.patch
-Patch14:	0015-malloc-Fix-MAX_TCACHE_SMALL_SIZE.patch
-Patch15:	0016-malloc-Make-sure-tcache_key-is-odd-enough.patch
-Patch16:	0017-malloc-Fix-checking-for-small-negative-values-of-tca.patch
-Patch17:	0018-Use-TLS-initial-exec-model-for-__libc_tsd_CTYPE_-thr.patch
-Patch18:	0019-i386-Add-GLIBC_ABI_GNU_TLS-version-BZ-33221.patch
-Patch19:	0020-x86-64-Add-GLIBC_ABI_GNU2_TLS-version-BZ-33129.patch
-Patch20:	0021-x86-64-Add-GLIBC_ABI_DT_X86_64_PLT-BZ-33212.patch
-Patch21:	0022-i386-Also-add-GLIBC_ABI_GNU2_TLS-version-BZ-33129.patch
-Patch22:	0023-AArch64-Fix-SVE-powf-routine-BZ-33299.patch
-Patch23:	0024-libio-Define-AT_RENAME_-with-the-same-tokens-as-Linu.patch
-Patch24:	0025-nss-Group-merge-does-not-react-to-ERANGE-during-merg.patch
-Patch25:	0026-nptl-Fix-MADV_GUARD_INSTALL-logic-for-thread-without.patch
-Patch26:	0027-x86-Detect-Intel-Wildcat-Lake-Processor.patch
-Patch27:	0028-x86-Detect-Intel-Nova-Lake-Processor.patch
-Patch28:	0029-aarch64-define-macro-for-calling-__libc_arm_za_disab.patch
-Patch29:	0030-aarch64-clear-ZA-state-of-SME-before-clone-and-clone.patch
-Patch30:	0031-aarch64-tests-for-SME.patch
-Patch31:	0032-x86-fix-wmemset-ifunc-stray-bug-33542.patch
-Patch32:	0033-aarch64-fix-cfi-directives-around-__libc_arm_za_disa.patch
-Patch33:	0034-aarch64-fix-includes-in-SME-tests.patch
-Patch34:	0035-AArch64-Optimise-SVE-scalar-callbacks.patch
-Patch35:	0036-AArch64-Fix-instability-in-AdvSIMD-tan.patch
-Patch36:	0037-AArch64-Fix-instability-in-AdvSIMD-sinh.patch
-Patch37:	0038-AArch64-fix-SVE-tanpi-f-BZ-33642.patch
-Patch38:	0039-AArch64-Fix-and-improve-SVE-pow-f-special-cases.patch
-Patch39:	0040-ppc64le-Restore-optimized-strcmp-for-power10.patch
-Patch40:	0041-ppc64le-Restore-optimized-strncmp-for-power10.patch
-Patch41:	0042-ppc64le-Power-10-rawmemchr-clobbers-v20-bug-33091.patch
-Patch42:	0043-posix-Fix-invalid-flags-test-for-p-write-read-v2.patch
-Patch43:	0044-sprof-check-pread-size-and-offset-for-overflow.patch
-Patch44:	0045-sprof-fix-Wformat-warnings-on-32-bit-hosts.patch
-Patch45:	0046-support-Fix-FILE-leak-in-check_for_unshare_hints-in-.patch
-Patch46:	0047-support-Exit-on-consistency-check-failure-in-resolv_.patch
-Patch47:	0048-nptl-Optimize-trylock-for-high-cache-contention-work.patch
-Patch48:	0049-memalign-reinstate-alignment-overflow-check-CVE-2026.patch
-Patch49:	0050-resolv-Fix-NSS-DNS-backend-for-getnetbyaddr-CVE-2026.patch
+Patch0:		0001-Replace-advisories-directory-with-file-ADVISORIES.patch
+Patch1:		0002-NEWS-add-new-section-2.43.1.patch
+Patch2:		0003-Fix-ldbl-128ibm-ceill-floorl-roundl-and-truncl-zero-.patch
+Patch3:		0004-po-Incorporate-translatins-nl-updated-ar-new.patch
+Patch4:		0005-Don-t-include-bits-openat2.h-directly-bug-33848.patch
+Patch5:		0006-nss-Introduce-dedicated-struct-nss_database_for_fork.patch
+Patch6:		0007-Linux-In-getlogin_r-use-utmp-fallback-only-for-speci.patch
+Patch7:		0008-nss-Missing-checks-in-__nss_configure_lookup-__nss_d.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -309,17 +267,10 @@ Patch1037:	glibc-2.29-SIG_BLOCK.patch
 Patch1038:	glibc-2.31.9000-aarch64-compile.patch
 Patch1039:	https://github.com/FireBurn/glibc/commit/4483f2500825a84382c2a6a9ac60fc77954533d7.patch
 Patch1040:	https://github.com/FireBurn/glibc/commit/2efa9591e5e8a129e7b73ad0dad3eecbd69482ff.patch
-# Workaround for ISA levels going wrong -- causes glibc to abort on
-# znver1 inside VirtualBox even if the right CPU instructions are
-# supported
-# https://forums.gentoo.org/viewtopic-p-8568765.html?sid=563ab671df23b2a550273edc2dea30a2
-# https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=5dbd6a821ff753e3b41324c4fb7c58cf65eeea33
-Patch1041:	glibc-2.33-no-x86-isa-level.patch
 # Fix _Float32/_Float64 assumptions to make it work with
 # clang setting __GNUC__ to something > 6
 Patch1043:	glibc-2.33-clang-_Float32-_Float64.patch
 Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
-Patch1050:	https://803950.bugs.gentoo.org/attachment.cgi?id=757176#/nss-dont-crash-on-NULL.patch
 # https://www.phoronix.com/news/Glibc-2.36-EAC-Problems
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 # Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
@@ -665,7 +616,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Dhivehi" "dv" "dv_MV")}
 %{expand:%(sh %{S:1000} "Dzongkha" "dz" "dz_BT")}
 %{expand:%(sh %{S:1000} "Greek" "el" "r:gr" "el_CY" "el_GR")}
-%{expand:%(sh %{S:1000} "English" "en" "C" "en_AG" "en_AU" "en_BW" "en_CA" "en_DK" "en_GB" "en_HK" "en_IE" "en_IL" "en_IN" "en_NG" "en_NZ" "en_PH" "en_SC" "en_SG" "en_US" "en_ZA" "en_ZM" "en_ZW")}
+%{expand:%(sh %{S:1000} "English" "en" "C" "en_AG" "en_AU" "en_BW" "en_CA" "en_DK" "en_GB" "en_HK" "en_IE" "en_IL" "en_IN" "en_NG" "en_NZ" "en_PH" "en_SC" "en_SE" "en_SG" "en_US" "en_ZA" "en_ZM" "en_ZW")}
 %{expand:%(sh %{S:1000} "Esperanto" "eo" "eo" "eo_XX")}
 # Potentially unhandled: es@tradicional? an = Aragonese
 %{expand:%(sh %{S:1000} "Spanish" "es" "an_ES" "es_AR" "es_BO" "es_CL" "es_CO" "es_CR" "es_CU" "es_DO" "es_EC" "es_ES" "es_GT" "es_HN" "es_MX" "es_NI" "es_PA" "es_PE" "es_PR" "es_PY" "es_SV" "es_US" "es_UY" "es_VE")}
@@ -849,7 +800,6 @@ posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %config(noreplace) %{_sysconfdir}/rpc
 %doc %dir %{_docdir}/glibc
 %doc %{_docdir}/glibc/gai.conf
-%doc %{_docdir}/glibc/COPYING
 %doc %{_docdir}/glibc/COPYING.LIB
 %dir %{_libdir}/gconv
 %dir %{_libdir}/gconv/gconv-modules.d
@@ -1068,7 +1018,6 @@ The glibc-docs package contains docs for %{name}.
 %files doc
 %doc %{_docdir}/glibc/*
 %exclude %{_docdir}/glibc/gai.conf
-%exclude %{_docdir}/glibc/COPYING
 %exclude %{_docdir}/glibc/COPYING.LIB
 
 %files devel
@@ -1355,6 +1304,9 @@ done
 %prep
 %autosetup -p1 -n %{source_dir} -a3
 
+# OM filesystem ajustments
+sed -i -e 's,/var/mail,/srv/mail,g' sysdeps/unix/sysv/linux/paths.h sysdeps/generic/paths.h
+
 find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 
 # Remove patch backups from files we ship in glibc packages
@@ -1428,7 +1380,7 @@ function BuildGlibc() {
 %endif
 	BuildAltArch="yes"
 	# The -isystem flag is a workaround for the i686 build not finding stddef.h
-	BuildCompFlags="-m32 -isystem %{_libdir}/gcc/i686-openmandriva-linux-gnu/15.1.0/include/"
+	BuildCompFlags="-m32 -isystem %{_libdir}/gcc/i686-openmandriva-linux-gnu/%(gcc --version 2>/dev/null|head -n1 |awk '{ print $3; }')/include/"
 %endif
 %ifarch %{ix86}
 	BuildFlags="$BuildFlags -march=i686 -msse -mfpmath=sse -fasynchronous-unwind-tables -mtune=generic -mstackrealign"
@@ -2047,9 +1999,9 @@ install -m 755 -d %{buildroot}%{_docdir}/glibc
 	install -m644 -D manual/libc.pdf %{buildroot}%{_docdir}/glibc/libc.pdf
 %endif
     cd -
-install -m 644 COPYING COPYING.LIB README NEWS INSTALL 			\
-    hesiod/README.hesiod						\
-    posix/gai.conf		\
+install -m 644 COPYING.LIB README NEWS INSTALL 	\
+    hesiod/README.hesiod			\
+    posix/gai.conf				\
     %{buildroot}%{_docdir}/glibc
 install -m 644 timezone/README %{buildroot}%{_docdir}/glibc/README.timezone
 

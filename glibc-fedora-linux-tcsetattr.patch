@@ -1,6 +1,6 @@
-diff -up glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c.1~ glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c
---- glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c.1~	2025-07-28 20:22:55.000000000 +0200
-+++ glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c	2025-07-29 23:36:43.339587551 +0200
+diff -up glibc-2.43/sysdeps/unix/sysv/linux/tcsetattr.c.9~ glibc-2.43/sysdeps/unix/sysv/linux/tcsetattr.c
+--- glibc-2.43/sysdeps/unix/sysv/linux/tcsetattr.c.9~	2026-01-23 21:54:00.000000000 +0100
++++ glibc-2.43/sysdeps/unix/sysv/linux/tcsetattr.c	2026-02-20 22:21:29.520230981 +0100
 @@ -25,6 +25,7 @@ __tcsetattr (int fd, int optional_action
  {
    struct termios2 k_termios;
@@ -9,9 +9,9 @@ diff -up glibc-2.42/sysdeps/unix/sysv/linux/tcsetattr.c.1~ glibc-2.42/sysdeps/un
  
    memset (&k_termios, 0, sizeof k_termios);
  
-@@ -74,7 +75,36 @@ __tcsetattr (int fd, int optional_action
-       k_termios.c_cflag &= ~CIBAUD;
-     }
+@@ -75,7 +76,36 @@ __tcsetattr (int fd, int optional_action
+   else
+     cmd += TCSETS;
  
 -  return INLINE_SYSCALL_CALL (ioctl, fd, cmd, &k_termios);
 +  retval = INLINE_SYSCALL_CALL (ioctl, fd, cmd, &k_termios);

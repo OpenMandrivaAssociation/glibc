@@ -1,8 +1,7 @@
-diff -up glibc-2.29/locale/weight.h.omv~ glibc-2.29/locale/weight.h
-diff -up glibc-2.29/string/strcoll_l.c.omv~ glibc-2.29/string/strcoll_l.c
---- glibc-2.29/string/strcoll_l.c.omv~	2019-02-01 01:52:36.824032337 +0100
-+++ glibc-2.29/string/strcoll_l.c	2019-02-01 01:56:42.412484448 +0100
-@@ -40,7 +40,11 @@
+diff -up glibc-2.43/string/strcoll_l.c.41~ glibc-2.43/string/strcoll_l.c
+--- glibc-2.43/string/strcoll_l.c.41~	2026-01-23 21:54:00.000000000 +0100
++++ glibc-2.43/string/strcoll_l.c	2026-02-20 22:25:49.070372661 +0100
+@@ -39,7 +39,11 @@
  #define CONCAT1(a,b) a##b
  
  #include "../locale/localeinfo.h"
@@ -14,7 +13,7 @@ diff -up glibc-2.29/string/strcoll_l.c.omv~ glibc-2.29/string/strcoll_l.c
  
  /* Track status while looking for sequences in a string.  */
  typedef struct
-@@ -292,7 +296,7 @@ STRCOLL (const STRING_TYPE *s1, const ST
+@@ -291,7 +295,7 @@ STRCOLL (const STRING_TYPE *s1, const ST
  
    int result = 0, rule = 0;
  
@@ -23,12 +22,12 @@ diff -up glibc-2.29/string/strcoll_l.c.omv~ glibc-2.29/string/strcoll_l.c
       seq1.back_us and seq2.back_us might be used uninitialized.
       Sometimes this warning appears at locations in locale/weightwc.h
       where the actual use is, but on architectures other than x86_64,
-@@ -300,7 +304,7 @@ STRCOLL (const STRING_TYPE *s1, const ST
+@@ -299,7 +303,7 @@ STRCOLL (const STRING_TYPE *s1, const ST
       seq2.  This uninitialized use is impossible for the same reason
       as described in comments in locale/weightwc.h.  */
    DIAG_PUSH_NEEDS_COMMENT;
--  DIAG_IGNORE_Os_NEEDS_COMMENT (7, "-Wmaybe-uninitialized");
-+  DIAG_IGNORE_Os_NEEDS_COMMENT (8, "-Wmaybe-uninitialized");
+-  DIAG_IGNORE_Os_NEEDS_COMMENT_GCC (7, "-Wmaybe-uninitialized");
++  DIAG_IGNORE_Os_NEEDS_COMMENT_GCC (8, "-Wmaybe-uninitialized");
    coll_seq seq1, seq2;
    DIAG_POP_NEEDS_COMMENT;
    seq1.len = 0;
