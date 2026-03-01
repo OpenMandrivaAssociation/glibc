@@ -1,0 +1,1068 @@
+diff -up glibc-2.43/bits/floatn-common.h.omv~ glibc-2.43/bits/floatn-common.h
+--- glibc-2.43/bits/floatn-common.h.omv~	2026-02-25 01:15:27.936937827 +0100
++++ glibc-2.43/bits/floatn-common.h	2026-02-25 01:17:47.712585597 +0100
+@@ -78,7 +78,7 @@
+    or _FloatNx types, if __HAVE_<type> is 1.  The corresponding
+    literal suffixes exist since GCC 7, for C only.  */
+ # if __HAVE_FLOAT16
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ /* No corresponding suffix available for this type.  */
+ #   define __f16(x) ((_Float16) x##f)
+ #  else
+@@ -87,7 +87,7 @@
+ # endif
+ 
+ # if __HAVE_FLOAT32
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ #   define __f32(x) x##f
+ #  else
+ #   define __f32(x) x##f32
+@@ -95,7 +95,7 @@
+ # endif
+ 
+ # if __HAVE_FLOAT64
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ #   ifdef __NO_LONG_DOUBLE_MATH
+ #    define __f64(x) x##l
+ #   else
+@@ -107,7 +107,7 @@
+ # endif
+ 
+ # if __HAVE_FLOAT32X
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ #   define __f32x(x) x
+ #  else
+ #   define __f32x(x) x##f32x
+@@ -115,7 +115,7 @@
+ # endif
+ 
+ # if __HAVE_FLOAT64X
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ #   if __HAVE_FLOAT64X_LONG_DOUBLE
+ #    define __f64x(x) x##l
+ #   else
+@@ -136,7 +136,7 @@
+ 
+ /* Defined to a complex type if __HAVE_<type> is 1.  */
+ # if __HAVE_FLOAT16
+-#  if !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
++#  if defined(__clang__) || !__GNUC_PREREQ (7, 0) || (defined __cplusplus && !__GNUC_PREREQ (13, 0))
+ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
+ #   define __CFLOAT16 __cfloat16
+ #  else
+diff -up glibc-2.43/bits/floatn.h.omv~ glibc-2.43/bits/floatn.h
+diff -up glibc-2.43/debug/Makefile.omv~ glibc-2.43/debug/Makefile
+--- glibc-2.43/debug/Makefile.omv~	2026-02-26 22:23:02.012815111 +0100
++++ glibc-2.43/debug/Makefile	2026-02-26 22:23:24.940426460 +0100
+@@ -21,6 +21,8 @@
+ #
+ subdir	:= debug
+ 
++LDFLAGS += -Wl,-z,nostart-stop-gc
++
+ include ../Makeconfig
+ 
+ headers	:= execinfo.h
+diff -up glibc-2.43/iconv/Makefile.omv~ glibc-2.43/iconv/Makefile
+--- glibc-2.43/iconv/Makefile.omv~	2026-02-25 00:17:51.321283456 +0100
++++ glibc-2.43/iconv/Makefile	2026-02-25 00:36:42.997092081 +0100
+@@ -72,7 +72,7 @@ install-sbin	= iconvconfig
+ CFLAGS-gconv_cache.c += -DGCONV_DIR='"$(gconvdir)"'
+ CFLAGS-gconv_conf.c += -DGCONV_PATH='"$(gconvdir)"'
+ CFLAGS-iconvconfig.c += -DGCONV_PATH='"$(gconvdir)"' -DGCONV_DIR='"$(gconvdir)"'
+-CFLAGS-gconv_simple.c += -Wno-error=stringop-overflow
++CFLAGS-gconv_simple.c += $(call cc-option,-Wno-error=stringop-overflow)
+ 
+ # Set libof-* for each routine.
+ cpp-srcs-left := $(iconv_prog-modules) $(iconvconfig-modules)
+diff -up glibc-2.43/include/alloc_buffer.h.omv~ glibc-2.43/include/alloc_buffer.h
+--- glibc-2.43/include/alloc_buffer.h.omv~	2026-02-25 00:41:26.872662105 +0100
++++ glibc-2.43/include/alloc_buffer.h	2026-02-25 00:43:19.747474729 +0100
+@@ -213,13 +213,13 @@ __alloc_buffer_assert_size (size_t size)
+ {
+   if (!__builtin_constant_p (size))
+     {
+-      __errordecl (error, "type size is not constant");
+-      error ();
++      __errordecl (error_typesize_not_constant, "type size is not constant");
++      error_typesize_not_constant ();
+     }
+   else if (size == 0)
+     {
+-      __errordecl (error, "type size is zero");
+-      error ();
++      __errordecl (error_typesize_zero, "type size is zero");
++      error_typesize_zero ();
+     }
+   return size;
+ }
+@@ -231,18 +231,18 @@ __alloc_buffer_assert_align (size_t alig
+ {
+   if (!__builtin_constant_p (align))
+     {
+-      __errordecl (error, "type alignment is not constant");
+-      error ();
++      __errordecl (error_alignment_not_constant, "type alignment is not constant");
++      error_alignment_not_constant ();
+     }
+   else if (align == 0)
+     {
+-      __errordecl (error, "type alignment is zero");
+-      error ();
++      __errordecl (error_alignment_zero, "type alignment is zero");
++      error_alignment_zero ();
+     }
+   else if (!powerof2 (align))
+     {
+-      __errordecl (error, "type alignment is not a power of two");
+-      error ();
++      __errordecl (error_alignment_not_power_of_two, "type alignment is not a power of two");
++      error_alignment_not_power_of_two ();
+     }
+   return align;
+ }
+diff -up glibc-2.43/include/float.h.omv~ glibc-2.43/include/float.h
+--- glibc-2.43/include/float.h.omv~	2026-02-25 00:33:32.096998304 +0100
++++ glibc-2.43/include/float.h	2026-02-25 00:33:53.120581036 +0100
+@@ -17,7 +17,7 @@
+    in TS 18661-3.  */
+ #include <features.h>
+ #include <bits/floatn.h>
+-#if !__GNUC_PREREQ (7, 0) && __GLIBC_USE (IEC_60559_TYPES_EXT)
++#if (!__GNUC_PREREQ (7, 0) || defined(__clang__)) && __GLIBC_USE (IEC_60559_TYPES_EXT)
+ 
+ # if __HAVE_FLOAT128
+ #  define FLT128_MANT_DIG	113
+diff -up glibc-2.43/intl/localealias.c.omv~ glibc-2.43/intl/localealias.c
+--- glibc-2.43/intl/localealias.c.omv~	2026-02-25 00:18:12.823394880 +0100
++++ glibc-2.43/intl/localealias.c	2026-02-25 00:18:22.905008801 +0100
+@@ -316,7 +316,7 @@ read_alias_file (const char *fname, int
+ 		    {
+ #pragma GCC diagnostic push
+ 
+-#if defined __GNUC__ && __GNUC__ >= 12
++#if defined __GNUC__ && __GNUC__ >= 12 && !defined(__clang__)
+   /* Suppress the valid GCC 12 warning until the code below is changed
+      to avoid using pointers to the reallocated block.  */
+ #  pragma GCC diagnostic ignored "-Wuse-after-free"
+diff -up glibc-2.43/libio/tst-freopen.c.omv~ glibc-2.43/libio/tst-freopen.c
+--- glibc-2.43/libio/tst-freopen.c.omv~	2026-02-25 18:00:37.156828037 +0100
++++ glibc-2.43/libio/tst-freopen.c	2026-02-25 18:01:31.217435918 +0100
+@@ -84,7 +84,7 @@ do_test_basic (void)
+   fclose (f);
+ }
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Force an error to detect incorrectly making freopen a deallocator
+    for its last argument via attribute malloc.  The function closes
+    the stream without deallocating it so either the argument or
+@@ -115,7 +115,7 @@ do_test_return_stream (void)
+   fclose (f1);
+ }
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Pop -Wmismatched-dealloc set to error above.  */
+ # pragma GCC diagnostic pop
+ #endif
+diff -up glibc-2.43/libio/tst-wmemstream1.c.omv~ glibc-2.43/libio/tst-wmemstream1.c
+--- glibc-2.43/libio/tst-wmemstream1.c.omv~	2026-02-25 18:02:20.695352264 +0100
++++ glibc-2.43/libio/tst-wmemstream1.c	2026-02-25 18:02:34.117025971 +0100
+@@ -2,7 +2,7 @@
+ 
+ extern int fclose (FILE*);
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Verify that calling fclose on the result of open_wmemstream doesn't
+    trigger GCC -Wmismatched-dealloc with fclose forward-declared and
+    without <stdio.h> included first (it is included later, in.
+@@ -30,7 +30,7 @@ int test_open_wmemstream_no_stdio (void)
+   return 0;
+ }
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Restore -Wmismatched-dealloc setting.  */
+ # pragma GCC diagnostic pop
+ #endif
+diff -up glibc-2.43/libio/tst-wmemstream5.c.omv~ glibc-2.43/libio/tst-wmemstream5.c
+--- glibc-2.43/libio/tst-wmemstream5.c.omv~	2026-02-25 18:02:44.139555603 +0100
++++ glibc-2.43/libio/tst-wmemstream5.c	2026-02-25 18:02:58.114242023 +0100
+@@ -19,7 +19,7 @@
+ 
+ extern int fclose (FILE*);
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Verify that calling fclose on the result of open_wmemstream doesn't
+    trigger GCC -Wmismatched-dealloc with fclose forward-declared and
+    without <stdio.h> included in the same translation unit.  */
+@@ -48,7 +48,7 @@ do_test (void)
+   return 0;
+ }
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Restore -Wmismatched-dealloc setting.  */
+ # pragma GCC diagnostic pop
+ #endif
+diff -up glibc-2.43/malloc/tst-malloc-backtrace.c.omv~ glibc-2.43/malloc/tst-malloc-backtrace.c
+--- glibc-2.43/malloc/tst-malloc-backtrace.c.omv~	2026-02-25 23:45:01.119197479 +0100
++++ glibc-2.43/malloc/tst-malloc-backtrace.c	2026-02-25 23:45:15.136224320 +0100
+@@ -32,13 +32,13 @@ __attribute__((noinline))
+ call_free (void *ptr)
+ {
+   free (ptr);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a valid warning about using a pointer made indeterminate
+      by a prior call to free().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+   *(size_t *)(ptr - sizeof (size_t)) = 1;
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ }
+diff -up glibc-2.43/malloc/tst-malloc-check.c.omv~ glibc-2.43/malloc/tst-malloc-check.c
+--- glibc-2.43/malloc/tst-malloc-check.c.omv~	2026-02-25 23:46:09.534347415 +0100
++++ glibc-2.43/malloc/tst-malloc-check.c	2026-02-25 23:47:24.137119257 +0100
+@@ -39,7 +39,7 @@ do_test (void)
+   errno = 0;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -77,7 +77,7 @@ do_test (void)
+     merror ("malloc (512) failed.");
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -88,13 +88,13 @@ do_test (void)
+     merror ("errno is not set correctly.");
+   DIAG_POP_NEEDS_COMMENT;
+ 
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a valid warning about using a pointer made indeterminate
+      by a prior call to realloc().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+   free (p);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+@@ -103,7 +103,7 @@ do_test (void)
+     merror ("malloc (512) failed.");
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -114,13 +114,13 @@ do_test (void)
+     merror ("errno is not set correctly.");
+   DIAG_POP_NEEDS_COMMENT;
+ 
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a valid warning about using a pointer made indeterminate
+      by a prior call to realloc().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+   free (p);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   free (q);
+diff -up glibc-2.43/malloc/tst-malloc-too-large.c.omv~ glibc-2.43/malloc/tst-malloc-too-large.c
+--- glibc-2.43/malloc/tst-malloc-too-large.c.omv~	2026-02-25 23:48:49.962163116 +0100
++++ glibc-2.43/malloc/tst-malloc-too-large.c	2026-02-25 23:49:48.333670648 +0100
+@@ -74,13 +74,13 @@ test_large_allocations (size_t size)
+ 
+   test_setup ();
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+   TEST_VERIFY (malloc (size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   TEST_VERIFY (errno == ENOMEM);
+@@ -88,21 +88,21 @@ test_large_allocations (size_t size)
+   ptr_to_realloc = malloc (16);
+   TEST_VERIFY_EXIT (ptr_to_realloc != NULL);
+   test_setup ();
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+   TEST_VERIFY (realloc (ptr_to_realloc, size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   TEST_VERIFY (errno == ENOMEM);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a warning about using a pointer made indeterminate by
+      a prior call to realloc().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+   free (ptr_to_realloc);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+@@ -122,13 +122,13 @@ test_large_allocations (size_t size)
+         test_setup ();
+         TEST_VERIFY (reallocarray (ptr_to_realloc, nmemb, size / nmemb) == NULL);
+         TEST_VERIFY (errno == ENOMEM);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a warning about using a pointer made indeterminate by
+      a prior call to realloc().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+         free (ptr_to_realloc);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+@@ -137,13 +137,13 @@ test_large_allocations (size_t size)
+         test_setup ();
+         TEST_VERIFY (reallocarray (ptr_to_realloc, size / nmemb, nmemb) == NULL);
+         TEST_VERIFY (errno == ENOMEM);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   /* Ignore a warning about using a pointer made indeterminate by
+      a prior call to realloc().  */
+   DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
+ #endif
+         free (ptr_to_realloc);
+-#if __GNUC_PREREQ (12, 0)
++#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+       }
+@@ -174,11 +174,11 @@ test_large_aligned_allocations (size_t s
+   for (align = 1; align > 0; align <<= 1)
+     {
+       test_setup ();
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+       DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+       TEST_VERIFY (memalign (align, size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+       DIAG_POP_NEEDS_COMMENT;
+ #endif
+       TEST_VERIFY (errno == ENOMEM);
+@@ -196,11 +196,11 @@ test_large_aligned_allocations (size_t s
+       if ((size % align) == 0)
+         {
+           test_setup ();
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ 	  DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+           TEST_VERIFY (aligned_alloc (align, size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ 	  DIAG_POP_NEEDS_COMMENT;
+ #endif
+           TEST_VERIFY (errno == ENOMEM);
+@@ -210,21 +210,21 @@ test_large_aligned_allocations (size_t s
+   /* Both valloc and pvalloc return page-aligned memory.  */
+ 
+   test_setup ();
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+   TEST_VERIFY (valloc (size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   TEST_VERIFY (errno == ENOMEM);
+ 
+   test_setup ();
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+   TEST_VERIFY (pvalloc (size) == NULL);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   TEST_VERIFY (errno == ENOMEM);
+@@ -258,7 +258,7 @@ do_test (void)
+ #endif /* __WORDSIZE >= 64 */
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+diff -up glibc-2.43/malloc/tst-malloc.c.omv~ glibc-2.43/malloc/tst-malloc.c
+--- glibc-2.43/malloc/tst-malloc.c.omv~	2026-02-25 23:41:07.837912734 +0100
++++ glibc-2.43/malloc/tst-malloc.c	2026-02-25 23:41:24.133885667 +0100
+@@ -44,7 +44,7 @@ do_test (void)
+   errno = 0;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -81,7 +81,7 @@ do_test (void)
+     merror ("malloc (513K) failed.");
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+diff -up glibc-2.43/malloc/tst-memalign.c.omv~ glibc-2.43/malloc/tst-memalign.c
+--- glibc-2.43/malloc/tst-memalign.c.omv~	2026-02-26 00:10:21.086557057 +0100
++++ glibc-2.43/malloc/tst-memalign.c	2026-02-26 00:10:32.881372994 +0100
+@@ -45,7 +45,7 @@ do_test (void)
+   errno = 0;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -53,7 +53,7 @@ do_test (void)
+   /* An attempt to allocate a huge value should return NULL and set
+      errno to ENOMEM.  */
+   p = memalign (sizeof (void *), -1);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+diff -up glibc-2.43/malloc/tst-posix_memalign.c.omv~ glibc-2.43/malloc/tst-posix_memalign.c
+--- glibc-2.43/malloc/tst-posix_memalign.c.omv~	2026-02-26 00:23:22.551382313 +0100
++++ glibc-2.43/malloc/tst-posix_memalign.c	2026-02-26 00:23:35.874554067 +0100
+@@ -43,7 +43,7 @@ do_test (void)
+   p = NULL;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -51,7 +51,7 @@ do_test (void)
+   /* An attempt to allocate a huge value should return ENOMEM and
+      p should remain NULL.  */
+   ret = posix_memalign (&p, sizeof (void *), -1);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+diff -up glibc-2.43/malloc/tst-pvalloc.c.omv~ glibc-2.43/malloc/tst-pvalloc.c
+--- glibc-2.43/malloc/tst-pvalloc.c.omv~	2026-02-26 00:23:48.882361113 +0100
++++ glibc-2.43/malloc/tst-pvalloc.c	2026-02-26 00:23:56.731988210 +0100
+@@ -44,7 +44,7 @@ do_test (void)
+   errno = 0;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -52,7 +52,7 @@ do_test (void)
+   /* An attempt to allocate a huge value should return NULL and set
+      errno to ENOMEM.  */
+   p = pvalloc (-1);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+diff -up glibc-2.43/malloc/tst-realloc.c.omv~ glibc-2.43/malloc/tst-realloc.c
+--- glibc-2.43/malloc/tst-realloc.c.omv~	2026-02-26 00:24:10.654222358 +0100
++++ glibc-2.43/malloc/tst-realloc.c	2026-02-26 00:24:22.625938095 +0100
+@@ -36,7 +36,7 @@ do_test (void)
+ 
+   /* realloc (NULL, ...) behaves similarly to malloc (C89).  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -111,7 +111,7 @@ do_test (void)
+ 
+   /* Check failed realloc leaves original untouched (C89).  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+diff -up glibc-2.43/malloc/tst-reallocarray.c.omv~ glibc-2.43/malloc/tst-reallocarray.c
+--- glibc-2.43/malloc/tst-reallocarray.c.omv~	2026-02-26 00:25:05.917462192 +0100
++++ glibc-2.43/malloc/tst-reallocarray.c	2026-02-26 00:25:11.151551039 +0100
+@@ -26,13 +26,13 @@
+ static void *
+ reallocarray_nowarn (void *ptr, size_t nmemb, size_t size)
+ {
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+ #endif
+   void *ret = reallocarray (ptr, nmemb, size);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   return ret;
+diff -up glibc-2.43/malloc/tst-valloc.c.omv~ glibc-2.43/malloc/tst-valloc.c
+--- glibc-2.43/malloc/tst-valloc.c.omv~	2026-02-26 00:47:48.905715691 +0100
++++ glibc-2.43/malloc/tst-valloc.c	2026-02-26 00:47:56.862154511 +0100
+@@ -45,7 +45,7 @@ do_test (void)
+   errno = 0;
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 7 warns about too-large allocations; here we want to test
+      that they fail.  */
+   DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+@@ -53,7 +53,7 @@ do_test (void)
+   /* An attempt to allocate a huge value should return NULL and set
+      errno to ENOMEM.  */
+   p = valloc (-1);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+ 
+diff -up glibc-2.43/math/libm-test-acos.inc.omv~ glibc-2.43/math/libm-test-acos.inc
+diff -up glibc-2.43/math/math.h.omv~ glibc-2.43/math/math.h
+--- glibc-2.43/math/math.h.omv~	2026-02-25 00:51:10.871173459 +0100
++++ glibc-2.43/math/math.h	2026-02-25 00:53:06.362185108 +0100
+@@ -1017,12 +1017,12 @@ extern int signgam;
+   (sizeof (TG_ARG) == sizeof (float) ? FUNC ## f ARGS : FUNC ARGS)
+ #elif __HAVE_DISTINCT_FLOAT128
+ # if __HAVE_GENERIC_SELECTION
+-#  if __HAVE_FLOATN_NOT_TYPEDEF && __HAVE_FLOAT32
++#  if __HAVE_FLOATN_NOT_TYPEDEF && __HAVE_FLOAT32 && !defined(__clang__)
+ #   define __MATH_TG_F32(FUNC, ARGS) _Float32: FUNC ## f ARGS,
+ #  else
+ #   define __MATH_TG_F32(FUNC, ARGS)
+ #  endif
+-#  if __HAVE_FLOATN_NOT_TYPEDEF && __HAVE_FLOAT64X
++#  if __HAVE_FLOATN_NOT_TYPEDEF && __HAVE_FLOAT64X && !defined(__clang__)
+ #   if __HAVE_FLOAT64X_LONG_DOUBLE
+ #    define __MATH_TG_F64X(FUNC, ARGS) _Float64x: FUNC ## l ARGS,
+ #   else
+diff -up glibc-2.43/nptl/pthread_create.c.omv~ glibc-2.43/nptl/pthread_create.c
+--- glibc-2.43/nptl/pthread_create.c.omv~	2026-02-25 00:35:55.942361171 +0100
++++ glibc-2.43/nptl/pthread_create.c	2026-02-25 00:36:03.660026872 +0100
+@@ -402,7 +402,7 @@ start_thread (void *arg)
+ 
+   int not_first_call;
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* This call results in a -Wstringop-overflow warning because struct
+      pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
+      do not use anything beyond the common prefix (they never access
+diff -up glibc-2.43/nptl/tst-attr3.c.omv~ glibc-2.43/nptl/tst-attr3.c
+--- glibc-2.43/nptl/tst-attr3.c.omv~	2026-02-25 18:04:04.687232103 +0100
++++ glibc-2.43/nptl/tst-attr3.c	2026-02-25 18:04:19.067134109 +0100
+@@ -363,7 +363,7 @@ do_test (void)
+     }
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 8 warns about aliasing of the restrict-qualified arguments
+      passed &a.  Since pthread_create does not dereference its fourth
+      argument, this aliasing, which is deliberate in this test, cannot
+@@ -398,7 +398,7 @@ do_test (void)
+     }
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 8 warns about aliasing of the restrict-qualified arguments
+      passed &a.  Since pthread_create does not dereference its fourth
+      argument, this aliasing, which is deliberate in this test, cannot
+diff -up glibc-2.43/nptl/unwind.c.omv~ glibc-2.43/nptl/unwind.c
+--- glibc-2.43/nptl/unwind.c.omv~	2026-02-25 00:38:48.401136973 +0100
++++ glibc-2.43/nptl/unwind.c	2026-02-25 00:38:56.186222285 +0100
+@@ -91,7 +91,7 @@ unwind_stop (int version, _Unwind_Action
+     }
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* This call results in a -Wstringop-overflow warning because struct
+      pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
+      do not use anything beyond the common prefix (they never access
+diff -up glibc-2.43/posix/test-errno.c.omv~ glibc-2.43/posix/test-errno.c
+--- glibc-2.43/posix/test-errno.c.omv~	2026-02-26 19:18:30.381837365 +0100
++++ glibc-2.43/posix/test-errno.c	2026-02-26 20:39:42.940620405 +0100
+@@ -19,7 +19,7 @@
+ 
+ #include <sys/cdefs.h>
+ #include <libc-diag.h>
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ /* Triggered by getgroup fortify wrapper.  */
+ DIAG_IGNORE_NEEDS_COMMENT (7, "-Wstringop-overflow");
+ #endif
+@@ -127,13 +127,13 @@ do_test (void)
+   fails |= test_wrp (EBADF, fsync, -1);
+   fails |= test_wrp (EBADF, ftruncate, -1, 0);
+ 
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_PUSH_NEEDS_COMMENT;
+   /* Avoid warnings about the second (size) argument being negative.  */
+   DIAG_IGNORE_NEEDS_COMMENT (10.1, "-Wstringop-overflow");
+ #endif
+   fails |= test_wrp (EINVAL, getgroups, -1, 0);
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_POP_NEEDS_COMMENT;
+ #endif
+   fails |= test_wrp (EBADF, getpeername, -1, &sa, &sl);
+diff -up glibc-2.43/resolv/res_debug.c.omv~ glibc-2.43/resolv/res_debug.c
+--- glibc-2.43/resolv/res_debug.c.omv~	2026-02-25 00:56:17.422290619 +0100
++++ glibc-2.43/resolv/res_debug.c	2026-02-25 00:56:24.990314620 +0100
+@@ -1083,7 +1083,7 @@ __p_secstodate (u_long secs) {
+ 	   that, even given range checks on all fields with
+ 	   __builtin_unreachable called for out-of-range values.  */
+ 	DIAG_PUSH_NEEDS_COMMENT;
+-# if __GNUC_PREREQ (7, 0)
++# if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ 	DIAG_IGNORE_NEEDS_COMMENT (8, "-Wformat-overflow=");
+ # endif
+ 	sprintf(output, "%04d%02d%02d%02d%02d%02d",
+diff -up glibc-2.43/stdio-common/Makefile.omv~ glibc-2.43/stdio-common/Makefile
+--- glibc-2.43/stdio-common/Makefile.omv~	2026-02-25 03:29:57.951082143 +0100
++++ glibc-2.43/stdio-common/Makefile	2026-02-25 04:51:30.885244009 +0100
+@@ -761,6 +761,14 @@ CFLAGS-tst-scanf-binary-c23.c += -std=c1
+ CFLAGS-tst-scanf-binary-gnu11.c += -std=gnu11 -DOBJPFX=\"$(objpfx)\"
+ CFLAGS-tst-scanf-binary-gnu89.c += -std=gnu89 -DOBJPFX=\"$(objpfx)\"
+ 
++# Workaround for clang 21 not supporting %w8 in C11 mode
++CPPFLAGS-tst-printf-intn.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++CPPFLAGS-tst-printf-intn-main.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++CPPFLAGS-tst-scanf-intn.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++CFLAGS-tst-scanf-intn.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++CPPFLAGS-tst-scanf-intn-main.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++CFLAGS-tst-scanf-intn-main.c += -Wno-format $(call cc-option,-Wno-error=format-invalid-specifier)
++
+ CPPFLAGS += $(libio-mtsafe)
+ 
+ make-tst-freopen4-out = \
+diff -up glibc-2.43/stdio-common/bug22.c.omv~ glibc-2.43/stdio-common/bug22.c
+--- glibc-2.43/stdio-common/bug22.c.omv~	2026-02-25 03:26:39.106979531 +0100
++++ glibc-2.43/stdio-common/bug22.c	2026-02-25 03:27:00.463483479 +0100
+@@ -34,7 +34,7 @@ do_test (void)
+   /* GCC 9 warns about output of more than INT_MAX characters; this is
+      deliberately tested here.  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
+ #endif
+   ret = fprintf (fp, "%" SN "d", 1);
+@@ -46,7 +46,7 @@ do_test (void)
+   /* GCC 9 warns about output of more than INT_MAX characters; this is
+      deliberately tested here.  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
+ #endif
+   ret = fprintf (fp, "%." SN "d", 1);
+@@ -63,7 +63,7 @@ do_test (void)
+   /* GCC 9 warns about output of more than INT_MAX characters; this is
+      deliberately tested here.  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
+ #endif
+   ret = fprintf (fp, "%" SN2 "d%" SN2 "d", 1, 1);
+diff -up glibc-2.43/stdio-common/tst-freopen.c.omv~ glibc-2.43/stdio-common/tst-freopen.c
+diff -up glibc-2.43/stdio-common/tst-printf.c.omv~ glibc-2.43/stdio-common/tst-printf.c
+--- glibc-2.43/stdio-common/tst-printf.c.omv~	2026-02-25 17:58:46.766380787 +0100
++++ glibc-2.43/stdio-common/tst-printf.c	2026-02-25 17:58:53.149690264 +0100
+@@ -113,7 +113,7 @@ I am ready for my first lesson today.";
+   /* GCC 9 warns about the NULL format argument; this is deliberately
+      tested here.  */
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
+ #endif
+   printf("null string:\t\"%s\"\n", (char *)NULL);
+diff -up glibc-2.43/stdlib/Makefile.omv~ glibc-2.43/stdlib/Makefile
+--- glibc-2.43/stdlib/Makefile.omv~	2026-02-25 01:51:34.026912301 +0100
++++ glibc-2.43/stdlib/Makefile	2026-02-25 01:53:46.412682318 +0100
+@@ -625,6 +625,7 @@ endif
+ $(objpfx)isomac.out: $(objpfx)isomac
+ 	$(dir $<)$(notdir $<) '$(CC)'  \
+ 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $@; \
++	$(dir $<)$(notdir $<) '$(CC)' \
+ 	'$(isomac-includes)' > $<.out \
+ 	$(evaluate-test)
+ 
+diff -up glibc-2.43/stdlib/stdbit.h.omv~ glibc-2.43/stdlib/stdbit.h
+--- glibc-2.43/stdlib/stdbit.h.omv~	2026-02-25 01:46:24.757611096 +0100
++++ glibc-2.43/stdlib/stdbit.h	2026-02-25 01:46:34.121076728 +0100
+@@ -44,7 +44,7 @@ __BEGIN_DECLS
+ /* Use __pacify_uint16 (N) instead of (uint16_t) (N) when the cast is helpful
+    only to pacify older GCC (e.g., GCC 10 -Wconversion) or non-GCC (e.g
+    clang -Wimplicit-int-conversion).  */
+-#if __GNUC_PREREQ (11, 0)
++#if __GNUC_PREREQ (11, 0) && !defined(__clang__)
+ # define __pacify_uint8(n)  (n)
+ # define __pacify_uint16(n) (n)
+ #else
+diff -up glibc-2.43/stdlib/tst-realpath.c.omv~ glibc-2.43/stdlib/tst-realpath.c
+--- glibc-2.43/stdlib/tst-realpath.c.omv~	2026-02-25 01:35:55.000867140 +0100
++++ glibc-2.43/stdlib/tst-realpath.c	2026-02-25 01:37:12.359807844 +0100
+@@ -29,7 +29,7 @@
+ #include <stdlib.h>
+ #include <malloc.h>
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Turn GCC -Wmismatched-dealloc warnings into errors to expose false
+    positives.  */
+ #  pragma GCC diagnostic push
+@@ -78,7 +78,7 @@ do_test (void)
+   return 0;
+ }
+ 
+-#if defined __GNUC__ && __GNUC__ >= 11
++#if defined __GNUC__ && __GNUC__ >= 11 && !defined(__clang__)
+ /* Restore -Wmismatched-dealloc setting.  */
+ #  pragma GCC diagnostic pop
+ #endif
+diff -up glibc-2.43/stdlib/tst-stdbit-Wconversion.c.omv~ glibc-2.43/stdlib/tst-stdbit-Wconversion.c
+diff -up glibc-2.43/string/Makefile.omv~ glibc-2.43/string/Makefile
+--- glibc-2.43/string/Makefile.omv~	2026-02-26 07:59:36.326035427 +0100
++++ glibc-2.43/string/Makefile	2026-02-26 08:00:19.055824576 +0100
+@@ -20,6 +20,8 @@
+ #
+ subdir	:= string
+ 
++LDFLAGS += -Wl,-z,nostart-stop-gc
++
+ include ../Makeconfig
+ 
+ headers := \
+diff -up glibc-2.43/string/bug-strncat1.c.omv~ glibc-2.43/string/bug-strncat1.c
+--- glibc-2.43/string/bug-strncat1.c.omv~	2026-02-26 05:15:00.798162458 +0100
++++ glibc-2.43/string/bug-strncat1.c	2026-02-26 05:15:14.388355067 +0100
+@@ -2,7 +2,7 @@
+ #define __USE_STRING_INLINES
+ #include <sys/cdefs.h>
+ #include <libc-diag.h>
+-#if __GNUC_PREREQ (8, 0)
++#if __GNUC_PREREQ (8, 0) && !defined(__clang__)
+ /* GCC warns about strncat truncating output; this is deliberately
+    tested here.  If fortify is enabled, it is also triggered by the
+    wrappers. */
+diff -up glibc-2.43/string/tester.c.omv~ glibc-2.43/string/tester.c
+--- glibc-2.43/string/tester.c.omv~	2026-02-26 05:27:13.615017375 +0100
++++ glibc-2.43/string/tester.c	2026-02-26 07:56:52.251669775 +0100
+@@ -30,7 +30,7 @@
+ #include <libc-diag.h>
+ 
+ /* Triggered by strncpy fortify wrapper when it is enabled.  */
+-#if __GNUC_PREREQ (8, 0)
++#if __GNUC_PREREQ (8, 0) && !defined(__clang__)
+ DIAG_IGNORE_NEEDS_COMMENT (8, "-Wstringop-truncation");
+ #endif
+ 
+@@ -38,7 +38,7 @@ DIAG_IGNORE_NEEDS_COMMENT (8, "-Wstringo
+    fortify strncat wrapper might overflow the destination buffer (the
+    failure is tied to -Werror).
+    Triggered by strncat fortify wrapper when it is enabled.  */
+-#if __GNUC_PREREQ (11, 0)
++#if __GNUC_PREREQ (11, 0) && !defined(__clang__)
+ DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
+ #endif
+ 
+@@ -67,7 +67,7 @@ DIAG_IGNORE_NEEDS_COMMENT (8, "-Warray-b
+ #if __GNUC_PREREQ (5, 0)
+ DIAG_IGNORE_NEEDS_COMMENT (5.0, "-Wmemset-transposed-args");
+ #endif
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ DIAG_IGNORE_NEEDS_COMMENT (9, "-Wrestrict");
+ DIAG_IGNORE_NEEDS_COMMENT (7, "-Wstringop-overflow=");
+ #endif
+diff -up glibc-2.43/string/tst-cmp.c.omv~ glibc-2.43/string/tst-cmp.c
+--- glibc-2.43/string/tst-cmp.c.omv~	2026-02-26 17:16:54.098525504 +0100
++++ glibc-2.43/string/tst-cmp.c	2026-02-26 17:17:15.432333447 +0100
+@@ -100,12 +100,12 @@ static int
+ strncmp_max (const char *left, const char *right)
+ {
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 9 warns about the size passed to strncmp being larger than
+      PTRDIFF_MAX; the use of SIZE_MAX is deliberate here.  */
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wstringop-overflow=");
+ #endif
+-#if __GNUC_PREREQ (11, 0)
++#if __GNUC_PREREQ (11, 0) && !defined(__clang__)
+   /* Likewise GCC 11, with a different warning option.  */
+   DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
+ #endif
+@@ -117,12 +117,12 @@ static int
+ strncasecmp_max (const char *left, const char *right)
+ {
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* GCC 9 warns about the size passed to strncasecmp being larger
+      than PTRDIFF_MAX; the use of SIZE_MAX is deliberate here.  */
+   DIAG_IGNORE_NEEDS_COMMENT (9, "-Wstringop-overflow=");
+ #endif
+-#if __GNUC_PREREQ (11, 0)
++#if __GNUC_PREREQ (11, 0) && !defined(__clang__)
+   /* Likewise GCC 11, with a different warning option.  */
+   DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
+ #endif
+diff -up glibc-2.43/string/tst-memmove-overflow.c.omv~ glibc-2.43/string/tst-memmove-overflow.c
+--- glibc-2.43/string/tst-memmove-overflow.c.omv~	2026-02-26 18:15:10.136514592 +0100
++++ glibc-2.43/string/tst-memmove-overflow.c	2026-02-26 18:15:26.584393449 +0100
+@@ -142,8 +142,10 @@ test_main (void)
+ #if __GNUC_PREREQ (8, 0)
+       /* GCC 8 warns about string function argument overflows.  */
+       DIAG_IGNORE_NEEDS_COMMENT (8, "-Warray-bounds");
++#ifndef __clang__
+       DIAG_IGNORE_NEEDS_COMMENT (8, "-Wstringop-overflow");
+ #endif
++#endif
+       memmove (start, start + 1, allocation_size - 1);
+       DIAG_POP_NEEDS_COMMENT;
+ 
+diff -up glibc-2.43/sysdeps/nptl/libc_start_call_main.h.omv~ glibc-2.43/sysdeps/nptl/libc_start_call_main.h
+--- glibc-2.43/sysdeps/nptl/libc_start_call_main.h.omv~	2026-02-25 00:17:03.668083580 +0100
++++ glibc-2.43/sysdeps/nptl/libc_start_call_main.h	2026-02-25 00:17:13.947420935 +0100
+@@ -35,7 +35,7 @@ __libc_start_call_main (int (*main) (int
+ 
+   int not_first_call;
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+   /* This call results in a -Wstringop-overflow warning because struct
+      pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
+      do not use anything beyond the common prefix (they never access
+diff -up glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~ glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c
+--- glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~	2026-02-26 20:58:17.695706735 +0100
++++ glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c	2026-02-26 20:58:25.258302070 +0100
+@@ -175,7 +175,7 @@ do_test (void)
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+ 
+-#if __GNUC_PREREQ (9, 0)
++#if __GNUC_PREREQ (9, 0) && !defined(__clang__)
+   /* Suppress valid GCC warning:
+      'poll' specified size 18446744073709551608 exceeds maximum object size
+   */
+diff -up glibc-2.43/sysdeps/x86/fpu/powl_helper.c.omv~ glibc-2.43/sysdeps/x86/fpu/powl_helper.c
+diff -up glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c.omv~ glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c
+--- glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c.omv~	2026-02-26 23:13:45.888253520 +0100
++++ glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c	2026-02-26 23:19:17.357400530 +0100
+@@ -92,7 +92,7 @@ do_test (int argc, char **argv)
+ #if __GNUC_PREREQ (6, 0)
+   fails += CHECK_FEATURE_ACTIVE (avx512bw, AVX512BW);
+   fails += CHECK_FEATURE_ACTIVE (avx512cd, AVX512CD);
+-# if !__GNUC_PREREQ (15, 0)
++# if !__GNUC_PREREQ (15, 0) && !defined(__clang__)
+   fails += CHECK_FEATURE_ACTIVE (avx512er, AVX512ER);
+ # endif
+   fails += CHECK_FEATURE_ACTIVE (avx512dq, AVX512DQ);
+@@ -101,7 +101,7 @@ do_test (int argc, char **argv)
+   fails += CHECK_FEATURE_ACTIVE (avx512f, AVX512F);
+ #endif
+ #if __GNUC_PREREQ (6, 0)
+-# if !__GNUC_PREREQ (15, 0)
++# if !__GNUC_PREREQ (15, 0) && !defined(__clang__)
+   fails += CHECK_FEATURE_ACTIVE (avx512pf, AVX512PF);
+ # endif
+   fails += CHECK_FEATURE_ACTIVE (avx512vl, AVX512VL);
+@@ -117,8 +117,10 @@ do_test (int argc, char **argv)
+ #endif
+   fails += CHECK_FEATURE_ACTIVE (cmov, CMOV);
+ #if __GNUC_PREREQ (11, 0)
++#ifndef __clang__
+   fails += CHECK_FEATURE_ACTIVE (cmpxchg16b, CMPXCHG16B);
+   fails += CHECK_FEATURE_ACTIVE (cmpxchg8b, CX8);
++#endif
+   fails += CHECK_FEATURE_PRESENT (enqcmd, ENQCMD);
+   fails += CHECK_FEATURE_ACTIVE (f16c, F16C);
+ #endif
+@@ -128,16 +130,20 @@ do_test (int argc, char **argv)
+ #endif
+ #if __GNUC_PREREQ (11, 0)
+   fails += CHECK_FEATURE_PRESENT (fsgsbase, FSGSBASE);
++#ifndef __clang__
+   fails += CHECK_FEATURE_ACTIVE (fxsave, FXSR);
+ #endif
++#endif
+ #if __GNUC_PREREQ (8, 0)
+   fails += CHECK_FEATURE_ACTIVE (gfni, GFNI);
+ #endif
+ #if __GNUC_PREREQ (11, 0)
++#ifndef __clang__
+   fails += CHECK_FEATURE_PRESENT (hle, HLE);
+   fails += CHECK_FEATURE_PRESENT (ibt, IBT);
+   fails += CHECK_FEATURE_ACTIVE (lahf_lm, LAHF64_SAHF64);
+   fails += CHECK_FEATURE_PRESENT (lm, LM);
++#endif
+   fails += CHECK_FEATURE_ACTIVE (lwp, LWP);
+   fails += CHECK_FEATURE_ACTIVE (lzcnt, LZCNT);
+ #endif
+@@ -146,13 +152,15 @@ do_test (int argc, char **argv)
+   fails += CHECK_FEATURE_ACTIVE (movbe, MOVBE);
+   fails += CHECK_FEATURE_ACTIVE (movdiri, MOVDIRI);
+   fails += CHECK_FEATURE_ACTIVE (movdir64b, MOVDIR64B);
++#ifndef __clang__
+   fails += CHECK_FEATURE_ACTIVE (osxsave, OSXSAVE);
++#endif
+   fails += CHECK_FEATURE_PRESENT (pconfig, PCONFIG);
+   fails += CHECK_FEATURE_ACTIVE (pku, PKU);
+ #endif
+   fails += CHECK_FEATURE_ACTIVE (popcnt, POPCNT);
+ #if __GNUC_PREREQ (11, 0)
+-# if !__GNUC_PREREQ (15, 0)
++# if !__GNUC_PREREQ (15, 0) && !defined(__clang__)
+   fails += CHECK_FEATURE_ACTIVE (prefetchwt1, PREFETCHWT1);
+ # endif
+   fails += CHECK_FEATURE_ACTIVE (ptwrite, PTWRITE);
+diff -up glibc-2.43/time/tst-strftime3.c.omv~ glibc-2.43/time/tst-strftime3.c
+--- glibc-2.43/time/tst-strftime3.c.omv~	2026-02-26 18:57:44.589330365 +0100
++++ glibc-2.43/time/tst-strftime3.c	2026-02-26 18:57:52.632429718 +0100
+@@ -442,7 +442,7 @@ tm_to_printed (struct tm *tm, char *buff
+     }
+ 
+   DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (9, 0)
++#if __GNUC_PREREQ (9, 0) && !defined(__clang__)
+   /* GCC 9 warns that strncmp may truncate its output, but that's why
+      we're using it.  When it needs to truncate, it got corrupted
+      data, and we only care that the string is different than valid
+diff -up glibc-2.43/wcsmbs/Makefile.omv~ glibc-2.43/wcsmbs/Makefile
+--- glibc-2.43/wcsmbs/Makefile.omv~	2026-02-26 18:45:28.968168441 +0100
++++ glibc-2.43/wcsmbs/Makefile	2026-02-26 18:45:50.832167991 +0100
+@@ -20,6 +20,8 @@
+ #
+ subdir	:= wcsmbs
+ 
++LDFLAGS += -Wl,-z,nostart-stop-gc
++
+ include ../Makeconfig
+ 
+ headers := \
+diff -up glibc-2.43/include/libc-symbols.h.omv~ glibc-2.43/include/libc-symbols.h
+--- glibc-2.43/include/libc-symbols.h.omv~	2026-02-28 03:55:02.362656759 +0100
++++ glibc-2.43/include/libc-symbols.h	2026-02-28 03:55:38.398045756 +0100
+@@ -656,6 +656,10 @@ for linking")
+ # define libanl_hidden_proto(name, attrs...)
+ #endif
+ 
++#ifdef __clang__
++_Pragma("clang diagnostic ignored \"-Wignored-attributes\"")
++#endif
++
+ /* Get some dirty hacks.  */
+ #include <symbol-hacks.h>
+ 
+diff -up glibc-2.43/string/memchr.c.omv~ glibc-2.43/string/memchr.c
+--- glibc-2.43/string/memchr.c.omv~	2026-02-28 03:48:15.448153891 +0100
++++ glibc-2.43/string/memchr.c	2026-02-28 03:48:43.892271800 +0100
+@@ -29,6 +29,10 @@
+ # define __memchr MEMCHR
+ #endif
+ 
++#ifdef __clang__
++_Pragma("clang diagnostic ignored \"-Wignored-attributes\"")
++#endif
++
+ static __always_inline const char *
+ sadd (uintptr_t x, uintptr_t y)
+ {
+diff -up glibc-2.43/string/rawmemchr.c.omv~ glibc-2.43/string/rawmemchr.c
+--- glibc-2.43/string/rawmemchr.c.omv~	2026-02-28 03:39:03.345571317 +0100
++++ glibc-2.43/string/rawmemchr.c	2026-02-28 03:39:35.675650865 +0100
+@@ -25,12 +25,12 @@
+ /* The pragmata should be nested inside RAWMEMCHR below, but that
+    triggers GCC PR 98512.  */
+ DIAG_PUSH_NEEDS_COMMENT;
+-#if __GNUC_PREREQ (7, 0)
++#if __GNUC_PREREQ (7, 0) && !defined(__clang__)
+ /* GCC 8 warns about the size passed to memchr being larger than
+    PTRDIFF_MAX; the use of SIZE_MAX is deliberate here.  */
+ DIAG_IGNORE_NEEDS_COMMENT (8, "-Wstringop-overflow=");
+ #endif
+-#if __GNUC_PREREQ (11, 0)
++#if __GNUC_PREREQ (11, 0) && !defined(__clang__)
+ /* Likewise GCC 11, with a different warning option.  */
+ DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
+ #endif
+diff -up glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h.omv~ glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h
+--- glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h.omv~	2026-02-28 16:41:53.058990495 +0100
++++ glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h	2026-02-28 16:42:15.906682046 +0100
+@@ -30,6 +30,7 @@
+ #ifdef __has_include
+ # if __has_include ("linux/mount.h")
+ #  include "linux/mount.h"
++#  undef OPEN_TREE_CLONE
+ # endif
+ #endif
+ 

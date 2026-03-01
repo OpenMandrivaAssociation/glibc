@@ -46,6 +46,21 @@
 
 %define _disable_rebuild_configure 1
 
+# As of 2.43, glibc can compile with clang with a limited number
+# of patches on many, but not all, platforms:
+# Any 32-bit: strtod_l.c:876:18: error: result of comparison of constant 9223372036854775807 with expression of type 'size_t' (aka 'unsigned int') is always true [-Werror,-Wtautological-constant-out-of-range-compare]
+# ARMv7: "unsupported-floating-point-opt"
+# RISC-V: Redefinitions from system headers
+# PPC: -mlong-double-128 required
+# LoongArch64:
+#   error: overriding currently unsupported rounding mode on this target [-Werror,-Wunsupported-floating-point-opt]
+#   error: overriding currently unsupported use of floating point exceptions on this target [-Werror,-Wunsupported-floating-point-opt]
+%ifarch %{arm} %{ix86} %{riscv64} %{ppc64} %{ppc64le} %{loongarch64}
+%bcond_with clang
+%else
+%bcond_without clang
+%endif
+
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
 
@@ -56,8 +71,8 @@
 
 # (tpg) optimize it a bit
 # --hash-style=both is for https://sourceware.org/bugzilla/show_bug.cgi?id=29456
-%global optflags %{optflags} -O3 -Wno-error=stringop-overflow -fno-strict-aliasing -Wformat -Wl,--hash-style=both
-%global build_ldflags %{build_ldflags} -Wl,--hash-style=both
+%global optflags %{optflags} -O3 -fno-strict-aliasing -Wformat -Wl,--hash-style=both
+%global build_ldflags %{build_ldflags} -Wl,--hash-style=both -fuse-ld=bfd
 %global Werror_cflags %{nil}
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
@@ -171,7 +186,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -275,9 +290,11 @@ Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 # Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
+# Clang support
+Patch1060:	glibc-2.43-clang.patch
 
 BuildRequires:	automake
-BuildRequires:	libtool-base
+#BuildRequires:	libtool-base
 BuildRequires:	slibtool
 BuildRequires:	make
 BuildRequires:	autoconf
@@ -1431,14 +1448,38 @@ function BuildGlibc() {
   esac
 
   # Determine C & C++ compilers
-  BuildCC="gcc -fuse-ld=bfd $BuildCompFlags"
-  BuildCXX="g++ -fuse-ld=bfd $BuildCompFlags"
+%if %{with clang} && "%{target_cpu}" != "armv7hnl" && "%{target_cpu}" != "i686" && "%{target_cpu}" != "riscv64" && "%{target_cpu}" != "loongarch64"
+  case $arch in
+  armv*|i[3-6]86|riscv64|loongarch64)
+	  BuildCC="gcc $BuildCompFlags"
+	  BuildCXX="g++ $BuildCompFlags"
+  	;;
+  *)
+	  BuildCC="clang $BuildCompFlags"
+	  BuildCXX="clang++ $BuildCompFlags"
+	  ;;
+  esac
+%else
+  BuildCC="gcc $BuildCompFlags"
+  BuildCXX="g++ $BuildCompFlags"
+%endif
 
   # Are we supposed to cross-compile?
   if [ "%{target_cpu}" != "%{_target_cpu}" ]; then
     # Can't use BuildCC anymore with previous changes.
-    BuildCC="%{cross_program_prefix}gcc $BuildCompFlags"
-    BuildCXX="%{cross_program_prefix}g++ $BuildCompFlags"
+%if %{with clang}
+    if [[ "%{target_cpu}" == armv* || "%{target_cpu}" == i?86 || "%{_target_platform}" == *x32 || "%{_target_platform}" == riscv* || "%{_target_platform}" == ppc* || "%{target_cpu}" == loongarch* ]]; then
+      # As of 2.43, glibc doesn't compile for 32-bit platforms or RISC-V with clang
+      BuildCC="%{target_cpu}-gcc $BuildCompFlags"
+      BuildCXX="%{target_cpu}-g++ $BuildCompFlags"
+    else
+      BuildCC="clang -target %{target_cpu} $BuildCompFlags"
+      BuildCXX="clang++ -target %{target_cpu} $BuildCompFlags"
+    fi
+%else
+    BuildCC="%{target_cpu}-gcc $BuildCompFlags"
+    BuildCXX="%{target_cpu}-g++ $BuildCompFlags"
+%endif
     BuildCross="--build=%{_target_platform}"
     export libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes
   fi
@@ -1534,10 +1575,19 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
-echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd"
+echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd"
 %if %{cross_compiling}
 	export TRIPLET=%{_target_platform}
-	CC="${TRIPLET}-gcc ${CFLAGS}" \
+%if %{with clang}
+	if [[ "${TRIPLET}" == armv7* || "${TRIPLET}" == i?86-* || "${TRIPLET}" == *x32 || "${TRIPLET}" == riscv* || "${TRIPLET}" == ppc* || "${TRIPLET}" == loongarch* ]]; then
+		C_COMPILER="${TRIPLET}-gcc"
+	else
+		C_COMPILER="clang -target ${TRIPLET}"
+	fi
+%else
+	C_COMPILER="${TRIPLET}-gcc"
+%endif
+	CC="${C_COMPILER} ${CFLAGS}" \
 	../configure \
 		--prefix=%{_prefix} \
 		--bindir=%{_bindir} \
@@ -1554,7 +1604,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %endif
 		--enable-add-ons=$AddOns
 %else
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags} -fuse-ld=bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
     $BuildCross \
@@ -1634,11 +1684,20 @@ for i in %{targets}; do
 	echo "===== Building %{_target_platform} -> $i ($TRIPLET) cross libc ====="
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
-#	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-#	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-#	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-#	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fuse-ld=bfd -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
+#	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+#	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
+%if %{with clang}
+	if [[ "${TRIPLET}" == armv7* || "${TRIPLET}" == i?86-* || "${TRIPLET}" == *x32 || "${TRIPLET}" == riscv* || "${TRIPLET}" == ppc* || "${TRIPLET}" == loongarch* ]]; then
+		C_COMPILER="${TRIPLET}-gcc"
+	else
+		C_COMPILER="clang -target ${TRIPLET}"
+	fi
+	CC="${C_COMPILER} ${CFLAGS}" \
+%else
 	CC="${TRIPLET}-gcc ${CFLAGS}" \
+%endif
 	../configure \
 		--prefix=%{_prefix}/${TRIPLET} \
 		--host=${TRIPLET} \
