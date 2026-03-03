@@ -72,7 +72,7 @@
 # (tpg) optimize it a bit
 # --hash-style=both is for https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 %global optflags %{optflags} -O3 -fno-strict-aliasing -Wformat -Wl,--hash-style=both
-%global build_ldflags %{build_ldflags} -Wl,--hash-style=both -fuse-ld=bfd
+%global build_ldflags %{build_ldflags} -Wl,--hash-style=both -fuse-ld=bfd -Wl,-z,noexecstack
 %global Werror_cflags %{nil}
 
 %global platform %{_target_vendor}-%{_target_os}%{?_gnu}
@@ -186,7 +186,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -1587,7 +1587,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %else
 	C_COMPILER="${TRIPLET}-gcc"
 %endif
-	CC="${C_COMPILER} ${CFLAGS}" \
+	CC="${C_COMPILER} ${CFLAGS}" ASFLAGS="$BuildFlags -Wa,--noexecstack" \
 	../configure \
 		--prefix=%{_prefix} \
 		--bindir=%{_bindir} \
@@ -1686,7 +1686,7 @@ for i in %{targets}; do
 	cd obj-${TRIPLET}
 #	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 #	CXXFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
-#	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
+	ASFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error -Wa,--noexecstack' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
 #	LDFLAGS="$(rpm --target ${i} --eval '%%{ldflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g')" \
 %if %{with clang}
 	if [[ "${TRIPLET}" == armv7* || "${TRIPLET}" == i?86-* || "${TRIPLET}" == *x32 || "${TRIPLET}" == riscv* || "${TRIPLET}" == ppc* || "${TRIPLET}" == loongarch* ]]; then
