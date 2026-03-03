@@ -186,7 +186,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -1575,7 +1575,7 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
-echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd"
+echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -Wl,-noexecstack"
 %if %{cross_compiling}
 	export TRIPLET=%{_target_platform}
 %if %{with clang}
@@ -1604,7 +1604,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %endif
 		--enable-add-ons=$AddOns
 %else
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -Wl,-noexecstack" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
     $BuildCross \
@@ -1819,8 +1819,18 @@ export BIARCH_BUILDING=1
 
 #-----------------------------------------------------------------------
 
-%if %{with tests}
 %check
+# Run some basic sanity checks even if we don't run the official test suite
+ERRORS=0
+for lib in libc.so.6 libm.so.6 libresolv.so.2; do
+	if readelf -lW %{buildroot}%{_libdir}/$lib |grep STACK |awk '{ print $7; }' |grep -q E; then
+		echo "$lib requests an executable stack"
+	fi
+	ERRORS=((ERRORS+1))
+done
+(( ERRORS > 0 )) && exit 1
+
+%if %{with tests}
 # ...
 export PATH=$PWD/bin:$PATH
 
