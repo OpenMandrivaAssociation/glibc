@@ -1575,7 +1575,7 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
-echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -Wl,-noexecstack"
+echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -z noexecstack"
 %if %{cross_compiling}
 	export TRIPLET=%{_target_platform}
 %if %{with clang}
@@ -1604,7 +1604,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %endif
 		--enable-add-ons=$AddOns
 %else
-  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -Wl,-noexecstack" ../configure \
+  CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -z noexecstack" ../configure \
     --target=$configarch-%{platform} \
     --host=$configarch-%{platform} \
     $BuildCross \
