@@ -1826,9 +1826,9 @@ for lib in libc.so.6 libm.so.6 libresolv.so.2; do
 	if readelf -lW %{buildroot}%{_libdir}/$lib |grep STACK |awk '{ print $7; }' |grep -q E; then
 		echo "$lib requests an executable stack"
 	fi
-	ERRORS=((ERRORS+1))
+	((ERRORS++))
 done
-(( ERRORS > 0 )) && exit 1
+((ERRORS>0)) && exit 1
 
 %if %{with tests}
 # ...
