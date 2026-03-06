@@ -55,11 +55,7 @@
 # LoongArch64:
 #   error: overriding currently unsupported rounding mode on this target [-Werror,-Wunsupported-floating-point-opt]
 #   error: overriding currently unsupported use of floating point exceptions on this target [-Werror,-Wunsupported-floating-point-opt]
-%ifarch %{arm} %{ix86} %{riscv64} %{ppc64} %{ppc64le} %{loongarch64}
 %bcond_with clang
-%else
-%bcond_without clang
-%endif
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
