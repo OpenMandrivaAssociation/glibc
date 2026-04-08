@@ -182,7 +182,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -218,6 +218,19 @@ Patch4:		0005-Don-t-include-bits-openat2.h-directly-bug-33848.patch
 Patch5:		0006-nss-Introduce-dedicated-struct-nss_database_for_fork.patch
 Patch6:		0007-Linux-In-getlogin_r-use-utmp-fallback-only-for-speci.patch
 Patch7:		0008-nss-Missing-checks-in-__nss_configure_lookup-__nss_d.patch
+Patch8:		0009-debug-Fix-build-with-enable-fortify-source-1-BZ-3390.patch
+Patch9:		0010-Add-BZ-33904-entry-to-NEWS.patch
+Patch10:	0011-malloc-Avoid-accessing-sys-kernel-mm-files.patch
+Patch11:	0012-tests-aarch64-fix-makefile-dependencies-for-dlopen-t.patch
+Patch12:	0013-aarch64-Lock-GCS-status-at-startup.patch
+Patch13:	0014-aarch64-Tests-for-locking-GCS.patch
+Patch14:	0015-posix-Run-tst-wordexp-reuse-mem-test.patch
+Patch15:	0016-resolv-Count-records-correctly-CVE-2026-4437.patch
+Patch16:	0017-resolv-Check-hostname-for-validity-CVE-2026-4438.patch
+Patch17:	0018-elf-parse-proc-self-maps-as-the-last-resort-to-find-.patch
+Patch18:	0019-elf-Use-dl-symbol-redir-ifunc.h-instead-_dl_strlen.patch
+Patch19:	0020-riscv-Resolve-calls-to-memcpy-using-memcpy-generic-i.patch
+Patch20:	0021-tests-fix-tst-rseq-with-Linux-7.0.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -286,6 +299,7 @@ Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 # Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
+Patch1052:	glibc-2.43-allow-autoconf-2.73.patch
 # Clang support
 Patch1060:	glibc-2.43-clang.patch
 
