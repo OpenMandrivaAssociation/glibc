@@ -1,7 +1,7 @@
 From 60cabd0464c6722d4e1f13bbbeef191ea40ef2ef Mon Sep 17 00:00:00 2001
 From: Adhemerval Zanella Netto <adhemerval.zanella@linaro.org>
 Date: Sat, 21 Mar 2026 08:11:06 -0600
-Subject: [PATCH 20/21] riscv: Resolve calls to memcpy using memcpy-generic in
+Subject: [PATCH 20/45] riscv: Resolve calls to memcpy using memcpy-generic in
  early startup
 
 This patch from Adhemerval sets up the ifunc redirections so that we

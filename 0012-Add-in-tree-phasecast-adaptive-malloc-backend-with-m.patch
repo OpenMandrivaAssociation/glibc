@@ -1,0 +1,2057 @@
+From c94373f6f9c9197d9038ff2456fe601c8e5ffff0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Sat, 4 Jul 2026 19:11:43 +0200
+Subject: [PATCH 12/13] Add in-tree phasecast adaptive malloc backend
+ (--with-malloc=phasecast)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Phasecast is an embeddable C allocator that specializes hot allocation
+sites (return PC × size class) after a short warmup, with per-thread
+size-class caches, a central span heap, optional ephemeral bump arenas
+via gnu_malloc_phase_{push,pop}, and profile load/save hooks.
+
+Includes overflow-safe sizing and payload-aligned spans so memalign
+reuses TLS-cached slots up to 128-byte alignment.
+---
+ malloc/Makefile                               |  18 +-
+ malloc/Versions                               |   4 +
+ malloc/malloc-phasecast-impl.c                |   5 +
+ malloc/malloc-phasecast.c                     | 469 ++++++++++
+ malloc/malloc-query.c                         |  27 +
+ malloc/malloc-select.c                        |  27 +
+ malloc/malloc.h                               |   7 +
+ malloc/phasecast/phasecast.c                  | 841 ++++++++++++++++++
+ malloc/phasecast/phasecast.h                  |  36 +
+ sysdeps/mach/hurd/i386/libc.abilist           |   4 +
+ sysdeps/mach/hurd/x86_64/libc.abilist         |   4 +
+ sysdeps/unix/sysv/linux/aarch64/libc.abilist  |   4 +
+ sysdeps/unix/sysv/linux/alpha/libc.abilist    |   4 +
+ sysdeps/unix/sysv/linux/arc/libc.abilist      |   4 +
+ sysdeps/unix/sysv/linux/arm/be/libc.abilist   |   4 +
+ sysdeps/unix/sysv/linux/arm/le/libc.abilist   |   4 +
+ sysdeps/unix/sysv/linux/csky/libc.abilist     |   4 +
+ sysdeps/unix/sysv/linux/hppa/libc.abilist     |   4 +
+ sysdeps/unix/sysv/linux/i386/libc.abilist     |   4 +
+ .../sysv/linux/loongarch/lp64/libc.abilist    |   4 +
+ .../sysv/linux/m68k/coldfire/libc.abilist     |   4 +
+ .../unix/sysv/linux/m68k/m680x0/libc.abilist  |   4 +
+ .../sysv/linux/microblaze/be/libc.abilist     |   4 +
+ .../sysv/linux/microblaze/le/libc.abilist     |   4 +
+ .../sysv/linux/mips/mips32/fpu/libc.abilist   |   4 +
+ .../sysv/linux/mips/mips32/nofpu/libc.abilist |   4 +
+ .../sysv/linux/mips/mips64/n32/libc.abilist   |   4 +
+ .../sysv/linux/mips/mips64/n64/libc.abilist   |   4 +
+ sysdeps/unix/sysv/linux/or1k/libc.abilist     |   4 +
+ .../linux/powerpc/powerpc32/fpu/libc.abilist  |   4 +
+ .../powerpc/powerpc32/nofpu/libc.abilist      |   4 +
+ .../linux/powerpc/powerpc64/be/libc.abilist   |   4 +
+ .../linux/powerpc/powerpc64/le/libc.abilist   |   4 +
+ .../unix/sysv/linux/riscv/rv32/libc.abilist   |   4 +
+ .../unix/sysv/linux/riscv/rv64/libc.abilist   |   4 +
+ .../unix/sysv/linux/s390/s390-64/libc.abilist |   4 +
+ sysdeps/unix/sysv/linux/sh/be/libc.abilist    |   4 +
+ sysdeps/unix/sysv/linux/sh/le/libc.abilist    |   4 +
+ .../sysv/linux/sparc/sparc32/libc.abilist     |   4 +
+ .../sysv/linux/sparc/sparc64/libc.abilist     |   4 +
+ .../unix/sysv/linux/x86_64/64/libc.abilist    |   4 +
+ .../unix/sysv/linux/x86_64/x32/libc.abilist   |   4 +
+ 42 files changed, 1565 insertions(+), 1 deletion(-)
+ create mode 100644 malloc/malloc-phasecast-impl.c
+ create mode 100644 malloc/malloc-phasecast.c
+ create mode 100644 malloc/phasecast/phasecast.c
+ create mode 100644 malloc/phasecast/phasecast.h
+
+diff --git a/malloc/Makefile b/malloc/Makefile
+index ffbcbff69b..323de8fc40 100644
+--- a/malloc/Makefile
++++ b/malloc/Makefile
+@@ -309,6 +309,7 @@ snmalloc-routines = malloc-snmalloc malloc-snmalloc-impl
+ rpmalloc-routines = malloc-rpmalloc malloc-rpmalloc-impl
+ mallocng-routines = malloc-mallocng malloc-mallocng-impl
+ hardened-malloc-routines = malloc-hardened-malloc malloc-hardened-malloc-impl
++phasecast-routines = malloc-phasecast malloc-phasecast-impl
+ 
+ # Helper: object list for one configure impl name.
+ malloc-routines-for = $(if $(filter glibc,$(1)),$(glibc-routines) malloc-glibc-register, \
+@@ -318,7 +319,8 @@ malloc-routines-for = $(if $(filter glibc,$(1)),$(glibc-routines) malloc-glibc-r
+   $(if $(filter snmalloc,$(1)),$(snmalloc-routines), \
+   $(if $(filter rpmalloc,$(1)),$(rpmalloc-routines), \
+   $(if $(filter mallocng,$(1)),$(mallocng-routines), \
+-  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines),))))))))
++  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines), \
++  $(if $(filter phasecast,$(1)),$(phasecast-routines),)))))))))
+ 
+ # Single embedded impl keeps the historical zero-overhead path.
+ # With dynamic impls, embed only malloc-embedded and use the selector;
+@@ -340,6 +342,8 @@ else ifeq ($(malloc-embedded),mallocng)
+ malloc-routines = $(mallocng-routines) malloc-query
+ else ifeq ($(malloc-embedded),hardened-malloc)
+ malloc-routines = $(hardened-malloc-routines) malloc-query
++else ifeq ($(malloc-embedded),phasecast)
++malloc-routines = $(phasecast-routines) malloc-query
+ else
+ malloc-routines = $(glibc-routines) malloc-query
+ endif
+@@ -932,6 +936,18 @@ CPPFLAGS-malloc-hardened-malloc-impl.c += -D__libc_use_alloca=__malloc_hardened_
+ endif
+ endif
+ 
++ifneq ($(filter phasecast,$(malloc-enabled-impls)),)
++phasecast-cppflags = \
++  -I$(..)malloc/phasecast \
++  $(malloc-third-party-warnings)
++CPPFLAGS-malloc-phasecast.c += $(phasecast-cppflags)
++CPPFLAGS-malloc-phasecast-impl.c += $(phasecast-cppflags)
++ifeq ($(malloc-multi),yes)
++CPPFLAGS-malloc-phasecast.c += -DMALLOC_MULTI_BACKEND
++CPPFLAGS-malloc-phasecast-impl.c += -DMALLOC_MULTI_BACKEND
++CPPFLAGS-malloc-phasecast-impl.c += -D__libc_use_alloca=__malloc_phasecast_use_alloca
++endif
++endif
+ 
+ # C++ allocators that need libstdc++ are preload DSOs only (never linked
+ # into libc.so).  Enable with --with-malloc-preload=mesh,partitionalloc,tcmalloc.
+diff --git a/malloc/Versions b/malloc/Versions
+index b39f7076ff..3f0ba3a19f 100644
+--- a/malloc/Versions
++++ b/malloc/Versions
+@@ -75,6 +75,10 @@ libc {
+     gnu_get_libc_malloc_impls;
+     gnu_get_libc_malloc_default;
+     gnu_get_libc_malloc_active;
++    gnu_malloc_phase_push;
++    gnu_malloc_phase_pop;
++    gnu_malloc_phase_load_profile;
++    gnu_malloc_phase_save_profile;
+   }
+   GLIBC_PRIVATE {
+     # Internal startup hook for libpthread.
+diff --git a/malloc/malloc-phasecast-impl.c b/malloc/malloc-phasecast-impl.c
+new file mode 100644
+index 0000000000..5534be980b
+--- /dev/null
++++ b/malloc/malloc-phasecast-impl.c
+@@ -0,0 +1,5 @@
++/* Compile phasecast core into glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.  */
++
++#include "phasecast/phasecast.c"
+diff --git a/malloc/malloc-phasecast.c b/malloc/malloc-phasecast.c
+new file mode 100644
+index 0000000000..cce2401a12
+--- /dev/null
++++ b/malloc/malloc-phasecast.c
+@@ -0,0 +1,469 @@
++/* Shim to use phasecast as the malloc implementation inside glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++#include "phasecast/phasecast.h"
++
++#include <errno.h>
++#include <stdio.h>
++#include <string.h>
++#include <malloc.h>
++#include <libc-symbols.h>
++#include <shlib-compat.h>
++#include <malloc-internal.h>
++#include "malloc-shim-compat.h"
++
++#ifdef MALLOC_MULTI_BACKEND
++# define __libc_malloc __malloc_phasecast_malloc
++# define __libc_free __malloc_phasecast_free
++# define __libc_realloc __malloc_phasecast_realloc
++# define __libc_calloc __malloc_phasecast_calloc
++# define __libc_memalign __malloc_phasecast_memalign
++# define __libc_valloc __malloc_phasecast_valloc
++# define __libc_pvalloc __malloc_phasecast_pvalloc
++# define __posix_memalign __malloc_phasecast_posix_memalign
++# define aligned_alloc __malloc_phasecast_aligned_alloc
++# define free_sized __malloc_phasecast_free_sized
++# define free_aligned_sized __malloc_phasecast_free_aligned_sized
++# define __malloc_usable_size __malloc_phasecast_usable_size
++# define __libc_mallopt __malloc_phasecast_mallopt
++# define __libc_mallinfo __malloc_phasecast_mallinfo
++# define __libc_mallinfo2 __malloc_phasecast_mallinfo2
++# define __malloc_info __malloc_phasecast_malloc_info
++# define __malloc_stats __malloc_phasecast_malloc_stats
++# define __malloc_trim __malloc_phasecast_malloc_trim
++# define __malloc_fork_lock_parent __malloc_phasecast_fork_lock_parent
++# define __malloc_fork_unlock_parent __malloc_phasecast_fork_unlock_parent
++# define __malloc_fork_unlock_child __malloc_phasecast_fork_unlock_child
++# define __malloc_arena_thread_freeres __malloc_phasecast_arena_thread_freeres
++# define __malloc_check_init __malloc_phasecast_check_init
++# define __ptmalloc_init __malloc_phasecast_ptmalloc_init
++# define __glibc_morecore __malloc_phasecast_morecore
++# pragma push_macro("libc_hidden_proto")
++# pragma push_macro("libc_hidden_def")
++# pragma push_macro("weak_function")
++# undef libc_hidden_proto
++# define libc_hidden_proto(...) /* nothing */
++# undef libc_hidden_def
++# define libc_hidden_def(...) /* nothing */
++# undef weak_function
++# define weak_function /* nothing */
++# define MALLOC_MULTI_HIDDEN_PUSHED 1
++#endif
++
++static __thread int pc_thread_inited;
++static int pc_global_inited;
++
++static inline void
++pc_ensure_init (void)
++{
++  if (__builtin_expect (!pc_global_inited, 0))
++    {
++      phasecast_init ();
++      pc_global_inited = 1;
++    }
++  if (__builtin_expect (!pc_thread_inited, 0))
++    {
++      phasecast_thread_init ();
++      pc_thread_inited = 1;
++    }
++}
++
++void *__libc_malloc (size_t);
++libc_hidden_proto (__libc_malloc)
++void __libc_free (void *);
++libc_hidden_proto (__libc_free)
++void *__libc_realloc (void *, size_t);
++libc_hidden_proto (__libc_realloc)
++void *__libc_memalign (size_t, size_t);
++libc_hidden_proto (__libc_memalign)
++struct mallinfo2 __libc_mallinfo2 (void);
++libc_hidden_proto (__libc_mallinfo2)
++int __libc_mallopt (int, int);
++libc_hidden_proto (__libc_mallopt)
++void *__libc_calloc (size_t, size_t);
++libc_hidden_proto (__libc_calloc)
++void *__libc_valloc (size_t);
++libc_hidden_proto (__libc_valloc)
++void *__libc_pvalloc (size_t);
++libc_hidden_proto (__libc_pvalloc)
++int __posix_memalign (void **, size_t, size_t);
++libc_hidden_proto (__posix_memalign)
++size_t __malloc_usable_size (void *);
++libc_hidden_proto (__malloc_usable_size)
++
++void *
++__libc_malloc (size_t bytes)
++{
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  pc_ensure_init ();
++  return MALLOC_SHIM_CALL (phasecast_malloc_at (bytes, __builtin_return_address (0)));
++}
++libc_hidden_def (__libc_malloc)
++
++void
++__libc_free (void *mem)
++{
++  if (mem == NULL)
++    return;
++  pc_ensure_init ();
++  MALLOC_SHIM_FREE (phasecast_free_at (mem, __builtin_return_address (0)));
++}
++libc_hidden_def (__libc_free)
++
++void *
++__libc_realloc (void *oldmem, size_t bytes)
++{
++  void *p;
++  if (bytes == 0)
++    {
++      pc_ensure_init ();
++      if (oldmem != NULL)
++	{
++	  phasecast_free (oldmem);
++	  return NULL;
++	}
++      return MALLOC_SHIM_CALL (phasecast_malloc (0));
++    }
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  pc_ensure_init ();
++  if (oldmem == NULL)
++    return MALLOC_SHIM_CALL (phasecast_malloc (bytes));
++  if (bytes <= phasecast_usable_size (oldmem))
++    return oldmem;
++  p = phasecast_realloc (oldmem, bytes);
++  if (p == NULL)
++    __set_errno (ENOMEM);
++  return p;
++}
++libc_hidden_def (__libc_realloc)
++
++void *
++__libc_calloc (size_t n, size_t elem_size)
++{
++  size_t bytes;
++  if (__builtin_mul_overflow (n, elem_size, &bytes) || malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  pc_ensure_init ();
++  return MALLOC_SHIM_CALL (phasecast_calloc (n, elem_size));
++}
++libc_hidden_def (__libc_calloc)
++
++void *
++__libc_memalign (size_t alignment, size_t bytes)
++{
++  void *p;
++  alignment = malloc_shim_align_pow2 (alignment);
++  if (alignment == 0 || malloc_shim_size_too_large (bytes)
++      || malloc_shim_size_too_large (alignment))
++    {
++      __set_errno (alignment == 0 ? EINVAL : ENOMEM);
++      return NULL;
++    }
++  pc_ensure_init ();
++  p = phasecast_memalign (alignment, bytes);
++  if (p == NULL)
++    __set_errno (ENOMEM);
++  return p;
++}
++libc_hidden_def (__libc_memalign)
++
++void *
++__libc_valloc (size_t bytes)
++{
++  return __libc_memalign (__getpagesize (), bytes);
++}
++libc_hidden_def (__libc_valloc)
++
++void *
++__libc_pvalloc (size_t bytes)
++{
++  size_t rounded = malloc_shim_pvalloc_size (bytes);
++  if (rounded == 0)
++    return malloc_shim_fail_oom ();
++  return __libc_memalign (__getpagesize (), rounded);
++}
++libc_hidden_def (__libc_pvalloc)
++
++int
++__posix_memalign (void **memptr, size_t alignment, size_t size)
++{
++  void *p;
++  if (memptr == NULL
++      || alignment == 0
++      || (alignment & (alignment - 1)) != 0
++      || alignment % sizeof (void *) != 0)
++    return EINVAL;
++  if (malloc_shim_size_too_large (size))
++    return ENOMEM;
++  pc_ensure_init ();
++  p = phasecast_memalign (alignment, size);
++  if (p == NULL)
++    return ENOMEM;
++  *memptr = p;
++  return 0;
++}
++libc_hidden_def (__posix_memalign)
++
++void *
++weak_function
++aligned_alloc (size_t alignment, size_t bytes)
++{
++  void *p;
++  if (alignment == 0 || (alignment & (alignment - 1)) != 0)
++    {
++      __set_errno (EINVAL);
++      return NULL;
++    }
++  if (malloc_shim_size_too_large (bytes) || malloc_shim_size_too_large (alignment))
++    return malloc_shim_fail_oom ();
++  pc_ensure_init ();
++  p = phasecast_memalign (alignment, bytes);
++  if (p == NULL)
++    __set_errno (ENOMEM);
++  return p;
++}
++
++void
++weak_function
++free_sized (void *ptr, size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  pc_ensure_init ();
++  MALLOC_SHIM_FREE (phasecast_free_at (ptr, __builtin_return_address (0)));
++}
++
++void
++weak_function
++free_aligned_sized (void *ptr, size_t alignment __attribute_maybe_unused__,
++		    size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  pc_ensure_init ();
++  MALLOC_SHIM_FREE (phasecast_free_at (ptr, __builtin_return_address (0)));
++}
++
++size_t
++__malloc_usable_size (void *mem)
++{
++  if (mem == NULL)
++    return 0;
++  pc_ensure_init ();
++  return phasecast_usable_size (mem);
++}
++libc_hidden_def (__malloc_usable_size)
++
++int
++__libc_mallopt (int param_number, int value)
++{
++  return malloc_shim_mallopt_ignore (param_number, value);
++}
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++libc_hidden_def (__libc_mallopt)
++#endif
++
++struct mallinfo
++__libc_mallinfo (void)
++{
++  struct mallinfo info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++
++struct mallinfo2
++__libc_mallinfo2 (void)
++{
++  struct mallinfo2 info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++libc_hidden_def (__libc_mallinfo2)
++
++int
++__malloc_info (int options __attribute__ ((unused)), FILE *fp)
++{
++  fprintf (fp, "<malloc version=\"phasecast\">\n</malloc>\n");
++  return 0;
++}
++
++void
++__malloc_stats (void)
++{
++}
++
++int
++__malloc_trim (size_t pad __attribute__ ((unused)))
++{
++  return 0;
++}
++
++void
++__malloc_fork_lock_parent (void)
++{
++  phasecast_fork_lock ();
++}
++
++void
++__malloc_fork_unlock_parent (void)
++{
++  phasecast_fork_unlock_parent ();
++}
++
++void
++__malloc_fork_unlock_child (void)
++{
++  phasecast_fork_unlock_child ();
++  pc_thread_inited = 1;
++  pc_global_inited = 1;
++}
++
++void
++__malloc_arena_thread_freeres (void)
++{
++  if (pc_thread_inited)
++    {
++      phasecast_thread_fini ();
++      pc_thread_inited = 0;
++    }
++}
++
++void
++__malloc_check_init (void)
++{
++}
++
++void
++__ptmalloc_init (void)
++{
++  phasecast_init ();
++  pc_global_inited = 1;
++  phasecast_thread_init ();
++  pc_thread_inited = 1;
++}
++
++#ifndef MALLOC_MULTI_BACKEND
++void *__malloc_initialize_hook = NULL;
++void *__free_hook = NULL;
++void *__malloc_hook = NULL;
++void *__realloc_hook = NULL;
++void *__memalign_hook = NULL;
++void *__after_morecore_hook = NULL;
++void *__morecore = NULL;
++#endif
++
++void *
++__glibc_morecore (ptrdiff_t increment __attribute__ ((unused)))
++{
++  return NULL;
++}
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_34) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __glibc_morecore, __default_morecore, GLIBC_2_0);
++#endif
++
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++strong_alias (__libc_malloc, malloc)
++strong_alias (__libc_realloc, realloc)
++strong_alias (__libc_free, free)
++weak_alias (__libc_calloc, calloc)
++weak_alias (__libc_memalign, memalign)
++weak_alias (__posix_memalign, posix_memalign)
++weak_alias (__libc_valloc, valloc)
++weak_alias (__libc_pvalloc, pvalloc)
++weak_alias (__malloc_usable_size, malloc_usable_size)
++weak_alias (__malloc_info, malloc_info)
++weak_alias (__libc_mallinfo, mallinfo)
++weak_alias (__libc_mallinfo2, mallinfo2)
++weak_alias (__libc_mallopt, mallopt)
++weak_alias (__malloc_stats, malloc_stats)
++weak_alias (__malloc_trim, malloc_trim)
++#endif
++
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
++#endif
++
++/* Phase markers are meaningful only with this backend; exported under
++   stable names even in multi-backend builds so tools can link them.  */
++void
++gnu_malloc_phase_push (const char *name)
++{
++  pc_ensure_init ();
++  phasecast_phase_push (name);
++}
++
++void
++gnu_malloc_phase_pop (void)
++{
++  pc_ensure_init ();
++  phasecast_phase_pop ();
++}
++
++int
++gnu_malloc_phase_load_profile (const char *path)
++{
++  pc_ensure_init ();
++  return phasecast_load_profile (path);
++}
++
++int
++gnu_malloc_phase_save_profile (const char *path)
++{
++  pc_ensure_init ();
++  return phasecast_save_profile (path);
++}
++
++#ifdef MALLOC_MULTI_BACKEND
++# ifdef MALLOC_MULTI_HIDDEN_PUSHED
++#  pragma pop_macro("weak_function")
++#  pragma pop_macro("libc_hidden_def")
++#  pragma pop_macro("libc_hidden_proto")
++# endif
++#include <malloc-backend.h>
++
++const struct libc_malloc_backend __libc_malloc_backend_phasecast =
++{
++  .name = "phasecast",
++  .init = __malloc_phasecast_ptmalloc_init,
++  .malloc = __malloc_phasecast_malloc,
++  .free = __malloc_phasecast_free,
++  .realloc = __malloc_phasecast_realloc,
++  .calloc = __malloc_phasecast_calloc,
++  .memalign = __malloc_phasecast_memalign,
++  .valloc = __malloc_phasecast_valloc,
++  .pvalloc = __malloc_phasecast_pvalloc,
++  .posix_memalign = __malloc_phasecast_posix_memalign,
++  .aligned_alloc = __malloc_phasecast_aligned_alloc,
++  .free_sized = __malloc_phasecast_free_sized,
++  .free_aligned_sized = __malloc_phasecast_free_aligned_sized,
++  .usable_size = __malloc_phasecast_usable_size,
++  .mallopt = __malloc_phasecast_mallopt,
++  .mallinfo = __malloc_phasecast_mallinfo,
++  .mallinfo2 = __malloc_phasecast_mallinfo2,
++  .malloc_info = __malloc_phasecast_malloc_info,
++  .malloc_stats = __malloc_phasecast_malloc_stats,
++  .malloc_trim = __malloc_phasecast_malloc_trim,
++  .fork_lock_parent = __malloc_phasecast_fork_lock_parent,
++  .fork_unlock_parent = __malloc_phasecast_fork_unlock_parent,
++  .fork_unlock_child = __malloc_phasecast_fork_unlock_child,
++  .arena_thread_freeres = __malloc_phasecast_arena_thread_freeres,
++  .check_init = __malloc_phasecast_check_init,
++};
++#endif /* MALLOC_MULTI_BACKEND */
+diff --git a/malloc/malloc-query.c b/malloc/malloc-query.c
+index d38aec2022..04a99f80b5 100644
+--- a/malloc/malloc-query.c
++++ b/malloc/malloc-query.c
+@@ -83,3 +83,30 @@ gnu_get_libc_malloc_active (void)
+     return "external";
+   return malloc_query_impl_name;
+ }
++
++/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
++void
++weak_function
++gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
++{
++}
++
++void
++weak_function
++gnu_malloc_phase_pop (void)
++{
++}
++
++int
++weak_function
++gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
++
++int
++weak_function
++gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
+diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
+index 3e774db30c..4373651798 100644
+--- a/malloc/malloc-select.c
++++ b/malloc/malloc-select.c
+@@ -1679,3 +1679,30 @@ weak_alias (__malloc_trim, malloc_trim)
+ #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
+ compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
+ #endif
++
++/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
++void
++weak_function
++gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
++{
++}
++
++void
++weak_function
++gnu_malloc_phase_pop (void)
++{
++}
++
++int
++weak_function
++gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
++
++int
++weak_function
++gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
+diff --git a/malloc/malloc.h b/malloc/malloc.h
+index 76a57ee40d..dfdda69dae 100644
+--- a/malloc/malloc.h
++++ b/malloc/malloc.h
+@@ -164,5 +164,12 @@ extern int gnu_get_libc_malloc_impls (char *__buf, size_t __len) __THROW;
+ extern const char *gnu_get_libc_malloc_default (void) __THROW;
+ extern const char *gnu_get_libc_malloc_active (void) __THROW;
+ 
++/* Phasecast ephemeral-arena markers.  No-ops unless the active backend
++   is phasecast (or phasecast is the embedded single implementation).  */
++extern void gnu_malloc_phase_push (const char *__name) __THROW;
++extern void gnu_malloc_phase_pop (void) __THROW;
++extern int gnu_malloc_phase_load_profile (const char *__path) __THROW;
++extern int gnu_malloc_phase_save_profile (const char *__path) __THROW;
++
+ __END_DECLS
+ #endif /* malloc.h */
+diff --git a/malloc/phasecast/phasecast.c b/malloc/phasecast/phasecast.c
+new file mode 100644
+index 0000000000..d23d4e39ce
+--- /dev/null
++++ b/malloc/phasecast/phasecast.c
+@@ -0,0 +1,841 @@
++/* Phasecast adaptive malloc implementation.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   MVP: per-thread size-class caches, central span heap, allocation-site
++   table with direct function pointers, and optional ephemeral bump
++   arenas entered via phase_push/pop.  */
++#include "phasecast.h"
++
++#include <errno.h>
++#include <limits.h>
++#include <stdalign.h>
++#include <stdatomic.h>
++#include <stdbool.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <string.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
++#define PC_MAGIC 0x5043u /* 'PC' */
++#define PC_SPAN_SIZE (256u * 1024u)
++#define PC_MAX_SMALL (32u * 1024u)
++#define PC_MAX_CLASSES 128u
++#define PC_SITE_BITS 16
++#define PC_SITE_N (1u << PC_SITE_BITS)
++#define PC_SITE_MASK (PC_SITE_N - 1u)
++#define PC_WARMUP 32u
++#define PC_EPH_SLAB (1024u * 1024u)
++#define PC_ALIGN 16u
++#define PC_SLOT_ALIGN 128u
++
++#define PC_F_EPH 1u
++#define PC_F_MMAP 2u
++
++typedef struct pc_hdr
++{
++  uint32_t magic;
++  uint16_t class_id;
++  uint16_t flags;
++  size_t size;
++} pc_hdr_t;
++
++#define PC_HDR_SIZE sizeof (pc_hdr_t)
++
++static inline int
++pc_size_too_large (size_t size)
++{
++  return size > (size_t) PTRDIFF_MAX;
++}
++
++static inline size_t
++pc_pagesize (void)
++{
++  long p = sysconf (_SC_PAGESIZE);
++  return p > 0 ? (size_t) p : 4096u;
++}
++
++typedef struct pc_span
++{
++  struct pc_span *next;
++  uint16_t class_id;
++  uint16_t nslots;
++  uint32_t nfree;
++  void *free_list;
++  char *slots;
++} pc_span_t;
++
++typedef struct pc_remote
++{
++  void *head;
++} pc_remote_t;
++
++struct pc_site;
++
++typedef struct pc_tls
++{
++  int inited;
++  void *cache[PC_MAX_CLASSES];
++  pc_remote_t remote;
++  char *eph_base;
++  char *eph_cur;
++  char *eph_end;
++  struct pc_tls *eph_prev_tls_link;
++  int eph_depth;
++  unsigned slow_ticks;
++} pc_tls_t;
++
++typedef void *(*pc_alloc_fn) (struct pc_site *, size_t);
++
++typedef struct pc_site
++{
++  _Atomic uintptr_t alloc;
++  uint32_t class_id;
++  uint32_t hits;
++  uint32_t frees;
++  uint32_t flags;
++} pc_site_t;
++
++static uint16_t pc_class_size[PC_MAX_CLASSES];
++static unsigned pc_nclasses;
++static pc_span_t *pc_span_lists[PC_MAX_CLASSES];
++static atomic_int pc_lock;
++static int pc_global_inited;
++static pc_site_t pc_sites[PC_SITE_N];
++static __thread pc_tls_t pc_tls;
++
++static inline void
++pc_lock_acquire (void)
++{
++  while (atomic_exchange_explicit (&pc_lock, 1, memory_order_acquire))
++    {
++      while (atomic_load_explicit (&pc_lock, memory_order_relaxed))
++	__atomic_thread_fence (memory_order_relaxed);
++    }
++}
++
++static inline void
++pc_lock_release (void)
++{
++  atomic_store_explicit (&pc_lock, 0, memory_order_release);
++}
++
++static inline pc_alloc_fn
++pc_site_load_alloc (pc_site_t *site)
++{
++  return (pc_alloc_fn) (uintptr_t) atomic_load_explicit (&site->alloc,
++							 memory_order_acquire);
++}
++
++static inline void
++pc_site_store_alloc (pc_site_t *site, pc_alloc_fn fn)
++{
++  atomic_store_explicit (&site->alloc, (uintptr_t) fn, memory_order_release);
++}
++
++static inline size_t pc_align_up (size_t x, size_t a)
++{
++  return (x + a - 1) & ~(a - 1);
++}
++
++static inline pc_hdr_t *pc_hdr_of (void *p)
++{
++  return (pc_hdr_t *) ((char *) p - PC_HDR_SIZE);
++}
++
++static inline void *pc_payload (pc_hdr_t *h)
++{
++  return (char *) h + PC_HDR_SIZE;
++}
++
++static unsigned pc_init_classes (void)
++{
++  unsigned n = 0;
++  unsigned s;
++  for (s = 16; s <= 128; s += 16)
++    pc_class_size[n++] = (uint16_t) s;
++  for (s = 160; s <= 512; s += 32)
++    pc_class_size[n++] = (uint16_t) s;
++  for (s = 576; s <= 1024; s += 64)
++    pc_class_size[n++] = (uint16_t) s;
++  for (s = 1280; s <= 4096; s += 256)
++    pc_class_size[n++] = (uint16_t) s;
++  for (s = 5120; s <= PC_MAX_SMALL; s += 1024)
++    {
++      if (n >= PC_MAX_CLASSES)
++	break;
++      pc_class_size[n++] = (uint16_t) s;
++    }
++  return n;
++}
++
++static unsigned pc_size_class (size_t size)
++{
++  unsigned i;
++  size_t need;
++  if (__builtin_add_overflow (size, PC_HDR_SIZE, &need))
++    return UINT32_MAX;
++  for (i = 0; i < pc_nclasses; i++)
++    if (pc_class_size[i] >= need)
++      return i;
++  return UINT32_MAX;
++}
++
++static unsigned pc_size_class_aligned (size_t size, size_t alignment)
++{
++  unsigned i;
++  size_t need;
++  if (alignment < PC_ALIGN)
++    alignment = PC_ALIGN;
++  if (__builtin_add_overflow (size, PC_HDR_SIZE, &need))
++    return UINT32_MAX;
++  for (i = 0; i < pc_nclasses; i++)
++    {
++      size_t cs = pc_class_size[i];
++      /* Span payloads are aligned to PC_SLOT_ALIGN; the stride must be a
++	 multiple of both that and the requested alignment so every slot
++	 payload stays aligned (header sits immediately before payload).  */
++      if (cs >= need && (cs % alignment) == 0
++	  && (alignment <= PC_ALIGN || (cs % PC_SLOT_ALIGN) == 0))
++	return i;
++    }
++  return UINT32_MAX;
++}
++
++static inline uint32_t pc_mix (uintptr_t x)
++{
++  x ^= x >> 16;
++  x *= 0x7feb352dU;
++  x ^= x >> 15;
++  x *= 0x846ca68bU;
++  x ^= x >> 16;
++  return (uint32_t) x;
++}
++
++static inline uint32_t pc_site_index (uintptr_t pc, unsigned class_id)
++{
++  return (pc_mix (pc) ^ (class_id * 0x9e3779b9u)) & PC_SITE_MASK;
++}
++
++static void *pc_mmap (size_t n)
++{
++  void *p = mmap (NULL, n, PROT_READ | PROT_WRITE,
++		  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++  return p == MAP_FAILED ? NULL : p;
++}
++
++static void pc_munmap (void *p, size_t n)
++{
++  if (p)
++    munmap (p, n);
++}
++
++static pc_span_t *pc_span_new (unsigned class_id)
++{
++  size_t slot = pc_class_size[class_id];
++  size_t meta = pc_align_up (sizeof (pc_span_t), PC_ALIGN);
++  char *mem = pc_mmap (PC_SPAN_SIZE);
++  pc_span_t *sp;
++  size_t avail, nslots, i;
++  char *slots;
++  uintptr_t payload0, aligned_payload;
++  if (!mem)
++    return NULL;
++  sp = (pc_span_t *) mem;
++  /* Align the first payload to PC_SLOT_ALIGN so memalign up to that
++     granularity can reuse size-class slots (header precedes payload).  */
++  payload0 = (uintptr_t) mem + meta + PC_HDR_SIZE;
++  aligned_payload = pc_align_up (payload0, PC_SLOT_ALIGN);
++  if (aligned_payload < payload0)
++    {
++      pc_munmap (mem, PC_SPAN_SIZE);
++      return NULL;
++    }
++  slots = (char *) (aligned_payload - PC_HDR_SIZE);
++  if (slots < mem + meta)
++    {
++      pc_munmap (mem, PC_SPAN_SIZE);
++      return NULL;
++    }
++  avail = (size_t) (mem + PC_SPAN_SIZE - slots);
++  nslots = avail / slot;
++  if (nslots == 0)
++    {
++      pc_munmap (mem, PC_SPAN_SIZE);
++      return NULL;
++    }
++  sp->next = NULL;
++  sp->class_id = (uint16_t) class_id;
++  sp->nslots = (uint16_t) nslots;
++  sp->nfree = (uint32_t) nslots;
++  sp->slots = slots;
++  sp->free_list = NULL;
++  for (i = 0; i < nslots; i++)
++    {
++      void *s = slots + i * slot;
++      *(void **) s = sp->free_list;
++      sp->free_list = s;
++    }
++  return sp;
++}
++
++static void pc_central_push_span (pc_span_t *sp)
++{
++  unsigned c = sp->class_id;
++  pc_lock_acquire ();
++  sp->next = pc_span_lists[c];
++  pc_span_lists[c] = sp;
++  pc_lock_release ();
++}
++
++static pc_span_t *pc_central_pop_span (unsigned class_id)
++{
++  pc_span_t *sp;
++  pc_lock_acquire ();
++  sp = pc_span_lists[class_id];
++  if (sp)
++    pc_span_lists[class_id] = sp->next;
++  pc_lock_release ();
++  if (sp)
++    sp->next = NULL;
++  return sp;
++}
++
++static void pc_tls_drain_remote (pc_tls_t *t)
++{
++  void *h = atomic_exchange_explicit ((_Atomic (void *) *) &t->remote.head,
++				      NULL, memory_order_acq_rel);
++  while (h)
++    {
++      void *next = *(void **) h;
++      pc_hdr_t *hdr = (pc_hdr_t *) h;
++      unsigned c = hdr->class_id;
++      if (c < pc_nclasses)
++	{
++	  *(void **) h = t->cache[c];
++	  t->cache[c] = h;
++	}
++      h = next;
++    }
++}
++
++static void *pc_alloc_from_cache (pc_tls_t *t, unsigned class_id)
++{
++  void *slot = t->cache[class_id];
++  pc_hdr_t *hdr;
++  if (slot)
++    {
++      t->cache[class_id] = *(void **) slot;
++      hdr = (pc_hdr_t *) slot;
++      hdr->magic = PC_MAGIC;
++      hdr->class_id = (uint16_t) class_id;
++      hdr->flags = 0;
++      hdr->size = pc_class_size[class_id] - PC_HDR_SIZE;
++      return pc_payload (hdr);
++    }
++  return NULL;
++}
++
++static int pc_refill_cache (pc_tls_t *t, unsigned class_id)
++{
++  pc_span_t *sp = pc_central_pop_span (class_id);
++  unsigned take, i;
++  if (!sp)
++    {
++      sp = pc_span_new (class_id);
++      if (!sp)
++	return -1;
++    }
++  take = sp->nfree < 32 ? sp->nfree : 32;
++  for (i = 0; i < take; i++)
++    {
++      void *s = sp->free_list;
++      if (!s)
++	break;
++      sp->free_list = *(void **) s;
++      sp->nfree--;
++      *(void **) s = t->cache[class_id];
++      t->cache[class_id] = s;
++    }
++  if (sp->nfree)
++    pc_central_push_span (sp);
++  return t->cache[class_id] ? 0 : -1;
++}
++
++static void *pc_alloc_mmap (size_t size, size_t alignment)
++{
++  size_t need, total, pagesz, prefix;
++  char *mem;
++  pc_hdr_t *hdr;
++  uintptr_t raw, aligned, start;
++  if (pc_size_too_large (size) || alignment == 0
++      || (alignment & (alignment - 1)) != 0 || pc_size_too_large (alignment))
++    return NULL;
++  if (alignment < PC_ALIGN)
++    alignment = PC_ALIGN;
++  pagesz = pc_pagesize ();
++  prefix = sizeof (size_t) + sizeof (void *);
++  if (__builtin_add_overflow (size, PC_HDR_SIZE, &need)
++      || __builtin_add_overflow (need, alignment, &need)
++      || __builtin_add_overflow (need, prefix, &need))
++    return NULL;
++  total = pc_align_up (need, pagesz);
++  if (total < need || total == 0)
++    return NULL;
++  mem = pc_mmap (total);
++  if (!mem)
++    return NULL;
++  start = (uintptr_t) mem + prefix;
++  raw = start + PC_HDR_SIZE;
++  aligned = (raw + alignment - 1) & ~(uintptr_t) (alignment - 1);
++  if (aligned < raw || aligned + size < aligned
++      || aligned + size > (uintptr_t) mem + total)
++    {
++      pc_munmap (mem, total);
++      return NULL;
++    }
++  hdr = (pc_hdr_t *) (aligned - PC_HDR_SIZE);
++  hdr->magic = PC_MAGIC;
++  hdr->class_id = 0xffff;
++  hdr->flags = PC_F_MMAP;
++  hdr->size = (size_t) ((uintptr_t) mem + total - aligned);
++  ((size_t *) mem)[0] = total;
++  *(void **) ((char *) hdr - sizeof (void *)) = mem;
++  return (void *) aligned;
++}
++
++static void pc_free_mmap (pc_hdr_t *hdr)
++{
++  void *base = *(void **) ((char *) hdr - sizeof (void *));
++  size_t total = *(size_t *) base;
++  pc_munmap (base, total);
++}
++
++static void *pc_alloc_reusable (unsigned class_id, size_t size)
++{
++  pc_tls_t *t = &pc_tls;
++  void *p;
++  (void) size;
++  if (!t->inited)
++    phasecast_thread_init ();
++  if ((++t->slow_ticks & 63u) == 0)
++    pc_tls_drain_remote (t);
++  p = pc_alloc_from_cache (t, class_id);
++  if (p)
++    return p;
++  if (pc_refill_cache (t, class_id) != 0)
++    return NULL;
++  return pc_alloc_from_cache (t, class_id);
++}
++
++static void pc_free_reusable (void *slot)
++{
++  pc_hdr_t *hdr = (pc_hdr_t *) slot;
++  pc_tls_t *t = &pc_tls;
++  unsigned c = hdr->class_id;
++  if (!t->inited)
++    phasecast_thread_init ();
++  if (c < pc_nclasses)
++    {
++      *(void **) slot = t->cache[c];
++      t->cache[c] = slot;
++    }
++}
++
++static void *pc_alloc_eph (size_t size)
++{
++  pc_tls_t *t = &pc_tls;
++  size_t need, slab;
++  pc_hdr_t *hdr;
++  if (pc_size_too_large (size))
++    return NULL;
++  if (__builtin_add_overflow (size, PC_HDR_SIZE, &need))
++    return NULL;
++  need = pc_align_up (need, PC_ALIGN);
++  if (!t->eph_base || (size_t) (t->eph_end - t->eph_cur) < need)
++    {
++      if (need > PC_EPH_SLAB)
++	{
++	  slab = pc_align_up (need, pc_pagesize ());
++	  if (slab < need)
++	    return NULL;
++	}
++      else
++	slab = PC_EPH_SLAB;
++      char *mem = pc_mmap (slab);
++      if (!mem)
++	return NULL;
++      /* Chain previous slab pointer at start for pop cleanup.  */
++      ((void **) mem)[0] = t->eph_base;
++      ((size_t *) mem)[1] = slab;
++      t->eph_base = mem;
++      t->eph_cur = mem + 64;
++      t->eph_end = mem + slab;
++    }
++  hdr = (pc_hdr_t *) t->eph_cur;
++  t->eph_cur += need;
++  hdr->magic = PC_MAGIC;
++  hdr->class_id = 0xfffe;
++  hdr->flags = PC_F_EPH;
++  hdr->size = size;
++  return pc_payload (hdr);
++}
++
++static void *pc_site_alloc_fast (pc_site_t *site, size_t size)
++{
++  (void) size;
++  return pc_alloc_reusable (site->class_id, size);
++}
++
++static void *pc_site_alloc_eph (pc_site_t *site, size_t size)
++{
++  (void) site;
++  return pc_alloc_eph (size);
++}
++
++static void *pc_site_alloc_slow (pc_site_t *site, size_t size);
++
++static void pc_site_consider (pc_site_t *site, unsigned class_id)
++{
++  uint32_t hits = ++site->hits;
++  if (site->class_id == UINT32_MAX)
++    site->class_id = class_id;
++  else if (site->class_id != class_id)
++    site->class_id = UINT32_MAX - 1; /* mixed sizes */
++  if (hits == PC_WARMUP && site->class_id < pc_nclasses)
++    {
++      if (site->frees * 2 >= hits && pc_tls.eph_depth > 0)
++	{
++	  site->flags |= 1;
++	  pc_site_store_alloc (site, pc_site_alloc_eph);
++	}
++      else
++	pc_site_store_alloc (site, pc_site_alloc_fast);
++    }
++}
++
++static void *pc_site_alloc_slow (pc_site_t *site, size_t size)
++{
++  unsigned c = pc_size_class (size);
++  void *p;
++  if (c == UINT32_MAX)
++    {
++      if (pc_size_too_large (size))
++	return NULL;
++      return pc_alloc_mmap (size, PC_ALIGN);
++    }
++  pc_site_consider (site, c);
++  if (pc_tls.eph_depth > 0 && (site->flags & 1))
++    p = pc_alloc_eph (size);
++  else
++    p = pc_alloc_reusable (c, size);
++  return p;
++}
++
++static void pc_sites_init (void)
++{
++  unsigned i;
++  for (i = 0; i < PC_SITE_N; i++)
++    {
++      pc_site_store_alloc (&pc_sites[i], pc_site_alloc_slow);
++      pc_sites[i].class_id = UINT32_MAX;
++      pc_sites[i].hits = 0;
++      pc_sites[i].frees = 0;
++      pc_sites[i].flags = 0;
++    }
++}
++
++void
++phasecast_init (void)
++{
++  if (pc_global_inited)
++    return;
++  pc_nclasses = pc_init_classes ();
++  pc_sites_init ();
++  pc_global_inited = 1;
++}
++
++void
++phasecast_thread_init (void)
++{
++  if (!pc_global_inited)
++    phasecast_init ();
++  if (pc_tls.inited)
++    return;
++  memset (&pc_tls, 0, sizeof pc_tls);
++  pc_tls.inited = 1;
++}
++
++void
++phasecast_thread_fini (void)
++{
++  unsigned i;
++  if (!pc_tls.inited)
++    return;
++  pc_tls_drain_remote (&pc_tls);
++  for (i = 0; i < pc_nclasses; i++)
++    pc_tls.cache[i] = NULL;
++  while (pc_tls.eph_base)
++    {
++      void *prev = ((void **) pc_tls.eph_base)[0];
++      size_t slab = ((size_t *) pc_tls.eph_base)[1];
++      pc_munmap (pc_tls.eph_base, slab);
++      pc_tls.eph_base = prev;
++    }
++  pc_tls.eph_cur = pc_tls.eph_end = NULL;
++  pc_tls.eph_depth = 0;
++  pc_tls.inited = 0;
++}
++
++static pc_site_t *pc_lookup_site_pc (size_t size, void *caller_pc)
++{
++  uintptr_t pc = (uintptr_t) caller_pc;
++  unsigned c = pc_size_class (size);
++  uint32_t idx = pc_site_index (pc, c == UINT32_MAX ? 0xffffu : c);
++  return &pc_sites[idx];
++}
++
++void *
++phasecast_malloc_at (size_t size, void *caller_pc)
++{
++  pc_site_t *site;
++  pc_alloc_fn fn;
++  if (pc_size_too_large (size))
++    return NULL;
++  if (!pc_tls.inited)
++    phasecast_thread_init ();
++  if (size == 0)
++    size = 1;
++  if (caller_pc == NULL)
++    caller_pc = __builtin_extract_return_addr (__builtin_return_address (0));
++  site = pc_lookup_site_pc (size, caller_pc);
++  fn = pc_site_load_alloc (site);
++  return fn (site, size);
++}
++
++void *
++phasecast_malloc (size_t size)
++{
++  return phasecast_malloc_at (size,
++			      __builtin_extract_return_addr (__builtin_return_address (0)));
++}
++
++void
++phasecast_free_at (void *ptr, void *caller_pc)
++{
++  pc_hdr_t *hdr;
++  void *slot;
++  if (!ptr)
++    return;
++  hdr = pc_hdr_of (ptr);
++  if (hdr->magic != PC_MAGIC)
++    return;
++  if (hdr->flags & PC_F_EPH)
++    {
++      /* Reclaimed on phase_pop.  */
++      return;
++    }
++  if (hdr->flags & PC_F_MMAP)
++    {
++      pc_free_mmap (hdr);
++      return;
++    }
++  slot = hdr;
++  if (caller_pc == NULL)
++    caller_pc = __builtin_extract_return_addr (__builtin_return_address (0));
++  {
++    uint32_t idx = pc_site_index ((uintptr_t) caller_pc, hdr->class_id);
++    pc_sites[idx].frees++;
++  }
++  pc_free_reusable (slot);
++}
++
++void
++phasecast_free (void *ptr)
++{
++  phasecast_free_at (ptr,
++		     __builtin_extract_return_addr (__builtin_return_address (0)));
++}
++
++void *
++phasecast_realloc (void *ptr, size_t size)
++{
++  pc_hdr_t *hdr;
++  void *n;
++  size_t old;
++  if (!ptr)
++    return phasecast_malloc (size);
++  if (size == 0)
++    {
++      phasecast_free (ptr);
++      return NULL;
++    }
++  if (pc_size_too_large (size))
++    return NULL;
++  hdr = pc_hdr_of (ptr);
++  if (hdr->magic != PC_MAGIC)
++    return NULL;
++  old = hdr->size;
++  if (size <= old)
++    return ptr;
++  n = phasecast_malloc (size);
++  if (!n)
++    return NULL;
++  memcpy (n, ptr, old < size ? old : size);
++  phasecast_free (ptr);
++  return n;
++}
++
++void *
++phasecast_calloc (size_t n, size_t size)
++{
++  size_t bytes;
++  void *p;
++  if (__builtin_mul_overflow (n, size, &bytes) || pc_size_too_large (bytes))
++    return NULL;
++  p = phasecast_malloc (bytes);
++  if (p)
++    memset (p, 0, bytes);
++  return p;
++}
++
++void *
++phasecast_memalign (size_t alignment, size_t size)
++{
++  unsigned c;
++  void *p;
++  if (alignment == 0 || (alignment & (alignment - 1)) != 0)
++    return NULL;
++  if (pc_size_too_large (size) || pc_size_too_large (alignment))
++    return NULL;
++  if (!pc_tls.inited)
++    phasecast_thread_init ();
++  if (size == 0)
++    size = 1;
++  if (alignment < PC_ALIGN)
++    alignment = PC_ALIGN;
++  if (alignment > PC_SLOT_ALIGN)
++    return pc_alloc_mmap (size, alignment);
++  c = pc_size_class_aligned (size, alignment);
++  if (c == UINT32_MAX)
++    return pc_alloc_mmap (size, alignment);
++  p = pc_alloc_reusable (c, size);
++  if (p == NULL)
++    return NULL;
++  if (((uintptr_t) p & (alignment - 1)) != 0)
++    {
++      phasecast_free (p);
++      return pc_alloc_mmap (size, alignment);
++    }
++  return p;
++}
++
++size_t
++phasecast_usable_size (void *ptr)
++{
++  pc_hdr_t *hdr;
++  if (!ptr)
++    return 0;
++  hdr = pc_hdr_of (ptr);
++  if (hdr->magic != PC_MAGIC)
++    return 0;
++  return hdr->size;
++}
++
++void
++phasecast_fork_lock (void)
++{
++  pc_lock_acquire ();
++}
++
++void
++phasecast_fork_unlock_parent (void)
++{
++  pc_lock_release ();
++}
++
++void
++phasecast_fork_unlock_child (void)
++{
++  unsigned i;
++  atomic_store_explicit (&pc_lock, 0, memory_order_relaxed);
++  for (i = 0; i < PC_MAX_CLASSES; i++)
++    pc_span_lists[i] = NULL;
++  memset (&pc_tls, 0, sizeof pc_tls);
++  phasecast_thread_init ();
++}
++
++void
++phasecast_phase_push (const char *name)
++{
++  (void) name;
++  if (!pc_tls.inited)
++    phasecast_thread_init ();
++  pc_tls.eph_depth++;
++}
++
++void
++phasecast_phase_pop (void)
++{
++  if (!pc_tls.inited || pc_tls.eph_depth == 0)
++    return;
++  pc_tls.eph_depth--;
++  if (pc_tls.eph_depth == 0)
++    {
++      while (pc_tls.eph_base)
++	{
++	  void *prev = ((void **) pc_tls.eph_base)[0];
++	  size_t slab = ((size_t *) pc_tls.eph_base)[1];
++	  pc_munmap (pc_tls.eph_base, slab);
++	  pc_tls.eph_base = prev;
++	}
++      pc_tls.eph_cur = pc_tls.eph_end = NULL;
++    }
++}
++
++int
++phasecast_load_profile (const char *path)
++{
++  FILE *f;
++  char line[256];
++  if (!path)
++    return -1;
++  if (!pc_global_inited)
++    phasecast_init ();
++  f = fopen (path, "r");
++  if (!f)
++    return -1;
++  while (fgets (line, sizeof line, f))
++    {
++      unsigned idx, class_id, flags;
++      if (sscanf (line, "%u %u %u", &idx, &class_id, &flags) != 3)
++	continue;
++      if (idx >= PC_SITE_N || class_id >= pc_nclasses)
++	continue;
++      pc_sites[idx].class_id = class_id;
++      pc_sites[idx].hits = PC_WARMUP;
++      pc_sites[idx].flags = flags;
++      pc_site_store_alloc (&pc_sites[idx],
++			   (flags & 1) ? pc_site_alloc_eph : pc_site_alloc_fast);
++    }
++  fclose (f);
++  return 0;
++}
++
++int
++phasecast_save_profile (const char *path)
++{
++  FILE *f;
++  unsigned i;
++  if (!path)
++    return -1;
++  f = fopen (path, "w");
++  if (!f)
++    return -1;
++  for (i = 0; i < PC_SITE_N; i++)
++    if (pc_sites[i].hits >= PC_WARMUP && pc_sites[i].class_id < pc_nclasses)
++      fprintf (f, "%u %u %u\n", i, pc_sites[i].class_id, pc_sites[i].flags);
++  fclose (f);
++  return 0;
++}
+diff --git a/malloc/phasecast/phasecast.h b/malloc/phasecast/phasecast.h
+new file mode 100644
+index 0000000000..00761e326f
+--- /dev/null
++++ b/malloc/phasecast/phasecast.h
+@@ -0,0 +1,36 @@
++/* Phasecast adaptive allocator — internal API.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.  */
++
++#ifndef _PHASECAST_H
++#define _PHASECAST_H
++
++#include <stddef.h>
++#include <stdint.h>
++
++#ifdef __GNUC__
++# define PC_HIDDEN __attribute__ ((visibility ("hidden")))
++#else
++# define PC_HIDDEN
++#endif
++
++void phasecast_init (void) PC_HIDDEN;
++void phasecast_thread_init (void) PC_HIDDEN;
++void phasecast_thread_fini (void) PC_HIDDEN;
++void *phasecast_malloc (size_t size) PC_HIDDEN;
++void *phasecast_malloc_at (size_t size, void *caller_pc) PC_HIDDEN;
++void phasecast_free (void *ptr) PC_HIDDEN;
++void phasecast_free_at (void *ptr, void *caller_pc) PC_HIDDEN;
++void *phasecast_realloc (void *ptr, size_t size) PC_HIDDEN;
++void *phasecast_calloc (size_t n, size_t size) PC_HIDDEN;
++void *phasecast_memalign (size_t alignment, size_t size) PC_HIDDEN;
++size_t phasecast_usable_size (void *ptr) PC_HIDDEN;
++void phasecast_fork_lock (void) PC_HIDDEN;
++void phasecast_fork_unlock_parent (void) PC_HIDDEN;
++void phasecast_fork_unlock_child (void) PC_HIDDEN;
++void phasecast_phase_push (const char *name) PC_HIDDEN;
++void phasecast_phase_pop (void) PC_HIDDEN;
++int phasecast_load_profile (const char *path) PC_HIDDEN;
++int phasecast_save_profile (const char *path) PC_HIDDEN;
++
++#endif
+diff --git a/sysdeps/mach/hurd/i386/libc.abilist b/sysdeps/mach/hurd/i386/libc.abilist
+index 8612e6731e..fc14936cf6 100644
+--- a/sysdeps/mach/hurd/i386/libc.abilist
++++ b/sysdeps/mach/hurd/i386/libc.abilist
+@@ -2763,6 +2763,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/mach/hurd/x86_64/libc.abilist b/sysdeps/mach/hurd/x86_64/libc.abilist
+index 4ce74d9e7d..a16218e9b6 100644
+--- a/sysdeps/mach/hurd/x86_64/libc.abilist
++++ b/sysdeps/mach/hurd/x86_64/libc.abilist
+@@ -2440,6 +2440,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ HURD_CTHREADS_0.3 __mutex_init F
+ HURD_CTHREADS_0.3 __mutex_lock F
+ HURD_CTHREADS_0.3 __mutex_trylock F
+diff --git a/sysdeps/unix/sysv/linux/aarch64/libc.abilist b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
+index 0facdcf8ee..7b7bf611f5 100644
+--- a/sysdeps/unix/sysv/linux/aarch64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
+@@ -2778,3 +2778,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/alpha/libc.abilist b/sysdeps/unix/sysv/linux/alpha/libc.abilist
+index 42395f8edf..d2105abbe6 100644
+--- a/sysdeps/unix/sysv/linux/alpha/libc.abilist
++++ b/sysdeps/unix/sysv/linux/alpha/libc.abilist
+@@ -3125,6 +3125,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/arc/libc.abilist b/sysdeps/unix/sysv/linux/arc/libc.abilist
+index f3707f9412..aa6f667672 100644
+--- a/sysdeps/unix/sysv/linux/arc/libc.abilist
++++ b/sysdeps/unix/sysv/linux/arc/libc.abilist
+@@ -2539,3 +2539,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/arm/be/libc.abilist b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
+index 2b022801e0..f136d025d2 100644
+--- a/sysdeps/unix/sysv/linux/arm/be/libc.abilist
++++ b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
+@@ -2831,6 +2831,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/arm/le/libc.abilist b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
+index 1911a07c54..d9e4a7b9be 100644
+--- a/sysdeps/unix/sysv/linux/arm/le/libc.abilist
++++ b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
+@@ -2828,6 +2828,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/csky/libc.abilist b/sysdeps/unix/sysv/linux/csky/libc.abilist
+index a4754227cf..ad3ab8d7a5 100644
+--- a/sysdeps/unix/sysv/linux/csky/libc.abilist
++++ b/sysdeps/unix/sysv/linux/csky/libc.abilist
+@@ -2815,3 +2815,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/hppa/libc.abilist b/sysdeps/unix/sysv/linux/hppa/libc.abilist
+index b86c12551d..81d101c371 100644
+--- a/sysdeps/unix/sysv/linux/hppa/libc.abilist
++++ b/sysdeps/unix/sysv/linux/hppa/libc.abilist
+@@ -2852,6 +2852,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/i386/libc.abilist b/sysdeps/unix/sysv/linux/i386/libc.abilist
+index f7d3d91aaa..6f27d75f32 100644
+--- a/sysdeps/unix/sysv/linux/i386/libc.abilist
++++ b/sysdeps/unix/sysv/linux/i386/libc.abilist
+@@ -3035,6 +3035,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
+index 90a8c572b4..3d6d5f77e4 100644
+--- a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
+@@ -2299,3 +2299,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
+index 5010327d76..516b407ade 100644
+--- a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
++++ b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
+@@ -2811,6 +2811,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
+index 431eb47b5c..c7415e22b2 100644
+--- a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
++++ b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
+@@ -2978,6 +2978,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
+index 4c51353bff..cd90aed898 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
++++ b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
+@@ -2864,3 +2864,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
+index 6743bcf95f..3a02fddfca 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
++++ b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
+@@ -2861,3 +2861,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
+index e382943a0f..a627487ea4 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
++++ b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
+@@ -2941,6 +2941,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
+index 736d0f7b62..d35117c553 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
++++ b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
+@@ -2939,6 +2939,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
+index 0ea6f52434..702381b80d 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
+@@ -2947,6 +2947,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
+index 0b93ed6963..e9b81c95f9 100644
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
+@@ -2849,6 +2849,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/or1k/libc.abilist b/sysdeps/unix/sysv/linux/or1k/libc.abilist
+index 8e2af47f7a..ffc5448cfb 100644
+--- a/sysdeps/unix/sysv/linux/or1k/libc.abilist
++++ b/sysdeps/unix/sysv/linux/or1k/libc.abilist
+@@ -2289,3 +2289,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
+index f9d981ca3f..198dce05cd 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
+@@ -3168,6 +3168,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
+index 20d7d5ec36..f091b40fe7 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
+@@ -3213,6 +3213,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
+index 578c100389..8c17ac1702 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
+@@ -2922,6 +2922,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
+index 4001a8005a..13f71060b6 100644
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
+@@ -2998,3 +2998,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
+index 13b3e9df43..8fee8100a6 100644
+--- a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
++++ b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
+@@ -2542,3 +2542,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
+index 0d4b7699f3..76f883be64 100644
+--- a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
+@@ -2742,3 +2742,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+diff --git a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
+index bb24f1f6c0..349d60b87d 100644
+--- a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
+@@ -2959,6 +2959,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/sh/be/libc.abilist b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
+index f94f45ff95..fad3ee292f 100644
+--- a/sysdeps/unix/sysv/linux/sh/be/libc.abilist
++++ b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
+@@ -2858,6 +2858,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/sh/le/libc.abilist b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
+index 8499460409..80f300e235 100644
+--- a/sysdeps/unix/sysv/linux/sh/le/libc.abilist
++++ b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
+@@ -2855,6 +2855,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
+index ab94365cdf..0cc90e4a0c 100644
+--- a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
++++ b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
+@@ -3189,6 +3189,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
+index 9129d1c053..4f59bdd6d0 100644
+--- a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
+@@ -2825,6 +2825,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
+index ca1bfaceca..59980537c4 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
+@@ -2774,6 +2774,10 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+ GLIBC_2.5 __readlinkat_chk F
+ GLIBC_2.5 inet6_opt_append F
+ GLIBC_2.5 inet6_opt_find F
+diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
+index 54b45c3ec9..19c02d547a 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
+@@ -2793,3 +2793,7 @@ GLIBC_2.43 umaxabs F
+ GLIBC_2.44 gnu_get_libc_malloc_active F
+ GLIBC_2.44 gnu_get_libc_malloc_default F
+ GLIBC_2.44 gnu_get_libc_malloc_impls F
++GLIBC_2.44 gnu_malloc_phase_load_profile F
++GLIBC_2.44 gnu_malloc_phase_pop F
++GLIBC_2.44 gnu_malloc_phase_push F
++GLIBC_2.44 gnu_malloc_phase_save_profile F
+-- 
+2.53.0
+

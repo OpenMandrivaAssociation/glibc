@@ -1,7 +1,7 @@
 From 140c760d711d03c0230dff218b5268b11935f92e Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Fri, 13 Feb 2026 09:02:07 +0100
-Subject: [PATCH 6/8] nss: Introduce dedicated struct nss_database_for_fork
+Subject: [PATCH 06/45] nss: Introduce dedicated struct nss_database_for_fork
  type
 
 The initialized field in struct nss_database_data is rather confusing

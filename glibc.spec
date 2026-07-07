@@ -1,7 +1,8 @@
+%undefine _debugsource_packages
 %if %{cross_compiling}
 %bcond_with crosscompilers
 %else
-%bcond_without crosscompilers
+%bcond_with crosscompilers
 %endif
 # The test suite should be run after updates, but is very
 # slow especially on arches where we have slow builders.
@@ -56,6 +57,8 @@
 #   error: overriding currently unsupported rounding mode on this target [-Werror,-Wunsupported-floating-point-opt]
 #   error: overriding currently unsupported use of floating point exceptions on this target [-Werror,-Wunsupported-floating-point-opt]
 %bcond_with clang
+# Build alternative malloc implemenations
+%bcond_without mallocs
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
@@ -114,6 +117,11 @@
 %define build_biarch 0
 %if %isarch %{x86_64} mips64 mips64el mips mipsel
 %define build_biarch 1
+%endif
+%if %build_biarch
+%ifarch %{x86_64}
+BuildRequires: cross-i686-openmandriva-linux-gnu-binutils cross-i686-openmandriva-linux-gnu-gcc-bootstrap cross-i686-openmandriva-linux-gnu-kernel-headers
+%endif
 %endif
 
 %bcond_with nscd
@@ -182,7 +190,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -231,6 +239,30 @@ Patch17:	0018-elf-parse-proc-self-maps-as-the-last-resort-to-find-.patch
 Patch18:	0019-elf-Use-dl-symbol-redir-ifunc.h-instead-_dl_strlen.patch
 Patch19:	0020-riscv-Resolve-calls-to-memcpy-using-memcpy-generic-i.patch
 Patch20:	0021-tests-fix-tst-rseq-with-Linux-7.0.patch
+Patch21:	0022-Use-pending-character-state-in-IBM1390-IBM1399-chara.patch
+Patch22:	0023-include-isolate-__O_CLOEXEC-flag-for-sys-mount.h-and.patch
+Patch23:	0024-Linux-Only-define-OPEN_TREE_-macros-in-sys-mount.h-i.patch
+Patch24:	0025-abilist.awk-Handle-weak-unversioned-defined-symbols.patch
+Patch25:	0026-libio-Fix-ungetwc-operating-on-byte-stream-BZ-33998.patch
+Patch26:	0027-stdio-common-Fix-buffer-overflow-in-scanf-mc-BZ-3400.patch
+Patch27:	0028-math-Fix-fma-alignment-when-exponent-difference-is-e.patch
+Patch28:	0029-Rename-__unused-fields-to-__glibc_reserved.patch
+Patch29:	0030-elf-don-t-clobber-ld.so.conf-in-tst-glibc-hwcaps-pre.patch
+Patch30:	0031-Hurd-comment-PF_LINK-AF_LINK-defines.patch
+Patch31:	0032-Hurd-comment-PF_ROUTE-AF_ROUTE-defines.patch
+Patch32:	0033-Hurd-comment-ioctls-which-cannot-currently-compile.patch
+Patch33:	0034-Hurd-restore-some-SIOC-ioctls.patch
+Patch34:	0035-iconv-Suppress-intermediate-errors-with-TRANSLIT-bug.patch
+Patch35:	0036-arm-Save-restore-VFP-registers-in-PLT-trampolines-BZ.patch
+Patch36:	0037-hppa-Fix-missing-call-to-__feraiseexcept-BZ-34306.patch
+Patch37:	0038-resolv-Declare-__p_class_syms-__p_type_syms-for-inte.patch
+Patch38:	0039-resolv-Fix-ns_sprintrrf-formatting-of-class-type-val.patch
+Patch39:	0040-resolv-Improve-formatting-of-unknown-records-in-ns_s.patch
+Patch40:	0041-resolv-Check-for-inet_ntop-failure-in-ns_sprintrrf.patch
+Patch41:	0042-resolv-More-types-as-unknown-in-ns_sprintrrf-CVE-202.patch
+Patch42:	0043-resolv-Fix-buffer-overreads-in-ns_sprintrrf-CVE-2026.patch
+Patch43:	0044-resolv-Add-test-case-tst-ns_sprintrr-bug-34033-bug-3.patch
+Patch44:	0045-posix-Fix-stack-overflow-in-wordexp-tilde-expansion-.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -302,9 +334,24 @@ Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d8
 Patch1052:	glibc-2.43-allow-autoconf-2.73.patch
 # Clang support
 Patch1060:	glibc-2.43-clang.patch
+# Performance optimizations
+Patch1061:	glibc-grok-performance-opts.patch
+# Pluggable mallocs
+Patch1070:	0001-Add-pluggable-multi-implementation-malloc-infrastruc.patch
+Patch1071:	0002-Add-in-tree-mimalloc-backend-with-malloc-mimalloc.patch
+Patch1072:	0003-Add-in-tree-mimalloc-secure-backend-with-malloc-mima.patch
+Patch1073:	0004-Add-in-tree-jemalloc-backend-with-malloc-jemalloc.patch
+Patch1074:	0005-Add-in-tree-snmalloc-backend-with-malloc-snmalloc.patch
+Patch1075:	0006-Add-in-tree-rpmalloc-backend-with-malloc-rpmalloc.patch
+Patch1076:	0007-Add-in-tree-mallocng-backend-with-malloc-mallocng.patch
+Patch1077:	0008-Add-in-tree-hardened_malloc-backend-with-malloc-hard.patch
+Patch1078:	0009-Add-in-tree-Mesh-backend-with-malloc-preload-mesh.patch
+Patch1079:	0010-Add-in-tree-PartitionAlloc-backend-with-malloc-prelo.patch
+Patch1080:	0011-Add-full-tcmalloc-as-LD_PRELOAD-DSO-with-malloc-prel.patch
+Patch1081:	0012-Add-in-tree-phasecast-adaptive-malloc-backend-with-m.patch
+Patch1082:	0013-Add-malloc-backend-documentation-and-benchmark-resul.patch
 
 BuildRequires:	automake
-#BuildRequires:	libtool-base
 BuildRequires:	slibtool
 BuildRequires:	make
 BuildRequires:	autoconf
@@ -317,6 +364,13 @@ BuildRequires:	hardlink
 BuildRequires:	cap-devel
 BuildRequires:	bison
 BuildRequires:	pkgconfig(libidn2)
+%if %{with mallocs}
+BuildRequires:	gcc-c++
+BuildRequires:	stdc++-devel
+BuildRequires:	stdc++-static-devel
+BuildRequires:	atomic-devel
+BuildRequires:	%{_lib}atomic-static-devel
+%endif
 %if %{with selinux}
 # see configure.ac
 BuildRequires:	selinux-devel
@@ -881,6 +935,8 @@ posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %{_libdir}/ld-linux-loongarch-lp64d.so.1
 %endif
 %{_libdir}/lib*.so.[0-9]*
+%dir %{_libdir}/glibc
+%dir %{_libdir}/glibc/malloc
 %if "%{name}" == "glibc"
 %dir %{_libdir}/audit
 %{_libdir}/audit/sotruss-lib.so
@@ -918,6 +974,8 @@ posix.symlink("%{_libdir}/ld-linux-aarch64.so.1", "/lib/ld-linux-aarch64.so.1")
 %if %{build_biarch}
 %{_libdir32}/ld.so.1
 %{_libdir32}/lib*.so.[0-9]*
+%dir %{_prefix}/lib/glibc
+%dir %{_prefix}/lib/glibc/malloc
 %dir %{_libdirn32}
 %{_libdirn32}/ld.so.1
 %{_libdirn32}/lib*.so.[0-9]*
@@ -1607,6 +1665,14 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 		--host=${TRIPLET} \
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
+%if %{with mallocs}
+		--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
+		--with-malloc-preload=tcmalloc \
+		--with-default-malloc=snmalloc \
+%else
+		--with-malloc=glibc \
+		--with-default-malloc=glibc \
+%endif
 %if %{with nscd}
 		--enable-build-nscd \
 %else
@@ -1625,6 +1691,14 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --libdir=${LIBDIR} \
     --infodir=%{_infodir} \
     --localedir=%{_localedir} \
+%if %{with mallocs}
+    --with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
+    --with-malloc-preload=tcmalloc \
+    --with-default-malloc=snmalloc \
+%else
+    --with-malloc=glibc \
+    --with-default-malloc=glibc \
+%endif
     --enable-add-ons=$AddOns \
     --disable-profile \
     --enable-static \
@@ -1713,6 +1787,8 @@ for i in %{targets}; do
 		--host=${TRIPLET} \
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
+		--with-malloc=glibc \
+		--with-default-malloc=glibc \
 		--with-headers=%{_prefix}/${TRIPLET}/include
 	# We set CXX to empty to prevent links-dso-program from being built
 	# (it may not work -- if we're using a bootstrap version of gcc,
@@ -2207,6 +2283,43 @@ touch %{buildroot}%{_prefix}/lib/locale/locale-archive
 rm -f %{buildroot}%{_prefix}/*/libcrypt.a %{buildroot}%{_includedir}/crypt.h %{buildroot}/*/libcrypt* %{buildroot}%{_prefix}/*/libcrypt.a
 # remove broken symlink
 rm -f %{buildroot}%{_prefix}/lib/libcrypt.so
+
+rm -f %{buildroot}%{_libdir}/glibc/malloc/.keep
+%if "%{_libdir}" != "%{_prefix}/lib"
+rm -f %{buildroot}%{_prefix}/lib/glibc/malloc/.keep
+%endif
+
+for i in $(ls -1 %{buildroot}%{_libdir}/glibc/malloc/*.so); do
+	MALLOC="$(basename $i .so |sed -e 's,^libglibc_malloc_,,')"
+	cat >%{specpartsdir}/%{name}-malloc-${MALLOC}.specpart <<EOF
+%%package malloc-${MALLOC}
+Summary: Plugin for the ${MALLOC} malloc implementation in glibc
+Group: System
+
+%%description malloc-${MALLOC}
+Plugin for the ${MALLOC} malloc implementation in glibc
+
+%%files malloc-${MALLOC}
+%{_libdir}/glibc/malloc/libglibc_malloc_${MALLOC}.so
+EOF
+done
+
+%if "%{_libdir}" != "%{_prefix}/lib"
+for i in $(ls -1 %{buildroot}%{_prefix}/lib/glibc/malloc/*.so); do
+	MALLOC="$(basename $i .so |sed -e 's,^libglibc_malloc_,,')"
+	cat >%{specpartsdir}/%{name}-malloc-${MALLOC}32.specpart <<EOF
+%%package malloc-${MALLOC}32
+Summary: Plugin for the ${MALLOC} malloc implementation in 32-bit glibc
+Group: System
+
+%%description malloc-${MALLOC}32
+Plugin for the ${MALLOC} malloc implementation in 32-bit glibc
+
+%%files malloc-${MALLOC}32
+%{_prefix}/lib/glibc/malloc/libglibc_malloc_${MALLOC}.so
+EOF
+done
+%endif
 
 %ifarch %{aarch64}
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-aarch64.so.1

@@ -1,0 +1,1432 @@
+From 1bbd96792a10386e07dbe389fee0164f0244a494 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Sat, 4 Jul 2026 19:06:43 +0200
+Subject: [PATCH 07/13] Add in-tree mallocng backend (--with-malloc=mallocng)
+
+Vendor GrapheneOS mallocng as a compact single-file backend with selector
+registration for embed or dynamic use.
+---
+ malloc/malloc-mallocng-impl.c |  19 +
+ malloc/malloc-mallocng.c      | 400 ++++++++++++++
+ malloc/mallocng/README.md     |   6 +
+ malloc/mallocng/mallocng.c    | 962 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 1387 insertions(+)
+ create mode 100644 malloc/malloc-mallocng-impl.c
+ create mode 100644 malloc/malloc-mallocng.c
+ create mode 100644 malloc/mallocng/README.md
+ create mode 100644 malloc/mallocng/mallocng.c
+
+diff --git a/malloc/malloc-mallocng-impl.c b/malloc/malloc-mallocng-impl.c
+new file mode 100644
+index 0000000000..c877324bca
+--- /dev/null
++++ b/malloc/malloc-mallocng-impl.c
+@@ -0,0 +1,19 @@
++/* C compilation unit for mallocng embedded in glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++#include "mallocng/mallocng.c"
+diff --git a/malloc/malloc-mallocng.c b/malloc/malloc-mallocng.c
+new file mode 100644
+index 0000000000..191a5ee3ac
+--- /dev/null
++++ b/malloc/malloc-mallocng.c
+@@ -0,0 +1,400 @@
++/* Shim to use musl's mallocng as the malloc implementation inside glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++/* The allocator core lives in malloc/mallocng/ and is compiled by
++   malloc-mallocng-impl.c.  */
++
++#include <stddef.h>
++
++/* Allocator entry points provided by malloc-mallocng-impl.c.  */
++void *mallocng_malloc (size_t);
++void mallocng_free (void *);
++void *mallocng_realloc (void *, size_t);
++void *mallocng_aligned_alloc (size_t, size_t);
++size_t mallocng_usable_size (void *);
++int mallocng_is_allzero (void *);
++void mallocng_fork_lock (void);
++void mallocng_fork_unlock (void);
++void mallocng_fork_unlock_child (void);
++
++
++#include <stdio.h>
++#include <string.h>
++#include <errno.h>
++#include <unistd.h>
++#include <malloc.h>
++#include <libc-symbols.h>
++#include <shlib-compat.h>
++#include <malloc-internal.h>
++#include "malloc-shim-compat.h"
++
++#ifdef MALLOC_MULTI_BACKEND
++# define __libc_malloc __malloc_mallocng_malloc
++# define __libc_free __malloc_mallocng_free
++# define __libc_realloc __malloc_mallocng_realloc
++# define __libc_calloc __malloc_mallocng_calloc
++# define __libc_memalign __malloc_mallocng_memalign
++# define __libc_valloc __malloc_mallocng_valloc
++# define __libc_pvalloc __malloc_mallocng_pvalloc
++# define __posix_memalign __malloc_mallocng_posix_memalign
++# define aligned_alloc __malloc_mallocng_aligned_alloc
++# define free_sized __malloc_mallocng_free_sized
++# define free_aligned_sized __malloc_mallocng_free_aligned_sized
++# define __malloc_usable_size __malloc_mallocng_usable_size
++# define __libc_mallopt __malloc_mallocng_mallopt
++# define __libc_mallinfo __malloc_mallocng_mallinfo
++# define __libc_mallinfo2 __malloc_mallocng_mallinfo2
++# define __malloc_info __malloc_mallocng_malloc_info
++# define __malloc_stats __malloc_mallocng_malloc_stats
++# define __malloc_trim __malloc_mallocng_malloc_trim
++# define __malloc_fork_lock_parent __malloc_mallocng_fork_lock_parent
++# define __malloc_fork_unlock_parent __malloc_mallocng_fork_unlock_parent
++# define __malloc_fork_unlock_child __malloc_mallocng_fork_unlock_child
++# define __malloc_arena_thread_freeres __malloc_mallocng_arena_thread_freeres
++# define __malloc_check_init __malloc_mallocng_check_init
++# define __ptmalloc_init __malloc_mallocng_ptmalloc_init
++# define __glibc_morecore __malloc_mallocng_morecore
++# pragma push_macro("libc_hidden_proto")
++# pragma push_macro("libc_hidden_def")
++# pragma push_macro("weak_function")
++# undef libc_hidden_proto
++# define libc_hidden_proto(...) /* nothing */
++# undef libc_hidden_def
++# define libc_hidden_def(...) /* nothing */
++# undef weak_function
++# define weak_function /* nothing */
++# define MALLOC_MULTI_HIDDEN_PUSHED 1
++#endif
++
++
++void *__libc_malloc (size_t);
++libc_hidden_proto (__libc_malloc)
++void __libc_free (void *);
++libc_hidden_proto (__libc_free)
++void *__libc_realloc (void *, size_t);
++libc_hidden_proto (__libc_realloc)
++void *__libc_memalign (size_t, size_t);
++libc_hidden_proto (__libc_memalign)
++struct mallinfo2 __libc_mallinfo2 (void);
++libc_hidden_proto (__libc_mallinfo2)
++int __libc_mallopt (int, int);
++libc_hidden_proto (__libc_mallopt)
++
++void *__libc_calloc (size_t, size_t);
++libc_hidden_proto (__libc_calloc)
++void *__libc_valloc (size_t);
++libc_hidden_proto (__libc_valloc)
++void *__libc_pvalloc (size_t);
++libc_hidden_proto (__libc_pvalloc)
++int __posix_memalign (void **, size_t, size_t);
++libc_hidden_proto (__posix_memalign)
++size_t __malloc_usable_size (void *);
++libc_hidden_proto (__malloc_usable_size)
++
++/* ------------------------------------------------------------------ */
++/* Core allocation entry points                                       */
++/* ------------------------------------------------------------------ */
++
++void *
++__libc_malloc (size_t bytes)
++{
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  return MALLOC_SHIM_CALL (mallocng_malloc (bytes));
++}
++libc_hidden_def (__libc_malloc)
++
++void
++__libc_free (void *mem)
++{
++  if (mem == NULL)
++    return;
++  MALLOC_SHIM_FREE (mallocng_free (mem));
++}
++libc_hidden_def (__libc_free)
++
++void *
++__libc_realloc (void *oldmem, size_t bytes)
++{
++  void *p;
++  if (bytes == 0)
++    {
++      if (oldmem != NULL)
++	{
++	  MALLOC_SHIM_FREE (mallocng_free (oldmem));
++	  return NULL;
++	}
++      return MALLOC_SHIM_CALL (mallocng_malloc (0));
++    }
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  if (oldmem == NULL)
++      if (oldmem == NULL)
++    return MALLOC_SHIM_CALL (mallocng_malloc (bytes));
++  /* Shrink-in-place: glibc leaves the block unmoved when the new size
++     fits in the existing usable region (tst-realloc).  */
++  if (bytes <= mallocng_usable_size (oldmem))
++    return oldmem;
++  p = mallocng_realloc (oldmem, bytes);
++  if (p == NULL)
++    __set_errno (ENOMEM);
++  return p;
++}
++libc_hidden_def (__libc_realloc)
++
++void *
++__libc_calloc (size_t n, size_t elem_size)
++{
++  size_t bytes;
++  void *p;
++  if (__builtin_mul_overflow (n, elem_size, &bytes) || malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  p = mallocng_malloc (bytes);
++  if (p == NULL)
++    {
++      __set_errno (ENOMEM);
++      return NULL;
++    }
++  if (!mallocng_is_allzero (p))
++    memset (p, 0, bytes);
++  return p;
++}
++libc_hidden_def (__libc_calloc)
++
++void *
++__libc_memalign (size_t alignment, size_t bytes)
++{
++  alignment = malloc_shim_align_pow2 (alignment);
++  if (alignment == 0 || malloc_shim_size_too_large (bytes)
++      || malloc_shim_size_too_large (alignment))
++    {
++      __set_errno (alignment == 0 ? EINVAL : ENOMEM);
++      return NULL;
++    }
++  return MALLOC_SHIM_CALL (mallocng_aligned_alloc (alignment, bytes));
++}
++libc_hidden_def (__libc_memalign)
++
++void *
++__libc_valloc (size_t bytes)
++{
++  return __libc_memalign (__getpagesize (), bytes);
++}
++libc_hidden_def (__libc_valloc)
++
++void *
++__libc_pvalloc (size_t bytes)
++{
++  size_t rounded = malloc_shim_pvalloc_size (bytes);
++  if (rounded == 0)
++    return malloc_shim_fail_oom ();
++  return __libc_memalign (__getpagesize (), rounded);
++}
++libc_hidden_def (__libc_pvalloc)
++
++int
++__posix_memalign (void **memptr, size_t alignment, size_t size)
++{
++  void *p;
++  if (memptr == NULL
++      || alignment == 0
++      || (alignment & (alignment - 1)) != 0
++      || alignment % sizeof (void *) != 0)
++    return EINVAL;
++  if (malloc_shim_size_too_large (size))
++    return ENOMEM;
++  p = mallocng_aligned_alloc (alignment, size);
++  if (p == NULL)
++    return ENOMEM;
++  *memptr = p;
++  return 0;
++}
++libc_hidden_def (__posix_memalign)
++
++void *
++weak_function
++aligned_alloc (size_t alignment, size_t bytes)
++{
++  if (alignment == 0 || (alignment & (alignment - 1)) != 0)
++    {
++      __set_errno (EINVAL);
++      return NULL;
++    }
++  if (malloc_shim_size_too_large (bytes) || malloc_shim_size_too_large (alignment))
++    return malloc_shim_fail_oom ();
++  return MALLOC_SHIM_CALL (mallocng_aligned_alloc (alignment, bytes));
++}
++
++void
++weak_function
++free_sized (void *ptr, size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  MALLOC_SHIM_FREE (mallocng_free (ptr));
++}
++
++void
++weak_function
++free_aligned_sized (void *ptr, size_t alignment __attribute_maybe_unused__,
++		    size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  MALLOC_SHIM_FREE (mallocng_free (ptr));
++}
++
++size_t
++__malloc_usable_size (void *mem)
++{
++  if (mem == NULL)
++    return 0;
++  return mallocng_usable_size (mem);
++}
++libc_hidden_def (__malloc_usable_size)
++
++int
++__libc_mallopt (int param_number, int value)
++{
++  return malloc_shim_mallopt_ignore (param_number, value);
++}
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++libc_hidden_def (__libc_mallopt)
++#endif
++
++struct mallinfo
++__libc_mallinfo (void)
++{
++  struct mallinfo info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++
++struct mallinfo2
++__libc_mallinfo2 (void)
++{
++  struct mallinfo2 info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++libc_hidden_def (__libc_mallinfo2)
++
++int
++__malloc_info (int options __attribute__ ((unused)), FILE *fp)
++{
++  fprintf (fp, "<malloc version=\"mallocng\">\n</malloc>\n");
++  return 0;
++}
++
++void
++__malloc_stats (void)
++{
++}
++
++int
++__malloc_trim (size_t pad __attribute__ ((unused)))
++{
++  return 1;
++}
++
++void __malloc_fork_lock_parent (void) { mallocng_fork_lock (); }
++void __malloc_fork_unlock_parent (void) { mallocng_fork_unlock (); }
++void __malloc_fork_unlock_child (void) { mallocng_fork_unlock_child (); }
++void __malloc_arena_thread_freeres (void) { }
++void __malloc_check_init (void) { }
++void __ptmalloc_init (void) { }
++
++#ifndef MALLOC_MULTI_BACKEND
++void *__malloc_initialize_hook = NULL;
++void *__free_hook = NULL;
++void *__malloc_hook = NULL;
++void *__realloc_hook = NULL;
++void *__memalign_hook = NULL;
++void *__after_morecore_hook = NULL;
++void *__morecore = NULL;
++#endif
++
++void *
++__glibc_morecore (ptrdiff_t increment __attribute__ ((unused)))
++{
++  return NULL;
++}
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_34) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __glibc_morecore, __default_morecore, GLIBC_2_0);
++#endif
++
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++strong_alias (__libc_malloc, malloc)
++strong_alias (__libc_realloc, realloc)
++strong_alias (__libc_free, free)
++weak_alias (__libc_calloc, calloc)
++weak_alias (__libc_memalign, memalign)
++weak_alias (__posix_memalign, posix_memalign)
++weak_alias (__libc_valloc, valloc)
++weak_alias (__libc_pvalloc, pvalloc)
++weak_alias (__malloc_usable_size, malloc_usable_size)
++weak_alias (__malloc_info, malloc_info)
++weak_alias (__libc_mallinfo, mallinfo)
++weak_alias (__libc_mallinfo2, mallinfo2)
++weak_alias (__libc_mallopt, mallopt)
++weak_alias (__malloc_stats, malloc_stats)
++weak_alias (__malloc_trim, malloc_trim)
++#endif
++
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
++#endif
++
++#ifdef MALLOC_MULTI_BACKEND
++# ifdef MALLOC_MULTI_HIDDEN_PUSHED
++#  pragma pop_macro("weak_function")
++#  pragma pop_macro("libc_hidden_def")
++#  pragma pop_macro("libc_hidden_proto")
++# endif
++#include <malloc-backend.h>
++#include <string.h>
++
++const struct libc_malloc_backend __libc_malloc_backend_mallocng =
++{
++  .name = "mallocng",
++  .init = __malloc_mallocng_ptmalloc_init,
++  .malloc = __malloc_mallocng_malloc,
++  .free = __malloc_mallocng_free,
++  .realloc = __malloc_mallocng_realloc,
++  .calloc = __malloc_mallocng_calloc,
++  .memalign = __malloc_mallocng_memalign,
++  .valloc = __malloc_mallocng_valloc,
++  .pvalloc = __malloc_mallocng_pvalloc,
++  .posix_memalign = __malloc_mallocng_posix_memalign,
++  .aligned_alloc = __malloc_mallocng_aligned_alloc,
++  .free_sized = __malloc_mallocng_free_sized,
++  .free_aligned_sized = __malloc_mallocng_free_aligned_sized,
++  .usable_size = __malloc_mallocng_usable_size,
++  .mallopt = __malloc_mallocng_mallopt,
++  .mallinfo = __malloc_mallocng_mallinfo,
++  .mallinfo2 = __malloc_mallocng_mallinfo2,
++  .malloc_info = __malloc_mallocng_malloc_info,
++  .malloc_stats = __malloc_mallocng_malloc_stats,
++  .malloc_trim = __malloc_mallocng_malloc_trim,
++  .fork_lock_parent = __malloc_mallocng_fork_lock_parent,
++  .fork_unlock_parent = __malloc_mallocng_fork_unlock_parent,
++  .fork_unlock_child = __malloc_mallocng_fork_unlock_child,
++  .arena_thread_freeres = __malloc_mallocng_arena_thread_freeres,
++  .check_init = __malloc_mallocng_check_init,
++};
++#endif /* MALLOC_MULTI_BACKEND */
+diff --git a/malloc/mallocng/README.md b/malloc/mallocng/README.md
+new file mode 100644
+index 0000000000..6e5dc7c620
+--- /dev/null
++++ b/malloc/mallocng/README.md
+@@ -0,0 +1,6 @@
++In-tree copy of musl mallocng adapted for embedding into glibc.
++
++The allocator core (`mallocng.c`) includes a replacement glue layer that
++re-implements musl internals (atomics, locks, brk, randomness) using GCC
++builtins and POSIX APIs.  Compiled via `malloc/malloc-mallocng-impl.c`.
++The glibc `__libc_*` entry points live in `malloc/malloc-mallocng.c`.
+diff --git a/malloc/mallocng/mallocng.c b/malloc/mallocng/mallocng.c
+new file mode 100644
+index 0000000000..4348d2f231
+--- /dev/null
++++ b/malloc/mallocng/mallocng.c
+@@ -0,0 +1,962 @@
++/* musl mallocng allocator core embedded in glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++/* musl's mallocng is deeply coupled to musl internals.  We provide
++   a replacement "glue" layer that re-implements the needed primitives
++   using GCC builtins and POSIX APIs, then #include the mallocng
++   source files.  */
++
++/* ================================================================== */
++/* Replacement glue layer — replaces musl's glue.h                    */
++/* ================================================================== */
++
++#include <stdint.h>
++#include <stddef.h>
++#include <sys/mman.h>
++#include <unistd.h>
++#include <string.h>
++#include <errno.h>
++#include <limits.h>
++#include <stdlib.h>
++#include <pthread.h>
++#include <sys/syscall.h>
++
++/* --- Atomic primitives (replace musl's atomic.h) --- */
++
++static inline int a_cas(volatile int *p, int t, int s)
++{
++  int expected = t;
++  __atomic_compare_exchange_n(p, &expected, s, 0,
++                              __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
++  return expected;
++}
++
++static inline void a_or(volatile int *p, int v)
++{
++  __atomic_or_fetch(p, v, __ATOMIC_SEQ_CST);
++}
++
++static inline int a_ctz_32(uint32_t x)
++{
++  return __builtin_ctz(x);
++}
++
++static inline int a_clz_32(uint32_t x)
++{
++  return __builtin_clz(x);
++}
++
++static inline void a_crash(void)
++{
++  __builtin_trap();
++}
++
++/* --- Assertion --- */
++#undef assert
++#define assert(x) do { if (!(x)) a_crash(); } while(0)
++
++/* --- Page size --- */
++/* We do NOT define PAGESIZE as a compile-time constant, so the
++   allocator uses ctx.pagesize which is set at init time.  */
++#undef PAGESIZE
++static inline size_t get_page_size(void) { return sysconf(_SC_PAGESIZE); }
++
++/* --- Locking (replace musl's lock.h) --- */
++static inline void mallocng_lock(volatile int *lk)
++{
++  /* Simple spinlock using atomics — good enough for this allocator.  */
++  while (a_cas(lk, 0, 1))
++    {
++      /* spin */
++#if defined(__x86_64__) || defined(__i386__)
++      __builtin_ia32_pause();
++#endif
++    }
++}
++
++static inline void mallocng_unlock(volatile int *lk)
++{
++  __atomic_store_n(lk, 0, __ATOMIC_SEQ_CST);
++}
++
++#define LOCK(x) mallocng_lock(x)
++#define UNLOCK(x) mallocng_unlock(x)
++
++/* --- brk syscall --- */
++/* Use raw syscall to avoid glibc's brk wrapper complications.  */
++#ifndef SYS_brk
++#define SYS_brk __NR_brk
++#endif
++#define brk(p) ((uintptr_t)syscall(SYS_brk, (void *)(p)))
++
++/* --- mmap wrappers (musl's glue.h redefines these) --- */
++/* We use the system mmap directly.  */
++
++/* --- Random secret --- */
++static inline uint64_t get_random_secret(void)
++{
++  uint64_t secret;
++  /* Use the address of a local as initial entropy, plus clock.  */
++  secret = (uintptr_t)&secret * 1103515245ULL;
++  secret ^= (uint64_t)(uintptr_t)&get_random_secret;
++#ifdef __linux__
++  /* Use getentropy() which is available in glibc.  */
++  getentropy(&secret, sizeof(secret));
++#endif
++  return secret;
++}
++
++/* --- Macros expected by mallocng code --- */
++#define MT 1  /* always multi-threaded when inside glibc */
++#define RDLOCK_IS_EXCLUSIVE 1
++
++#define DISABLE_ALIGNED_ALLOC 0
++
++/* --- Namespace prefixes to avoid symbol collisions --- */
++#define size_classes __mallocng_size_classes
++#define ctx __mallocng_context
++#define alloc_meta __mallocng_alloc_meta
++#define is_allzero __mallocng_is_allzero
++
++/* Forward declarations with internal names.  */
++void *mallocng_malloc(size_t);
++void mallocng_free(void *);
++void *mallocng_realloc(void *, size_t);
++
++/* --- Lock object definition --- */
++#define LOCK_OBJ_DEF \
++static void mallocng_atfork(int who) { malloc_atfork(who); } \
++static int __mallocng_lock[1]
++
++/* Internal lock pointer.  */
++static int __mallocng_lock[1];
++
++/* --- Meta structures (from musl's meta.h) --- */
++
++#define MMAP_THRESHOLD 131052
++#define UNIT 16
++#define IB 4
++
++struct group {
++  struct meta *meta;
++  unsigned char active_idx:5;
++  char pad[UNIT - sizeof(struct meta *) - 1];
++  unsigned char storage[];
++};
++
++struct meta {
++  struct meta *prev, *next;
++  struct group *mem;
++  volatile int avail_mask, freed_mask;
++  uintptr_t last_idx:5;
++  uintptr_t freeable:1;
++  uintptr_t sizeclass:6;
++  uintptr_t maplen:8*sizeof(uintptr_t)-12;
++};
++
++struct meta_area {
++  uint64_t check;
++  struct meta_area *next;
++  int nslots;
++  struct meta slots[];
++};
++
++struct malloc_context {
++  uint64_t secret;
++  size_t pagesize;
++  int init_done;
++  unsigned mmap_counter;
++  struct meta *free_meta_head;
++  struct meta *avail_meta;
++  size_t avail_meta_count, avail_meta_area_count, meta_alloc_shift;
++  struct meta_area *meta_area_head, *meta_area_tail;
++  unsigned char *avail_meta_areas;
++  struct meta *active[48];
++  size_t usage_by_class[48];
++  uint8_t unmap_seq[32], bounces[32];
++  uint8_t seq;
++  uintptr_t brk;
++};
++
++static const uint16_t size_classes[] = {
++  1, 2, 3, 4, 5, 6, 7, 8,
++  9, 10, 12, 15,
++  18, 20, 25, 31,
++  36, 42, 50, 63,
++  72, 84, 102, 127,
++  146, 170, 204, 255,
++  292, 340, 409, 511,
++  584, 682, 818, 1023,
++  1169, 1364, 1637, 2047,
++  2340, 2730, 3276, 4095,
++  4680, 5460, 6552, 8191,
++};
++
++static struct malloc_context ctx = { 0 };
++
++#define PGSZ ctx.pagesize
++
++/* --- Inline helpers from meta.h --- */
++
++static inline void queue(struct meta **phead, struct meta *m)
++{
++  assert(!m->next);
++  assert(!m->prev);
++  if (*phead) {
++    struct meta *head = *phead;
++    m->next = head;
++    m->prev = head->prev;
++    m->next->prev = m->prev->next = m;
++  } else {
++    m->prev = m->next = m;
++    *phead = m;
++  }
++}
++
++static inline void dequeue(struct meta **phead, struct meta *m)
++{
++  if (m->next != m) {
++    m->prev->next = m->next;
++    m->next->prev = m->prev;
++    if (*phead == m) *phead = m->next;
++  } else {
++    *phead = 0;
++  }
++  m->prev = m->next = 0;
++}
++
++static inline struct meta *dequeue_head(struct meta **phead)
++{
++  struct meta *m = *phead;
++  if (m) dequeue(phead, m);
++  return m;
++}
++
++static inline void free_meta(struct meta *m)
++{
++  *m = (struct meta){0};
++  queue(&ctx.free_meta_head, m);
++}
++
++static inline uint32_t activate_group(struct meta *m)
++{
++  assert(!m->avail_mask);
++  uint32_t mask, act = (2u<<m->mem->active_idx)-1;
++  do mask = m->freed_mask;
++  while (a_cas(&m->freed_mask, mask, mask&~act)!=mask);
++  return m->avail_mask = mask & act;
++}
++
++static inline int get_slot_index(const unsigned char *p)
++{
++  return p[-3] & 31;
++}
++
++static inline struct meta *get_meta(const unsigned char *p)
++{
++  assert(!((uintptr_t)p & 15));
++  int offset = *(const uint16_t *)(p - 2);
++  int index = get_slot_index(p);
++  if (p[-4]) {
++    assert(!offset);
++    offset = *(uint32_t *)(p - 8);
++    assert(offset > 0xffff);
++  }
++  const struct group *base = (const void *)(p - UNIT*offset - UNIT);
++  const struct meta *meta = base->meta;
++  assert(meta->mem == base);
++  assert(index <= (int)meta->last_idx);
++  assert(!(meta->avail_mask & (1u<<index)));
++  assert(!(meta->freed_mask & (1u<<index)));
++  const struct meta_area *area = (void *)((uintptr_t)meta & -4096);
++  assert(area->check == ctx.secret);
++  if (meta->sizeclass < 48) {
++    assert(offset >= (int)(size_classes[meta->sizeclass]*index));
++    assert(offset < (int)(size_classes[meta->sizeclass]*(index+1)));
++  } else {
++    assert(meta->sizeclass == 63);
++  }
++  if (meta->maplen) {
++    assert(offset <= (int)(meta->maplen*4096UL/UNIT - 1));
++  }
++  return (struct meta *)meta;
++}
++
++static inline size_t get_nominal_size(const unsigned char *p, const unsigned char *end)
++{
++  size_t reserved = p[-3] >> 5;
++  if (reserved >= 5) {
++    assert(reserved == 5);
++    reserved = *(const uint32_t *)(end-4);
++    assert(reserved >= 5);
++    assert(!end[-5]);
++  }
++  assert(reserved <= (size_t)(end-p));
++  assert(!*(end-reserved));
++  assert(!*end);
++  return end-reserved-p;
++}
++
++static inline size_t get_stride(const struct meta *g)
++{
++  if (!g->last_idx && g->maplen) {
++    return g->maplen*4096UL - UNIT;
++  } else {
++    return UNIT*size_classes[g->sizeclass];
++  }
++}
++
++static inline void set_size(unsigned char *p, unsigned char *end, size_t n)
++{
++  int reserved = end-p-n;
++  if (reserved) end[-reserved] = 0;
++  if (reserved >= 5) {
++    *(uint32_t *)(end-4) = reserved;
++    end[-5] = 0;
++    reserved = 5;
++  }
++  p[-3] = (p[-3]&31) + (reserved<<5);
++}
++
++static inline void *enframe(struct meta *g, int idx, size_t n, int ctr)
++{
++  size_t stride = get_stride(g);
++  size_t slack = (stride-IB-n)/UNIT;
++  unsigned char *p = g->mem->storage + stride*idx;
++  unsigned char *end = p+stride-IB;
++  int off = (p[-3] ? *(uint16_t *)(p-2) + 1 : ctr) & 255;
++  assert(!p[-4]);
++  if (off > (int)slack) {
++    size_t m = slack;
++    m |= m>>1; m |= m>>2; m |= m>>4;
++    off &= m;
++    if (off > (int)slack) off -= slack+1;
++    assert(off <= (int)slack);
++  }
++  if (off) {
++    *(uint16_t *)(p-2) = off;
++    p[-3] = 7<<5;
++    p += UNIT*off;
++    p[-4] = 0;
++  }
++  *(uint16_t *)(p-2) = (size_t)(p-g->mem->storage)/UNIT;
++  p[-3] = idx;
++  set_size(p, end, n);
++  return p;
++}
++
++static inline int size_to_class(size_t n)
++{
++  n = (n+IB-1)>>4;
++  if (n<10) return n;
++  n++;
++  int i = (28-a_clz_32(n))*4 + 8;
++  if (n>size_classes[i+1]) i+=2;
++  if (n>size_classes[i]) i++;
++  return i;
++}
++
++static inline int size_overflows(size_t n)
++{
++  if (n >= SIZE_MAX/2 - 4096) {
++    errno = ENOMEM;
++    return 1;
++  }
++  return 0;
++}
++
++static inline void step_seq(void)
++{
++  if (ctx.seq==255) {
++    for (int i=0; i<32; i++) ctx.unmap_seq[i] = 0;
++    ctx.seq = 1;
++  } else {
++    ctx.seq++;
++  }
++}
++
++static inline void record_seq(int sc)
++{
++  if (sc-7U < 32) ctx.unmap_seq[sc-7] = ctx.seq;
++}
++
++static inline void account_bounce(int sc)
++{
++  if (sc-7U < 32) {
++    int seq = ctx.unmap_seq[sc-7];
++    if (seq && ctx.seq-seq < 10) {
++      if (ctx.bounces[sc-7]+1 < 100)
++        ctx.bounces[sc-7]++;
++      else
++        ctx.bounces[sc-7] = 150;
++    }
++  }
++}
++
++static inline void decay_bounces(int sc)
++{
++  if (sc-7U < 32 && ctx.bounces[sc-7])
++    ctx.bounces[sc-7]--;
++}
++
++static inline int is_bouncing(int sc)
++{
++  return (sc-7U < 32 && ctx.bounces[sc-7] >= 100);
++}
++
++/* Locking wrappers using our lock.  */
++static inline void rdlock(void)
++{
++  LOCK(__mallocng_lock);
++}
++static inline void wrlock(void)
++{
++  LOCK(__mallocng_lock);
++}
++static inline void unlock(void)
++{
++  UNLOCK(__mallocng_lock);
++}
++static inline void upgradelock(void) { }
++static inline void resetlock(void)
++{
++  __mallocng_lock[0] = 0;
++}
++
++/* ================================================================== */
++/* Now include the mallocng algorithm code inline.                    */
++/* We paste the key functions from musl's mallocng here.              */
++/* ================================================================== */
++
++/* --- alloc_meta from malloc.c --- */
++
++static struct meta *alloc_meta(void)
++{
++  struct meta *m;
++  unsigned char *p;
++  if (!ctx.init_done) {
++    ctx.pagesize = get_page_size();
++    ctx.secret = get_random_secret();
++    ctx.init_done = 1;
++  }
++  size_t pagesize = PGSZ;
++  if (pagesize < 4096) pagesize = 4096;
++  if ((m = dequeue_head(&ctx.free_meta_head))) return m;
++  if (!ctx.avail_meta_count) {
++    int need_unprotect = 1;
++    if (!ctx.avail_meta_area_count && ctx.brk!=(uintptr_t)-1) {
++      uintptr_t new = ctx.brk + pagesize;
++      int need_guard = 0;
++      if (!ctx.brk) {
++        need_guard = 1;
++        ctx.brk = brk(0);
++        ctx.brk += -ctx.brk & (pagesize-1);
++        new = ctx.brk + 2*pagesize;
++      }
++      if (brk(new) != new) {
++        ctx.brk = -1;
++      } else {
++        if (need_guard) mmap((void *)ctx.brk, pagesize,
++          PROT_NONE, MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
++        ctx.brk = new;
++        ctx.avail_meta_areas = (void *)(new - pagesize);
++        ctx.avail_meta_area_count = pagesize>>12;
++        need_unprotect = 0;
++      }
++    }
++    if (!ctx.avail_meta_area_count) {
++      size_t n = 2UL << ctx.meta_alloc_shift;
++      p = mmap(0, n*pagesize, PROT_NONE,
++        MAP_PRIVATE|MAP_ANON, -1, 0);
++      if (p==MAP_FAILED) return 0;
++      ctx.avail_meta_areas = p + pagesize;
++      ctx.avail_meta_area_count = (n-1)*(pagesize>>12);
++      ctx.meta_alloc_shift++;
++    }
++    p = ctx.avail_meta_areas;
++    if ((uintptr_t)p & (pagesize-1)) need_unprotect = 0;
++    if (need_unprotect)
++      if (mprotect(p, pagesize, PROT_READ|PROT_WRITE)
++          && errno != ENOSYS)
++        return 0;
++    ctx.avail_meta_area_count--;
++    ctx.avail_meta_areas = p + 4096;
++    if (ctx.meta_area_tail) {
++      ctx.meta_area_tail->next = (void *)p;
++    } else {
++      ctx.meta_area_head = (void *)p;
++    }
++    ctx.meta_area_tail = (void *)p;
++    ctx.meta_area_tail->check = ctx.secret;
++    ctx.avail_meta_count = ctx.meta_area_tail->nslots
++      = (4096-sizeof(struct meta_area))/sizeof *m;
++    ctx.avail_meta = ctx.meta_area_tail->slots;
++  }
++  ctx.avail_meta_count--;
++  m = ctx.avail_meta++;
++  m->prev = m->next = 0;
++  return m;
++}
++
++/* --- Core malloc --- */
++
++static const uint8_t small_cnt_tab[][3] = {
++  { 30, 30, 30 },
++  { 31, 15, 15 },
++  { 20, 10, 10 },
++  { 31, 15, 7 },
++  { 25, 12, 6 },
++  { 21, 10, 5 },
++  { 18, 8, 4 },
++  { 31, 15, 7 },
++  { 28, 14, 6 },
++};
++
++static const uint8_t med_cnt_tab[4] = { 28, 24, 20, 32 };
++
++static uint32_t try_avail(struct meta **pm)
++{
++  struct meta *m = *pm;
++  uint32_t first;
++  if (!m) return 0;
++  uint32_t mask = m->avail_mask;
++  if (!mask) {
++    if (!m) return 0;
++    if (!m->freed_mask) {
++      dequeue(pm, m);
++      m = *pm;
++      if (!m) return 0;
++    } else {
++      m = m->next;
++      *pm = m;
++    }
++    mask = m->freed_mask;
++    if (mask == (2u<<m->last_idx)-1 && m->freeable) {
++      m = m->next;
++      *pm = m;
++      mask = m->freed_mask;
++    }
++    if (!(mask & ((2u<<m->mem->active_idx)-1))) {
++      if (m->next != m) {
++        m = m->next;
++        *pm = m;
++      } else {
++        int cnt = m->mem->active_idx + 2;
++        int size = size_classes[m->sizeclass]*UNIT;
++        int span = UNIT + size*cnt;
++        while ((span^(span+size-1)) < 4096) {
++          cnt++;
++          span += size;
++        }
++        if (cnt > (int)m->last_idx+1)
++          cnt = m->last_idx+1;
++        m->mem->active_idx = cnt-1;
++      }
++    }
++    mask = activate_group(m);
++    assert(mask);
++    decay_bounces(m->sizeclass);
++  }
++  first = mask&-mask;
++  m->avail_mask = mask-first;
++  return first;
++}
++
++static int alloc_slot(int, size_t);
++
++static struct meta *alloc_group(int sc, size_t req)
++{
++  size_t size = UNIT*size_classes[sc];
++  int i = 0, cnt;
++  unsigned char *p;
++  struct meta *m = alloc_meta();
++  if (!m) return 0;
++  size_t usage = ctx.usage_by_class[sc];
++  size_t pagesize = PGSZ;
++  int active_idx;
++  if (sc < 9) {
++    while (i<2 && 4*small_cnt_tab[sc][i] > usage)
++      i++;
++    cnt = small_cnt_tab[sc][i];
++  } else {
++    cnt = med_cnt_tab[sc&3];
++    while (!(cnt&1) && 4*(unsigned)cnt > usage)
++      cnt >>= 1;
++    while (size*cnt >= 65536*UNIT)
++      cnt >>= 1;
++  }
++  if (cnt==1 && size*cnt+UNIT <= pagesize/2) cnt = 2;
++  if (size*cnt+UNIT > pagesize/2) {
++    int nosmall = is_bouncing(sc);
++    account_bounce(sc);
++    step_seq();
++    if (!(sc&1) && sc<32) usage += ctx.usage_by_class[sc+1];
++    if (4*(unsigned)cnt > usage && !nosmall) {
++      if (0);
++      else if ((sc&3)==1 && size*cnt>8*pagesize) cnt = 2;
++      else if ((sc&3)==2 && size*cnt>4*pagesize) cnt = 3;
++      else if ((sc&3)==0 && size*cnt>8*pagesize) cnt = 3;
++      else if ((sc&3)==0 && size*cnt>2*pagesize) cnt = 5;
++    }
++    size_t needed = size*cnt + UNIT;
++    needed += -needed & (pagesize-1);
++    if (!nosmall && cnt<=7) {
++      req += IB + UNIT;
++      req += -req & (pagesize-1);
++      if (req<size+UNIT || (req>=4*pagesize && 2*(unsigned)cnt>usage)) {
++        cnt = 1;
++        needed = req;
++      }
++    }
++    p = mmap(0, needed, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
++    if (p==MAP_FAILED) {
++      free_meta(m);
++      return 0;
++    }
++    m->maplen = needed>>12;
++    ctx.mmap_counter++;
++    active_idx = (4096-UNIT)/size-1;
++    if (active_idx > cnt-1) active_idx = cnt-1;
++    if (active_idx < 0) active_idx = 0;
++  } else {
++    int j = size_to_class(UNIT+cnt*size-IB);
++    int idx = alloc_slot(j, UNIT+cnt*size-IB);
++    if (idx < 0) {
++      free_meta(m);
++      return 0;
++    }
++    struct meta *g = ctx.active[j];
++    p = enframe(g, idx, UNIT*size_classes[j]-IB, ctx.mmap_counter);
++    m->maplen = 0;
++    p[-3] = (p[-3]&31) | (6<<5);
++    for (int ii=0; ii<=cnt; ii++)
++      p[UNIT+ii*size-4] = 0;
++    active_idx = cnt-1;
++  }
++  ctx.usage_by_class[sc] += cnt;
++  m->avail_mask = (2u<<active_idx)-1;
++  m->freed_mask = (2u<<(cnt-1))-1 - m->avail_mask;
++  m->mem = (void *)p;
++  m->mem->meta = m;
++  m->mem->active_idx = active_idx;
++  m->last_idx = cnt-1;
++  m->freeable = 1;
++  m->sizeclass = sc;
++  return m;
++}
++
++static int alloc_slot(int sc, size_t req)
++{
++  uint32_t first = try_avail(&ctx.active[sc]);
++  if (first) return a_ctz_32(first);
++  struct meta *g = alloc_group(sc, req);
++  if (!g) return -1;
++  g->avail_mask--;
++  queue(&ctx.active[sc], g);
++  return 0;
++}
++
++void *mallocng_malloc(size_t n)
++{
++  if (size_overflows(n)) return 0;
++  struct meta *g;
++  uint32_t mask, first;
++  int sc;
++  int idx;
++  int ctr;
++
++  if (n >= MMAP_THRESHOLD) {
++    size_t needed = n + IB + UNIT;
++    void *p = mmap(0, needed, PROT_READ|PROT_WRITE,
++      MAP_PRIVATE|MAP_ANON, -1, 0);
++    if (p==MAP_FAILED) return 0;
++    wrlock();
++    step_seq();
++    g = alloc_meta();
++    if (!g) {
++      unlock();
++      munmap(p, needed);
++      return 0;
++    }
++    g->mem = p;
++    g->mem->meta = g;
++    g->last_idx = 0;
++    g->freeable = 1;
++    g->sizeclass = 63;
++    g->maplen = (needed+4095)/4096;
++    g->avail_mask = g->freed_mask = 0;
++    ctx.mmap_counter++;
++    idx = 0;
++    goto success;
++  }
++
++  sc = size_to_class(n);
++
++  rdlock();
++  g = ctx.active[sc];
++
++  if (!g && sc>=4 && sc<32 && sc!=6 && !(sc&1) && !ctx.usage_by_class[sc]) {
++    size_t usage = ctx.usage_by_class[sc|1];
++    if (!ctx.active[sc|1] || (!ctx.active[sc|1]->avail_mask
++        && !ctx.active[sc|1]->freed_mask))
++      usage += 3;
++    if (usage <= 12)
++      sc |= 1;
++    g = ctx.active[sc];
++  }
++
++  for (;;) {
++    mask = g ? g->avail_mask : 0;
++    first = mask&-mask;
++    if (!first) break;
++    if (RDLOCK_IS_EXCLUSIVE || !MT)
++      g->avail_mask = mask-first;
++    else if (a_cas(&g->avail_mask, mask, mask-first)!=mask)
++      continue;
++    idx = a_ctz_32(first);
++    goto success;
++  }
++  upgradelock();
++
++  idx = alloc_slot(sc, n);
++  if (idx < 0) {
++    unlock();
++    return 0;
++  }
++  g = ctx.active[sc];
++
++success:
++  ctr = ctx.mmap_counter;
++  unlock();
++  return enframe(g, idx, n, ctr);
++}
++
++/* --- Free --- */
++
++struct mapinfo {
++  void *base;
++  size_t len;
++};
++
++static struct mapinfo nontrivial_free(struct meta *, int);
++
++static struct mapinfo free_group(struct meta *g)
++{
++  struct mapinfo mi = { 0 };
++  int sc = g->sizeclass;
++  if (sc < 48) {
++    ctx.usage_by_class[sc] -= g->last_idx+1;
++  }
++  if (g->maplen) {
++    step_seq();
++    record_seq(sc);
++    mi.base = g->mem;
++    mi.len = g->maplen*4096UL;
++  } else {
++    void *p = g->mem;
++    struct meta *m = get_meta(p);
++    int idx = get_slot_index(p);
++    g->mem->meta = 0;
++    mi = nontrivial_free(m, idx);
++  }
++  free_meta(g);
++  return mi;
++}
++
++static int okay_to_free(struct meta *g)
++{
++  int sc = g->sizeclass;
++  if (!g->freeable) return 0;
++  if (sc >= 48 || get_stride(g) < UNIT*size_classes[sc])
++    return 1;
++  if (!g->maplen) return 1;
++  if (g->next != g) return 1;
++  if (!is_bouncing(sc)) return 1;
++  size_t cnt = g->last_idx+1;
++  size_t usage = ctx.usage_by_class[sc];
++  if (9*cnt <= usage && cnt < 20)
++    return 1;
++  return 0;
++}
++
++static struct mapinfo nontrivial_free(struct meta *g, int i)
++{
++  uint32_t self = 1u<<i;
++  int sc = g->sizeclass;
++  uint32_t mask = g->freed_mask | g->avail_mask;
++
++  if (mask+self == (2u<<g->last_idx)-1 && okay_to_free(g)) {
++    if (g->next) {
++      assert(sc < 48);
++      int activate_new = (ctx.active[sc]==g);
++      dequeue(&ctx.active[sc], g);
++      if (activate_new && ctx.active[sc])
++        activate_group(ctx.active[sc]);
++    }
++    return free_group(g);
++  } else if (!mask) {
++    assert(sc < 48);
++    if (ctx.active[sc] != g) {
++      queue(&ctx.active[sc], g);
++    }
++  }
++  a_or(&g->freed_mask, self);
++  return (struct mapinfo){ 0 };
++}
++
++void mallocng_free(void *p)
++{
++  if (!p) return;
++
++  struct meta *g = get_meta(p);
++  int idx = get_slot_index(p);
++  size_t stride = get_stride(g);
++  unsigned char *start = g->mem->storage + stride*idx;
++  unsigned char *end = start + stride - IB;
++  get_nominal_size(p, end);
++  uint32_t self = 1u<<idx, all = (2u<<g->last_idx)-1;
++  ((unsigned char *)p)[-3] = 255;
++  *(uint16_t *)((char *)p-2) = 0;
++
++  if (((uintptr_t)(start-1) ^ (uintptr_t)end) >= 2*PGSZ && g->last_idx) {
++    unsigned char *base = start + (-(uintptr_t)start & (PGSZ-1));
++    size_t len = (end-base) & -PGSZ;
++    if (len) {
++      int e = errno;
++      madvise(base, len, MADV_FREE);
++      errno = e;
++    }
++  }
++
++  for (;;) {
++    uint32_t freed = g->freed_mask;
++    uint32_t avail = g->avail_mask;
++    uint32_t mask = freed | avail;
++    assert(!(mask&self));
++    if (!freed || mask+self==all) break;
++    if (!MT)
++      g->freed_mask = freed+self;
++    else if (a_cas(&g->freed_mask, freed, freed+self)!=freed)
++      continue;
++    return;
++  }
++
++  wrlock();
++  struct mapinfo mi = nontrivial_free(g, idx);
++  unlock();
++  if (mi.len) {
++    int e = errno;
++    munmap(mi.base, mi.len);
++    errno = e;
++  }
++}
++
++/* --- Realloc --- */
++void *mallocng_realloc(void *p, size_t n)
++{
++  if (!p) return mallocng_malloc(n);
++  if (size_overflows(n)) return 0;
++
++  struct meta *g = get_meta(p);
++  int idx = get_slot_index(p);
++  size_t stride = get_stride(g);
++  unsigned char *start = g->mem->storage + stride*idx;
++  unsigned char *end = start + stride - IB;
++  size_t old_size = get_nominal_size(p, end);
++  size_t avail_size = end-(unsigned char *)p;
++
++  if (n <= avail_size && n<MMAP_THRESHOLD
++      && size_to_class(n)+1 >= (int)g->sizeclass) {
++    set_size(p, end, n);
++    return p;
++  }
++
++  void *newp = mallocng_malloc(n);
++  if (!newp) return 0;
++  memcpy(newp, p, n < old_size ? n : old_size);
++  mallocng_free(p);
++  return newp;
++}
++
++/* --- malloc_usable_size --- */
++size_t mallocng_usable_size(void *p)
++{
++  if (!p) return 0;
++  struct meta *g = get_meta(p);
++  int idx = get_slot_index(p);
++  size_t stride = get_stride(g);
++  unsigned char *start = g->mem->storage + stride*idx;
++  unsigned char *end = start + stride - IB;
++  return get_nominal_size(p, end);
++}
++
++/* --- aligned_alloc --- */
++void *mallocng_aligned_alloc(size_t align, size_t len)
++{
++  if ((align & -align) != align) {
++    errno = EINVAL;
++    return 0;
++  }
++  if (len > SIZE_MAX - align || align >= (1ULL<<31)*UNIT) {
++    errno = ENOMEM;
++    return 0;
++  }
++  if (align <= UNIT) align = UNIT;
++
++  unsigned char *p = mallocng_malloc(len + align - UNIT);
++  if (!p) return 0;
++
++  struct meta *g = get_meta(p);
++  int idx = get_slot_index(p);
++  size_t stride = get_stride(g);
++  unsigned char *start = g->mem->storage + stride*idx;
++  unsigned char *end = g->mem->storage + stride*(idx+1) - IB;
++  size_t adj = -(uintptr_t)p & (align-1);
++
++  if (!adj) {
++    set_size(p, end, len);
++    return p;
++  }
++  p += adj;
++  uint32_t offset = (size_t)(p-g->mem->storage)/UNIT;
++  if (offset <= 0xffff) {
++    *(uint16_t *)(p-2) = offset;
++    p[-4] = 0;
++  } else {
++    *(uint16_t *)(p-2) = 0;
++    *(uint32_t *)(p-8) = offset;
++    p[-4] = 1;
++  }
++  p[-3] = idx;
++  set_size(p, end, len);
++  *(uint16_t *)(start - 2) = (size_t)(p-start)/UNIT;
++  start[-3] = 7<<5;
++  return p;
++}
++
++int mallocng_is_allzero(void *p)
++{
++  struct meta *g = get_meta(p);
++  return g->sizeclass >= 48 ||
++    get_stride(g) < UNIT*size_classes[g->sizeclass];
++}
++
++
++void mallocng_fork_lock(void) { LOCK(__mallocng_lock); }
++void mallocng_fork_unlock(void) { UNLOCK(__mallocng_lock); }
++void mallocng_fork_unlock_child(void) { resetlock(); }
+-- 
+2.53.0
+

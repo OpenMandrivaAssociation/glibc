@@ -1,7 +1,7 @@
 From f02515d8a6963158e0e4be8034b96c658e1b9a32 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Andreas=20K=2E=20H=C3=BCttel?= <dilfridge@gentoo.org>
 Date: Fri, 23 Jan 2026 23:59:36 +0100
-Subject: [PATCH 1/8] Replace advisories directory with file ADVISORIES
+Subject: [PATCH 01/45] Replace advisories directory with file ADVISORIES
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

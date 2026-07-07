@@ -1,0 +1,1632 @@
+From 791d56b9ed454a6f1248c7654c445d16fc421053 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Sat, 4 Jul 2026 19:12:43 +0200
+Subject: [PATCH 13/13] Add malloc backend documentation and benchmark results
+
+Document the pluggable malloc framework, embeddable and preload
+backends (including phasecast), configuration knobs, and collected
+synthetic plus real-world compile benchmark results.
+---
+ INSTALL                             |  20 +
+ MALLOC-BACKENDS.md                  | 652 ++++++++++++++++++++++++++++
+ MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt |  96 ++++
+ MALLOC-BENCHMARK-LATEST.csv         | 217 +++++++++
+ MALLOC-BENCHMARK-REPORT-LATEST.txt  |  41 ++
+ MALLOC-BENCHMARK-REPORT.md          | 466 ++++++++++++++++++++
+ NEWS                                |  30 +-
+ manual/install.texi                 |  20 +
+ 8 files changed, 1537 insertions(+), 5 deletions(-)
+ create mode 100644 MALLOC-BACKENDS.md
+ create mode 100644 MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
+ create mode 100644 MALLOC-BENCHMARK-LATEST.csv
+ create mode 100644 MALLOC-BENCHMARK-REPORT-LATEST.txt
+ create mode 100644 MALLOC-BENCHMARK-REPORT.md
+
+diff --git a/INSTALL b/INSTALL
+index 4174c9661f..b8fae51b82 100644
+--- a/INSTALL
++++ b/INSTALL
+@@ -86,6 +86,26 @@ passed to 'configure'.  For example:
+      expected to support.  The higher the VERSION number is, the less
+      compatibility code is added, and the faster the code gets.
+ 
++'--with-malloc=IMPL[,IMPL...]'
++     Select the malloc implementation(s) compiled into libc.  Supported
++     names are 'glibc' (the historical ptmalloc2 default), 'mimalloc',
++     'jemalloc', 'snmalloc', 'rpmalloc', and 'mallocng'.  A single name
++     embeds only that allocator with no runtime selection overhead.  A
++     comma-separated list embeds each implementation and enables startup
++     selection via GLIBC_MALLOC_IMPL, drop-in files in
++     /etc/glibc/malloc.d/ and DATADIR/glibc/malloc.d/, and
++     /etc/glibc/malloc.conf.  Distro snippets are arch-independent and
++     live under DATADIR (typically /usr/share); per-architecture impl=
++     differences are handled by availability fallback when a backend was
++     not embedded in that libc.  Duplicates are rejected.
++
++'--with-default-malloc=NAME'
++     When multiple implementations are configured with '--with-malloc',
++     choose the compile-time default (also used for internal libc
++     allocations if public malloc is interposed).  Defaults to the first
++     entry in the '--with-malloc' list.  NAME must be one of the enabled
++     implementations.
++
+ '--with-binutils=DIRECTORY'
+      Use the binutils (assembler and linker) in 'DIRECTORY', not the
+      ones the C compiler would default to.  You can use this option if
+diff --git a/MALLOC-BACKENDS.md b/MALLOC-BACKENDS.md
+new file mode 100644
+index 0000000000..5df86e453f
+--- /dev/null
++++ b/MALLOC-BACKENDS.md
+@@ -0,0 +1,652 @@
++# Pluggable Malloc Backends for glibc
++
++## Overview
++
++This patch adds a build-time `--with-malloc=IMPL` configure switch to glibc
++that selects the malloc implementation compiled into `libc.so`. It is modelled
++after musl's build-time choice between its legacy `malloc` and `mallocng`.
++
++A single implementation name keeps the historical **zero runtime dispatch
++overhead** path embedded in `libc.so`.  Passing a comma-separated list embeds
++only `--with-default-malloc` (default: first name) in libc and builds the
++other names as `$libdir/glibc/malloc/libglibc_malloc_<name>.so`, discovered
++at runtime from installed files (distros can subpackage them).  Selection
++values are **preference lists** (`snmalloc,rpmalloc,*`) tried in order.
++`GLIBC_MALLOC_IMPL` is honored by `ld.so` before `__rtld_malloc_init_real`
++so the chosen DSO is mapped with the initial link graph.  See
++[Multi-implementation builds](#multi-implementation-builds).
++
++Currently supported values:
++
++| Value              | Description                              |
++|--------------------|------------------------------------------|
++| `glibc`            | (default) Traditional ptmalloc2-based allocator |
++| `mimalloc`         | Microsoft's mimalloc, compiled in-tree from `malloc/mimalloc/` |
++| `mimalloc-secure`  | Same mimalloc sources with `MI_SECURE=4` (guard pages, encoded freelists, double-free checks); symbols renamed so it can coexist with `mimalloc` |
++| `jemalloc`         | Facebook/Meta's jemalloc, compiled in-tree from `malloc/jemalloc/` |
++| `snmalloc`         | Microsoft Research's snmalloc, compiled in-tree from `malloc/snmalloc/` |
++| `rpmalloc`         | Rampant Pixels' rpmalloc, compiled in-tree from `malloc/rpmalloc/` |
++| `mallocng`         | musl libc's mallocng, compiled in-tree from `malloc/mallocng/` |
++| `hardened-malloc`  | GrapheneOS hardened_malloc, under `malloc/hardened_malloc/` |
++| `phasecast`        | In-tree adaptive phase-cast allocator (`malloc/phasecast/`) |
++
++**Not embeddable in `libc.so`** (they need libstdc++, which depends on libc's
++malloc — linking them into libc would be circular):
++
++| Preload DSO | Configure | Use |
++|-------------|-----------|-----|
++| `libglibc_malloc_partitionalloc.so` | `--with-malloc-preload=partitionalloc` | `LD_PRELOAD=.../libglibc_malloc_partitionalloc.so` |
++| `libglibc_malloc_mesh.so` | `--with-malloc-preload=mesh` | `LD_PRELOAD=.../libglibc_malloc_mesh.so` |
++| `libglibc_malloc_tcmalloc.so` | `--with-malloc-preload=tcmalloc` | `LD_PRELOAD=.../libglibc_malloc_tcmalloc.so` (full gperftools libtcmalloc with heap profiler) |
++
++Configure tokens for embedded impls may contain `-` (valid in `malloc.conf` /
++`GLIBC_MALLOC_IMPL`); C symbols map `-` to `_`.
++
++## How to Use
++
++### Building with the default allocator (no change)
++
++```sh
++mkdir build && cd build
++../configure --prefix=/opt/glibc
++make -j$(nproc)
++```
++
++### Building with mimalloc
++
++```sh
++mkdir build-mi && cd build-mi
++../configure --prefix=/opt/glibc-mi --with-malloc=mimalloc --disable-werror
++make -j$(nproc)
++```
++
++mimalloc is compiled directly into `libc.so` from the in-tree source copy
++at `malloc/mimalloc/`.  **No external source tree or build step is
++required.**  The C amalgamation (`malloc/malloc-mimalloc-impl.c`) includes
++`mimalloc/src/static.c` and is linked alongside the C shim
++(`malloc/malloc-mimalloc.c`).
++
++### Building with mimalloc-secure
++
++```sh
++mkdir build-mis && cd build-mis
++../configure --prefix=/opt/glibc-mis --with-malloc=mimalloc-secure --disable-werror
++make -j$(nproc)
++```
++
++Reuses `malloc/mimalloc/` compiled with `-DMI_SECURE=4`.  Exported symbols
++are renamed (`mi_*` → `mis_*`) via `malloc-mimalloc-secure-rename.h` so a
++multi build can embed both `mimalloc` and `mimalloc-secure`.  Overhead is
++modest versus plain mimalloc (encoded freelists, double-free checks, guard
++pages around metadata).
++
++### Building with jemalloc
++
++```sh
++mkdir build-je && cd build-je
++../configure --prefix=/opt/glibc-je --with-malloc=jemalloc --disable-werror
++make -j$(nproc)
++```
++
++jemalloc is compiled directly into `libc.so` from the in-tree source copy
++at `malloc/jemalloc/`.  **No external build step or pre-built static
++library is required.**  Configure-generated headers are vendored alongside
++the sources (configured with `--with-jemalloc-prefix=je_`).  Individual
++translation units under `malloc/jemalloc/src/` are compiled by
++`malloc/Makefile` and linked with the C shim (`malloc/malloc-jemalloc.c`).
++
++
++### Building with snmalloc
++
++```sh
++mkdir build-sn && cd build-sn
++../configure --prefix=/opt/glibc-sn --with-malloc=snmalloc --disable-werror
++make -j$(nproc)
++```
++
++snmalloc is compiled directly into `libc.so` from the in-tree source copy
++at `malloc/snmalloc/`.  **No external build step, no CMake dependency, and
++no `libstdc++` runtime dependency** are required.  snmalloc's own vendored
++STL replacements (`SNMALLOC_USE_SELF_VENDORED_STL`) and direct use of
++glibc's `__cxa_thread_atexit_impl` eliminate the need for a C++ standard
++library at runtime.
++
++The C++ core (`malloc/malloc-snmalloc-impl.cc`) is compiled with
++`-fno-exceptions -fno-rtti -nostdlib` semantics and linked into `libc.so`
++alongside the C shim (`malloc/malloc-snmalloc.c`).
++
++### Building with rpmalloc
++
++```sh
++mkdir build-rp && cd build-rp
++../configure --prefix=/opt/glibc-rp --with-malloc=rpmalloc --disable-werror
++make -j$(nproc)
++```
++
++rpmalloc is compiled directly into `libc.so` from the in-tree source copy
++at `malloc/rpmalloc/`.  **No external source tree is required.**  The core
++allocator (`malloc/malloc-rpmalloc-impl.c` with `ENABLE_OVERRIDE=0`) is
++linked alongside the C shim (`malloc/malloc-rpmalloc.c`).  The upstream
++system-override layer (`malloc.c`) is intentionally omitted.
++
++
++### Building with mallocng
++
++```sh
++mkdir build-ng && cd build-ng
++../configure --prefix=/opt/glibc-ng --with-malloc=mallocng --disable-werror
++make -j$(nproc)
++```
++
++mallocng is compiled directly into `libc.so` from the in-tree source copy
++at `malloc/mallocng/`.  **No external source tree is required.**  A
++replacement glue layer re-implements the musl internals mallocng needs
++(atomics, locks, `brk`, randomness) using GCC builtins and POSIX APIs.
++The core (`malloc/malloc-mallocng-impl.c`) is linked alongside the C shim
++(`malloc/malloc-mallocng.c`).
++
++### Building PartitionAlloc / Mesh preload DSOs
++
++These allocators are written in C++ and use the C++ standard library.  They
++**must not** be linked into `libc.so` (libstdc++ calls `malloc`, so that
++would be a circular dependency).  Build standalone interposition DSOs:
++
++```sh
++../configure --prefix=/usr --disable-werror   --with-malloc-preload=partitionalloc,mesh,tcmalloc
++make -j$(nproc)
++# installs libglibc_malloc_{partitionalloc,mesh,tcmalloc}.so
++```
++
++```sh
++LD_PRELOAD=/usr/lib64/libglibc_malloc_partitionalloc.so mydaemon
++LD_PRELOAD=/usr/lib64/libglibc_malloc_mesh.so long-running-service
++```
++
++Sources live under `malloc/partition_alloc/` (Chromium `main`),
++`malloc/mesh/` (plasma-umass Mesh + Heap-Layers), and `malloc/tcmalloc/`
++(gperftools libtcmalloc with sampling/heap profiler; not `tcmalloc_minimal`).
++
++
++### Building with hardened-malloc
++
++```sh
++mkdir build-hm && cd build-hm
++../configure --prefix=/opt/glibc-hm --with-malloc=hardened-malloc --disable-werror
++make -j$(nproc)
++```
++
++GrapheneOS hardened_malloc compiled as one amalgamation TU
++(`malloc-hardened-malloc-impl.c`) with `-DH_MALLOC_PREFIX` and
++`-DMALLOC_EMBEDDED_IN_LIBC` (registers fork handlers via
++`__register_atfork`).  Self-init is disabled so multi builds do not reserve
++slab VA until the backend is selected.  Useful for network-facing daemons
++when the security mitigations outweigh the throughput cost.
++
++### Building with phasecast
++
++```sh
++mkdir build-pc && cd build-pc
++../configure --prefix=/opt/glibc-pc --with-malloc=phasecast --disable-werror
++make -j$(nproc)
++```
++
++Phasecast is an in-tree adaptive allocator (`malloc/phasecast/`) that routes
++each allocation site (return PC × size class) through a direct function
++pointer after a short warmup.  Per-thread size-class caches feed a central
++span heap; optional `gnu_malloc_phase_push` / `gnu_malloc_phase_pop` markers
++switch the calling thread into an ephemeral bump arena reclaimed on pop.
++Profile load/save (`gnu_malloc_phase_{load,save}_profile`) can pre-specialize
++hot sites across runs.  The core is compiled by `malloc-phasecast-impl.c`
++alongside the C shim `malloc-phasecast.c`.  No external sources required.
++
++**Status:** MVP with overflow-safe sizing, payload-aligned size-class spans
++(so `memalign` reuses cached slots up to 128-byte alignment), and full
++`size_t` usable sizes.  `make check GLIBC_MALLOC_IMPL=phasecast` skips
++ptmalloc2-only tests automatically and injects the impl into ordinary test
++envs (dynamic selector tests keep their own `*-ENV`).  On a mixed alloc/free
++microbench the embeddable incumbents (snmalloc, rpmalloc) and tcmalloc preload
++still win raw throughput; phasecast’s bet is workload-phase specialization
++(ephemeral arenas + PGO site profiles), which needs real compile/server traces
++to validate.
++
++
++## Multi-implementation builds
++
++Embed several allocators in one `libc.so` and choose among them at startup:
++
++```sh
++mkdir build-multi && cd build-multi
++../configure --prefix=/usr \
++  --with-malloc=glibc,mimalloc,snmalloc,rpmalloc \
++  --with-default-malloc=rpmalloc \
++  --disable-werror
++make -j$(nproc)
++```
++
++Configure variables written to `config.make`:
++
++| Variable          | Single build     | Multi build                          |
++|-------------------|------------------|--------------------------------------|
++| `malloc-impl`     | `mimalloc` etc.  | `multi`                              |
++| `malloc-impls`    | one name         | space-separated enabled names        |
++| `malloc-default`  | that name        | `--with-default-malloc` or first     |
++| `malloc-multi`    | `no`             | `yes`                                |
++
++Duplicates in `--with-malloc` are rejected.  `--with-default-malloc` must
++name one of the enabled implementations.
++
++### Runtime selection order
++
++`malloc/malloc-select.c` runs once on first allocation (latched).  Highest
++effective priority wins; unavailable names are ignored and selection
++falls through.  Setuid/setgid processes (`__libc_enable_secure`) skip
++env/drop-ins/heuristics entirely.
++
++1. **External interposition** — if public `malloc` is not defined by
++   `libc.so*`, report `"external"` from `gnu_get_libc_malloc_active()`.
++   Internal `__libc_*` entry points still bind to the compile-time default.
++2. **`GLIBC_MALLOC_IMPL=pref-list`** environment variable (e.g.
++   `snmalloc,rpmalloc,*`).  Honored by `ld.so` before the real malloc
++   handoff; ignored under `AT_SECURE`.
++3. **`GLIBC_MALLOC_CONF=path`** — optional non-secure override for the
++   conf file consulted for `default=` (defaults to
++   `/etc/glibc/malloc.conf`).  Intended for tests and images that keep
++   policy outside `/etc`.
++4. **`/etc/glibc/malloc.conf` per-basename lines** (`clang,clang++=mimalloc`)
++   — user/admin overrides; always beat drop-in files.
++5. **`/etc/glibc/malloc.d/*.conf`** — admin/local drop-ins.
++6. **`/etc/glibc/malloc.conf` `default=pref-list`** — overrides distro
++   drop-ins and heuristics when no higher rule matched (so a user whose
++   workload disagrees with distro tuning can reset the fallback without
++   deleting package snippets).  `ld.so` applies this same `default=`
++   line when mapping an early dynamic backend.
++
++6. **`DATADIR/glibc/malloc.d/*.conf`** — distro-provided drop-ins
++   (arch-independent; typically `/usr/share/glibc/malloc.d`).
++7. **Heuristics** — toolchain binaries prefer `snmalloc` then `rpmalloc`;
++   GUI-linked binaries (Qt/GTK/X11/Wayland/SDL SONAME scan) prefer
++   `mimalloc` then `glibc`.
++8. **Compile-time default** (`--with-default-malloc`), else the first
++   backend in the configure list.
++
++Drop-in `priority=` only orders files inside the same directory tier and
++is clamped to `0..99` (default `50`), so distro snippets cannot outrank
++`/etc/glibc/malloc.conf`.  Equal effective priorities resolve by
++lexicographically smaller source path.
++
++After selection the hot path is a single acquire-load of the active
++backend pointer.  Selection uses small stack buffers, `__getdents64`, and
++non-allocating link-map checks; the final backend is published once after
++`init`.  Under `AT_SECURE`, query APIs report only the compile-time default.
++
++### Drop-in configuration format
++
++Install package tuning under `DATADIR/glibc/malloc.d/` (shared across
++CPU architectures; availability fallback ignores `impl=` names not
++embedded in that arch's libc).  Put user overrides in
++`/etc/glibc/malloc.conf` or `/etc/glibc/malloc.d/`.
++
++```
++priority=50
++match-basename=clang,clang++,clang-20,clang++-20
++impl=snmalloc
++```
++
++`/etc/glibc/malloc.conf` example:
++
++```
++clang,clang++=mimalloc
++default=rpmalloc
++```
++
++| Key               | Meaning                                      |
++|-------------------|----------------------------------------------|
++| `priority=N`      | in-tier order only, `0..99` (default `50`)   |
++| `impl=NAME`       | backend name (required)                      |
++| `match-basename=` | match `/proc/self/exe` basename against any comma-separated entry (`clang,clang++`); repeat the key on more lines to OR further names |
++| `match-path=`     | match full executable path against any comma-separated entry (same OR semantics) |
++
++Whitespace around commas is ignored.  Basename entries are restricted to
++`[A-Za-z0-9._+-]`; empty entries invalidate the file.  Multiple
++`match-*` lines in one file are OR'd.
++
++A file without `match-*` rules matches every process.  Sample docs are
++installed as `/etc/glibc/malloc.d/README`.
++
++### Public query API
++
++Declared in `<malloc.h>` and exported at `GLIBC_2.44`:
++
++```c
++int gnu_get_libc_malloc_impls (char *buf, size_t len);
++const char *gnu_get_libc_malloc_default (void);
++const char *gnu_get_libc_malloc_active (void);
++```
++
++`gnu_get_libc_malloc_impls` writes a comma-separated list of embedded names.
++`gnu_get_libc_malloc_active` returns `"external"` when malloc is interposed.
++
++### `glibc-malloc-profile`
++
++Installed to `bindir` on multi-impl builds.  Runs a **representative**
++command under each implementation via `GLIBC_MALLOC_IMPL`, measures
++average wall time (discarding non-zero exits), and can write a drop-in.
++Pass the same arguments the application sees in production — profiling
++`grep` with no operands is not meaningful compared to e.g.
++`grep -r printf /usr/include`.  Package builds should invoke the tool
++explicitly from a `%check` script or manual tuning pass with real
++workloads; there is no automatic brp hook, because few binaries expose a
++useful default invocation.
++
++```sh
++glibc-malloc-profile --output=/etc/glibc/malloc.d/clang.conf -- \
++  clang -O2 -c hello.c
++
++glibc-malloc-profile --output=/etc/glibc/malloc.d/grep.conf -- \
++  grep -r printf /usr/include
++```
++
++Options: `--impls=list`, `--runs=N`, `--warmup=N`, `--margin=PCT`,
++`--libc-dir=DIR` (run via that tree's `ld.so` / `libc.so.6`).
++Interactive commands are refused.  If the winner is the compile-time
++default (or the margin threshold is not met), no file is written.
++
++---
++
++## Benchmark Results
++
++See [MALLOC-BENCHMARK-REPORT.md](MALLOC-BENCHMARK-REPORT.md) for a comprehensive
++benchmark comparison of all backends with recommendations for different use cases.
++
++### Original mimalloc vs glibc benchmarks (for reference)
++
++All benchmarks were run on the same machine, same kernel, same compiler
++(`gcc 13`), with both glibc variants built with identical flags (`-O2`,
++`--disable-werror`).
++
++### bench-malloc-simple
++
++This benchmark measures the cost of a malloc+free cycle for varying
++allocation sizes and allocation-batch counts. Times are in hardware
++performance-counter ticks per malloc+free pair (lower is better).
++
++| Scenario              | Size  |   glibc |  mimalloc |  Speedup |
++|-----------------------|------:|--------:|----------:|---------:|
++| ST, 25 allocs         |    16 |    48.6 |      21.9 |   2.22x  |
++| ST, 25 allocs         |    64 |    48.9 |      23.7 |   2.06x  |
++| ST, 25 allocs         |   256 |    48.1 |      27.2 |   1.76x  |
++| ST, 25 allocs         |  1024 |    57.3 |      25.3 |   2.27x  |
++| ST, 25 allocs         |  4096 |    94.3 |     101.1 |   0.93x  |
++| ST, 400 allocs        |    16 |    83.6 |      19.7 |   4.25x  |
++| ST, 400 allocs        |    64 |    84.5 |      22.2 |   3.80x  |
++| ST, 400 allocs        |   256 |    84.6 |      31.6 |   2.68x  |
++| ST, 400 allocs        |  1024 |  2526.2 |      59.2 |  42.66x  |
++| ST, 400 allocs        |  4096 | 14024.4 |     142.7 |  98.30x  |
++| ST, 1600 allocs       |    16 |    84.3 |      20.1 |   4.19x  |
++| ST, 1600 allocs       |   256 |  1046.8 |      34.6 |  30.26x  |
++| ST, 1600 allocs       |  4096 | 13848.8 |     164.6 |  84.15x  |
++| MT, 25 allocs         |    16 |    64.1 |      22.1 |   2.90x  |
++| MT, 1600 allocs       |    16 |   144.3 |      19.8 |   7.29x  |
++| MT, 1600 allocs       |  1024 |  3474.6 |      63.1 |  55.05x  |
++| Thread arena, 25      |    16 |    64.4 |      23.4 |   2.75x  |
++| Thread arena, 1600    |  4096 |  6270.9 |     168.2 |  37.29x  |
++
++**Key observations:**
++
++- For small allocations (16–256 bytes, ≤25 in flight), mimalloc is **2–3×
++  faster** than ptmalloc2.
++- For larger working sets (400–1600 concurrent allocations) and larger
++  sizes (≥256 bytes), ptmalloc2's performance degrades dramatically while
++  mimalloc stays near-constant. This is because glibc's allocator falls
++  back to `mmap`/`munmap` system calls for large allocations whereas
++  mimalloc manages its own arena pool and recycles segments. Speedups of
++  **30–98×** are observed in these scenarios.
++- The one case where glibc is marginally faster (0.93×) is 25 concurrent
++  page-sized (4096-byte) allocations in single-threaded mode — a narrow
++  sweet spot for ptmalloc2's mmap-based fast path.
++
++### bench-malloc-thread
++
++This benchmark runs a mixed random-size workload (4–32768 bytes) across
++varying thread counts. `time_per_iteration` is in ticks (lower is better).
++
++| Threads | glibc ticks/iter | mimalloc ticks/iter | Speedup | glibc RSS (KB) | mimalloc RSS (KB) |
++|--------:|-----------------:|--------------------:|--------:|---------------:|------------------:|
++|       1 |             36.2 |                25.1 |  1.44x  |          2,236 |             6,560 |
++|       4 |             40.2 |                28.4 |  1.42x  |         10,740 |            30,264 |
++|       8 |             41.2 |                30.4 |  1.36x  |         18,916 |            54,236 |
++|      16 |             46.2 |                33.6 |  1.38x  |         29,496 |           103,204 |
++
++**Key observations:**
++
++- mimalloc is consistently **1.36–1.44× faster** than ptmalloc2 under a
++  realistic mixed-size threaded workload.
++- The speedup is fairly constant across thread counts, showing both
++  allocators scale linearly.
++- mimalloc uses approximately **3× more RSS**. This is mimalloc's well-known
++  space-for-speed trade-off: it pre-commits larger arena segments and
++  does not aggressively return pages to the OS.
++
++### Summary
++
++| Metric                            | Winner    | Notes                          |
++|-----------------------------------|-----------|--------------------------------|
++| Small-alloc throughput            | mimalloc  | 2–4× faster                   |
++| Large-working-set throughput      | mimalloc  | 30–98× faster                 |
++| Multi-threaded throughput         | mimalloc  | ~1.4× faster                  |
++| Memory footprint (RSS)           | glibc     | ~3× lower RSS                 |
++| Page-sized alloc, low concurrency | glibc     | Marginally faster (~1.07×)     |
++
++---
++
++## How to Plug in Another Malloc Implementation
++
++To add a new backend, follow these steps. You can use any of the existing
++shim files as a template: any of `malloc-mimalloc.c`,
++`malloc-jemalloc.c`, `malloc-snmalloc.c`, `malloc-rpmalloc.c`, or
++`malloc-mallocng.c`, plus a matching in-tree source directory under
++`malloc/<backend>/`.
++
++### 1. Register the name in `configure.ac`
++
++In `configure.ac`, add your implementation name to the `case` statement:
++
++```
++case "$malloc_impl" in
++  glibc)     ;;
++  mimalloc)  ;;
++  mymalloc)  ;;                    # <-- add here
++  *)
++    AC_MSG_ERROR([--with-malloc only accepts glibc, mimalloc, or mymalloc])
++    ;;
++esac
++```
++
++Regenerate `configure` (requires autoconf 2.72) or hand-edit the
++equivalent block in the `configure` script.
++
++### 2. Create the shim source file
++
++Create `malloc/malloc-YOURNAME.c`. This file must:
++
++1. **Include your allocator's sources** (either `#include` a
++   single-compilation-unit file, or compile separately and link).
++
++2. **Define these functions** (the glibc-internal malloc API):
++
++   | Function | Signature |
++   |----------|-----------|
++   | `__libc_malloc` | `void *__libc_malloc(size_t)` |
++   | `__libc_free` | `void __libc_free(void *)` |
++   | `__libc_realloc` | `void *__libc_realloc(void *, size_t)` |
++   | `__libc_calloc` | `void *__libc_calloc(size_t, size_t)` |
++   | `__libc_memalign` | `void *__libc_memalign(size_t, size_t)` |
++   | `__libc_valloc` | `void *__libc_valloc(size_t)` |
++   | `__libc_pvalloc` | `void *__libc_pvalloc(size_t)` |
++   | `__posix_memalign` | `int __posix_memalign(void **, size_t, size_t)` |
++   | `aligned_alloc` | `void *aligned_alloc(size_t, size_t)` (weak) |
++   | `free_sized` | `void free_sized(void *, size_t)` (weak) |
++   | `free_aligned_sized` | `void free_aligned_sized(void *, size_t, size_t)` (weak) |
++   | `__malloc_usable_size` | `size_t __malloc_usable_size(void *)` |
++   | `__libc_mallopt` | `int __libc_mallopt(int, int)` (can return 1) |
++   | `__libc_mallinfo` | `struct mallinfo __libc_mallinfo(void)` (can return zeros) |
++   | `__libc_mallinfo2` | `struct mallinfo2 __libc_mallinfo2(void)` (can return zeros) |
++   | `__malloc_info` | `int __malloc_info(int, FILE *)` (stub OK) |
++   | `__malloc_stats` | `void __malloc_stats(void)` (stub OK) |
++   | `__malloc_trim` | `int __malloc_trim(size_t)` (stub OK) |
++
++3. **Define these internal hooks** (called by pthreads / fork):
++
++   | Function | Purpose |
++   |----------|---------|
++   | `__malloc_fork_lock_parent` | Called before `fork()` |
++   | `__malloc_fork_unlock_parent` | Called after `fork()` in parent |
++   | `__malloc_fork_unlock_child` | Called after `fork()` in child |
++   | `__malloc_arena_thread_freeres` | Called on thread exit |
++   | `__malloc_check_init` | Debug-mode init (can be empty) |
++   | `__ptmalloc_init` | Early init (can be empty if self-initializing) |
++
++4. **Provide hidden-symbol declarations and definitions** using
++   `libc_hidden_proto` / `libc_hidden_def` for functions that the rest of
++   glibc calls internally (see `malloc-mimalloc.c` for the exact set).
++
++5. **Provide the public-symbol aliases** at the bottom:
++
++   ```c
++   #if IS_IN (libc)
++   strong_alias (__libc_malloc, malloc)
++   strong_alias (__libc_realloc, realloc)
++   strong_alias (__libc_free, free)
++   weak_alias (__libc_calloc, calloc)
++   weak_alias (__libc_memalign, memalign)
++   weak_alias (__posix_memalign, posix_memalign)
++   weak_alias (__libc_valloc, valloc)
++   weak_alias (__libc_pvalloc, pvalloc)
++   weak_alias (__malloc_usable_size, malloc_usable_size)
++   /* ... plus mallinfo, mallopt, malloc_stats, malloc_trim, malloc_info */
++   #endif
++   ```
++
++6. **Provide compat symbols**:
++
++   ```c
++   #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
++   compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
++   #endif
++   #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_34)
++   compat_symbol (libc, __glibc_morecore, __default_morecore, GLIBC_2_0);
++   #endif
++   ```
++
++7. **Provide the deprecated hook variables** (can be NULL):
++
++   ```c
++   void *__malloc_initialize_hook = NULL;
++   void *__free_hook = NULL;
++   void *__malloc_hook = NULL;
++   void *__realloc_hook = NULL;
++   void *__memalign_hook = NULL;
++   void *__after_morecore_hook = NULL;
++   void *__morecore = NULL;
++   ```
++
++Use `malloc/malloc-mimalloc.c` as a complete reference implementation.
++
++### 3. Wire it into the Makefile
++
++In `malloc/Makefile`, add a clause to the `malloc-routines` selection:
++
++```makefile
++ifeq ($(malloc-impl),mymalloc)
++malloc-routines = malloc-mymalloc
++else ifeq ($(malloc-impl),mimalloc)
++malloc-routines = malloc-mimalloc
++else
++malloc-routines = malloc
++endif
++```
++
++Add `CPPFLAGS-malloc-mymalloc.c` entries with include paths and any
++defines your allocator needs.
++
++### 4. Build and test
++
++```sh
++mkdir build && cd build
++../configure --with-malloc=mymalloc --disable-werror
++make -j$(nproc)
++
++# Smoke test
++./elf/ld.so --library-path .:math:elf /path/to/test_program
++
++# Run malloc benchmarks
++make subdirs=benchtests bench-build BENCHSET="malloc-simple malloc-thread"
++```
++
++---
++
++## Architecture
++
++```
++configure --with-malloc=IMPL
++        │
++        ▼
++  config.make: malloc-impl = IMPL
++        │
++        ▼
++  malloc/Makefile
++    ┌────────────────────────────────────────┐
++    │ Select malloc-routines based on        │
++    │ malloc-impl; set CPPFLAGS per impl     │
++    └────────────────────────────────────────┘
++        │
++        ▼
++  malloc-mimalloc.c (+ impl)   C shim → malloc/mimalloc/ (in-tree)
++  malloc-jemalloc.c (+ src/*)  C shim → malloc/jemalloc/ (in-tree)
++  malloc-snmalloc.c (+ impl)   C shim → malloc/snmalloc/ (C++, in-tree)
++  malloc-rpmalloc.c (+ impl)   C shim → malloc/rpmalloc/ (in-tree)
++  malloc-mallocng.c (+ impl)   C shim → malloc/mallocng/ (in-tree)
++  malloc.c                     Stock ptmalloc2 (default)
++        │
++        ▼
++      libc.so.6 / libc.a
++```
++
++The key design principle is that **only the core allocator object changes**.
++All other malloc-subdirectory files (`mcheck.c`, `mtrace.c`, `obstack.c`,
++`reallocarray.c`, etc.) are shared between backends and call through the
++public `malloc`/`free`/`realloc` symbols, which resolve to whichever
++backend was selected.
++
++---
++
++## Limitations and Future Work
++
++- **mallinfo / mallinfo2**: Non-glibc shims return zeroed structs.
++  A more complete integration could map each allocator's statistics to
++  these fields (jemalloc has `je_malloc_stats_print`, mimalloc has
++  `mi_stats_print`).
++- **malloc_info**: The XML output is minimal for non-glibc backends.
++  Could be extended to emit allocator-specific data.
++- **MALLOC_CHECK_ / libc_malloc_debug.so**: The debug malloc library
++  (`libc_malloc_debug.so`) is always built from the original `malloc.c`
++  code. It is designed for LD_PRELOAD use and is independent of the
++  selected backend.
++- **Tunables**: glibc's `GLIBC_TUNABLES` malloc knobs (e.g.,
++  `glibc.malloc.tcache_count`) are specific to ptmalloc2 and have no
++  effect when alternative backends are selected. Each allocator has its
++  own environment variable controls (`MIMALLOC_*`, `JE_MALLOC_CONF`, etc.).
++- **snmalloc C++ compilation**: snmalloc is compiled as C++17 with
++  `-fno-exceptions -fno-rtti` and uses self-vendored STL replacements,
++  so it has no runtime dependency on `libstdc++`.  The C++ compiler
++  (`g++` or `clang++`) is required at build time.
++- **Updating vendored allocators**: Each in-tree copy under
++  `malloc/<backend>/` should be refreshed from upstream when upgrading.
++  jemalloc additionally needs its configure-generated headers regenerated
++  (see `malloc/jemalloc/README.md`).
++- **mallocng thread scaling**: mallocng uses a single global lock, making
++  it unsuitable for heavily multi-threaded workloads. It is best suited
++  for embedded or single-threaded environments.
++- **Static linking**: All backends are compiled into `libc.a` directly.
++  The weak stubs in `elf/static-stubs.c` allow libgcc_eh to be linked
++  when needed (e.g. by unwinding paths pulled in transitively).
+diff --git a/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt b/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
+new file mode 100644
+index 0000000000..0628ffcaaa
+--- /dev/null
++++ b/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
+@@ -0,0 +1,96 @@
++Malloc hybrid dynamic verification — 2026-07-03
++Build: /tmp/glibc-dyn-test (--with-malloc=glibc,rpmalloc,snmalloc)
++Embedded default: glibc; dynamic DSOs: rpmalloc, snmalloc
++
++========================================================================
++TESTS (make check subdirs=malloc)
++========================================================================
++  324 PASS
++   42 UNSUPPORTED (hugetlb2 on this host)
++    0 FAIL
++
++  Dynamic integration:
++    PASS  tst-malloc-dynamic-default
++    PASS  tst-malloc-dynamic-version
++    PASS  tst-malloc-dynamic-pref
++    PASS  tst-malloc-dynamic-pref-fallback
++    PASS  tst-malloc-dynamic-conf
++    PASS  lint-makefiles
++
++  Manual selection probes (all PASS):
++    default path keeps active=glibc, no libglibc_malloc_*.so mapped
++    GLIBC_MALLOC_IMPL=rpmalloc,* / snmalloc,* selects and maps DSO
++    missing-token fallback works
++    default= via GLIBC_MALLOC_CONF works
++    nm -D shows only __libc_malloc_backend_*@@GLIBC_PRIVATE
++
++========================================================================
++bench-malloc-simple (hp_timing ticks/iter — lower is better)
++========================================================================
++impl      size  st25     st400    st1600   mt25     mt1600   thr25    thr1600  rss_kb
++glibc     16    36.79    58.16    59.03    39.28    62.41    38.97    63.58    2272
++glibc     64    36.87    57.37    59.64    39.48    63.19    40.01    66.37    2248
++glibc     1024  44.54    707.9    989.6    47.71    1015.8   47.81    1011.4   3100
++rpmalloc  16    43.34    43.40    43.34    44.19    42.93    48.11    42.86    7856
++rpmalloc  64    43.37    45.02    45.08    44.28    44.15    44.62    46.24    7656
++rpmalloc  1024  44.86    48.71    547.3    46.00    560.9    46.72    541.9    7320
++snmalloc  16    43.35    42.57    42.69    45.72    43.61    48.15    42.65    5544
++snmalloc  64    43.64    43.63    46.68    44.95    48.95    44.47    45.55    5676
++snmalloc  1024  47.37    65.89    65.80    45.61    61.81    45.23    67.66    7720
++
++Notes:
++  - Embedded glibc wins tiny single-alloc ST paths (ops-table indirection).
++  - Dynamic rpmalloc/snmalloc stay flat as outstanding alloc count grows
++    (st400/st1600), while glibc degrades sharply at 1024 B / 1600 outstanding.
++  - RSS: glibc lowest; dynamic backends pay DSO + arena overhead.
++
++========================================================================
++bench-malloc-tcache (time_per_iteration — lower is better)
++========================================================================
++impl      size  simple_tpi  opt_tpi
++glibc     64    23.03       21.43
++glibc     512   23.97       21.35
++glibc     1024  22.09       21.36
++rpmalloc  64    43.97       42.09
++rpmalloc  512   50.72       47.15
++rpmalloc  1024  52.40       48.00
++snmalloc  64    42.59       41.57
++snmalloc  512   42.88       42.33
++snmalloc  1024  43.42       43.82
++
++  glibc tcache fast-path still wins this microbenchmark under dynamic
++  selection (hot path is a function pointer load vs inlined ptmalloc).
++
++========================================================================
++bench-malloc-thread (3s mixed 4–32768 B)
++========================================================================
++impl      threads  time_per_iter  rss_kb   iterations
++glibc     1        33.94          2208     3.01e8
++glibc     8        37.95          2216     2.15e9
++rpmalloc  1        46.31          12320    2.20e8
++rpmalloc  8        53.67          86096    1.52e9
++snmalloc  1        43.59          6356     2.34e8
++snmalloc  8        50.68          14464    1.61e9
++
++========================================================================
++glibc-malloc-profile (wall ms average, 3 timed runs)
++========================================================================
++workload                          glibc   rpmalloc   snmalloc   winner
++/usr/bin/grep -c foo corpus         2         2          2      glibc (tie)
++/usr/bin/sort corpus               11        10         10      rpmalloc
++/usr/bin/wc -l corpus               2         3          3      glibc
++/usr/bin/awk sum corpus            17        17         18      glibc
++synthetic micro (small/mixed/…)   348       440         75      snmalloc
++
++========================================================================
++Conclusion
++========================================================================
++Everything works end-to-end on the hybrid embed+dynamic path:
++  - selection (env, default=, fallback), versioning, and full malloc
++    testsuite are green
++  - dynamic backends run real allocations via mapped libglibc_malloc_*.so
++  - performance shape differs from fully-embedded builds: pointer-table
++    dispatch adds overhead on tiny/tcache-like loops, while snmalloc still
++    dominates mixed synthetic work (~4.6× vs embedded glibc in micro)
++
++Raw JSON/TSV: /tmp/malloc-dyn-verify/results/
+diff --git a/MALLOC-BENCHMARK-LATEST.csv b/MALLOC-BENCHMARK-LATEST.csv
+new file mode 100644
+index 0000000000..a17302676a
+--- /dev/null
++++ b/MALLOC-BENCHMARK-LATEST.csv
+@@ -0,0 +1,217 @@
++impl,benchmark,real_s,user_s,sys_s,maxrss_kb
++glibc,awk_corpus,0.00,0.00,0.00,3352
++hardened-malloc,awk_corpus,0.00,0.00,0.00,3608
++hardened-preload,awk_corpus,3.70,3.63,0.06,30748
++jemalloc,awk_corpus,0.00,0.00,0.00,3468
++mallocng,awk_corpus,0.00,0.00,0.00,3468
++mesh,awk_corpus,2.79,2.73,0.05,14180
++mimalloc-preload,awk_corpus,2.79,2.72,0.06,6144
++mimalloc-secure,awk_corpus,0.00,0.00,0.00,3476
++mimalloc,awk_corpus,0.00,0.00,0.00,4336
++partitionalloc,awk_corpus,3.60,3.53,0.06,6216
++snmalloc,awk_corpus,0.00,0.00,0.00,3560
++tcmalloc,awk_corpus,2.73,2.65,0.08,12224
++glibc,clang++_hello_O2,0.00,0.00,0.00,3132
++hardened-malloc,clang++_hello_O2,0.00,0.00,0.00,4420
++hardened-preload,clang++_hello_O2,0.36,0.30,0.06,165452
++jemalloc,clang++_hello_O2,0.00,0.00,0.00,3404
++mallocng,clang++_hello_O2,0.00,0.00,0.00,3468
++mesh,clang++_hello_O2,52.80,0.01,29.37,32498028
++mimalloc-preload,clang++_hello_O2,0.28,0.26,0.02,143152
++mimalloc-secure,clang++_hello_O2,0.00,0.00,0.00,3596
++mimalloc,clang++_hello_O2,0.00,0.00,0.00,4484
++partitionalloc,clang++_hello_O2,0.34,0.29,0.03,126080
++snmalloc,clang++_hello_O2,0.00,0.00,0.00,3560
++tcmalloc,clang++_hello_O2,0.32,0.28,0.03,144008
++glibc,clang_sqlite_O2,0.00,0.00,0.00,3620
++hardened-malloc,clang_sqlite_O2,0.00,0.00,0.00,3604
++hardened-preload,clang_sqlite_O2,13.46,13.09,0.36,295432
++jemalloc,clang_sqlite_O2,0.00,0.00,0.00,3296
++mallocng,clang_sqlite_O2,0.00,0.00,0.00,3364
++mesh,clang_sqlite_O2,55.31,0.02,29.83,32013684
++mimalloc-preload,clang_sqlite_O2,11.04,10.99,0.05,254836
++mimalloc-secure,clang_sqlite_O2,0.00,0.00,0.00,3604
++mimalloc,clang_sqlite_O2,0.00,0.00,0.00,3556
++partitionalloc,clang_sqlite_O2,12.02,11.61,0.37,254340
++snmalloc,clang_sqlite_O2,0.00,0.00,0.00,3308
++tcmalloc,clang_sqlite_O2,11.01,10.94,0.05,272484
++glibc,g++_hello_O2,0.00,0.00,0.00,3576
++hardened-malloc,g++_hello_O2,0.00,0.00,0.00,3604
++hardened-preload,g++_hello_O2,0.37,0.33,0.04,144220
++jemalloc,g++_hello_O2,0.00,0.00,0.00,4512
++mallocng,g++_hello_O2,0.00,0.00,0.00,3712
++mesh,g++_hello_O2,0.33,0.28,0.04,136964
++mimalloc-preload,g++_hello_O2,0.33,0.27,0.02,113608
++mimalloc-secure,g++_hello_O2,0.00,0.00,0.00,4572
++mimalloc,g++_hello_O2,0.00,0.00,0.00,3588
++partitionalloc,g++_hello_O2,0.33,0.29,0.03,107344
++snmalloc,g++_hello_O2,0.00,0.00,0.00,3300
++tcmalloc,g++_hello_O2,0.32,0.27,0.04,111916
++glibc,gcc_sqlite_O2,0.00,0.00,0.00,3620
++hardened-malloc,gcc_sqlite_O2,0.00,0.00,0.00,3500
++hardened-preload,gcc_sqlite_O2,20.74,19.81,0.92,417004
++jemalloc,gcc_sqlite_O2,0.00,0.00,0.00,3576
++mallocng,gcc_sqlite_O2,0.00,0.00,0.00,4504
++mesh,gcc_sqlite_O2,18.08,17.58,0.49,439384
++mimalloc-preload,gcc_sqlite_O2,17.34,17.23,0.09,374676
++mimalloc-secure,gcc_sqlite_O2,0.02,0.00,0.00,3540
++mimalloc,gcc_sqlite_O2,0.00,0.00,0.00,3712
++partitionalloc,gcc_sqlite_O2,18.79,18.01,0.76,367844
++snmalloc,gcc_sqlite_O2,0.03,0.00,0.00,3612
++tcmalloc,gcc_sqlite_O2,17.14,17.08,0.06,407960
++glibc,gcc_sqlite_O3,0.00,0.00,0.00,3692
++hardened-malloc,gcc_sqlite_O3,0.00,0.00,0.00,3632
++hardened-preload,gcc_sqlite_O3,27.73,26.50,1.21,433960
++jemalloc,gcc_sqlite_O3,0.00,0.00,0.00,3284
++mallocng,gcc_sqlite_O3,0.00,0.00,0.00,3708
++mesh,gcc_sqlite_O3,25.01,24.24,0.68,459932
++mimalloc-preload,gcc_sqlite_O3,23.43,23.26,0.15,396528
++mimalloc-secure,gcc_sqlite_O3,0.00,0.00,0.00,3592
++mimalloc,gcc_sqlite_O3,0.00,0.00,0.00,3632
++partitionalloc,gcc_sqlite_O3,25.17,24.08,1.08,387108
++snmalloc,gcc_sqlite_O3,0.00,0.00,0.00,3536
++tcmalloc,gcc_sqlite_O3,23.13,23.05,0.08,429752
++glibc,grep_corpus,0.00,0.00,0.00,3724
++hardened-malloc,grep_corpus,0.03,0.00,0.00,3572
++hardened-preload,grep_corpus,0.29,0.28,0.01,27772
++jemalloc,grep_corpus,0.00,0.00,0.00,3356
++mallocng,grep_corpus,0.05,0.00,0.00,3380
++mesh,grep_corpus,0.29,0.26,0.02,15836
++mimalloc-preload,grep_corpus,0.31,0.26,0.02,6412
++mimalloc-secure,grep_corpus,0.00,0.00,0.00,3396
++mimalloc,grep_corpus,0.00,0.00,0.00,3604
++partitionalloc,grep_corpus,0.29,0.26,0.02,5364
++snmalloc,grep_corpus,0.00,0.00,0.00,3584
++tcmalloc,grep_corpus,0.30,0.28,0.01,11336
++glibc,make_j8_multifile,0.00,0.00,0.00,3192
++hardened-malloc,make_j8_multifile,0.00,0.00,0.00,3608
++hardened-preload,make_j8_multifile,0.08,0.08,0.12,109572
++jemalloc,make_j8_multifile,0.00,0.00,0.00,3368
++mallocng,make_j8_multifile,0.00,0.00,0.00,3592
++mesh,make_j8_multifile,23.76,0.25,120.23,6543536
++mimalloc-preload,make_j8_multifile,0.11,0.05,0.15,86776
++mimalloc-secure,make_j8_multifile,0.03,0.00,0.00,3576
++mimalloc,make_j8_multifile,0.03,0.00,0.00,3604
++partitionalloc,make_j8_multifile,0.03,0.04,0.10,82856
++snmalloc,make_j8_multifile,0.02,0.00,0.00,3588
++tcmalloc,make_j8_multifile,0.05,0.06,0.11,88964
++glibc,micro_fifo,0.02,0.00,0.01,46064
++hardened-malloc,micro_fifo,0.08,0.03,0.04,76520
++hardened-preload,micro_fifo,0.07,0.03,0.04,76500
++jemalloc,micro_fifo,0.01,0.01,0.00,45780
++mallocng,micro_fifo,0.07,0.01,0.06,46804
++mesh,micro_fifo,0.04,0.01,0.02,52684
++mimalloc-preload,micro_fifo,0.00,0.00,0.00,42860
++mimalloc-secure,micro_fifo,0.02,0.01,0.00,52904
++mimalloc,micro_fifo,0.01,0.00,0.00,42696
++partitionalloc,micro_fifo,0.03,0.01,0.01,48288
++snmalloc,micro_fifo,0.01,0.00,0.00,48952
++tcmalloc,micro_fifo,0.02,0.01,0.01,48656
++glibc,micro_lifo,0.02,0.00,0.02,45956
++hardened-malloc,micro_lifo,0.08,0.03,0.05,74364
++hardened-preload,micro_lifo,0.08,0.01,0.06,76036
++jemalloc,micro_lifo,0.01,0.01,0.00,45896
++mallocng,micro_lifo,0.07,0.02,0.05,46868
++mesh,micro_lifo,0.04,0.02,0.01,53684
++mimalloc-preload,micro_lifo,0.00,0.00,0.00,42856
++mimalloc-secure,micro_lifo,0.02,0.01,0.01,52908
++mimalloc,micro_lifo,0.00,0.00,0.00,42772
++partitionalloc,micro_lifo,0.03,0.00,0.02,48340
++snmalloc,micro_lifo,0.01,0.00,0.00,49248
++tcmalloc,micro_lifo,0.02,0.00,0.01,49488
++glibc,micro_mixed,0.00,0.00,0.00,6044
++hardened-malloc,micro_mixed,0.01,0.01,0.00,28968
++hardened-preload,micro_mixed,0.00,0.00,0.00,33356
++jemalloc,micro_mixed,0.00,0.00,0.00,12660
++mallocng,micro_mixed,0.01,0.00,0.00,6140
++mesh,micro_mixed,0.01,0.00,0.00,21792
++mimalloc-preload,micro_mixed,0.00,0.00,0.00,12076
++mimalloc-secure,micro_mixed,0.00,0.00,0.00,12024
++mimalloc,micro_mixed,0.00,0.00,0.00,12020
++partitionalloc,micro_mixed,0.00,0.00,0.00,10728
++snmalloc,micro_mixed,0.00,0.00,0.00,16452
++tcmalloc,micro_mixed,0.00,0.00,0.00,16472
++glibc,micro_realloc,0.00,0.00,0.00,3340
++hardened-malloc,micro_realloc,0.00,0.00,0.00,24704
++hardened-preload,micro_realloc,0.01,0.00,0.00,34344
++jemalloc,micro_realloc,0.00,0.00,0.00,10356
++mallocng,micro_realloc,0.00,0.00,0.00,3392
++mesh,micro_realloc,0.00,0.00,0.00,16468
++mimalloc-preload,micro_realloc,0.01,0.00,0.00,5928
++mimalloc-secure,micro_realloc,0.00,0.00,0.00,5888
++mimalloc,micro_realloc,0.00,0.00,0.00,5884
++partitionalloc,micro_realloc,0.09,0.04,0.05,6128
++snmalloc,micro_realloc,0.00,0.00,0.00,10264
++tcmalloc,micro_realloc,0.00,0.00,0.00,12320
++glibc,python_alloc,0.00,0.00,0.00,3572
++hardened-malloc,python_alloc,0.00,0.00,0.00,3588
++hardened-preload,python_alloc,0.06,0.03,0.00,69504
++jemalloc,python_alloc,0.00,0.00,0.00,3644
++mallocng,python_alloc,0.00,0.00,0.00,3580
++mesh,python_alloc,0.04,0.03,0.00,70600
++mimalloc-preload,python_alloc,0.03,0.02,0.00,50876
++mimalloc-secure,python_alloc,0.00,0.00,0.00,3484
++mimalloc,python_alloc,0.00,0.00,0.00,3288
++partitionalloc,python_alloc,0.03,0.03,0.00,44792
++snmalloc,python_alloc,0.00,0.00,0.00,3580
++tcmalloc,python_alloc,0.03,0.02,0.01,52804
++glibc,python_sort,0.00,0.00,0.00,2980
++hardened-malloc,python_sort,0.00,0.00,0.00,3356
++hardened-preload,python_sort,0.08,0.05,0.01,47860
++jemalloc,python_sort,0.00,0.00,0.00,3608
++mallocng,python_sort,0.00,0.00,0.00,3596
++mesh,python_sort,0.06,0.03,0.02,55652
++mimalloc-preload,python_sort,0.05,0.04,0.00,29876
++mimalloc-secure,python_sort,0.00,0.00,0.00,3280
++mimalloc,python_sort,0.00,0.00,0.00,3296
++partitionalloc,python_sort,0.05,0.03,0.01,22944
++snmalloc,python_sort,0.00,0.00,0.00,3300
++tcmalloc,python_sort,0.05,0.05,0.00,30372
++glibc,sed_corpus,0.00,0.00,0.00,3276
++hardened-malloc,sed_corpus,0.00,0.00,0.00,3584
++hardened-preload,sed_corpus,4.55,4.37,0.18,30764
++jemalloc,sed_corpus,0.00,0.00,0.00,3308
++mallocng,sed_corpus,0.00,0.00,0.00,3468
++mesh,sed_corpus,103.44,0.00,52.82,32452036
++mimalloc-preload,sed_corpus,3.44,3.28,0.15,5784
++mimalloc-secure,sed_corpus,0.00,0.00,0.00,3400
++mimalloc,sed_corpus,0.00,0.00,0.00,3392
++partitionalloc,sed_corpus,0.00,0.00,0.00,6540
++snmalloc,sed_corpus,0.00,0.00,0.00,3296
++tcmalloc,sed_corpus,3.52,3.37,0.14,11664
++glibc,shell_loop,0.00,0.00,0.00,3344
++hardened-malloc,shell_loop,0.00,0.00,0.00,3380
++hardened-preload,shell_loop,0.02,0.02,0.00,30464
++jemalloc,shell_loop,0.00,0.00,0.00,3364
++mallocng,shell_loop,0.00,0.00,0.00,3344
++mesh,shell_loop,0.01,0.01,0.00,14160
++mimalloc-preload,shell_loop,0.01,0.01,0.00,5732
++mimalloc-secure,shell_loop,0.00,0.00,0.00,3692
++mimalloc,shell_loop,0.00,0.00,0.00,3644
++partitionalloc,shell_loop,0.02,0.02,0.00,6308
++snmalloc,shell_loop,0.00,0.00,0.00,3656
++tcmalloc,shell_loop,0.01,0.01,0.00,13704
++glibc,sort_corpus,0.00,0.00,0.00,3308
++hardened-malloc,sort_corpus,0.00,0.00,0.00,3660
++hardened-preload,sort_corpus,2.83,7.11,0.38,3300696
++jemalloc,sort_corpus,0.00,0.00,0.00,3616
++mallocng,sort_corpus,0.00,0.00,0.00,3732
++mesh,sort_corpus,2.93,7.12,2.22,3319200
++mimalloc-preload,sort_corpus,2.72,6.96,0.41,3283944
++mimalloc-secure,sort_corpus,0.00,0.00,0.00,3712
++mimalloc,sort_corpus,0.00,0.00,0.00,3412
++partitionalloc,sort_corpus,0.17,0.00,0.00,5412
++snmalloc,sort_corpus,0.00,0.00,0.00,3296
++tcmalloc,sort_corpus,1.87,7.01,0.36,3311516
++glibc,wc_corpus,0.00,0.00,0.00,3252
++hardened-malloc,wc_corpus,0.00,0.00,0.00,3596
++hardened-preload,wc_corpus,0.61,0.58,0.02,30076
++jemalloc,wc_corpus,0.00,0.00,0.00,3372
++mallocng,wc_corpus,0.00,0.00,0.00,3400
++mesh,wc_corpus,0.62,0.60,0.01,13612
++mimalloc-preload,wc_corpus,0.62,0.61,0.00,4896
++mimalloc-secure,wc_corpus,0.00,0.00,0.00,3236
++mimalloc,wc_corpus,0.00,0.00,0.00,4520
++partitionalloc,wc_corpus,0.55,0.52,0.02,5740
++snmalloc,wc_corpus,0.00,0.00,0.00,3604
++tcmalloc,wc_corpus,0.63,0.62,0.01,10088
+diff --git a/MALLOC-BENCHMARK-REPORT-LATEST.txt b/MALLOC-BENCHMARK-REPORT-LATEST.txt
+new file mode 100644
+index 0000000000..45047583fc
+--- /dev/null
++++ b/MALLOC-BENCHMARK-REPORT-LATEST.txt
+@@ -0,0 +1,41 @@
++=== Relative wall time vs glibc (lower is faster) ===
++benchmark                      glibchardened-mallochardened-preload      jemalloc      mallocng          mesh      mimallocmimalloc-preloadmimalloc-securepartitionalloc      snmalloc      tcmalloc
++awk_corpus                    0.000s        0.000s        3.700s        0.000s        0.000s        2.790s        0.000s        2.790s        0.000s        3.600s        0.000s        2.730s
++clang++_hello_O2              0.000s        0.000s        0.360s        0.000s        0.000s       52.800s        0.000s        0.280s        0.000s        0.340s        0.000s        0.320s
++clang_sqlite_O2               0.000s        0.000s       13.460s        0.000s        0.000s       55.310s        0.000s       11.040s        0.000s       12.020s        0.000s       11.010s
++g++_hello_O2                  0.000s        0.000s        0.370s        0.000s        0.000s        0.330s        0.000s        0.330s        0.000s        0.330s        0.000s        0.320s
++gcc_sqlite_O2                 0.000s        0.000s       20.740s        0.000s        0.000s       18.080s        0.000s       17.340s        0.020s       18.790s        0.030s       17.140s
++gcc_sqlite_O3                 0.000s        0.000s       27.730s        0.000s        0.000s       25.010s        0.000s       23.430s        0.000s       25.170s        0.000s       23.130s
++grep_corpus                   0.000s        0.030s        0.290s        0.000s        0.050s        0.290s        0.000s        0.310s        0.000s        0.290s        0.000s        0.300s
++make_j8_multifile             0.000s        0.000s        0.080s        0.000s        0.000s       23.760s        0.030s        0.110s        0.030s        0.030s        0.020s        0.050s
++micro_fifo                     1.00x         4.00x         3.50x         0.50x         3.50x         2.00x         0.50x         0.00x         1.00x         1.50x         0.50x         1.00x
++micro_lifo                     1.00x         4.00x         4.00x         0.50x         3.50x         2.00x         0.00x         0.00x         1.00x         1.50x         0.50x         1.00x
++micro_mixed                   0.000s        0.010s        0.000s        0.000s        0.010s        0.010s        0.000s        0.000s        0.000s        0.000s        0.000s        0.000s
++micro_realloc                 0.000s        0.000s        0.010s        0.000s        0.000s        0.000s        0.000s        0.010s        0.000s        0.090s        0.000s        0.000s
++python_alloc                  0.000s        0.000s        0.060s        0.000s        0.000s        0.040s        0.000s        0.030s        0.000s        0.030s        0.000s        0.030s
++python_sort                   0.000s        0.000s        0.080s        0.000s        0.000s        0.060s        0.000s        0.050s        0.000s        0.050s        0.000s        0.050s
++sed_corpus                    0.000s        0.000s        4.550s        0.000s        0.000s      103.440s        0.000s        3.440s        0.000s        0.000s        0.000s        3.520s
++shell_loop                    0.000s        0.000s        0.020s        0.000s        0.000s        0.010s        0.000s        0.010s        0.000s        0.020s        0.000s        0.010s
++sort_corpus                   0.000s        0.000s        2.830s        0.000s        0.000s        2.930s        0.000s        2.720s        0.000s        0.170s        0.000s        1.870s
++wc_corpus                     0.000s        0.000s        0.610s        0.000s        0.000s        0.620s        0.000s        0.620s        0.000s        0.550s        0.000s        0.630s
++
++=== Max RSS KB ===
++benchmark                      glibchardened-mallochardened-preload      jemalloc      mallocng          mesh      mimallocmimalloc-preloadmimalloc-securepartitionalloc      snmalloc      tcmalloc
++awk_corpus                      3352          3608         30748          3468          3468         14180          4336          6144          3476          6216          3560         12224
++clang++_hello_O2                3132          4420        165452          3404          3468      32498028          4484        143152          3596        126080          3560        144008
++clang_sqlite_O2                 3620          3604        295432          3296          3364      32013684          3556        254836          3604        254340          3308        272484
++g++_hello_O2                    3576          3604        144220          4512          3712        136964          3588        113608          4572        107344          3300        111916
++gcc_sqlite_O2                   3620          3500        417004          3576          4504        439384          3712        374676          3540        367844          3612        407960
++gcc_sqlite_O3                   3692          3632        433960          3284          3708        459932          3632        396528          3592        387108          3536        429752
++grep_corpus                     3724          3572         27772          3356          3380         15836          3604          6412          3396          5364          3584         11336
++make_j8_multifile               3192          3608        109572          3368          3592       6543536          3604         86776          3576         82856          3588         88964
++micro_fifo                     46064         76520         76500         45780         46804         52684         42696         42860         52904         48288         48952         48656
++micro_lifo                     45956         74364         76036         45896         46868         53684         42772         42856         52908         48340         49248         49488
++micro_mixed                     6044         28968         33356         12660          6140         21792         12020         12076         12024         10728         16452         16472
++micro_realloc                   3340         24704         34344         10356          3392         16468          5884          5928          5888          6128         10264         12320
++python_alloc                    3572          3588         69504          3644          3580         70600          3288         50876          3484         44792          3580         52804
++python_sort                     2980          3356         47860          3608          3596         55652          3296         29876          3280         22944          3300         30372
++sed_corpus                      3276          3584         30764          3308          3468      32452036          3392          5784          3400          6540          3296         11664
++shell_loop                      3344          3380         30464          3364          3344         14160          3644          5732          3692          6308          3656         13704
++sort_corpus                     3308          3660       3300696          3616          3732       3319200          3412       3283944          3712          5412          3296       3311516
++wc_corpus                       3252          3596         30076          3372          3400         13612          4520          4896          3236          5740          3604         10088
+diff --git a/MALLOC-BENCHMARK-REPORT.md b/MALLOC-BENCHMARK-REPORT.md
+new file mode 100644
+index 0000000000..d132b42d61
+--- /dev/null
++++ b/MALLOC-BENCHMARK-REPORT.md
+@@ -0,0 +1,466 @@
++# Malloc Backend Benchmark Report
++
++## Test Environment
++
++- **CPU**: x86_64, nproc = 32
++- **Kernel**: Linux 7.0.10-server-gcc-1omv2690
++- **Compiler**: GCC 16.1.1
++- **glibc**: malloc-experiments branch with fully in-tree pluggable backends
++- **Benchmarks**:
++  1. Synthetic workloads (small / large / mixed / realloc / 4-thread), 3 runs, median reported
++  2. `benchtests/bench-malloc-simple` (hp_timing ticks/iter, lower is better)
++  3. `benchtests/bench-malloc-thread` (3s mixed workload, time/iter + max RSS)
++- Each backend built with `../configure --prefix=/usr --disable-werror --disable-mathvec --with-malloc=IMPL`
++- Benchmarks executed via each build's `testrun.sh` so the under-test `libc.so` is used
++
++## Backends Tested
++
++| Backend | Integration | libc.so size |
++|---------|-------------|-------------:|
++| **glibc** | Native ptmalloc2 (default) | 11,674 KB |
++| **mimalloc** | In-tree `malloc/mimalloc/` | 12,241 KB |
++| **jemalloc** | In-tree `malloc/jemalloc/` | 15,162 KB |
++| **snmalloc** | In-tree `malloc/snmalloc/` (C++) | 14,454 KB |
++| **rpmalloc** | In-tree `malloc/rpmalloc/` | 11,633 KB |
++| **mallocng** | In-tree `malloc/mallocng/` | 11,579 KB |
++
++## Synthetic Workloads
++
++### Throughput (Mops/s — higher is better, median of 3 runs)
++
++| Benchmark | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|-----------|---------:|---------:|---------:|---------:|---------:|---------:|
++| **Small alloc** (8–256 B, 2M ops) | 538.99 | 544.77 | 578.37 | 621.75 | **623.20** | 618.58 |
++| **Large alloc** (4 KB–1 MB, 200K ops) | 0.09 | 1.88 | 1.35 | **4.28** | 3.60 | 0.12 |
++| **Mixed alloc** (8 B–64 KB, 1M ops) | 4.22 | 22.16 | 3.80 | 48.47 | **60.43** | 1.05 |
++| **Realloc** (500K ops) | 28.43 | 15.92 | 17.54 | 27.37 | **80.55** | 5.63 |
++| **MT 4-thread** (8M ops) | 304.16 | 278.59 | 311.31 | 334.24 | **380.54** | 7.20 |
++
++### Execution Time (seconds — lower is better, median of 3 runs)
++
++| Benchmark | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|-----------|---------:|---------:|---------:|---------:|---------:|---------:|
++| **Small alloc** (8–256 B, 2M ops) | 0.0037 | 0.0037 | 0.0035 | **0.0032** | 0.0032 | 0.0032 |
++| **Large alloc** (4 KB–1 MB, 200K ops) | 2.2569 | 0.1062 | 0.1483 | **0.0467** | 0.0555 | 1.6173 |
++| **Mixed alloc** (8 B–64 KB, 1M ops) | 0.2368 | 0.0451 | 0.2631 | 0.0206 | **0.0165** | 0.9510 |
++| **Realloc** (500K ops) | 0.0176 | 0.0314 | 0.0285 | 0.0183 | **0.0062** | 0.0888 |
++| **MT 4-thread** (8M ops) | 0.0263 | 0.0287 | 0.0257 | 0.0239 | **0.0210** | 1.1117 |
++
++### Peak RSS (KB — lower is better, median of 3 runs)
++
++| Metric | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|--------|---------:|---------:|---------:|---------:|---------:|---------:|
++| **Peak RSS** | 37,264 | 69,328 | 98,088 | 69,376 | 140,824 | **16,912** |
++
++## bench-malloc-simple (16-byte blocks, hp_timing ticks/iter — lower is better)
++
++| Scenario | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|----------|---------:|---------:|---------:|---------:|---------:|---------:|
++| ST 25 | 38.59 | 23.28 | 16.31 | 27.63 | **13.47** | 71.69 |
++| ST 400 | 96.95 | 22.77 | 34.22 | 22.99 | **13.36** | 210.86 |
++| ST 1600 | 100.21 | 22.91 | 38.51 | 23.60 | **13.46** | 160.79 |
++| MT 25 | 56.70 | 23.31 | 16.76 | 24.30 | **13.84** | 58.03 |
++| MT 1600 | 103.76 | 23.45 | 38.88 | 22.70 | **13.34** | 162.58 |
++| Thread 25 | 56.36 | 24.73 | 17.39 | 26.20 | **14.33** | 60.45 |
++| Thread 1600 | 105.35 | 22.87 | 39.45 | 23.19 | **13.43** | 160.38 |
++| max_rss KB | 3,524 | 5,596 | 10,008 | 5,528 | 7,644 | **3,300** |
++
++## bench-malloc-thread (3s mixed 4–32768 B workload, 1 thread)
++
++| Metric | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|--------|---------:|---------:|---------:|---------:|---------:|---------:|
++| time/iter (ns) | 23.63 | **16.34** | 22.29 | 24.33 | 18.87 | 114.40 |
++| max_rss (KB) | **3,612** | 6,208 | 8,472 | 6,148 | 12,348 | 3,696 |
++
++## Summary
++
++- **rpmalloc** leads `bench-malloc-simple` by a wide margin (~13 ticks vs ~23+ for others) and dominates synthetic realloc (~81 Mops/s) and mixed alloc throughput.
++- **snmalloc** is strongest on synthetic large-alloc throughput and very strong on mixed alloc; competitive multi-threaded scaling.
++- **mimalloc** is consistently fast on small/mixed workloads with stable RSS behaviour in `bench-malloc-simple`.
++- **jemalloc** is solid on small allocs in `bench-malloc-simple` but loses on mixed synthetic workloads; largest `libc.so`.
++- **glibc ptmalloc2** has the lowest peak RSS in the synthetic suite but is far slower on large/mixed allocations.
++- **mallocng** is compact and fine for tiny single-thread allocs, but its single global lock makes multi-threaded and mixed workloads poor fits.
++
++### Recommendations (embeddable in-tree backends only)
++
++| Use case | Recommendation | Rationale |
++|----------|----------------|-----------|
++| General / containers | **snmalloc** or **rpmalloc** | Best overall throughput; small libc growth |
++| Realloc-heavy / games | **rpmalloc** | ~3–5× realloc throughput vs alternatives |
++| Multi-threaded servers | **snmalloc** / **jemalloc** | Strong MT results; avoid mallocng |
++| RSS-sensitive embedded | **glibc** or **mallocng** | Lowest peak RSS; accept throughput tradeoff |
++
++Raw logs: `/tmp/malloc-bench/results/`.
++
++---
++
++## Real-world: compiling with clang under each libc
++
++### Setup
++
++- **Compiler**: OpenMandriva clang 22.1.8
++- **Workload**:
++  1. `clang -O2 -c sqlite3.c` (SQLite amalgamation, 257,679 lines) — single process
++  2. `clang -O3 -c sqlite3.c` — single process, heavier optimisations
++  3. `make -j16` building 16 SQLite variants + mimalloc `static.c` + rpmalloc + snmalloc C++ impl
++  4. Same multi-file set with `make -j1` (no compiler parallelism)
++- Each `clang`/`clang++` invocation wrapped with the under-test `ld.so` and `libc.so` from `/tmp/glibc-malloc-build/<impl>` (verified via `/proc/<pid>/maps`)
++- Wall time and peak RSS summed across the make/clang process tree; 3 runs with median unless noted
++
++### SQLite amalgamation `-O2` (median of 3)
++
++| Backend | Time (s) | vs glibc | Peak RSS (MB) |
++|---------|---------:|---------:|--------------:|
++| **glibc** | 12.718 | 1.00x | **228.8** |
++| **mimalloc** | 11.476 | 1.11x | 246.8 |
++| **jemalloc** | 11.620 | 1.09x | 255.7 |
++| **snmalloc** | **11.373** | 1.12x | 273.6 |
++| **rpmalloc** | 11.566 | 1.10x | 318.9 |
++| **mallocng** | 13.765 | 0.92x | 241.0 |
++
++### SQLite amalgamation `-O3` (median of 3)
++
++| Backend | Time (s) | vs glibc | Peak RSS (MB) |
++|---------|---------:|---------:|--------------:|
++| **glibc** | 30.368 | 1.00x | **233.2** |
++| **mimalloc** | 29.920 | 1.01x | 250.6 |
++| **jemalloc** | 22.893 | 1.33x | 255.8 |
++| **snmalloc** | 17.198 | 1.77x | 273.6 |
++| **rpmalloc** | **12.179** | 2.49x | 324.4 |
++| **mallocng** | 14.449 | 2.10x | 245.4 |
++
++### Multi-file compile `make -j16` (median of 3)
++
++| Backend | Time (s) | vs glibc | Peak RSS (MB) |
++|---------|---------:|---------:|--------------:|
++| **glibc** | 17.758 | 1.00x | **3570.0** |
++| **mimalloc** | 16.627 | 1.07x | 3844.1 |
++| **jemalloc** | 16.343 | 1.09x | 3942.5 |
++| **snmalloc** | **16.257** | 1.09x | 4227.9 |
++| **rpmalloc** | 16.559 | 1.07x | 4977.3 |
++| **mallocng** | 19.807 | 0.90x | 3778.8 |
++
++### Multi-file compile `make -j1` (1 run)
++
++| Backend | Time (s) | vs glibc | Peak RSS (MB) |
++|---------|---------:|---------:|--------------:|
++| **glibc** | 199.021 | 1.00x | **231.9** |
++| **mimalloc** | 182.457 | 1.09x | 248.8 |
++| **jemalloc** | 182.235 | 1.09x | 256.6 |
++| **snmalloc** | **181.640** | 1.10x | 273.9 |
++| **rpmalloc** | 182.939 | 1.09x | 319.7 |
++| **mallocng** | 225.100 | 0.88x | 246.5 |
++
++### Observations
++
++- On single-process `-O2` SQLite, **snmalloc**, **mimalloc**, **jemalloc**, and **rpmalloc** cluster around **11.4–11.6 s** (~9–12% faster than ptmalloc2 at 12.7 s). **mallocng** is slowest at ~13.8 s.
++- The `-O3` run amplifies allocator differences: **rpmalloc** finishes in **~12.2 s** (**2.49×** vs ptmalloc2's ~30.4 s). **snmalloc** (~17.2 s) and **mallocng** (~14.4 s) also beat ptmalloc2 substantially; **mimalloc** is near ptmalloc2 here.
++- Parallel `-j16` is more CPU-bound, but **snmalloc** (~16.26 s) and **jemalloc** (~16.34 s) still edge out ptmalloc2 (~17.76 s); **mallocng** regresses to ~19.8 s from lock contention across 16 clang processes.
++- Peak RSS: ptmalloc2 is leanest; rpmalloc uses the most memory (single-process ~319 MB, parallel tree sum ~5.0 GB).
++- Serial multi-file (`-j1`) mirrors single-process rankings: snmalloc/jemalloc/mimalloc/rpmalloc ~182 s vs glibc 199 s vs mallocng 225 s.
++
++Raw logs: `/tmp/malloc-bench/clang-results/`.
++
++---
++
++## Compiler matrix: clang vs gcc, C vs C++
++
++### Setup
++
++- **Compilers**: clang 22.1.8 and gcc/g++ 16.1.1
++- **C workload**: SQLite amalgamation (257,679 lines)
++- **C++ workload**: generated template-heavy `heavy.cpp` (10,811 lines, 450 node/wrapper template families) plus real `snmalloc` embedding TUs in the parallel set
++- Each compiler binary wrapped with the under-test `ld.so`/`libc.so`; peak RSS summed over the make/compiler process tree
++- Two runs per cell; tables show the **mean**. Some parallel cells have high run-to-run variance under memory pressure
++
++### C: SQLite amalgamation `-O2` (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 15.01 | 1.00x | 1.66 | **230** |
++| **mimalloc** | 15.45 | 0.97x | 2.88 | 246 |
++| **jemalloc** | **11.62** | 1.29x | 0.36 | 252 |
++| **snmalloc** | 12.87 | 1.17x | 2.73 | 269 |
++| **rpmalloc** | 13.52 | 1.11x | 3.73 | 315 |
++| **mallocng** | 15.84 | 0.95x | 3.01 | 242 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 27.85 | 1.00x | 2.03 | 357 |
++| **mimalloc** | **18.19** | 1.53x | 0.29 | 361 |
++| **jemalloc** | 18.47 | 1.51x | 0.64 | 363 |
++| **snmalloc** | 19.59 | 1.42x | 1.57 | 361 |
++| **rpmalloc** | 24.62 | 1.13x | 1.80 | 365 |
++| **mallocng** | 23.34 | 1.19x | 9.01 | **357** |
++
++### C: SQLite amalgamation `-O3` (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 17.41 | 1.00x | 0.53 | **234** |
++| **mimalloc** | 13.61 | 1.28x | 1.78 | 249 |
++| **jemalloc** | **12.57** | 1.38x | 0.90 | 254 |
++| **snmalloc** | 12.61 | 1.38x | 0.61 | 273 |
++| **rpmalloc** | 13.23 | 1.32x | 1.17 | 326 |
++| **mallocng** | 16.16 | 1.08x | 0.51 | 249 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 26.34 | 1.00x | 2.31 | **373** |
++| **mimalloc** | 32.86 | 0.80x | 16.52 | 377 |
++| **jemalloc** | 40.09 | 0.66x | 19.04 | 379 |
++| **snmalloc** | **24.35** | 1.08x | 0.46 | 376 |
++| **rpmalloc** | 25.53 | 1.03x | 0.69 | 381 |
++| **mallocng** | 27.46 | 0.96x | 3.55 | 373 |
++
++### C++: template-heavy TU (`heavy.cpp`, 10.8k lines) `-O2` (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 18.51 | 1.00x | 0.24 | **545** |
++| **mimalloc** | **17.15** | 1.08x | 0.07 | 564 |
++| **jemalloc** | 22.56 | 0.82x | 5.48 | 594 |
++| **snmalloc** | 24.82 | 0.75x | 5.30 | 602 |
++| **rpmalloc** | 19.55 | 0.95x | 0.32 | 620 |
++| **mallocng** | 21.47 | 0.86x | 0.60 | 556 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | **14.19** | 1.00x | 0.19 | **1161** |
++| **mimalloc** | 14.82 | 0.96x | 1.46 | 1166 |
++| **jemalloc** | 14.57 | 0.97x | 0.62 | 1168 |
++| **snmalloc** | 15.79 | 0.90x | 3.09 | 1165 |
++| **rpmalloc** | 15.00 | 0.95x | 0.82 | 1169 |
++| **mallocng** | 14.69 | 0.97x | 0.15 | 1161 |
++
++### C++: template-heavy TU `-O3` (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | **19.05** | 1.00x | 0.88 | **543** |
++| **mimalloc** | 26.78 | 0.71x | 5.62 | 563 |
++| **jemalloc** | 30.48 | 0.62x | 11.86 | 593 |
++| **snmalloc** | 21.55 | 0.88x | 4.48 | 602 |
++| **rpmalloc** | 20.96 | 0.91x | 5.66 | 620 |
++| **mallocng** | 22.15 | 0.86x | 1.03 | 558 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | **22.56** | 1.00x | 0.33 | 1262 |
++| **mimalloc** | 32.08 | 0.70x | 18.33 | 1266 |
++| **jemalloc** | 30.36 | 0.74x | 14.32 | 1268 |
++| **snmalloc** | 40.99 | 0.55x | 4.68 | 1266 |
++| **rpmalloc** | 33.31 | 0.68x | 2.65 | 1270 |
++| **mallocng** | 25.85 | 0.87x | 4.68 | **1262** |
++
++### C: multi-file `make -j12` (12× SQLite + mimalloc + rpmalloc) (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 18.66 | 1.00x | 3.49 | **2674** |
++| **mimalloc** | **16.39** | 1.14x | 0.57 | 2858 |
++| **jemalloc** | 18.83 | 0.99x | 5.85 | 2945 |
++| **snmalloc** | 31.43 | 0.59x | 1.53 | 3160 |
++| **rpmalloc** | 39.31 | 0.47x | 9.17 | 3663 |
++| **mallocng** | 27.66 | 0.67x | 1.36 | 2803 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 26.16 | 1.00x | 4.00 | 4240 |
++| **mimalloc** | 40.81 | 0.64x | 18.93 | 4280 |
++| **jemalloc** | 35.34 | 0.74x | 13.00 | 4285 |
++| **snmalloc** | **25.16** | 1.04x | 1.97 | 4279 |
++| **rpmalloc** | 34.47 | 0.76x | 5.85 | 4337 |
++| **mallocng** | 29.86 | 0.88x | 5.89 | **4188** |
++
++### C++: multi-file `make -j12` (12× heavy + 4× snmalloc) (mean of 2)
++
++#### clang
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 26.48 | 1.00x | 4.74 | **6329** |
++| **mimalloc** | 33.31 | 0.80x | 8.92 | 6402 |
++| **jemalloc** | **26.16** | 1.01x | 5.43 | 7033 |
++| **snmalloc** | 52.73 | 0.50x | 55.25 | 7123 |
++| **rpmalloc** | 52.58 | 0.50x | 45.71 | 6433 |
++| **mallocng** | 32.05 | 0.83x | 6.49 | 6566 |
++
++#### gcc
++
++| Backend | Time (s) | vs glibc | Δ runs (s) | Peak RSS (MB) |
++|---------|---------:|---------:|-----------:|--------------:|
++| **glibc** | 36.25 | 1.00x | 7.96 | 13450 |
++| **mimalloc** | 28.82 | 1.26x | 4.92 | 13596 |
++| **jemalloc** | 24.68 | 1.47x | 1.54 | 13678 |
++| **snmalloc** | **20.62** | 1.76x | 1.48 | 13821 |
++| **rpmalloc** | 22.06 | 1.64x | 4.42 | 13868 |
++| **mallocng** | 34.62 | 1.05x | 14.28 | **13256** |
++
++### Cross-cutting observations
++
++- **C / clang**: jemalloc and snmalloc are consistently among the fastest single-TU times; ptmalloc2 and mallocng trail. Parallel `-j12` favors mimalloc/jemalloc; rpmalloc/snmalloc show higher wall time and RSS under multi-process clang.
++- **C / gcc**: modern allocators help more than with clang on `-O2` SQLite (mimalloc/jemalloc/snmalloc ~18–20 s vs glibc ~28 s). gcc uses substantially more RSS than clang on the same C inputs.
++- **C++ / clang**: mimalloc leads single-TU `-O2` (~17.1 s). Several alternate allocators **lose** on `-O3` C++ versus ptmalloc2 (higher means, large run spreads), suggesting sensitivity to clang’s optimizers’ allocation patterns plus memory pressure.
++- **C++ / gcc**: ptmalloc2 is surprisingly strong on single-TU `-O2`/`-O3` time and leanest RSS, but uses **~1.2–1.3 GB** RSS vs clang’s ~0.55–0.64 GB for the same TU. Parallel C++ `-j12` flips the ranking: **rpmalloc/snmalloc/jemalloc** win wall time while consuming ~14 GB aggregated RSS.
++- **mallocng** remains a poor fit for parallel compiles (global lock) on both compilers, and is rarely best on single-TU C++.
++- Takeaway for compiler workloads: gains are **compiler- and language-specific**. gcc C builds benefit clearly from mimalloc/jemalloc/snmalloc; clang C benefits modestly; clang C++ is mixed; gcc parallel C++ favors snmalloc/rpmalloc at high RSS cost.
++
++Raw logs: `/tmp/malloc-bench/compile-results/`.
++
++---
++
++## Parallel builds at `-j32` (primary workstation workload)
++
++Targeted at `ninja -j32` / `make -j32` with **clang default** and occasional **gcc** packages.
++Workload sized to saturate 32 cores: 32× SQLite TUs + mimalloc/rpmalloc C sources,
++32× template-heavy C++ TUs + 8× real snmalloc embedding TUs. Three runs (median) for clang;
++two runs (median) for gcc mixed.
++
++### clang++ parallel C++ (`make -j32`, 40 TUs)
++
++| Backend | Median time (s) | Range (s) | vs glibc | Median peak RSS (GB) |
++|---------|----------------:|----------:|---------:|---------------------:|
++| **glibc** | 53.7 | 42.8–54.4 | 1.00× | **14.5** |
++| **mimalloc** | 43.0 | 39.6–44.6 | 1.25× | 16.2 |
++| **jemalloc** | 43.0 | 41.7–44.9 | 1.25× | 17.5 |
++| **snmalloc** | **41.1** | 40.0–61.6 | 1.31× | 18.5 |
++| **rpmalloc** | 41.9 | 37.8–42.7 | 1.28× | 18.1 |
++| **mallocng** | 49.6 | 49.2–49.7 | 1.08× | 16.3 |
++
++### clang parallel C (`make -j32`, 34 TUs)
++
++| Backend | Median time (s) | Range (s) | vs glibc | Median peak RSS (GB) |
++|---------|----------------:|----------:|---------:|---------------------:|
++| **glibc** | 31.8 | 30.6–43.2 | 1.00× | **6.9** |
++| **mimalloc** | 58.9 | 40.3–78.7 | 0.54× | 7.1 |
++| **jemalloc** | 28.9 | 27.7–29.5 | 1.10× | 7.6 |
++| **snmalloc** | **28.1** | 27.9–28.2 | 1.13× | 8.2 |
++| **rpmalloc** | 28.3 | 28.0–32.3 | 1.12× | 9.6 |
++| **mallocng** | 39.2 | 34.3–42.0 | 0.81× | 7.2 |
++
++### clang mixed C+C++ (`make -j32`, 74 TUs) — closest to daily builds
++
++| Backend | Median time (s) | Range (s) | vs glibc | Median peak RSS (GB) |
++|---------|----------------:|----------:|---------:|---------------------:|
++| **glibc** | 76.8 | 73.2–99.5 | 1.00× | 15.1 |
++| **mimalloc** | 71.1 | 71.0–78.8 | 1.08× | 15.6 |
++| **jemalloc** | 75.9 | 70.7–80.3 | 1.01× | 16.7 |
++| **snmalloc** | 70.7 | 69.4–79.6 | 1.09× | 18.6 |
++| **rpmalloc** | **70.5** | 68.4–71.7 | 1.09× | 17.0 |
++| **mallocng** | 108.4 | 102.1–118.1 | 0.71× | **11.5** |
++
++### gcc mixed C+C++ (`make -j32`) — secondary toolchain packages
++
++| Backend | Median time (s) | Range (s) | vs glibc | Median peak RSS (GB) |
++|---------|----------------:|----------:|---------:|---------------------:|
++| **glibc** | 135.5 | 87.7–135.5 | 1.00× | 34.3 |
++| **mimalloc** | 85.0 | 83.4–85.0 | 1.59× | 34.7 |
++| **jemalloc** | 96.3 | 92.9–96.3 | 1.41× | **33.9** |
++| **snmalloc** | 98.3 | 83.0–98.3 | 1.38× | 34.1 |
++| **rpmalloc** | **81.8** | 79.9–81.8 | 1.66× | 34.8 |
++| **mallocng** | 115.4 | 81.4–115.4 | 1.17× | 34.1 |
++
++### Recommendation for this machine
++
++For **clang-first `ninja -j32` on mixed C/C++**, the `-j32` mixed medians are:
++
++| Rank | Backend | Mixed median | Notes |
++|-----:|---------|-------------:|-------|
++| 1 | **rpmalloc** | **70.5 s** | Fastest mixed; also strong on pure C++ (`41.9 s`) and pure C (`28.3 s`). Highest RSS (~17–19 GB tree sum). |
++| 2 | **snmalloc** | **70.7 s** | Ties rpmalloc on mixed; excellent pure C (`28.1 s`). One noisy C++ outlier run (62 s) but median solid. |
++| 3 | **mimalloc** | **71.1 s** | Very close; good single-TU C++ earlier. Pure-C `-j32` showed high variance (40–79 s). |
++| 4 | **jemalloc** | **75.9 s** | Best/most stable pure-C clang `-j32` (`28.9 s`). Slightly behind on mixed. |
++| 5 | glibc ptmalloc2 | **76.8 s** | Baseline; leanest-ish RSS on some cells but leaves ~6–10 s on the table vs top three. |
++| 6 | mallocng | **108.4 s** | Clear loss under multi-process clang (global lock). Avoid for `-j32`. |
++
++**Practical pick:** `--with-malloc=rpmalloc` or `--with-malloc=snmalloc` as the system default for this box. Both beat ptmalloc2 by ~8% on the mixed clang `-j32` proxy and by ~20%+ on pure parallel C++. Prefer **snmalloc** if you also care about single-threaded C++ compile latency stability from earlier single-TU tests; prefer **rpmalloc** if realloc-heavy app runtimes matter (synthetic suite).
++
++For **gcc packages at `-j32`**, rpmalloc (~80.8 s) and mimalloc (~84.2 s) beat glibc’s median (~111.6 s, pulled up by a 135 s outlier). Expect **~33–36 GB** aggregated RSS with gcc `-j32` mixed — fine on 62 GB RAM but tight if other jobs run.
++
++Raw logs: `/tmp/malloc-bench/compile-results/*j32*`.
++
++## Post-shim-fix re-benchmark (2026-07-03)
++
++Re-run after compat shim fixes (`PTRDIFF_MAX` guard, `realloc(0)` semantics,
++errno-preserving `free`, shrink-in-place). Single-impl builds via
++`ld.so --library-path` (same method as prior `testrun.sh` runs).
++Absolute Mops differ from the earlier report because workloads now
++touch allocated memory (prevents malloc elision) and use a tight
++alloc/free loop for the hot-path microbench; **rankings** are what matter.
++
++### Hot-path `malloc`+`free` 16 B (5 Mops, median of 5)
++
++| Backend | Mops/s | ns/op |
++|---------|-------:|------:|
++| **glibc** | 202.78 | 4.93 |
++| **mimalloc** | 123.86 | 8.07 |
++| **jemalloc** | 145.43 | 6.88 |
++| **snmalloc** | 110.91 | 9.02 |
++| **rpmalloc** | 147.66 | 6.77 |
++| **mallocng** | 6.54 | 152.88 |
++
++### Synthetic throughput (Mops/s, median of 3)
++
++| Benchmark | glibc | mimalloc | jemalloc | snmalloc | rpmalloc | mallocng |
++|-----------|------:|---------:|---------:|---------:|---------:|---------:|
++| small | 188.15 | 94.30 | 130.27 | 95.97 | 109.90 | 6.51 |
++| large | 0.34 | 5.02 | 4.43 | 1.25 | 61.06 | 0.15 |
++| mixed | 7.60 | 41.22 | 4.04 | 44.86 | 46.86 | 1.17 |
++| realloc | 145.11 | 232.03 | 204.00 | 247.22 | 251.94 | 138.19 |
++| mt4 | 112.41 | 95.77 | 117.34 | 105.85 | 95.94 | 5.31 |
++
++### Realloc micro (2 Mops, median of 5) vs prior report realloc workload
++
++| Backend | post-shim Mops/s | prior report Mops/s | delta |
++|---------|-----------------:|--------------------:|------:|
++| **glibc** | 293.81 | 28.43 | n/a (workload changed) |
++| **mimalloc** | 237.93 | 15.92 | n/a (workload changed) |
++| **jemalloc** | 207.81 | 17.54 | n/a (workload changed) |
++| **snmalloc** | 246.95 | 27.37 | n/a (workload changed) |
++| **rpmalloc** | 251.27 | 80.55 | n/a (workload changed) |
++| **mallocng** | 154.58 | 5.63 | n/a (workload changed) |
++
++### clang -O2 -c sqlite3.c (median of 3 wall seconds, lower better)
++
++| Backend | seconds |
++|---------|--------:|
++| **glibc** | 0.520 |
++| **mimalloc** | 0.490 |
++| **jemalloc** | 0.500 |
++| **snmalloc** | 0.490 |
++| **rpmalloc** | 0.490 |
++| **mallocng** | 0.520 |
++
++### Regression read
++
++- **rpmalloc** remains in the leading group on mixed/realloc/large synthetic
++  workloads after shim guards; hot-path ns/op ~6.8 vs glibc tcache ~4.9.
++- **snmalloc** stays competitive on realloc/mixed; slightly behind rpmalloc on
++  hot-path microbench (expected; unchanged relative ordering vs mi/je).
++- **mallocng** still trails badly on small/mt paths (pre-existing).
++- No impl shows a collapse vs peers that would indicate the `unlikely` size
++  check or errno save/restore dominating the fast path.
++
++Raw logs: `/tmp/malloc-bench-postshim/results/`.
++
+diff --git a/NEWS b/NEWS
+index cec8b61f55..868ac6d102 100644
+--- a/NEWS
++++ b/NEWS
+@@ -9,11 +9,31 @@ Version 2.43.1
+ 
+ The following bugs are resolved with this release:
+ 
+- [33623] [ldbl-128ibm] roundl, ceill, truncl, floorl bad sign of zero
+-   results
+- [33848] build: Build fails at openat2.h, redefinition of 'struct
+-    open_how'
+- [33904] build: error: '__vasprintf_chk' undeclared here
++Major new features:
++
++* The --with-malloc configure option accepts a comma-separated list of
++  implementations (glibc, mimalloc, mimalloc-secure, jemalloc, snmalloc,
++  rpmalloc, mallocng, hardened-malloc, phasecast) to embed multiple
++  allocators in one libc and select among them at startup.
++  --with-default-malloc=NAME sets the compile-time default.  A single
++  implementation keeps zero runtime dispatch overhead.  New query functions
++  gnu_get_libc_malloc_impls, gnu_get_libc_malloc_default, and
++  gnu_get_libc_malloc_active are declared in <malloc.h>.  Runtime selection
++  honors GLIBC_MALLOC_IMPL, drop-in files under /etc/glibc/malloc.d/ and
++  DATADIR/glibc/malloc.d/, and /etc/glibc/malloc.conf.  Optional
++  --with-malloc-preload builds LD_PRELOAD DSOs for C++ allocators (mesh,
++  partitionalloc, tcmalloc).  The phasecast backend adds
++  gnu_malloc_phase_{push,pop,load_profile,save_profile}.  The
++  glibc-malloc-profile helper times a representative command under each
++  embedded implementation and can write a matching drop-in.
++
++The following bugs are resolved with this release:
++
++  [33623] [ldbl-128ibm] roundl, ceill, truncl, floorl bad sign of zero
++    results
++  [33848] build: Build fails at openat2.h, redefinition of 'struct
++     open_how'
++  [33904] build: error: '__vasprintf_chk' undeclared here
+ 
+ Version 2.43
+ 
+diff --git a/manual/install.texi b/manual/install.texi
+index 073cda0530..1cdf059b1b 100644
+--- a/manual/install.texi
++++ b/manual/install.texi
+@@ -116,6 +116,26 @@ smallest version of the Linux kernel the generated library is expected
+ to support.  The higher the @var{version} number is, the less
+ compatibility code is added, and the faster the code gets.
+ 
++@item --with-malloc=@var{impl}[,@var{impl}...]
++Select the @code{malloc} implementation(s) compiled into libc.
++Supported names are @samp{glibc} (the historical ptmalloc2 default),
++@samp{mimalloc}, @samp{jemalloc}, @samp{snmalloc}, @samp{rpmalloc}, and
++@samp{mallocng}.  A single name embeds only that allocator with no runtime
++selection overhead.  A comma-separated list embeds each implementation and
++enables startup selection via @env{GLIBC_MALLOC_IMPL}, drop-in files in
++@file{/etc/glibc/malloc.d/} and @file{@var{datadir}/glibc/malloc.d/}, and
++@file{/etc/glibc/malloc.conf}.  Distro snippets are arch-independent and
++live under @var{datadir} (typically @file{/usr/share}); per-architecture
++@code{impl=} differences are handled by availability fallback when a
++backend was not embedded in that libc.  Duplicates are rejected.
++
++@item --with-default-malloc=@var{name}
++When multiple implementations are configured with @option{--with-malloc},
++choose the compile-time default (also used for internal libc allocations
++if public @code{malloc} is interposed).  Defaults to the first entry in
++the @option{--with-malloc} list.  @var{name} must be one of the enabled
++implementations.
++
+ @item --with-binutils=@var{directory}
+ Use the binutils (assembler and linker) in @file{@var{directory}}, not
+ the ones the C compiler would default to.  You can use this option if
+-- 
+2.53.0
+

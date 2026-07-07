@@ -1,7 +1,7 @@
 From 856c426a753450b8c6861a5b994a564f4fc16d4b Mon Sep 17 00:00:00 2001
 From: Andreas Schwab <schwab@suse.de>
 Date: Tue, 3 Feb 2026 12:41:23 +0100
-Subject: [PATCH 5/8] Don't include <bits/openat2.h> directly (bug 33848)
+Subject: [PATCH 05/45] Don't include <bits/openat2.h> directly (bug 33848)
 
 Headers from bits directories should never be included directly, only via
 the official headers.

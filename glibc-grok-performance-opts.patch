@@ -1,0 +1,121 @@
+commit 915233100c78de5f10f2a7ddf7ccc67c8d11c7a2
+Author: Bernhard Rosenkraenzer <bero@lindev.ch>
+Date:   Thu May 14 17:54:07 2026 +0000
+
+    Optimize buffered stdio and qsort
+
+diff --git a/libio/fileops.c b/libio/fileops.c
+index 9348d7c3a1..1983f11533 100644
+--- a/libio/fileops.c
++++ b/libio/fileops.c
+@@ -1290,15 +1290,14 @@ _IO_new_file_xsputn (FILE *f, const void *data, size_t n)
+       count = f->_IO_buf_end - f->_IO_write_ptr;
+       if (count >= n)
+ 	{
+-	  const char *p;
+-	  for (p = s + n; p > s; )
++	  /* Use memrchr to find the last newline — this uses a
++	     word-at-a-time scan which is much faster than the
++	     byte-at-a-time reverse loop for longer buffers.  */
++	  const char *p = __memrchr (s, '\n', n);
++	  if (p != NULL)
+ 	    {
+-	      if (*--p == '\n')
+-		{
+-		  count = p - s + 1;
+-		  must_flush = 1;
+-		  break;
+-		}
++	      count = p - s + 1;
++	      must_flush = 1;
+ 	    }
+ 	}
+     }
+diff --git a/stdlib/qsort.c b/stdlib/qsort.c
+index ca3350268b..37926b4668 100644
+--- a/stdlib/qsort.c
++++ b/stdlib/qsort.c
+@@ -176,6 +176,49 @@ heapsort_r (void *base, size_t n, size_t size, __compar_d_fn_t cmp, void *arg)
+     }
+ }
+ 
++/* Sub-arrays of this many elements or fewer are sorted with insertion sort
++   instead of mergesort.  Insertion sort has lower overhead for tiny arrays
++   and avoids recursive calls + temp-buffer copies.  16 is a well-studied
++   threshold (see Musser 1997, Timsort, pdqsort).  */
++#define INSERTION_SORT_THRESHOLD  8
++
++/* Insertion sort for small sub-arrays.  Operates in-place, no temp buffer
++   needed.  swap_type and size are used only for the element swap.
++   For SWAP_VOID_ARG (indirect sort) the comparator receives the
++   dereferenced pointer values, matching the merge behaviour.  */
++static inline void
++insertion_sort (void *base, size_t n, size_t size,
++	       enum swap_type_t swap_type, __compar_d_fn_t cmp, void *arg)
++{
++  char *a = (char *) base;
++  if (__glibc_unlikely (swap_type == SWAP_VOID_ARG))
++    {
++      for (size_t i = 1; i < n; i++)
++	{
++	  size_t j = i;
++	  while (j > 0
++		 && cmp (*(const void **) (a + (j - 1) * size),
++			 *(const void **) (a + j * size), arg) > 0)
++	    {
++	      do_swap (a + (j - 1) * size, a + j * size, size, swap_type);
++	      j--;
++	    }
++	}
++    }
++  else
++    {
++      for (size_t i = 1; i < n; i++)
++	{
++	  size_t j = i;
++	  while (j > 0 && cmp (a + (j - 1) * size, a + j * size, arg) > 0)
++	    {
++	      do_swap (a + (j - 1) * size, a + j * size, size, swap_type);
++	      j--;
++	    }
++	}
++    }
++}
++
+ /* The maximum size in bytes required by mergesort that will be provided
+    through a buffer allocated in the stack.  */
+ #define QSORT_STACK_SIZE  1024
+@@ -202,6 +245,17 @@ msort_with_tmp (const struct msort_param *p, void *b, size_t n)
+   if (n <= 1)
+     return;
+ 
++  /* Use insertion sort for small sub-arrays — avoids recursive call
++     overhead and temp-buffer copies.  Skip for indirect sort (large
++     elements) where the pointer-dereference comparator overhead
++     makes insertion sort less beneficial than continuing to merge.  */
++  if (__glibc_unlikely (n <= INSERTION_SORT_THRESHOLD)
++      && __glibc_likely (p->var != SWAP_VOID_ARG))
++    {
++      insertion_sort (b, n, p->s, p->var, p->cmp, p->arg);
++      return;
++    }
++
+   n1 = n / 2;
+   n2 = n - n1;
+   b1 = b;
+@@ -210,6 +264,15 @@ msort_with_tmp (const struct msort_param *p, void *b, size_t n)
+   msort_with_tmp (p, b1, n1);
+   msort_with_tmp (p, b2, n2);
+ 
++  /* If the two halves are already in order, the merge can be skipped.
++     This gives O(n) behaviour on already-sorted or nearly-sorted input
++     which is common in practice (e.g. incremental symbol tables).  */
++  if (p->var == SWAP_VOID_ARG
++      ? p->cmp (*(const void **) (b2 - p->s),
++		 *(const void **) b2, p->arg) <= 0
++      : p->cmp (b2 - p->s, b2, p->arg) <= 0)
++    return;
++
+   char *tmp = p->t;
+   const size_t s = p->s;
+   __compar_d_fn_t cmp = p->cmp;

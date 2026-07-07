@@ -1,0 +1,867 @@
+From e9c8c3d9115e7cd48bb13b99a75707426a707c78 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Sat, 4 Jul 2026 19:02:43 +0200
+Subject: [PATCH 03/13] Add in-tree mimalloc-secure backend
+ (--with-malloc=mimalloc-secure)
+
+Build mimalloc with MI_SECURE=4 via dedicated wrapper sources and symbol
+rename headers, selectable independently from the plain mimalloc token.
+---
+ malloc/malloc-mimalloc-secure-impl.c   |  29 ++
+ malloc/malloc-mimalloc-secure-rename.h | 356 ++++++++++++++++++++
+ malloc/malloc-mimalloc-secure.c        | 444 +++++++++++++++++++++++++
+ 3 files changed, 829 insertions(+)
+ create mode 100644 malloc/malloc-mimalloc-secure-impl.c
+ create mode 100644 malloc/malloc-mimalloc-secure-rename.h
+ create mode 100644 malloc/malloc-mimalloc-secure.c
+
+diff --git a/malloc/malloc-mimalloc-secure-impl.c b/malloc/malloc-mimalloc-secure-impl.c
+new file mode 100644
+index 0000000000..186b13004b
+--- /dev/null
++++ b/malloc/malloc-mimalloc-secure-impl.c
+@@ -0,0 +1,29 @@
++/* C compilation unit for mimalloc-secure embedded in glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++/* Second amalgamation of mimalloc compiled with MI_SECURE=4.  Symbol
++   renames (mi_* -> mis_*, _mi_* -> _mis_*) come from
++   malloc-mimalloc-secure-rename.h so this TU can link alongside the
++   non-secure mimalloc backend.  */
++
++#ifndef MI_SECURE
++# define MI_SECURE 4
++#endif
++
++#include "malloc-mimalloc-secure-rename.h"
++#include "mimalloc/src/static.c"
+diff --git a/malloc/malloc-mimalloc-secure-rename.h b/malloc/malloc-mimalloc-secure-rename.h
+new file mode 100644
+index 0000000000..eb633b74b9
+--- /dev/null
++++ b/malloc/malloc-mimalloc-secure-rename.h
+@@ -0,0 +1,356 @@
++/* Auto-generated: rename mimalloc symbols for the secure variant. */
++#ifndef _MALLOC_MIMALLOC_SECURE_RENAME_H
++#define _MALLOC_MIMALLOC_SECURE_RENAME_H
++#define _mi_abandoned_collect _mis_abandoned_collect
++#define _mi_abandoned_reclaim_all _mis_abandoned_reclaim_all
++#define _mi_allocator_done _mis_allocator_done
++#define _mi_allocator_init _mis_allocator_init
++#define _mi_arena_alloc _mis_arena_alloc
++#define _mi_arena_alloc_aligned _mis_arena_alloc_aligned
++#define _mi_arena_contains _mis_arena_contains
++#define _mi_arena_field_cursor_done _mis_arena_field_cursor_done
++#define _mi_arena_field_cursor_init _mis_arena_field_cursor_init
++#define _mi_arena_free _mis_arena_free
++#define _mi_arena_id_none _mis_arena_id_none
++#define _mi_arena_memid_is_os_allocated _mis_arena_memid_is_os_allocated
++#define _mi_arena_memid_is_suitable _mis_arena_memid_is_suitable
++#define _mi_arena_meta_free _mis_arena_meta_free
++#define _mi_arena_meta_zalloc _mis_arena_meta_zalloc
++#define _mi_arena_segment_clear_abandoned _mis_arena_segment_clear_abandoned
++#define _mi_arena_segment_clear_abandoned_next _mis_arena_segment_clear_abandoned_next
++#define _mi_arena_segment_mark_abandoned _mis_arena_segment_mark_abandoned
++#define _mi_arena_unsafe_destroy_all _mis_arena_unsafe_destroy_all
++#define _mi_arenas_collect _mis_arenas_collect
++#define _mi_atomic_once_enter _mis_atomic_once_enter
++#define _mi_atomic_once_release _mis_atomic_once_release
++#define _mi_auto_process_done _mis_auto_process_done
++#define _mi_auto_process_init _mis_auto_process_init
++#define _mi_bin _mis_bin
++#define _mi_bin_size _mis_bin_size
++#define _mi_bitmap_claim _mis_bitmap_claim
++#define _mi_bitmap_claim_across _mis_bitmap_claim_across
++#define _mi_bitmap_is_any_claimed _mis_bitmap_is_any_claimed
++#define _mi_bitmap_is_any_claimed_across _mis_bitmap_is_any_claimed_across
++#define _mi_bitmap_is_claimed _mis_bitmap_is_claimed
++#define _mi_bitmap_is_claimed_across _mis_bitmap_is_claimed_across
++#define _mi_bitmap_try_claim _mis_bitmap_try_claim
++#define _mi_bitmap_try_find_claim_field _mis_bitmap_try_find_claim_field
++#define _mi_bitmap_try_find_from_claim _mis_bitmap_try_find_from_claim
++#define _mi_bitmap_try_find_from_claim_across _mis_bitmap_try_find_from_claim_across
++#define _mi_bitmap_try_find_from_claim_pred _mis_bitmap_try_find_from_claim_pred
++#define _mi_bitmap_unclaim _mis_bitmap_unclaim
++#define _mi_bitmap_unclaim_across _mis_bitmap_unclaim_across
++#define _mi_clock_end _mis_clock_end
++#define _mi_clock_now _mis_clock_now
++#define _mi_clock_start _mis_clock_start
++#define _mi_commit_mask_committed_size _mis_commit_mask_committed_size
++#define _mi_commit_mask_next_run _mis_commit_mask_next_run
++#define _mi_current_thread_count _mis_current_thread_count
++#define _mi_deferred_free _mis_deferred_free
++#define _mi_error_message _mis_error_message
++#define _mi_fprintf _mis_fprintf
++#define _mi_fputs _mis_fputs
++#define _mi_free_delayed_block _mis_free_delayed_block
++#define _mi_free_generic _mis_free_generic
++#define _mi_getenv _mis_getenv
++#define _mi_heap_area_init _mis_heap_area_init
++#define _mi_heap_area_visit_blocks _mis_heap_area_visit_blocks
++#define _mi_heap_by_tag _mis_heap_by_tag
++#define _mi_heap_collect_abandon _mis_heap_collect_abandon
++#define _mi_heap_collect_retired _mis_heap_collect_retired
++#define _mi_heap_default _mis_heap_default
++#define _mi_heap_default_key _mis_heap_default_key
++#define _mi_heap_delayed_free_all _mis_heap_delayed_free_all
++#define _mi_heap_delayed_free_partial _mis_heap_delayed_free_partial
++#define _mi_heap_destroy_pages _mis_heap_destroy_pages
++#define _mi_heap_empty _mis_heap_empty
++#define _mi_heap_guarded_init _mis_heap_guarded_init
++#define _mi_heap_init _mis_heap_init
++#define _mi_heap_main _mis_heap_main
++#define _mi_heap_main_get _mis_heap_main_get
++#define _mi_heap_malloc_zero _mis_heap_malloc_zero
++#define _mi_heap_malloc_zero_ex _mis_heap_malloc_zero_ex
++#define _mi_heap_memid_is_suitable _mis_heap_memid_is_suitable
++#define _mi_heap_random_next _mis_heap_random_next
++#define _mi_heap_realloc_zero _mis_heap_realloc_zero
++#define _mi_heap_set_default_direct _mis_heap_set_default_direct
++#define _mi_heap_unsafe_destroy_all _mis_heap_unsafe_destroy_all
++#define _mi_is_main_thread _mis_is_main_thread
++#define _mi_is_redirected _mis_is_redirected
++#define _mi_malloc_generic _mis_malloc_generic
++#define _mi_message _mis_message
++#define _mi_option_get_fast _mis_option_get_fast
++#define _mi_options_init _mis_options_init
++#define _mi_os_alloc _mis_os_alloc
++#define _mi_os_alloc_aligned _mis_os_alloc_aligned
++#define _mi_os_alloc_aligned_at_offset _mis_os_alloc_aligned_at_offset
++#define _mi_os_alloc_huge_os_pages _mis_os_alloc_huge_os_pages
++#define _mi_os_canuse_large_page _mis_os_canuse_large_page
++#define _mi_os_commit _mis_os_commit
++#define _mi_os_commit_ex _mis_os_commit_ex
++#define _mi_os_decommit _mis_os_decommit
++#define _mi_os_free _mis_os_free
++#define _mi_os_free_ex _mis_os_free_ex
++#define _mi_os_get_aligned_hint _mis_os_get_aligned_hint
++#define _mi_os_good_alloc_size _mis_os_good_alloc_size
++#define _mi_os_has_overcommit _mis_os_has_overcommit
++#define _mi_os_has_virtual_reserve _mis_os_has_virtual_reserve
++#define _mi_os_init _mis_os_init
++#define _mi_os_large_page_size _mis_os_large_page_size
++#define _mi_os_numa_node _mis_os_numa_node
++#define _mi_os_numa_node_count _mis_os_numa_node_count
++#define _mi_os_page_size _mis_os_page_size
++#define _mi_os_protect _mis_os_protect
++#define _mi_os_purge _mis_os_purge
++#define _mi_os_purge_ex _mis_os_purge_ex
++#define _mi_os_random_weak _mis_os_random_weak
++#define _mi_os_reset _mis_os_reset
++#define _mi_os_reuse _mis_os_reuse
++#define _mi_os_unprotect _mis_os_unprotect
++#define _mi_os_zalloc _mis_os_zalloc
++#define _mi_padding_shrink _mis_padding_shrink
++#define _mi_page_abandon _mis_page_abandon
++#define _mi_page_empty _mis_page_empty
++#define _mi_page_force_abandon _mis_page_force_abandon
++#define _mi_page_free _mis_page_free
++#define _mi_page_free_collect _mis_page_free_collect
++#define _mi_page_malloc _mis_page_malloc
++#define _mi_page_malloc_zero _mis_page_malloc_zero
++#define _mi_page_malloc_zeroed _mis_page_malloc_zeroed
++#define _mi_page_ptr_unalign _mis_page_ptr_unalign
++#define _mi_page_queue_append _mis_page_queue_append
++#define _mi_page_reclaim _mis_page_reclaim
++#define _mi_page_retire _mis_page_retire
++#define _mi_page_stats_bin _mis_page_stats_bin
++#define _mi_page_try_use_delayed_free _mis_page_try_use_delayed_free
++#define _mi_page_unfull _mis_page_unfull
++#define _mi_page_use_delayed_free _mis_page_use_delayed_free
++#define _mi_popcount_generic _mis_popcount_generic
++#define _mi_preloading _mis_preloading
++#define _mi_prim_alloc _mis_prim_alloc
++#define _mi_prim_alloc_huge_os_pages _mis_prim_alloc_huge_os_pages
++#define _mi_prim_clock_now _mis_prim_clock_now
++#define _mi_prim_commit _mis_prim_commit
++#define _mi_prim_decommit _mis_prim_decommit
++#define _mi_prim_free _mis_prim_free
++#define _mi_prim_getenv _mis_prim_getenv
++#define _mi_prim_mem_init _mis_prim_mem_init
++#define _mi_prim_numa_node _mis_prim_numa_node
++#define _mi_prim_numa_node_count _mis_prim_numa_node_count
++#define _mi_prim_out_stderr _mis_prim_out_stderr
++#define _mi_prim_process_info _mis_prim_process_info
++#define _mi_prim_protect _mis_prim_protect
++#define _mi_prim_random_buf _mis_prim_random_buf
++#define _mi_prim_reset _mis_prim_reset
++#define _mi_prim_reuse _mis_prim_reuse
++#define _mi_prim_thread_associate_default_heap _mis_prim_thread_associate_default_heap
++#define _mi_prim_thread_done_auto_done _mis_prim_thread_done_auto_done
++#define _mi_prim_thread_init_auto_done _mis_prim_thread_init_auto_done
++#define _mi_process_is_initialized _mis_process_is_initialized
++#define _mi_random_init _mis_random_init
++#define _mi_random_init_weak _mis_random_init_weak
++#define _mi_random_next _mis_random_next
++#define _mi_random_reinit_if_weak _mis_random_reinit_if_weak
++#define _mi_random_split _mis_random_split
++#define _mi_segment_attempt_reclaim _mis_segment_attempt_reclaim
++#define _mi_segment_collect _mis_segment_collect
++#define _mi_segment_huge_page_reset _mis_segment_huge_page_reset
++#define _mi_segment_map_allocated_at _mis_segment_map_allocated_at
++#define _mi_segment_map_freed_at _mis_segment_map_freed_at
++#define _mi_segment_map_unsafe_destroy _mis_segment_map_unsafe_destroy
++#define _mi_segment_page_abandon _mis_segment_page_abandon
++#define _mi_segment_page_alloc _mis_segment_page_alloc
++#define _mi_segment_page_free _mis_segment_page_free
++#define _mi_segment_page_start _mis_segment_page_start
++#define _mi_segment_visit_blocks _mis_segment_visit_blocks
++#define _mi_snprintf _mis_snprintf
++#define _mi_stat_adjust_decrease _mis_stat_adjust_decrease
++#define _mi_stat_counter_increase _mis_stat_counter_increase
++#define _mi_stat_decrease _mis_stat_decrease
++#define _mi_stat_increase _mis_stat_increase
++#define _mi_stats_done _mis_stats_done
++#define _mi_stats_main _mis_stats_main
++#define _mi_stats_merge_thread _mis_stats_merge_thread
++#define _mi_streq _mis_streq
++#define _mi_strlcat _mis_strlcat
++#define _mi_strlcpy _mis_strlcpy
++#define _mi_strlen _mis_strlen
++#define _mi_strnicmp _mis_strnicmp
++#define _mi_strnlen _mis_strnlen
++#define _mi_subproc_from_id _mis_subproc_from_id
++#define _mi_thread_data_collect _mis_thread_data_collect
++#define _mi_thread_done _mis_thread_done
++#define _mi_thread_id _mis_thread_id
++#define _mi_tld_init _mis_tld_init
++#define _mi_toupper _mis_toupper
++#define _mi_trace_message _mis_trace_message
++#define _mi_verbose_message _mis_verbose_message
++#define _mi_vsnprintf _mis_vsnprintf
++#define _mi_warning_message _mis_warning_message
++#define mi__expand mis__expand
++#define mi_abandoned_visit_blocks mis_abandoned_visit_blocks
++#define mi_aligned_alloc mis_aligned_alloc
++#define mi_aligned_offset_recalloc mis_aligned_offset_recalloc
++#define mi_aligned_recalloc mis_aligned_recalloc
++#define mi_arena_area mis_arena_area
++#define mi_arena_block_start mis_arena_block_start
++#define mi_arena_from_index mis_arena_from_index
++#define mi_arena_get_count mis_arena_get_count
++#define mi_arena_id_index mis_arena_id_index
++#define mi_arena_memid_indices mis_arena_memid_indices
++#define mi_arenas_print mis_arenas_print
++#define mi_calloc mis_calloc
++#define mi_calloc_aligned mis_calloc_aligned
++#define mi_calloc_aligned_at mis_calloc_aligned_at
++#define mi_cfree mis_cfree
++#define mi_check_owned mis_check_owned
++#define mi_collect mis_collect
++#define mi_collect_reduce mis_collect_reduce
++#define mi_debug_show_arenas mis_debug_show_arenas
++#define mi_dupenv_s mis_dupenv_s
++#define mi_expand mis_expand
++#define mi_free mis_free
++#define mi_free_aligned mis_free_aligned
++#define mi_free_size mis_free_size
++#define mi_free_size_aligned mis_free_size_aligned
++#define mi_free_small mis_free_small
++#define mi_good_size mis_good_size
++#define mi_heap_alloc_new mis_heap_alloc_new
++#define mi_heap_alloc_new_n mis_heap_alloc_new_n
++#define mi_heap_calloc mis_heap_calloc
++#define mi_heap_calloc_aligned mis_heap_calloc_aligned
++#define mi_heap_calloc_aligned_at mis_heap_calloc_aligned_at
++#define mi_heap_check_owned mis_heap_check_owned
++#define mi_heap_collect mis_heap_collect
++#define mi_heap_contains_block mis_heap_contains_block
++#define mi_heap_delete mis_heap_delete
++#define mi_heap_destroy mis_heap_destroy
++#define mi_heap_get_backing mis_heap_get_backing
++#define mi_heap_get_default mis_heap_get_default
++#define mi_heap_guarded_set_sample_rate mis_heap_guarded_set_sample_rate
++#define mi_heap_guarded_set_size_bound mis_heap_guarded_set_size_bound
++#define mi_heap_malloc mis_heap_malloc
++#define mi_heap_malloc_aligned mis_heap_malloc_aligned
++#define mi_heap_malloc_aligned_at mis_heap_malloc_aligned_at
++#define mi_heap_malloc_small mis_heap_malloc_small
++#define mi_heap_mallocn mis_heap_mallocn
++#define mi_heap_new mis_heap_new
++#define mi_heap_new_ex mis_heap_new_ex
++#define mi_heap_new_in_arena mis_heap_new_in_arena
++#define mi_heap_realloc mis_heap_realloc
++#define mi_heap_realloc_aligned mis_heap_realloc_aligned
++#define mi_heap_realloc_aligned_at mis_heap_realloc_aligned_at
++#define mi_heap_reallocf mis_heap_reallocf
++#define mi_heap_reallocn mis_heap_reallocn
++#define mi_heap_realpath mis_heap_realpath
++#define mi_heap_recalloc mis_heap_recalloc
++#define mi_heap_recalloc_aligned mis_heap_recalloc_aligned
++#define mi_heap_recalloc_aligned_at mis_heap_recalloc_aligned_at
++#define mi_heap_rezalloc mis_heap_rezalloc
++#define mi_heap_rezalloc_aligned mis_heap_rezalloc_aligned
++#define mi_heap_rezalloc_aligned_at mis_heap_rezalloc_aligned_at
++#define mi_heap_set_default mis_heap_set_default
++#define mi_heap_strdup mis_heap_strdup
++#define mi_heap_strndup mis_heap_strndup
++#define mi_heap_try_new mis_heap_try_new
++#define mi_heap_umalloc mis_heap_umalloc
++#define mi_heap_visit_blocks mis_heap_visit_blocks
++#define mi_heap_zalloc mis_heap_zalloc
++#define mi_heap_zalloc_aligned mis_heap_zalloc_aligned
++#define mi_heap_zalloc_aligned_at mis_heap_zalloc_aligned_at
++#define mi_heap_zalloc_small mis_heap_zalloc_small
++#define mi_is_in_heap_region mis_is_in_heap_region
++#define mi_is_redirected mis_is_redirected
++#define mi_malloc mis_malloc
++#define mi_malloc_aligned mis_malloc_aligned
++#define mi_malloc_aligned_at mis_malloc_aligned_at
++#define mi_malloc_good_size mis_malloc_good_size
++#define mi_malloc_size mis_malloc_size
++#define mi_malloc_small mis_malloc_small
++#define mi_malloc_usable_size mis_malloc_usable_size
++#define mi_mallocn mis_mallocn
++#define mi_manage_os_memory mis_manage_os_memory
++#define mi_manage_os_memory_ex mis_manage_os_memory_ex
++#define mi_mbsdup mis_mbsdup
++#define mi_memalign mis_memalign
++#define mi_new mis_new
++#define mi_new_aligned mis_new_aligned
++#define mi_new_aligned_nothrow mis_new_aligned_nothrow
++#define mi_new_n mis_new_n
++#define mi_new_nothrow mis_new_nothrow
++#define mi_new_realloc mis_new_realloc
++#define mi_new_reallocn mis_new_reallocn
++#define mi_option_disable mis_option_disable
++#define mi_option_enable mis_option_enable
++#define mi_option_get mis_option_get
++#define mi_option_get_clamp mis_option_get_clamp
++#define mi_option_get_size mis_option_get_size
++#define mi_option_is_enabled mis_option_is_enabled
++#define mi_option_set mis_option_set
++#define mi_option_set_default mis_option_set_default
++#define mi_option_set_enabled mis_option_set_enabled
++#define mi_option_set_enabled_default mis_option_set_enabled_default
++#define mi_options_print mis_options_print
++#define mi_posix_memalign mis_posix_memalign
++#define mi_process_done mis_process_done
++#define mi_process_info mis_process_info
++#define mi_process_init mis_process_init
++#define mi_pvalloc mis_pvalloc
++#define mi_realloc mis_realloc
++#define mi_realloc_aligned mis_realloc_aligned
++#define mi_realloc_aligned_at mis_realloc_aligned_at
++#define mi_reallocarr mis_reallocarr
++#define mi_reallocarray mis_reallocarray
++#define mi_reallocf mis_reallocf
++#define mi_reallocn mis_reallocn
++#define mi_realpath mis_realpath
++#define mi_recalloc mis_recalloc
++#define mi_recalloc_aligned mis_recalloc_aligned
++#define mi_recalloc_aligned_at mis_recalloc_aligned_at
++#define mi_register_deferred_free mis_register_deferred_free
++#define mi_register_error mis_register_error
++#define mi_register_output mis_register_output
++#define mi_reserve_huge_os_pages mis_reserve_huge_os_pages
++#define mi_reserve_huge_os_pages_at mis_reserve_huge_os_pages_at
++#define mi_reserve_huge_os_pages_at_ex mis_reserve_huge_os_pages_at_ex
++#define mi_reserve_huge_os_pages_interleave mis_reserve_huge_os_pages_interleave
++#define mi_reserve_os_memory mis_reserve_os_memory
++#define mi_reserve_os_memory_ex mis_reserve_os_memory_ex
++#define mi_rezalloc mis_rezalloc
++#define mi_rezalloc_aligned mis_rezalloc_aligned
++#define mi_rezalloc_aligned_at mis_rezalloc_aligned_at
++#define mi_stats_get mis_stats_get
++#define mi_stats_get_json mis_stats_get_json
++#define mi_stats_merge mis_stats_merge
++#define mi_stats_print mis_stats_print
++#define mi_stats_print_out mis_stats_print_out
++#define mi_stats_reset mis_stats_reset
++#define mi_strdup mis_strdup
++#define mi_strndup mis_strndup
++#define mi_subproc_add_current_thread mis_subproc_add_current_thread
++#define mi_subproc_delete mis_subproc_delete
++#define mi_subproc_main mis_subproc_main
++#define mi_subproc_new mis_subproc_new
++#define mi_thread_done mis_thread_done
++#define mi_thread_init mis_thread_init
++#define mi_thread_set_in_threadpool mis_thread_set_in_threadpool
++#define mi_thread_stats_print_out mis_thread_stats_print_out
++#define mi_ucalloc mis_ucalloc
++#define mi_ufree mis_ufree
++#define mi_umalloc mis_umalloc
++#define mi_umalloc_aligned mis_umalloc_aligned
++#define mi_umalloc_small mis_umalloc_small
++#define mi_unsafe_heap_page_is_under_utilized mis_unsafe_heap_page_is_under_utilized
++#define mi_urealloc mis_urealloc
++#define mi_usable_size mis_usable_size
++#define mi_uzalloc mis_uzalloc
++#define mi_uzalloc_aligned mis_uzalloc_aligned
++#define mi_valloc mis_valloc
++#define mi_version mis_version
++#define mi_wcsdup mis_wcsdup
++#define mi_wdupenv_s mis_wdupenv_s
++#define mi_zalloc mis_zalloc
++#define mi_zalloc_aligned mis_zalloc_aligned
++#define mi_zalloc_aligned_at mis_zalloc_aligned_at
++#define mi_zalloc_small mis_zalloc_small
++#endif
+diff --git a/malloc/malloc-mimalloc-secure.c b/malloc/malloc-mimalloc-secure.c
+new file mode 100644
+index 0000000000..8328b5db67
+--- /dev/null
++++ b/malloc/malloc-mimalloc-secure.c
+@@ -0,0 +1,444 @@
++/* Shim to use mimalloc-secure as the malloc implementation inside glibc.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; see the file COPYING.LIB.  If
++   not, see <https://www.gnu.org/licenses/>.  */
++
++/* This file provides the __libc_* malloc entry points expected by the
++   rest of glibc, implemented on top of mimalloc.  It is compiled
++   instead of malloc.c when --with-malloc=mimalloc-secure is used.
++
++   The mimalloc implementation itself lives in malloc/mimalloc/ and is
++   compiled by malloc-mimalloc-secure-impl.c with MI_SECURE=4.  */
++
++/* Declarations for the mis_* API provided by malloc-mimalloc-impl.c.  */
++#include <stddef.h>
++void *mis_malloc (size_t);
++void mis_free (void *);
++void *mis_realloc (void *, size_t);
++void *mis_calloc (size_t, size_t);
++void *mis_memalign (size_t, size_t);
++void *mis_valloc (size_t);
++void *mis_pvalloc (size_t);
++void *mis_aligned_alloc (size_t, size_t);
++int mis_posix_memalign (void **, size_t, size_t);
++size_t mis_usable_size (const void *);
++void mis_stats_print (void *);
++void mis_collect (int);
++
++#include <errno.h>
++#include <unistd.h>
++#include <stdio.h>
++#include <malloc.h>
++#include <libc-symbols.h>
++#include <shlib-compat.h>
++#include <malloc-internal.h>
++#include "malloc-shim-compat.h"
++
++#ifdef MALLOC_MULTI_BACKEND
++# define __libc_malloc __malloc_mimalloc_secure_malloc
++# define __libc_free __malloc_mimalloc_secure_free
++# define __libc_realloc __malloc_mimalloc_secure_realloc
++# define __libc_calloc __malloc_mimalloc_secure_calloc
++# define __libc_memalign __malloc_mimalloc_secure_memalign
++# define __libc_valloc __malloc_mimalloc_secure_valloc
++# define __libc_pvalloc __malloc_mimalloc_secure_pvalloc
++# define __posix_memalign __malloc_mimalloc_secure_posix_memalign
++# define aligned_alloc __malloc_mimalloc_secure_aligned_alloc
++# define free_sized __malloc_mimalloc_secure_free_sized
++# define free_aligned_sized __malloc_mimalloc_secure_free_aligned_sized
++# define __malloc_usable_size __malloc_mimalloc_secure_usable_size
++# define __libc_mallopt __malloc_mimalloc_secure_mallopt
++# define __libc_mallinfo __malloc_mimalloc_secure_mallinfo
++# define __libc_mallinfo2 __malloc_mimalloc_secure_mallinfo2
++# define __malloc_info __malloc_mimalloc_secure_malloc_info
++# define __malloc_stats __malloc_mimalloc_secure_malloc_stats
++# define __malloc_trim __malloc_mimalloc_secure_malloc_trim
++# define __malloc_fork_lock_parent __malloc_mimalloc_secure_fork_lock_parent
++# define __malloc_fork_unlock_parent __malloc_mimalloc_secure_fork_unlock_parent
++# define __malloc_fork_unlock_child __malloc_mimalloc_secure_fork_unlock_child
++# define __malloc_arena_thread_freeres __malloc_mimalloc_secure_arena_thread_freeres
++# define __malloc_check_init __malloc_mimalloc_secure_check_init
++# define __ptmalloc_init __malloc_mimalloc_secure_ptmalloc_init
++# define __glibc_morecore __malloc_mimalloc_secure_morecore
++# pragma push_macro("libc_hidden_proto")
++# pragma push_macro("libc_hidden_def")
++# pragma push_macro("weak_function")
++# undef libc_hidden_proto
++# define libc_hidden_proto(...) /* nothing */
++# undef libc_hidden_def
++# define libc_hidden_def(...) /* nothing */
++# undef weak_function
++# define weak_function /* nothing */
++# define MALLOC_MULTI_HIDDEN_PUSHED 1
++#endif
++
++
++/* Declare hidden prototypes so libc_hidden_def works below.  These
++   mirror the declarations in the stock malloc.c.  */
++void *__libc_malloc (size_t);
++libc_hidden_proto (__libc_malloc)
++void __libc_free (void *);
++libc_hidden_proto (__libc_free)
++void *__libc_realloc (void *, size_t);
++libc_hidden_proto (__libc_realloc)
++void *__libc_memalign (size_t, size_t);
++libc_hidden_proto (__libc_memalign)
++struct mallinfo2 __libc_mallinfo2 (void);
++libc_hidden_proto (__libc_mallinfo2)
++int __libc_mallopt (int, int);
++libc_hidden_proto (__libc_mallopt)
++
++void *__libc_calloc (size_t, size_t);
++libc_hidden_proto (__libc_calloc)
++void *__libc_valloc (size_t);
++libc_hidden_proto (__libc_valloc)
++void *__libc_pvalloc (size_t);
++libc_hidden_proto (__libc_pvalloc)
++int __posix_memalign (void **, size_t, size_t);
++libc_hidden_proto (__posix_memalign)
++size_t __malloc_usable_size (void *);
++libc_hidden_proto (__malloc_usable_size)
++
++/* ------------------------------------------------------------------ */
++/* Core allocation entry points                                       */
++/* ------------------------------------------------------------------ */
++
++void *
++__libc_malloc (size_t bytes)
++{
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  return MALLOC_SHIM_CALL (mis_malloc (bytes));
++}
++libc_hidden_def (__libc_malloc)
++
++void
++__libc_free (void *mem)
++{
++  if (mem == NULL)
++    return;
++  MALLOC_SHIM_FREE (mis_free (mem));
++}
++libc_hidden_def (__libc_free)
++
++void *
++__libc_realloc (void *oldmem, size_t bytes)
++{
++  void *p;
++  if (bytes == 0)
++    {
++      if (oldmem != NULL)
++	{
++	  MALLOC_SHIM_FREE (mis_free (oldmem));
++	  return NULL;
++	}
++      return MALLOC_SHIM_CALL (mis_malloc (0));
++    }
++  if (malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  if (oldmem == NULL)
++    return MALLOC_SHIM_CALL (mis_malloc (bytes));
++  /* Shrink-in-place: glibc leaves the block unmoved when the new size
++     fits in the existing usable region (tst-realloc).  */
++  if (bytes <= mis_usable_size (oldmem))
++    return oldmem;
++  p = mis_realloc (oldmem, bytes);
++  if (p == NULL)
++    __set_errno (ENOMEM);
++  return p;
++}
++libc_hidden_def (__libc_realloc)
++
++void *
++__libc_calloc (size_t n, size_t elem_size)
++{
++  size_t bytes;
++  if (__builtin_mul_overflow (n, elem_size, &bytes) || malloc_shim_size_too_large (bytes))
++    return malloc_shim_fail_oom ();
++  return MALLOC_SHIM_CALL (mis_calloc (n, elem_size));
++}
++libc_hidden_def (__libc_calloc)
++
++void *
++__libc_memalign (size_t alignment, size_t bytes)
++{
++  alignment = malloc_shim_align_pow2 (alignment);
++  if (alignment == 0 || malloc_shim_size_too_large (bytes)
++      || malloc_shim_size_too_large (alignment))
++    {
++      __set_errno (alignment == 0 ? EINVAL : ENOMEM);
++      return NULL;
++    }
++  return MALLOC_SHIM_CALL (mis_memalign (alignment, bytes));
++}
++libc_hidden_def (__libc_memalign)
++
++void *
++__libc_valloc (size_t bytes)
++{
++  return __libc_memalign (__getpagesize (), bytes);
++}
++libc_hidden_def (__libc_valloc)
++
++void *
++__libc_pvalloc (size_t bytes)
++{
++  size_t rounded = malloc_shim_pvalloc_size (bytes);
++  if (rounded == 0)
++    return malloc_shim_fail_oom ();
++  return __libc_memalign (__getpagesize (), rounded);
++}
++libc_hidden_def (__libc_pvalloc)
++
++int
++__posix_memalign (void **memptr, size_t alignment, size_t size)
++{
++  void *p;
++  if (memptr == NULL
++      || alignment == 0
++      || (alignment & (alignment - 1)) != 0
++      || alignment % sizeof (void *) != 0)
++    return EINVAL;
++  if (malloc_shim_size_too_large (size))
++    return ENOMEM;
++  p = mis_memalign (alignment, size);
++  if (p == NULL)
++    return ENOMEM;
++  *memptr = p;
++  return 0;
++}
++libc_hidden_def (__posix_memalign)
++
++void *
++weak_function
++aligned_alloc (size_t alignment, size_t bytes)
++{
++  if (alignment == 0 || (alignment & (alignment - 1)) != 0)
++    {
++      __set_errno (EINVAL);
++      return NULL;
++    }
++  if (malloc_shim_size_too_large (bytes) || malloc_shim_size_too_large (alignment))
++    return malloc_shim_fail_oom ();
++  return MALLOC_SHIM_CALL (mis_memalign (alignment, bytes));
++}
++
++void
++weak_function
++free_sized (void *ptr, size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  MALLOC_SHIM_FREE (mis_free (ptr));
++}
++
++void
++weak_function
++free_aligned_sized (void *ptr, size_t alignment __attribute_maybe_unused__,
++		    size_t size __attribute_maybe_unused__)
++{
++  if (ptr == NULL)
++    return;
++  MALLOC_SHIM_FREE (mis_free (ptr));
++}
++
++/* Extended / informational entry points                              */
++/* ------------------------------------------------------------------ */
++
++size_t
++__malloc_usable_size (void *mem)
++{
++  if (mem == NULL)
++    return 0;
++  return mis_usable_size (mem);
++}
++libc_hidden_def (__malloc_usable_size)
++
++int
++__libc_mallopt (int param_number, int value)
++{
++  return malloc_shim_mallopt_ignore (param_number, value);
++}
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++libc_hidden_def (__libc_mallopt)
++#endif
++
++struct mallinfo
++__libc_mallinfo (void)
++{
++  struct mallinfo info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++
++struct mallinfo2
++__libc_mallinfo2 (void)
++{
++  struct mallinfo2 info;
++  memset (&info, 0, sizeof (info));
++  return info;
++}
++libc_hidden_def (__libc_mallinfo2)
++
++int
++__malloc_info (int options __attribute__ ((unused)), FILE *fp)
++{
++  /* Minimal valid XML output.  */
++  fprintf (fp, "<malloc version=\"mimalloc-secure\">\n</malloc>\n");
++  return 0;
++}
++
++void
++__malloc_stats (void)
++{
++  mis_stats_print (NULL);
++}
++
++int
++__malloc_trim (size_t pad __attribute__ ((unused)))
++{
++  mis_collect (true);
++  return 1;
++}
++
++/* ------------------------------------------------------------------ */
++/* Internal hooks expected by the rest of glibc (pthreads, fork, …)   */
++/* ------------------------------------------------------------------ */
++
++void
++__malloc_fork_lock_parent (void)
++{
++  /* mimalloc-secure is fork-safe internally.  */
++}
++
++void
++__malloc_fork_unlock_parent (void)
++{
++}
++
++void
++__malloc_fork_unlock_child (void)
++{
++}
++
++void
++__malloc_arena_thread_freeres (void)
++{
++}
++
++void
++__malloc_check_init (void)
++{
++}
++
++void
++__ptmalloc_init (void)
++{
++  /* Nothing – mimalloc-secure self-initializes on first allocation.  */
++}
++
++/* ------------------------------------------------------------------ */
++/* Compat / version-map aliases                                       */
++/* ------------------------------------------------------------------ */
++
++/* Hooks are deprecated but still present in the version map. Provide
++   NULL-initialised variables so the linker is happy.  */
++#ifndef MALLOC_MULTI_BACKEND
++void *__malloc_initialize_hook = NULL;
++void *__free_hook = NULL;
++void *__malloc_hook = NULL;
++void *__realloc_hook = NULL;
++void *__memalign_hook = NULL;
++void *__after_morecore_hook = NULL;
++void *__morecore = NULL;
++#endif
++
++/* morecore.c is not compiled when using mimalloc-secure; provide the compat
++   symbol that the version map requires.  */
++void *
++__glibc_morecore (ptrdiff_t increment __attribute__ ((unused)))
++{
++  return NULL;
++}
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_34) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __glibc_morecore, __default_morecore, GLIBC_2_0);
++#endif
++
++#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
++strong_alias (__libc_malloc, malloc)
++strong_alias (__libc_realloc, realloc)
++strong_alias (__libc_free, free)
++weak_alias (__libc_calloc, calloc)
++weak_alias (__libc_memalign, memalign)
++weak_alias (__posix_memalign, posix_memalign)
++weak_alias (__libc_valloc, valloc)
++weak_alias (__libc_pvalloc, pvalloc)
++weak_alias (__malloc_usable_size, malloc_usable_size)
++weak_alias (__malloc_info, malloc_info)
++weak_alias (__libc_mallinfo, mallinfo)
++weak_alias (__libc_mallinfo2, mallinfo2)
++weak_alias (__libc_mallopt, mallopt)
++weak_alias (__malloc_stats, malloc_stats)
++weak_alias (__malloc_trim, malloc_trim)
++#endif /* IS_IN (libc) */
++
++/* cfree compat symbol.  */
++#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26) && !defined (MALLOC_MULTI_BACKEND)
++compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
++#endif
++
++/* __libc_reallocarray is provided by the separately-compiled
++   reallocarray.c, which calls realloc() — that will resolve to our
++   mimalloc-secure-backed realloc via the strong_alias above.  */
++
++#ifdef MALLOC_MULTI_BACKEND
++# ifdef MALLOC_MULTI_HIDDEN_PUSHED
++#  pragma pop_macro("weak_function")
++#  pragma pop_macro("libc_hidden_def")
++#  pragma pop_macro("libc_hidden_proto")
++# endif
++#include <malloc-backend.h>
++#include <string.h>
++
++const struct libc_malloc_backend __libc_malloc_backend_mimalloc_secure =
++{
++  .name = "mimalloc-secure",
++  .init = __malloc_mimalloc_secure_ptmalloc_init,
++  .malloc = __malloc_mimalloc_secure_malloc,
++  .free = __malloc_mimalloc_secure_free,
++  .realloc = __malloc_mimalloc_secure_realloc,
++  .calloc = __malloc_mimalloc_secure_calloc,
++  .memalign = __malloc_mimalloc_secure_memalign,
++  .valloc = __malloc_mimalloc_secure_valloc,
++  .pvalloc = __malloc_mimalloc_secure_pvalloc,
++  .posix_memalign = __malloc_mimalloc_secure_posix_memalign,
++  .aligned_alloc = __malloc_mimalloc_secure_aligned_alloc,
++  .free_sized = __malloc_mimalloc_secure_free_sized,
++  .free_aligned_sized = __malloc_mimalloc_secure_free_aligned_sized,
++  .usable_size = __malloc_mimalloc_secure_usable_size,
++  .mallopt = __malloc_mimalloc_secure_mallopt,
++  .mallinfo = __malloc_mimalloc_secure_mallinfo,
++  .mallinfo2 = __malloc_mimalloc_secure_mallinfo2,
++  .malloc_info = __malloc_mimalloc_secure_malloc_info,
++  .malloc_stats = __malloc_mimalloc_secure_malloc_stats,
++  .malloc_trim = __malloc_mimalloc_secure_malloc_trim,
++  .fork_lock_parent = __malloc_mimalloc_secure_fork_lock_parent,
++  .fork_unlock_parent = __malloc_mimalloc_secure_fork_unlock_parent,
++  .fork_unlock_child = __malloc_mimalloc_secure_fork_unlock_child,
++  .arena_thread_freeres = __malloc_mimalloc_secure_arena_thread_freeres,
++  .check_init = __malloc_mimalloc_secure_check_init,
++};
++#endif /* MALLOC_MULTI_BACKEND */
+-- 
+2.53.0
+
