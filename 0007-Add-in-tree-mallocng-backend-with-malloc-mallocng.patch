@@ -1,10 +1,8 @@
-From 1bbd96792a10386e07dbe389fee0164f0244a494 Mon Sep 17 00:00:00 2001
+From 3b1078864152589b8fc3465799594abead00e765 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:06:43 +0200
-Subject: [PATCH 07/13] Add in-tree mallocng backend (--with-malloc=mallocng)
+Date: Mon, 13 Jul 2026 02:11:23 +0200
+Subject: [PATCH 07/20] Add in-tree mallocng backend (--with-malloc=mallocng)
 
-Vendor GrapheneOS mallocng as a compact single-file backend with selector
-registration for embed or dynamic use.
 ---
  malloc/malloc-mallocng-impl.c |  19 +
  malloc/malloc-mallocng.c      | 400 ++++++++++++++

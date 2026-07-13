@@ -1,11 +1,8 @@
-From b11c52f41048070faca4a620c8e83a3dfeb1751a Mon Sep 17 00:00:00 2001
+From d4fe367c3e1a701693f30f8a6960eec443129a35 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:08:43 +0200
-Subject: [PATCH 09/13] Add in-tree Mesh backend (--with-malloc-preload=mesh)
+Date: Mon, 13 Jul 2026 02:11:25 +0200
+Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
 
-Vendor Plasma/Mesh as a C++ allocator shipped only as
-libglibc_malloc_mesh.so for LD_PRELOAD (not linked into libc), with embed
-stubs retained for registration experiments.
 ---
  malloc/malloc-mesh-impl.cc                    |   38 +
  malloc/malloc-mesh-preload.cc                 |   57 +

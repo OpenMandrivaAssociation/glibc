@@ -1,12 +1,9 @@
-From 548a09acd95113f5fd28414cc02486ed5d219289 Mon Sep 17 00:00:00 2001
+From d138c1934f10909008ca40012e6729495e3fe2c5 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:09:43 +0200
-Subject: [PATCH 10/13] Add in-tree PartitionAlloc backend
+Date: Mon, 13 Jul 2026 02:11:30 +0200
+Subject: [PATCH 10/20] Add in-tree PartitionAlloc backend
  (--with-malloc-preload=partitionalloc)
 
-Vendor Chromium PartitionAlloc and build libglibc_malloc_partitionalloc.so
-as a preload DSO against libstdc++, keeping libc free of C++ runtime
-linkage.
 ---
  malloc/malloc-partitionalloc-api.cc           |   97 +
  malloc/malloc-partitionalloc-impl.cc          |   74 +

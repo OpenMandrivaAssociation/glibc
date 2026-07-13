@@ -1,14 +1,9 @@
-From 83ed2d25149ae05503a00fefed07cf4ac48cac53 Mon Sep 17 00:00:00 2001
+From 1e0bb9cd290d52ef2c2ef03c37140776fa21205c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:10:43 +0200
-Subject: [PATCH 11/13] Add full tcmalloc as LD_PRELOAD DSO
+Date: Mon, 13 Jul 2026 02:11:32 +0200
+Subject: [PATCH 11/20] Add full tcmalloc as LD_PRELOAD DSO
  (--with-malloc-preload=tcmalloc)
 
-Ship gperftools libtcmalloc (sampling + heap profiler, not
-tcmalloc_minimal) as libglibc_malloc_tcmalloc.so.  Compile with the
-system C++ toolchain headers to avoid glibc include/ clashes, and omit
-libunwind so preload TLS setup does not recurse into malloc under the
-new ld.so.  Preload-only by design (libstdc++).
 ---
  malloc/tcmalloc/COPYING                       |   28 +
  malloc/tcmalloc/README-GLIBC.md               |    8 +

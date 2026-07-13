@@ -1,11 +1,8 @@
-From 0ff1318224e3b49c3ad4821c0b51d0e82e36f8df Mon Sep 17 00:00:00 2001
+From 95466410ad4fbe647353de59f40afa419e618b08 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:01:43 +0200
-Subject: [PATCH 02/13] Add in-tree mimalloc backend (--with-malloc=mimalloc)
+Date: Mon, 13 Jul 2026 02:11:18 +0200
+Subject: [PATCH 02/20] Add in-tree mimalloc backend (--with-malloc=mimalloc)
 
-Vendor microsoft/mimalloc sources under malloc/mimalloc/ and wire
-malloc-mimalloc{,-impl}.c into the multi-impl selector for embed or
-dynamic libglibc_malloc_mimalloc.so builds.
 ---
  malloc/malloc-mimalloc-impl.c                 |   23 +
  malloc/malloc-mimalloc.c                      |  444 +++++

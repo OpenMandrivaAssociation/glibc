@@ -1,26 +1,15 @@
-From c94373f6f9c9197d9038ff2456fe601c8e5ffff0 Mon Sep 17 00:00:00 2001
+From 97181955f8f07802ce933cd02968c311e16395b6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:11:43 +0200
-Subject: [PATCH 12/13] Add in-tree phasecast adaptive malloc backend
+Date: Mon, 13 Jul 2026 02:11:32 +0200
+Subject: [PATCH 12/20] Add in-tree phasecast adaptive malloc backend
  (--with-malloc=phasecast)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 
-Phasecast is an embeddable C allocator that specializes hot allocation
-sites (return PC × size class) after a short warmup, with per-thread
-size-class caches, a central span heap, optional ephemeral bump arenas
-via gnu_malloc_phase_{push,pop}, and profile load/save hooks.
-
-Includes overflow-safe sizing and payload-aligned spans so memalign
-reuses TLS-cached slots up to 128-byte alignment.
 ---
- malloc/Makefile                               |  18 +-
+ malloc/Makefile                               |   1 -
  malloc/Versions                               |   4 +
  malloc/malloc-phasecast-impl.c                |   5 +
  malloc/malloc-phasecast.c                     | 469 ++++++++++
- malloc/malloc-query.c                         |  27 +
- malloc/malloc-select.c                        |  27 +
+ malloc/malloc-select.c                        |  23 +-
  malloc/malloc.h                               |   7 +
  malloc/phasecast/phasecast.c                  | 841 ++++++++++++++++++
  malloc/phasecast/phasecast.h                  |  36 +
@@ -57,62 +46,24 @@ reuses TLS-cached slots up to 128-byte alignment.
  .../sysv/linux/sparc/sparc64/libc.abilist     |   4 +
  .../unix/sysv/linux/x86_64/64/libc.abilist    |   4 +
  .../unix/sysv/linux/x86_64/x32/libc.abilist   |   4 +
- 42 files changed, 1565 insertions(+), 1 deletion(-)
+ 41 files changed, 1503 insertions(+), 15 deletions(-)
  create mode 100644 malloc/malloc-phasecast-impl.c
  create mode 100644 malloc/malloc-phasecast.c
  create mode 100644 malloc/phasecast/phasecast.c
  create mode 100644 malloc/phasecast/phasecast.h
 
 diff --git a/malloc/Makefile b/malloc/Makefile
-index ffbcbff69b..323de8fc40 100644
+index 3abf3bf4a7..323de8fc40 100644
 --- a/malloc/Makefile
 +++ b/malloc/Makefile
-@@ -309,6 +309,7 @@ snmalloc-routines = malloc-snmalloc malloc-snmalloc-impl
- rpmalloc-routines = malloc-rpmalloc malloc-rpmalloc-impl
- mallocng-routines = malloc-mallocng malloc-mallocng-impl
- hardened-malloc-routines = malloc-hardened-malloc malloc-hardened-malloc-impl
-+phasecast-routines = malloc-phasecast malloc-phasecast-impl
- 
- # Helper: object list for one configure impl name.
- malloc-routines-for = $(if $(filter glibc,$(1)),$(glibc-routines) malloc-glibc-register, \
-@@ -318,7 +319,8 @@ malloc-routines-for = $(if $(filter glibc,$(1)),$(glibc-routines) malloc-glibc-r
-   $(if $(filter snmalloc,$(1)),$(snmalloc-routines), \
-   $(if $(filter rpmalloc,$(1)),$(rpmalloc-routines), \
-   $(if $(filter mallocng,$(1)),$(mallocng-routines), \
--  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines),))))))))
-+  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines), \
-+  $(if $(filter phasecast,$(1)),$(phasecast-routines),)))))))))
- 
- # Single embedded impl keeps the historical zero-overhead path.
- # With dynamic impls, embed only malloc-embedded and use the selector;
-@@ -340,6 +342,8 @@ else ifeq ($(malloc-embedded),mallocng)
- malloc-routines = $(mallocng-routines) malloc-query
- else ifeq ($(malloc-embedded),hardened-malloc)
- malloc-routines = $(hardened-malloc-routines) malloc-query
-+else ifeq ($(malloc-embedded),phasecast)
-+malloc-routines = $(phasecast-routines) malloc-query
- else
- malloc-routines = $(glibc-routines) malloc-query
+@@ -1177,7 +1177,6 @@ ifeq ($(datadir),)
+ $(error datadir must be set for multi-malloc builds so DATADIR drop-ins resolve)
  endif
-@@ -932,6 +936,18 @@ CPPFLAGS-malloc-hardened-malloc-impl.c += -D__libc_use_alloca=__malloc_hardened_
- endif
- endif
- 
-+ifneq ($(filter phasecast,$(malloc-enabled-impls)),)
-+phasecast-cppflags = \
-+  -I$(..)malloc/phasecast \
-+  $(malloc-third-party-warnings)
-+CPPFLAGS-malloc-phasecast.c += $(phasecast-cppflags)
-+CPPFLAGS-malloc-phasecast-impl.c += $(phasecast-cppflags)
-+ifeq ($(malloc-multi),yes)
-+CPPFLAGS-malloc-phasecast.c += -DMALLOC_MULTI_BACKEND
-+CPPFLAGS-malloc-phasecast-impl.c += -DMALLOC_MULTI_BACKEND
-+CPPFLAGS-malloc-phasecast-impl.c += -D__libc_use_alloca=__malloc_phasecast_use_alloca
-+endif
-+endif
- 
- # C++ allocators that need libstdc++ are preload DSOs only (never linked
- # into libc.so).  Enable with --with-malloc-preload=mesh,partitionalloc,tcmalloc.
+ CPPFLAGS-malloc-select.c += -DDATADIR='"$(datadir)"'
+-CPPFLAGS-malloc-select.c += -DSYSCONFDIR='"$(sysconfdir)"'
+ CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
+ CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR_BUILD='"$(common-objpfx)glibc/malloc"'
+ CPPFLAGS-malloc-scan.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
 diff --git a/malloc/Versions b/malloc/Versions
 index b39f7076ff..3f0ba3a19f 100644
 --- a/malloc/Versions
@@ -614,76 +565,49 @@ index 0000000000..cce2401a12
 +  .check_init = __malloc_phasecast_check_init,
 +};
 +#endif /* MALLOC_MULTI_BACKEND */
-diff --git a/malloc/malloc-query.c b/malloc/malloc-query.c
-index d38aec2022..04a99f80b5 100644
---- a/malloc/malloc-query.c
-+++ b/malloc/malloc-query.c
-@@ -83,3 +83,30 @@ gnu_get_libc_malloc_active (void)
-     return "external";
-   return malloc_query_impl_name;
- }
-+
-+/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
-+void
-+weak_function
-+gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
-+{
-+}
-+
-+void
-+weak_function
-+gnu_malloc_phase_pop (void)
-+{
-+}
-+
-+int
-+weak_function
-+gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
-+{
-+  return -1;
-+}
-+
-+int
-+weak_function
-+gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
-+{
-+  return -1;
-+}
 diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
-index 3e774db30c..4373651798 100644
+index 1746b375b7..4373651798 100644
 --- a/malloc/malloc-select.c
 +++ b/malloc/malloc-select.c
-@@ -1679,3 +1679,30 @@ weak_alias (__malloc_trim, malloc_trim)
- #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
- compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
- #endif
-+
-+/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
-+void
-+weak_function
-+gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
-+{
-+}
-+
-+void
-+weak_function
-+gnu_malloc_phase_pop (void)
-+{
-+}
-+
-+int
-+weak_function
-+gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
-+{
-+  return -1;
-+}
-+
-+int
-+weak_function
-+gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
-+{
-+  return -1;
-+}
+@@ -330,13 +330,13 @@ struct match_result
+ 
+ /* Selection tiers (effective priority, higher wins).  In-file priority=
+    only orders within a drop-in tier and is clamped to [0, 99] so a
+-   distro snippet cannot outrank $(sysconfdir)/glibc/malloc.conf.
++   distro snippet cannot outrank /etc/glibc/malloc.conf.
+ 
+      1000       GLIBC_MALLOC_IMPL
+-      800       $(sysconfdir)/glibc/malloc.conf per-basename lines
+-      600..699  $(sysconfdir)/glibc/malloc.d/<name>.conf  (admin / local)
+-      500       $(sysconfdir)/glibc/malloc.conf default= (overrides distro)
+-      400..499  $(datadir)/glibc/malloc.d/<name>.conf (distro-provided)
++      800       /etc/glibc/malloc.conf per-basename lines
++      600..699  /etc/glibc/malloc.d/<name>.conf  (admin / local)
++      500       /etc/glibc/malloc.conf default= (overrides distro drop-ins)
++      400..499  DATADIR/glibc/malloc.d/<name>.conf (distro-provided, arch-independent)
+       <0        heuristics / compile-time default (fallthrough)  */
+ enum
+   {
+@@ -1017,15 +1017,10 @@ choose_backend (int *external_out)
+   }
+ 
+   /* Scan all sources; effective priorities enforce:
+-     $(sysconfdir)/malloc.conf per-basename >
+-     $(sysconfdir)/malloc.d >
+-     $(sysconfdir)/malloc.conf default= >
+-     distro $(datadir)/malloc.d.  */
+-#ifndef SYSCONFDIR
+-# define SYSCONFDIR "/etc"
+-#endif
+-  scan_global_conf (SYSCONFDIR "/glibc/malloc.conf", exe_base_p, &best);
+-  scan_dropin_dir (SYSCONFDIR "/glibc/malloc.d", exe_path_p, exe_base_p,
++     malloc.conf per-basename > /etc/malloc.d > malloc.conf default=
++     > distro DATADIR/malloc.d.  */
++  scan_global_conf ("/etc/glibc/malloc.conf", exe_base_p, &best);
++  scan_dropin_dir ("/etc/glibc/malloc.d", exe_path_p, exe_base_p,
+ 		   PRIO_ETC_MALLOCD_BASE, &best);
+   scan_dropin_dir (DATADIR "/glibc/malloc.d", exe_path_p, exe_base_p,
+ 		   PRIO_DATA_MALLOCD_BASE, &best);
 diff --git a/malloc/malloc.h b/malloc/malloc.h
 index 76a57ee40d..dfdda69dae 100644
 --- a/malloc/malloc.h

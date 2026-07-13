@@ -1,11 +1,9 @@
-From 4b926af8ddefcd03ca3889d7ed4fd262f6558c52 Mon Sep 17 00:00:00 2001
+From 503674d44e76c9811aa660377cf53ba00cdcf5f9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:07:43 +0200
-Subject: [PATCH 08/13] Add in-tree hardened_malloc backend
+Date: Mon, 13 Jul 2026 02:11:23 +0200
+Subject: [PATCH 08/20] Add in-tree hardened_malloc backend
  (--with-malloc=hardened-malloc)
 
-Vendor GrapheneOS hardened_malloc with wrapper sources for embed builds and
-optional preload helper scripting.
 ---
  malloc/hardened_malloc/.clang-tidy            |    6 +
  malloc/hardened_malloc/.gitignore             |    2 +

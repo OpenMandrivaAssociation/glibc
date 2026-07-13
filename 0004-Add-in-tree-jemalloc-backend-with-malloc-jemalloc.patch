@@ -1,10 +1,8 @@
-From 1ae8b2ee3809d9a020e617079d948e4a5bb84288 Mon Sep 17 00:00:00 2001
+From 38b6baa093177e0458865724c5d27be64043961f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:03:43 +0200
-Subject: [PATCH 04/13] Add in-tree jemalloc backend (--with-malloc=jemalloc)
+Date: Mon, 13 Jul 2026 02:11:21 +0200
+Subject: [PATCH 04/20] Add in-tree jemalloc backend (--with-malloc=jemalloc)
 
-Vendor jemalloc under malloc/jemalloc/ with malloc-jemalloc.c registration
-for embed or dynamic libglibc_malloc_jemalloc.so selection.
 ---
  malloc/jemalloc/COPYING                       |   27 +
  malloc/jemalloc/README.md                     |   18 +

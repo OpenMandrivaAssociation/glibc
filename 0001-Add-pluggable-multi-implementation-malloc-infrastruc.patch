@@ -1,33 +1,21 @@
-From 55832473a67107fa94c00769ff053a4ec5961135 Mon Sep 17 00:00:00 2001
+From 99a48d9e0081acdd6883372e15cae434e924ea83 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:00:43 +0200
-Subject: [PATCH 01/13] Add pluggable multi-implementation malloc
+Date: Mon, 13 Jul 2026 02:11:17 +0200
+Subject: [PATCH 01/20] Add pluggable multi-implementation malloc
  infrastructure
 
-Introduce a backend ops table and runtime selector so libc can embed one
-default allocator and optionally map others from
-$slibdir/glibc/malloc/libglibc_malloc_*.so.  ld.so honors GLIBC_MALLOC_IMPL
-preference lists and /etc/glibc/malloc.conf default= before the real malloc
-handoff, with AT_SECURE ignoring user policy.  Dynamic DSOs export only
-__libc_malloc_backend_* @ GLIBC_PRIVATE and link with -Bsymbolic.
-Configure gains --with-malloc, --with-default-malloc, and
---with-malloc-preload; query APIs and glibc-malloc-profile support
-multi-impl builds.  make check GLIBC_MALLOC_IMPL=<non-glibc> skips
-ptmalloc2-only tests and injects the impl into ordinary test environments.
-Includes integration tests for default, preference lists, conf parsing,
-and version scripts.
 ---
  Makeconfig                                    |   22 +-
  Makerules                                     |    4 +
  config.make.in                                |   10 +
  configure                                     |  311 +++
  configure.ac                                  |  275 +++
- elf/Makefile                                  |    7 +
- elf/dl-malloc-impl.c                          |  453 +++++
+ elf/Makefile                                  |   12 +
+ elf/dl-malloc-impl.c                          |  825 ++++++++
  elf/dl-support.c                              |    8 +
  elf/rtld.c                                    |    4 +
  elf/static-stubs.c                            |   27 +-
- malloc/Makefile                               |  881 ++++++++-
+ malloc/Makefile                               |  898 ++++++++-
  malloc/UPSTREAM-REVISIONS.txt                 |   11 +
  malloc/Versions                               |    5 +
  malloc/arena.c                                |    4 +-
@@ -37,9 +25,9 @@ and version scripts.
  malloc/malloc-multi-smoke.sh                  |   50 +
  malloc/malloc-pref.h                          |  264 +++
  malloc/malloc-profile.sh                      |  291 +++
- malloc/malloc-query.c                         |   85 +
+ malloc/malloc-query.c                         |  112 ++
  malloc/malloc-scan.c                          |  111 ++
- malloc/malloc-select.c                        | 1681 +++++++++++++++++
+ malloc/malloc-select.c                        | 1713 +++++++++++++++++
  malloc/malloc-shim-compat.h                   |   94 +
  malloc/malloc.c                               |   52 +-
  malloc/malloc.d-README                        |   57 +
@@ -84,7 +72,7 @@ and version scripts.
  .../sysv/linux/sparc/sparc64/libc.abilist     |    3 +
  .../unix/sysv/linux/x86_64/64/libc.abilist    |    3 +
  .../unix/sysv/linux/x86_64/x32/libc.abilist   |    3 +
- 67 files changed, 5403 insertions(+), 32 deletions(-)
+ 67 files changed, 5856 insertions(+), 32 deletions(-)
  create mode 100644 elf/dl-malloc-impl.c
  create mode 100644 malloc/UPSTREAM-REVISIONS.txt
  create mode 100644 malloc/malloc-backend.h
@@ -823,7 +811,7 @@ index 3e4a601c01..cb1acd05ef 100644
  AC_ARG_WITH([binutils],
  	    AS_HELP_STRING([--with-binutils=PATH],
 diff --git a/elf/Makefile b/elf/Makefile
-index 11029be0ae..587c740f04 100644
+index 11029be0ae..90a4928dd1 100644
 --- a/elf/Makefile
 +++ b/elf/Makefile
 @@ -133,6 +133,7 @@ rtld-routines = \
@@ -834,25 +822,30 @@ index 11029be0ae..587c740f04 100644
    dl-minimal \
    dl-mutex \
    dl-profile \
-@@ -151,6 +152,12 @@ CFLAGS-dl-iteratephdr.c += $(uses-callbacks)
+@@ -151,6 +152,17 @@ CFLAGS-dl-iteratephdr.c += $(uses-callbacks)
  # off for non-shared builds.
  CFLAGS-dl-minimal-malloc.o = $(no-stack-protector)
  CFLAGS-dl-minimal-malloc.op = $(no-stack-protector)
 +CFLAGS-dl-malloc-impl.os += $(rtld-early-cflags)
++# Paths must come from configure (sysconfdir/datadir/slibdir), not
++# hardcoded /etc or /usr/share — non-default prefixes and multi-lib
++# layouts depend on it.
 +CPPFLAGS-dl-malloc-impl.c += \
 +  -DMALLOC_IMPL_DIR='"$(slibdir)/glibc/malloc"' \
 +  -DMALLOC_IMPL_DIR_BUILD='"$(common-objpfx)glibc/malloc"' \
 +  -DMALLOC_DEFAULT_NAME='"$(malloc-default)"' \
++  -DSYSCONFDIR='"$(sysconfdir)"' \
++  -DDATADIR='"$(datadir)"' \
 +  -I$(..)malloc
  
  # On targets without __builtin_memset, rtld.c uses a hand-coded loop
  # in _dl_start.  Make sure this isn't turned into a call to regular memset.
 diff --git a/elf/dl-malloc-impl.c b/elf/dl-malloc-impl.c
 new file mode 100644
-index 0000000000..b8568862cc
+index 0000000000..a857fa2353
 --- /dev/null
 +++ b/elf/dl-malloc-impl.c
-@@ -0,0 +1,453 @@
+@@ -0,0 +1,825 @@
 +/* Early selection of dynamically loaded malloc backends.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.  */
@@ -883,6 +876,16 @@ index 0000000000..b8568862cc
 +#ifndef MALLOC_DEFAULT_NAME
 +# define MALLOC_DEFAULT_NAME "glibc"
 +#endif
++/* From configure via elf/Makefile CPPFLAGS-dl-malloc-impl.c.  */
++#ifndef SYSCONFDIR
++# define SYSCONFDIR "/etc"
++#endif
++#ifndef DATADIR
++# define DATADIR "/usr/share"
++#endif
++#define MALLOC_SYSCONF_CONF	SYSCONFDIR "/glibc/malloc.conf"
++#define MALLOC_SYSCONF_DROPIN	SYSCONFDIR "/glibc/malloc.d"
++#define MALLOC_DATA_DROPIN	DATADIR "/glibc/malloc.d"
 +
 +static char pick_storage[MALLOC_IMPL_NAME_MAX];
 +static char conf_pref_storage[MALLOC_PREF_LIST_MAX];
@@ -947,10 +950,20 @@ index 0000000000..b8568862cc
 +  __close_nocancel_nostatus (fd);
 +}
 +
++/* Directory scan is relatively expensive (open + getdents + fstatat per
++   candidate) and runs in every process.  Defer until a preference list
++   actually needs to resolve against installed dynamic backends.  When no
++   GLIBC_MALLOC_IMPL / conf default applies, the scan is skipped entirely;
++   libc's malloc-select re-scans later if a query API needs the list.  */
++static bool installed_scanned;
++
 +static void
 +scan_installed (void)
 +{
 +  int count = 0;
++  if (installed_scanned)
++    return;
++  installed_scanned = true;
 +  GLRO (dl_malloc_impl_installed_len) = 0;
 +  scan_dir (GLRO (dl_malloc_impl_dir), &count);
 +  if (MALLOC_IMPL_DIR_BUILD[0] != '\0'
@@ -1043,6 +1056,297 @@ index 0000000000..b8568862cc
 +    }
 +  __close_nocancel_nostatus (fd);
 +  return found;
++}
++
++/* Trim and test whether NEED equals a comma-separated entry in LIST.
++   Mutates LIST (inserts NULs).  TOKEN_ONLY requires malloc_pref_valid_token
++   for each entry.  */
++static bool
++list_matches (char *list, const char *need, bool token_only)
++{
++  char *p;
++
++  if (list == NULL || *list == '\0' || need == NULL || *need == '\0')
++    return false;
++  p = list;
++  while (*p)
++    {
++      char *start, *end;
++
++      while (*p == ' ' || *p == '\t')
++	p++;
++      if (*p == '\0')
++	break;
++      start = p;
++      while (*p && *p != ',')
++	p++;
++      end = p;
++      if (*p == ',')
++	*p++ = '\0';
++      while (end > start && (end[-1] == ' ' || end[-1] == '\t'))
++	*--end = '\0';
++      if (*start == '\0')
++	continue;
++      if (token_only && !malloc_pref_valid_token (start))
++	continue;
++      if (strcmp (start, need) == 0)
++	return true;
++    }
++  return false;
++}
++
++static bool
++valid_dropin_filename (const char *name)
++{
++  size_t n = strlen (name);
++  size_t i;
++
++  if (n < 6 || strcmp (name + n - 5, ".conf") != 0 || name[0] == '.')
++    return false;
++  for (i = 0; i < n - 5; i++)
++    if (!malloc_pref_safe_name_char ((unsigned char) name[i]))
++      return false;
++  return true;
++}
++
++/* Parse one drop-in conf for match-basename/match-path + impl=.
++   On match with a non-empty impl, consider it against *BEST_PRIO
++   (higher wins; equal priority prefers lexicographically smaller path).  */
++static void
++scan_dropin_file_early (const char *path, const char *exe_path,
++			const char *exe_base, int tier_base,
++			char *best_impl, size_t best_impl_len,
++			char *best_src, size_t best_src_len, int *best_prio)
++{
++  int fd;
++  char chunk[512];
++  char line[512];
++  size_t line_len = 0;
++  bool skip = false;
++  int file_prio = 0;
++  char impl[MALLOC_PREF_LIST_MAX];
++  bool match = false;
++  bool have_match_rule = false;
++  bool seen_prio = false;
++  bool seen_impl = false;
++  struct stat64 st;
++
++  fd = __open64_nocancel (path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
++  if (fd < 0)
++    return;
++  if (__fstat64 (fd, &st) != 0 || !S_ISREG (st.st_mode) || st.st_size > 65536)
++    {
++      __close_nocancel_nostatus (fd);
++      return;
++    }
++  if (__libc_enable_secure
++      && (st.st_uid != 0 || (st.st_mode & (S_IWGRP | S_IWOTH)) != 0))
++    {
++      __close_nocancel_nostatus (fd);
++      return;
++    }
++
++  impl[0] = '\0';
++  for (;;)
++    {
++      ssize_t n = __read_nocancel (fd, chunk, sizeof chunk);
++      ssize_t i;
++
++      if (n <= 0)
++	break;
++      for (i = 0; i < n; i++)
++	{
++	  char c = chunk[i];
++	  if (c == '\n')
++	    {
++	      if (!skip && line_len > 0 && line_len < sizeof line)
++		{
++		  char *p, *eq, *k, *v;
++
++		  line[line_len] = '\0';
++		  p = line;
++		  while (*p == ' ' || *p == '\t')
++		    p++;
++		  if (*p != '\0' && *p != '#')
++		    {
++		      eq = p;
++		      while (*eq && *eq != '=')
++			eq++;
++		      if (*eq == '=')
++			{
++			  *eq = '\0';
++			  k = p;
++			  v = eq + 1;
++			  while (*v == ' ' || *v == '\t')
++			    v++;
++			  {
++			    char *ke = k + strlen (k);
++			    char *ve = v + strlen (v);
++			    while (ke > k
++				   && (ke[-1] == ' ' || ke[-1] == '\t'))
++			      *--ke = '\0';
++			    while (ve > v
++				   && (ve[-1] == ' ' || ve[-1] == '\t'
++				       || ve[-1] == '\r'))
++			      *--ve = '\0';
++			  }
++			  if (strcmp (k, "priority") == 0 && !seen_prio)
++			    {
++			      seen_prio = true;
++			      file_prio = 0;
++			      {
++				const char *q = v;
++				int sign = 1;
++				if (*q == '-')
++				  {
++				    sign = -1;
++				    q++;
++				  }
++				while (*q >= '0' && *q <= '9')
++				  {
++				    file_prio = file_prio * 10 + (*q - '0');
++				    q++;
++				  }
++				file_prio *= sign;
++			      }
++			    }
++			  else if (strcmp (k, "impl") == 0 && !seen_impl
++				   && *v != '\0')
++			    {
++			      size_t vl = strlen (v);
++			      if (vl < sizeof impl)
++				{
++				  seen_impl = true;
++				  memcpy (impl, v, vl + 1);
++				}
++			    }
++			  else if (strcmp (k, "match-basename") == 0)
++			    {
++			      char tmp[MALLOC_PREF_LIST_MAX];
++			      size_t vl = strlen (v);
++
++			      have_match_rule = true;
++			      if (vl < sizeof tmp && exe_base != NULL)
++				{
++				  memcpy (tmp, v, vl + 1);
++				  if (list_matches (tmp, exe_base, true))
++				    match = true;
++				}
++			    }
++			  else if (strcmp (k, "match-path") == 0)
++			    {
++			      char tmp[512];
++			      size_t vl = strlen (v);
++
++			      have_match_rule = true;
++			      if (vl < sizeof tmp && exe_path != NULL)
++				{
++				  memcpy (tmp, v, vl + 1);
++				  if (list_matches (tmp, exe_path, false))
++				    match = true;
++				}
++			    }
++			}
++		    }
++		}
++	      line_len = 0;
++	      skip = false;
++	    }
++	  else if (!skip)
++	    {
++	      if (line_len + 1 >= sizeof line)
++		skip = true;
++	      else
++		line[line_len++] = c;
++	    }
++	}
++    }
++  __close_nocancel_nostatus (fd);
++
++  if (!have_match_rule)
++    match = true;
++  if (!match || impl[0] == '\0')
++    return;
++
++  {
++    int prio = tier_base + file_prio;
++    int cmp;
++
++    if (file_prio < 0)
++      prio = tier_base;
++    else if (file_prio > 99)
++      prio = tier_base + 99;
++
++    if (*best_prio < 0)
++      cmp = 1;
++    else if (prio > *best_prio)
++      cmp = 1;
++    else if (prio < *best_prio)
++      cmp = -1;
++    else
++      cmp = strcmp (path, best_src) < 0 ? 1 : -1;
++    if (cmp > 0)
++      {
++	size_t il = strlen (impl);
++	size_t sl = strlen (path);
++	if (il >= best_impl_len || sl >= best_src_len)
++	  return;
++	memcpy (best_impl, impl, il + 1);
++	memcpy (best_src, path, sl + 1);
++	*best_prio = prio;
++      }
++  }
++}
++
++static void
++scan_dropin_dir_early (const char *dir, const char *exe_path,
++		       const char *exe_base, int tier_base,
++		       char *best_impl, size_t best_impl_len,
++		       char *best_src, size_t best_src_len, int *best_prio)
++{
++  int fd;
++  char dentbuf[2048];
++
++  if (dir == NULL || *dir == '\0')
++    return;
++  fd = __open64_nocancel (dir,
++			  O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW
++			  | O_NONBLOCK);
++  if (fd < 0)
++    return;
++  if (!secure_fd_ok (fd, true))
++    {
++      __close_nocancel_nostatus (fd);
++      return;
++    }
++  for (;;)
++    {
++      ssize_t nread = __getdents64 (fd, dentbuf, sizeof dentbuf);
++      ssize_t bpos = 0;
++      if (nread <= 0)
++	break;
++      while (bpos < nread)
++	{
++	  struct dirent64 *d = (struct dirent64 *) (dentbuf + bpos);
++	  char path[384];
++	  size_t dlen, nlen;
++
++	  bpos += d->d_reclen;
++	  if (!valid_dropin_filename (d->d_name))
++	    continue;
++	  dlen = strlen (dir);
++	  nlen = strlen (d->d_name);
++	  if (dlen + 1 + nlen + 1 > sizeof path)
++	    continue;
++	  memcpy (path, dir, dlen);
++	  path[dlen] = '/';
++	  memcpy (path + dlen + 1, d->d_name, nlen + 1);
++	  scan_dropin_file_early (path, exe_path, exe_base, tier_base,
++				  best_impl, best_impl_len,
++				  best_src, best_src_len, best_prio);
++	}
++    }
++  __close_nocancel_nostatus (fd);
 +}
 +
 +struct malloc_map_args
@@ -1205,6 +1509,9 @@ index 0000000000..b8568862cc
 +
 +  if (pref == NULL || *pref == '\0')
 +    return 0;
++  /* Preference tokens other than the embedded default (and '*') need the
++     installed-DSO inventory.  Scan once, lazily.  */
++  scan_installed ();
 +  if (!malloc_pref_resolve (pref, def,
 +			    GLRO (dl_malloc_impl_installed),
 +			    GLRO (dl_malloc_impl_installed_len),
@@ -1248,8 +1555,7 @@ index 0000000000..b8568862cc
 +  GLRO (dl_malloc_impl_pick) = NULL;
 +  GLRO (dl_malloc_impl_map) = NULL;
 +  GLRO (dl_malloc_impl_backend) = NULL;
-+
-+  scan_installed ();
++  /* Do not scan MALLOC_IMPL_DIR here — see scan_installed().  */
 +
 +  if (__libc_enable_secure)
 +    return 0;
@@ -1290,10 +1596,69 @@ index 0000000000..b8568862cc
 +      && read_default_pref (s, conf_pref_storage, sizeof conf_pref_storage))
 +    return apply_pref_list (main_map, conf_pref_storage);
 +
-+  /* Fall back to default= from /etc/glibc/malloc.conf.  */
-+  if (read_default_pref ("/etc/glibc/malloc.conf", conf_pref_storage,
++  /* Fall back to default= from $(sysconfdir)/glibc/malloc.conf.  */
++  if (read_default_pref (MALLOC_SYSCONF_CONF, conf_pref_storage,
 +			 sizeof conf_pref_storage))
 +    return apply_pref_list (main_map, conf_pref_storage);
++
++  /* Per-executable drop-ins (match-basename / match-path).  These must
++     be applied here in ld.so so a non-default *dynamic* backend
++     (libglibc_malloc_NAME.so) can be pre-mapped before the first
++     malloc.  libc's choose_backend can only honor dynamic picks that
++     were already mapped (v1).  Without this, e.g. DATADIR drop-ins
++     selecting glibc for chrome/helium are silently ignored when the
++     compile-time default is snmalloc — and snmalloc's multi-GiB
++     MAP_NORESERVE reserves trip Chromium's RLIMIT_DATA sandbox.  */
++  {
++    const char *exe_path = NULL;
++    const char *exe_base = NULL;
++    char basebuf[MALLOC_IMPL_NAME_MAX];
++    char best_impl[MALLOC_PREF_LIST_MAX];
++    char best_src[256];
++    int best_prio = -1;
++
++    /* Prefer the real path from the main map when set; otherwise fall
++       back to argv[0] (main_map->l_name is often "" this early).  */
++    if (main_map != NULL && main_map->l_name != NULL
++	&& main_map->l_name[0] != '\0')
++      exe_path = main_map->l_name;
++    else if (_dl_argv != NULL && _dl_argv[0] != NULL && _dl_argv[0][0] != '\0')
++      exe_path = _dl_argv[0];
++
++    if (exe_path != NULL)
++      {
++	/* rtld has no strrchr; walk for the last slash.  */
++	const char *base = exe_path;
++	const char *q;
++	size_t blen;
++
++	for (q = exe_path; *q != '\0'; q++)
++	  if (*q == '/')
++	    base = q + 1;
++	blen = strlen (base);
++	if (blen > 0 && blen < sizeof basebuf
++	    && malloc_pref_valid_token (base))
++	  {
++	    memcpy (basebuf, base, blen + 1);
++	    exe_base = basebuf;
++	  }
++      }
++
++    if (exe_base != NULL || exe_path != NULL)
++      {
++	best_impl[0] = '\0';
++	best_src[0] = '\0';
++	/* Higher tier first so sysconfdir wins over distro DATADIR.  */
++	scan_dropin_dir_early (MALLOC_SYSCONF_DROPIN, exe_path, exe_base,
++			       600, best_impl, sizeof best_impl,
++			       best_src, sizeof best_src, &best_prio);
++	scan_dropin_dir_early (MALLOC_DATA_DROPIN, exe_path, exe_base,
++			       400, best_impl, sizeof best_impl,
++			       best_src, sizeof best_src, &best_prio);
++	if (best_prio >= 0 && best_impl[0] != '\0')
++	  return apply_pref_list (main_map, best_impl);
++      }
++  }
 +
 +  return 0;
 +}
@@ -1389,10 +1754,10 @@ index d676aa5a27..352feacfa1 100644
 +  abort ();
 +}
 diff --git a/malloc/Makefile b/malloc/Makefile
-index bd7383dc64..ffbcbff69b 100644
+index bd7383dc64..3abf3bf4a7 100644
 --- a/malloc/Makefile
 +++ b/malloc/Makefile
-@@ -195,7 +195,231 @@ tests-exclude-mcheck = \
+@@ -195,7 +195,235 @@ tests-exclude-mcheck = \
  tests-mcheck = $(filter-out $(tests-exclude-mcheck) $(tests-static), $(tests))
  endif
  
@@ -1511,6 +1876,7 @@ index bd7383dc64..ffbcbff69b 100644
 +rpmalloc-routines = malloc-rpmalloc malloc-rpmalloc-impl
 +mallocng-routines = malloc-mallocng malloc-mallocng-impl
 +hardened-malloc-routines = malloc-hardened-malloc malloc-hardened-malloc-impl
++phasecast-routines = malloc-phasecast malloc-phasecast-impl
 +
 +# Helper: object list for one configure impl name.
 +malloc-routines-for = $(if $(filter glibc,$(1)),$(glibc-routines) malloc-glibc-register, \
@@ -1520,7 +1886,8 @@ index bd7383dc64..ffbcbff69b 100644
 +  $(if $(filter snmalloc,$(1)),$(snmalloc-routines), \
 +  $(if $(filter rpmalloc,$(1)),$(rpmalloc-routines), \
 +  $(if $(filter mallocng,$(1)),$(mallocng-routines), \
-+  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines),))))))))
++  $(if $(filter hardened-malloc,$(1)),$(hardened-malloc-routines), \
++  $(if $(filter phasecast,$(1)),$(phasecast-routines),)))))))))
 +
 +# Single embedded impl keeps the historical zero-overhead path.
 +# With dynamic impls, embed only malloc-embedded and use the selector;
@@ -1542,6 +1909,8 @@ index bd7383dc64..ffbcbff69b 100644
 +malloc-routines = $(mallocng-routines) malloc-query
 +else ifeq ($(malloc-embedded),hardened-malloc)
 +malloc-routines = $(hardened-malloc-routines) malloc-query
++else ifeq ($(malloc-embedded),phasecast)
++malloc-routines = $(phasecast-routines) malloc-query
 +else
 +malloc-routines = $(glibc-routines) malloc-query
 +endif
@@ -1625,7 +1994,7 @@ index bd7383dc64..ffbcbff69b 100644
    scratch_buffer_grow scratch_buffer_grow_preserve \
    scratch_buffer_set_array_size \
    dynarray_at_failure \
-@@ -212,7 +436,9 @@ routines = malloc mcheck mtrace obstack reallocarray \
+@@ -212,7 +440,9 @@ routines = malloc mcheck mtrace obstack reallocarray \
  install-lib := libmcheck.a
  non-lib.a := libmcheck.a
  
@@ -1636,7 +2005,7 @@ index bd7383dc64..ffbcbff69b 100644
  extra-libs = libmemusage libc_malloc_debug
  extra-libs-others = $(extra-libs)
  
-@@ -325,13 +551,43 @@ $(addprefix $(objpfx), $(tests-threaded-worker)): $(shared-thread-library)
+@@ -325,13 +555,43 @@ $(addprefix $(objpfx), $(tests-threaded-worker)): $(shared-thread-library)
  
  tests += $(tests-threaded-main) $(tests-threaded-worker)
  
@@ -1685,7 +2054,7 @@ index bd7383dc64..ffbcbff69b 100644
  
  # These should be removed by `make clean'.
  extra-objs = mcheck-init.o libmcheck.a
-@@ -399,6 +655,8 @@ ifeq ($(run-built-tests),yes)
+@@ -399,6 +659,8 @@ ifeq ($(run-built-tests),yes)
  ifeq (yes,$(build-shared))
  ifneq ($(PERL),no)
  tests-special += $(objpfx)tst-mtrace.out
@@ -1694,7 +2063,7 @@ index bd7383dc64..ffbcbff69b 100644
  tests-special += $(objpfx)tst-dynarray-mem.out
  tests-special += $(objpfx)tst-dynarray-fail-mem.out
  tests-special += $(objpfx)tst-free-aligned-sized-mtrace.out
-@@ -406,6 +664,8 @@ tests-special += $(objpfx)tst-free-sized-mtrace.out
+@@ -406,6 +668,8 @@ tests-special += $(objpfx)tst-free-sized-mtrace.out
  endif
  endif
  endif
@@ -1703,7 +2072,7 @@ index bd7383dc64..ffbcbff69b 100644
  
  include ../Rules
  
-@@ -451,6 +711,613 @@ CPPFLAGS-malloc.c += -DUSE_TCACHE=1
+@@ -451,6 +715,626 @@ CPPFLAGS-malloc.c += -DUSE_TCACHE=1
  # Uncomment this for test releases.  For public releases it is too expensive.
  #CPPFLAGS-malloc.o += -DMALLOC_DEBUG=1
  
@@ -1928,6 +2297,18 @@ index bd7383dc64..ffbcbff69b 100644
 +endif
 +endif
 +
++ifneq ($(filter phasecast,$(malloc-enabled-impls)),)
++phasecast-cppflags = \
++  -I$(..)malloc/phasecast \
++  $(malloc-third-party-warnings)
++CPPFLAGS-malloc-phasecast.c += $(phasecast-cppflags)
++CPPFLAGS-malloc-phasecast-impl.c += $(phasecast-cppflags)
++ifeq ($(malloc-multi),yes)
++CPPFLAGS-malloc-phasecast.c += -DMALLOC_MULTI_BACKEND
++CPPFLAGS-malloc-phasecast-impl.c += -DMALLOC_MULTI_BACKEND
++CPPFLAGS-malloc-phasecast-impl.c += -D__libc_use_alloca=__malloc_phasecast_use_alloca
++endif
++endif
 +
 +# C++ allocators that need libstdc++ are preload DSOs only (never linked
 +# into libc.so).  Enable with --with-malloc-preload=mesh,partitionalloc,tcmalloc.
@@ -2157,6 +2538,7 @@ index bd7383dc64..ffbcbff69b 100644
 +$(error datadir must be set for multi-malloc builds so DATADIR drop-ins resolve)
 +endif
 +CPPFLAGS-malloc-select.c += -DDATADIR='"$(datadir)"'
++CPPFLAGS-malloc-select.c += -DSYSCONFDIR='"$(sysconfdir)"'
 +CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
 +CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR_BUILD='"$(common-objpfx)glibc/malloc"'
 +CPPFLAGS-malloc-scan.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
@@ -3219,10 +3601,10 @@ index 0000000000..02e810e33b
 +printf 'wrote %s\n' "$output_path"
 diff --git a/malloc/malloc-query.c b/malloc/malloc-query.c
 new file mode 100644
-index 0000000000..d38aec2022
+index 0000000000..04a99f80b5
 --- /dev/null
 +++ b/malloc/malloc-query.c
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,112 @@
 +/* Query APIs for single-implementation malloc builds.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -3307,6 +3689,33 @@ index 0000000000..d38aec2022
 +  if (malloc_is_interposed ())
 +    return "external";
 +  return malloc_query_impl_name;
++}
++
++/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
++void
++weak_function
++gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
++{
++}
++
++void
++weak_function
++gnu_malloc_phase_pop (void)
++{
++}
++
++int
++weak_function
++gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
++
++int
++weak_function
++gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
 +}
 diff --git a/malloc/malloc-scan.c b/malloc/malloc-scan.c
 new file mode 100644
@@ -3427,10 +3836,10 @@ index 0000000000..20d6bb4dd1
 +libc_hidden_def (__libc_malloc_scan_installed)
 diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
 new file mode 100644
-index 0000000000..3e774db30c
+index 0000000000..1746b375b7
 --- /dev/null
 +++ b/malloc/malloc-select.c
-@@ -0,0 +1,1681 @@
+@@ -0,0 +1,1713 @@
 +#define _GNU_SOURCE 1
 +/* Select and dispatch among embedded malloc implementations.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -3763,13 +4172,13 @@ index 0000000000..3e774db30c
 +
 +/* Selection tiers (effective priority, higher wins).  In-file priority=
 +   only orders within a drop-in tier and is clamped to [0, 99] so a
-+   distro snippet cannot outrank /etc/glibc/malloc.conf.
++   distro snippet cannot outrank $(sysconfdir)/glibc/malloc.conf.
 +
 +     1000       GLIBC_MALLOC_IMPL
-+      800       /etc/glibc/malloc.conf per-basename lines
-+      600..699  /etc/glibc/malloc.d/<name>.conf  (admin / local)
-+      500       /etc/glibc/malloc.conf default= (overrides distro drop-ins)
-+      400..499  DATADIR/glibc/malloc.d/<name>.conf (distro-provided, arch-independent)
++      800       $(sysconfdir)/glibc/malloc.conf per-basename lines
++      600..699  $(sysconfdir)/glibc/malloc.d/<name>.conf  (admin / local)
++      500       $(sysconfdir)/glibc/malloc.conf default= (overrides distro)
++      400..499  $(datadir)/glibc/malloc.d/<name>.conf (distro-provided)
 +      <0        heuristics / compile-time default (fallthrough)  */
 +enum
 +  {
@@ -4450,10 +4859,15 @@ index 0000000000..3e774db30c
 +  }
 +
 +  /* Scan all sources; effective priorities enforce:
-+     malloc.conf per-basename > /etc/malloc.d > malloc.conf default=
-+     > distro DATADIR/malloc.d.  */
-+  scan_global_conf ("/etc/glibc/malloc.conf", exe_base_p, &best);
-+  scan_dropin_dir ("/etc/glibc/malloc.d", exe_path_p, exe_base_p,
++     $(sysconfdir)/malloc.conf per-basename >
++     $(sysconfdir)/malloc.d >
++     $(sysconfdir)/malloc.conf default= >
++     distro $(datadir)/malloc.d.  */
++#ifndef SYSCONFDIR
++# define SYSCONFDIR "/etc"
++#endif
++  scan_global_conf (SYSCONFDIR "/glibc/malloc.conf", exe_base_p, &best);
++  scan_dropin_dir (SYSCONFDIR "/glibc/malloc.d", exe_path_p, exe_base_p,
 +		   PRIO_ETC_MALLOCD_BASE, &best);
 +  scan_dropin_dir (DATADIR "/glibc/malloc.d", exe_path_p, exe_base_p,
 +		   PRIO_DATA_MALLOCD_BASE, &best);
@@ -5112,6 +5526,33 @@ index 0000000000..3e774db30c
 +#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
 +compat_symbol (libc, __libc_free, cfree, GLIBC_2_0);
 +#endif
++
++/* No-op fallbacks; overridden by strong defs when phasecast is embedded.  */
++void
++weak_function
++gnu_malloc_phase_push (const char *name __attribute__ ((unused)))
++{
++}
++
++void
++weak_function
++gnu_malloc_phase_pop (void)
++{
++}
++
++int
++weak_function
++gnu_malloc_phase_load_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
++
++int
++weak_function
++gnu_malloc_phase_save_profile (const char *path __attribute__ ((unused)))
++{
++  return -1;
++}
 diff --git a/malloc/malloc-shim-compat.h b/malloc/malloc-shim-compat.h
 new file mode 100644
 index 0000000000..06fb8f946a

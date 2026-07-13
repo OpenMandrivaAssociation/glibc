@@ -1,21 +1,18 @@
-From 791d56b9ed454a6f1248c7654c445d16fc421053 Mon Sep 17 00:00:00 2001
+From 3ab1e52787f31dced56e814cf4739097607c5ea8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:12:43 +0200
-Subject: [PATCH 13/13] Add malloc backend documentation and benchmark results
+Date: Mon, 13 Jul 2026 02:11:32 +0200
+Subject: [PATCH 13/20] Add malloc backend documentation and benchmark results
 
-Document the pluggable malloc framework, embeddable and preload
-backends (including phasecast), configuration knobs, and collected
-synthetic plus real-world compile benchmark results.
 ---
  INSTALL                             |  20 +
- MALLOC-BACKENDS.md                  | 652 ++++++++++++++++++++++++++++
+ MALLOC-BACKENDS.md                  | 663 ++++++++++++++++++++++++++++
  MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt |  96 ++++
  MALLOC-BENCHMARK-LATEST.csv         | 217 +++++++++
  MALLOC-BENCHMARK-REPORT-LATEST.txt  |  41 ++
- MALLOC-BENCHMARK-REPORT.md          | 466 ++++++++++++++++++++
+ MALLOC-BENCHMARK-REPORT.md          | 466 +++++++++++++++++++
  NEWS                                |  30 +-
  manual/install.texi                 |  20 +
- 8 files changed, 1537 insertions(+), 5 deletions(-)
+ 8 files changed, 1548 insertions(+), 5 deletions(-)
  create mode 100644 MALLOC-BACKENDS.md
  create mode 100644 MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
  create mode 100644 MALLOC-BENCHMARK-LATEST.csv
@@ -55,10 +52,10 @@ index 4174c9661f..b8fae51b82 100644
       ones the C compiler would default to.  You can use this option if
 diff --git a/MALLOC-BACKENDS.md b/MALLOC-BACKENDS.md
 new file mode 100644
-index 0000000000..5df86e453f
+index 0000000000..a276d19be1
 --- /dev/null
 +++ b/MALLOC-BACKENDS.md
-@@ -0,0 +1,652 @@
+@@ -0,0 +1,663 @@
 +# Pluggable Malloc Backends for glibc
 +
 +## Overview
@@ -418,6 +415,17 @@ index 0000000000..5df86e453f
 +
 +See [MALLOC-BENCHMARK-REPORT.md](MALLOC-BENCHMARK-REPORT.md) for a comprehensive
 +benchmark comparison of all backends with recommendations for different use cases.
++
++For **real-world desktop/compile** workloads (SQLite amalgamation + autoconf
++build, QtSvg C++/cmake), use:
++
++```sh
++./scripts/desktop-compile-bench.sh --libc-dir=$BUILD \
++  --impls=glibc,mimalloc,snmalloc --workloads=all --compiler=both
++```
++
++See [DESKTOP-COMPILE-BENCH.md](DESKTOP-COMPILE-BENCH.md) for options, result
++CSV layout, and optional `strace`/`perf` subsystem attribution.
 +
 +### Original mimalloc vs glibc benchmarks (for reference)
 +

@@ -1,11 +1,9 @@
-From e9c8c3d9115e7cd48bb13b99a75707426a707c78 Mon Sep 17 00:00:00 2001
+From d3013034046a0a031a72057dc9298e369aabc045 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:02:43 +0200
-Subject: [PATCH 03/13] Add in-tree mimalloc-secure backend
+Date: Mon, 13 Jul 2026 02:11:18 +0200
+Subject: [PATCH 03/20] Add in-tree mimalloc-secure backend
  (--with-malloc=mimalloc-secure)
 
-Build mimalloc with MI_SECURE=4 via dedicated wrapper sources and symbol
-rename headers, selectable independently from the plain mimalloc token.
 ---
  malloc/malloc-mimalloc-secure-impl.c   |  29 ++
  malloc/malloc-mimalloc-secure-rename.h | 356 ++++++++++++++++++++

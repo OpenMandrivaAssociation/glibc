@@ -1,12 +1,8 @@
-From 2370661656f7e4547c5cc4254c416d1ebba02d47 Mon Sep 17 00:00:00 2001
+From fbadaf06c2dd3602d4e29d5764e0559125fe2bab Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:04:43 +0200
-Subject: [PATCH 05/13] Add in-tree snmalloc backend (--with-malloc=snmalloc)
+Date: Mon, 13 Jul 2026 02:11:22 +0200
+Subject: [PATCH 05/20] Add in-tree snmalloc backend (--with-malloc=snmalloc)
 
-Vendor snmalloc headers/sources with a C++ implementation TU and C
-registration wrapper.  Ships without libstdc++ in libc via self-vendored
-STL; supports embed or dynamic libglibc_malloc_snmalloc.so.  Includes
-benchtests helpers exercised against this backend.
 ---
  benchtests/bench-memcpy-snmalloc.c            |   19 +
  benchtests/bench-memcpy-snmalloc.cc           |  160 ++

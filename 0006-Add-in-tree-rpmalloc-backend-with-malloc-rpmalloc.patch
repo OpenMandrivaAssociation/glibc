@@ -1,11 +1,8 @@
-From e22bd4947833e89adee7f7c32718adc7f6c5bc68 Mon Sep 17 00:00:00 2001
+From a6912294761adb08a648c05db88ea0a355cb6119 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Sat, 4 Jul 2026 19:05:43 +0200
-Subject: [PATCH 06/13] Add in-tree rpmalloc backend (--with-malloc=rpmalloc)
+Date: Mon, 13 Jul 2026 02:11:22 +0200
+Subject: [PATCH 06/20] Add in-tree rpmalloc backend (--with-malloc=rpmalloc)
 
-Vendor rpmalloc under malloc/rpmalloc/ with embed/dynamic wrappers.  The
-upstream override guard is preserved so the library body builds correctly
-when compiled into the selector backend DSO.
 ---
  malloc/malloc-rpmalloc-impl.c |   24 +
  malloc/malloc-rpmalloc.c      |  496 +++++
