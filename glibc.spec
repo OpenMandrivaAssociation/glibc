@@ -2,7 +2,7 @@
 %if %{cross_compiling}
 %bcond_with crosscompilers
 %else
-%bcond_with crosscompilers
+%bcond_without crosscompilers
 %endif
 # The test suite should be run after updates, but is very
 # slow especially on arches where we have slow builders.
@@ -190,7 +190,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	7
+Release:	8
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
