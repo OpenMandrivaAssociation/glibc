@@ -1668,7 +1668,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %if %{with mallocs}
 		--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
 		--with-malloc-preload=tcmalloc \
-		--with-default-malloc=snmalloc \
+		--with-default-malloc=glibc \
 %else
 		--with-malloc=glibc \
 		--with-default-malloc=glibc \
@@ -1694,7 +1694,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %if %{with mallocs}
     --with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
     --with-malloc-preload=tcmalloc \
-    --with-default-malloc=snmalloc \
+    --with-default-malloc=glibc \
 %else
     --with-malloc=glibc \
     --with-default-malloc=glibc \
