@@ -680,6 +680,7 @@ LANG variable to their preferred language in their
 %{expand:%(sh %{S:1000} "Upper Sorbian" "hsb" "hsb_DE")}
 %{expand:%(sh %{S:1000} "Lower Sorbian" "dsb" "dsb_DE")}
 %{expand:%(sh %{S:1000} "Breyol" "ht" "ht_HT")}
+%{expand:%(sh %{S:1000} "Hunsrik" "hrx" "hrx_BR")}
 %{expand:%(sh %{S:1000} "Hungarian" "hu" "hu_HU")}
 %{expand:%(sh %{S:1000} "Armenian" "hy" "hy_AM")}
 %{expand:%(sh %{S:1000} "Interlingua" "ia" "ia_FR")}
