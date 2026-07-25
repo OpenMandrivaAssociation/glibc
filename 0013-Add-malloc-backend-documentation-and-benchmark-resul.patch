@@ -1,29 +1,7 @@
-From 3ab1e52787f31dced56e814cf4739097607c5ea8 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:32 +0200
-Subject: [PATCH 13/20] Add malloc backend documentation and benchmark results
-
----
- INSTALL                             |  20 +
- MALLOC-BACKENDS.md                  | 663 ++++++++++++++++++++++++++++
- MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt |  96 ++++
- MALLOC-BENCHMARK-LATEST.csv         | 217 +++++++++
- MALLOC-BENCHMARK-REPORT-LATEST.txt  |  41 ++
- MALLOC-BENCHMARK-REPORT.md          | 466 +++++++++++++++++++
- NEWS                                |  30 +-
- manual/install.texi                 |  20 +
- 8 files changed, 1548 insertions(+), 5 deletions(-)
- create mode 100644 MALLOC-BACKENDS.md
- create mode 100644 MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
- create mode 100644 MALLOC-BENCHMARK-LATEST.csv
- create mode 100644 MALLOC-BENCHMARK-REPORT-LATEST.txt
- create mode 100644 MALLOC-BENCHMARK-REPORT.md
-
 diff --git a/INSTALL b/INSTALL
-index 4174c9661f..b8fae51b82 100644
---- a/INSTALL
-+++ b/INSTALL
-@@ -86,6 +86,26 @@ passed to 'configure'.  For example:
+--- a/INSTALL	2026-07-24 15:16:45.000000000 +0200
++++ b/INSTALL	2026-07-25 21:03:54.784361971 +0200
+@@ -86,6 +86,26 @@
       expected to support.  The higher the VERSION number is, the less
       compatibility code is added, and the faster the code gets.
  
@@ -51,10 +29,8 @@ index 4174c9661f..b8fae51b82 100644
       Use the binutils (assembler and linker) in 'DIRECTORY', not the
       ones the C compiler would default to.  You can use this option if
 diff --git a/MALLOC-BACKENDS.md b/MALLOC-BACKENDS.md
-new file mode 100644
-index 0000000000..a276d19be1
---- /dev/null
-+++ b/MALLOC-BACKENDS.md
+--- a/MALLOC-BACKENDS.md	1970-01-01 01:00:00.000000000 +0100
++++ b/MALLOC-BACKENDS.md	2026-07-25 21:03:54.784689063 +0200
 @@ -0,0 +1,663 @@
 +# Pluggable Malloc Backends for glibc
 +
@@ -720,10 +696,8 @@ index 0000000000..a276d19be1
 +  The weak stubs in `elf/static-stubs.c` allow libgcc_eh to be linked
 +  when needed (e.g. by unwinding paths pulled in transitively).
 diff --git a/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt b/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
-new file mode 100644
-index 0000000000..0628ffcaaa
---- /dev/null
-+++ b/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt
+--- a/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt	1970-01-01 01:00:00.000000000 +0100
++++ b/MALLOC-BENCHMARK-DYNAMIC-VERIFY.txt	2026-07-25 21:03:54.784807273 +0200
 @@ -0,0 +1,96 @@
 +Malloc hybrid dynamic verification — 2026-07-03
 +Build: /tmp/glibc-dyn-test (--with-malloc=glibc,rpmalloc,snmalloc)
@@ -822,10 +796,8 @@ index 0000000000..0628ffcaaa
 +
 +Raw JSON/TSV: /tmp/malloc-dyn-verify/results/
 diff --git a/MALLOC-BENCHMARK-LATEST.csv b/MALLOC-BENCHMARK-LATEST.csv
-new file mode 100644
-index 0000000000..a17302676a
---- /dev/null
-+++ b/MALLOC-BENCHMARK-LATEST.csv
+--- a/MALLOC-BENCHMARK-LATEST.csv	1970-01-01 01:00:00.000000000 +0100
++++ b/MALLOC-BENCHMARK-LATEST.csv	2026-07-25 21:03:54.784911454 +0200
 @@ -0,0 +1,217 @@
 +impl,benchmark,real_s,user_s,sys_s,maxrss_kb
 +glibc,awk_corpus,0.00,0.00,0.00,3352
@@ -1045,10 +1017,8 @@ index 0000000000..a17302676a
 +snmalloc,wc_corpus,0.00,0.00,0.00,3604
 +tcmalloc,wc_corpus,0.63,0.62,0.01,10088
 diff --git a/MALLOC-BENCHMARK-REPORT-LATEST.txt b/MALLOC-BENCHMARK-REPORT-LATEST.txt
-new file mode 100644
-index 0000000000..45047583fc
---- /dev/null
-+++ b/MALLOC-BENCHMARK-REPORT-LATEST.txt
+--- a/MALLOC-BENCHMARK-REPORT-LATEST.txt	1970-01-01 01:00:00.000000000 +0100
++++ b/MALLOC-BENCHMARK-REPORT-LATEST.txt	2026-07-25 21:03:54.785018824 +0200
 @@ -0,0 +1,41 @@
 +=== Relative wall time vs glibc (lower is faster) ===
 +benchmark                      glibchardened-mallochardened-preload      jemalloc      mallocng          mesh      mimallocmimalloc-preloadmimalloc-securepartitionalloc      snmalloc      tcmalloc
@@ -1092,10 +1062,8 @@ index 0000000000..45047583fc
 +sort_corpus                     3308          3660       3300696          3616          3732       3319200          3412       3283944          3712          5412          3296       3311516
 +wc_corpus                       3252          3596         30076          3372          3400         13612          4520          4896          3236          5740          3604         10088
 diff --git a/MALLOC-BENCHMARK-REPORT.md b/MALLOC-BENCHMARK-REPORT.md
-new file mode 100644
-index 0000000000..d132b42d61
---- /dev/null
-+++ b/MALLOC-BENCHMARK-REPORT.md
+--- a/MALLOC-BENCHMARK-REPORT.md	1970-01-01 01:00:00.000000000 +0100
++++ b/MALLOC-BENCHMARK-REPORT.md	2026-07-25 21:03:54.788963179 +0200
 @@ -0,0 +1,466 @@
 +# Malloc Backend Benchmark Report
 +
@@ -1564,20 +1532,12 @@ index 0000000000..d132b42d61
 +Raw logs: `/tmp/malloc-bench-postshim/results/`.
 +
 diff --git a/NEWS b/NEWS
-index cec8b61f55..868ac6d102 100644
---- a/NEWS
-+++ b/NEWS
-@@ -9,11 +9,31 @@ Version 2.43.1
+--- a/NEWS	2026-07-24 15:16:45.000000000 +0200
++++ b/NEWS	2026-07-25 21:03:54.828365631 +0200
+@@ -9,6 +9,22 @@
  
- The following bugs are resolved with this release:
+ Major new features:
  
-- [33623] [ldbl-128ibm] roundl, ceill, truncl, floorl bad sign of zero
--   results
-- [33848] build: Build fails at openat2.h, redefinition of 'struct
--    open_how'
-- [33904] build: error: '__vasprintf_chk' undeclared here
-+Major new features:
-+
 +* The --with-malloc configure option accepts a comma-separated list of
 +  implementations (glibc, mimalloc, mimalloc-secure, jemalloc, snmalloc,
 +  rpmalloc, mallocng, hardened-malloc, phasecast) to embed multiple
@@ -1594,21 +1554,13 @@ index cec8b61f55..868ac6d102 100644
 +  glibc-malloc-profile helper times a representative command under each
 +  embedded implementation and can write a matching drop-in.
 +
-+The following bugs are resolved with this release:
-+
-+  [33623] [ldbl-128ibm] roundl, ceill, truncl, floorl bad sign of zero
-+    results
-+  [33848] build: Build fails at openat2.h, redefinition of 'struct
-+     open_how'
-+  [33904] build: error: '__vasprintf_chk' undeclared here
- 
- Version 2.43
- 
+ * System-wide tunables can be applied using /etc/tunables.conf and
+   running ldconfig.  Specific tunable settings and the
+   /etc/tunables.conf file format and path are not part of the stable
 diff --git a/manual/install.texi b/manual/install.texi
-index 073cda0530..1cdf059b1b 100644
---- a/manual/install.texi
-+++ b/manual/install.texi
-@@ -116,6 +116,26 @@ smallest version of the Linux kernel the generated library is expected
+--- a/manual/install.texi	2026-07-24 15:16:45.000000000 +0200
++++ b/manual/install.texi	2026-07-25 21:03:54.791510460 +0200
+@@ -116,6 +116,26 @@
  to support.  The higher the @var{version} number is, the less
  compatibility code is added, and the faster the code gets.
  
@@ -1635,6 +1587,3 @@ index 073cda0530..1cdf059b1b 100644
  @item --with-binutils=@var{directory}
  Use the binutils (assembler and linker) in @file{@var{directory}}, not
  the ones the C compiler would default to.  You can use this option if
--- 
-2.53.0
-

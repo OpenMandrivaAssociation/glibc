@@ -1,6 +1,6 @@
-diff -up glibc-2.43/bits/floatn-common.h.omv~ glibc-2.43/bits/floatn-common.h
---- glibc-2.43/bits/floatn-common.h.omv~	2026-02-25 01:15:27.936937827 +0100
-+++ glibc-2.43/bits/floatn-common.h	2026-02-25 01:17:47.712585597 +0100
+diff -up glibc-2.44/bits/floatn-common.h.omv~ glibc-2.44/bits/floatn-common.h
+--- glibc-2.44/bits/floatn-common.h.omv~	2026-02-25 01:15:27.936937827 +0100
++++ glibc-2.44/bits/floatn-common.h	2026-02-25 01:17:47.712585597 +0100
 @@ -78,7 +78,7 @@
     or _FloatNx types, if __HAVE_<type> is 1.  The corresponding
     literal suffixes exist since GCC 7, for C only.  */
@@ -55,10 +55,10 @@ diff -up glibc-2.43/bits/floatn-common.h.omv~ glibc-2.43/bits/floatn-common.h
  typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
  #   define __CFLOAT16 __cfloat16
  #  else
-diff -up glibc-2.43/bits/floatn.h.omv~ glibc-2.43/bits/floatn.h
-diff -up glibc-2.43/debug/Makefile.omv~ glibc-2.43/debug/Makefile
---- glibc-2.43/debug/Makefile.omv~	2026-02-26 22:23:02.012815111 +0100
-+++ glibc-2.43/debug/Makefile	2026-02-26 22:23:24.940426460 +0100
+diff -up glibc-2.44/bits/floatn.h.omv~ glibc-2.44/bits/floatn.h
+diff -up glibc-2.44/debug/Makefile.omv~ glibc-2.44/debug/Makefile
+--- glibc-2.44/debug/Makefile.omv~	2026-02-26 22:23:02.012815111 +0100
++++ glibc-2.44/debug/Makefile	2026-02-26 22:23:24.940426460 +0100
 @@ -21,6 +21,8 @@
  #
  subdir	:= debug
@@ -68,21 +68,9 @@ diff -up glibc-2.43/debug/Makefile.omv~ glibc-2.43/debug/Makefile
  include ../Makeconfig
  
  headers	:= execinfo.h
-diff -up glibc-2.43/iconv/Makefile.omv~ glibc-2.43/iconv/Makefile
---- glibc-2.43/iconv/Makefile.omv~	2026-02-25 00:17:51.321283456 +0100
-+++ glibc-2.43/iconv/Makefile	2026-02-25 00:36:42.997092081 +0100
-@@ -72,7 +72,7 @@ install-sbin	= iconvconfig
- CFLAGS-gconv_cache.c += -DGCONV_DIR='"$(gconvdir)"'
- CFLAGS-gconv_conf.c += -DGCONV_PATH='"$(gconvdir)"'
- CFLAGS-iconvconfig.c += -DGCONV_PATH='"$(gconvdir)"' -DGCONV_DIR='"$(gconvdir)"'
--CFLAGS-gconv_simple.c += -Wno-error=stringop-overflow
-+CFLAGS-gconv_simple.c += $(call cc-option,-Wno-error=stringop-overflow)
- 
- # Set libof-* for each routine.
- cpp-srcs-left := $(iconv_prog-modules) $(iconvconfig-modules)
-diff -up glibc-2.43/include/alloc_buffer.h.omv~ glibc-2.43/include/alloc_buffer.h
---- glibc-2.43/include/alloc_buffer.h.omv~	2026-02-25 00:41:26.872662105 +0100
-+++ glibc-2.43/include/alloc_buffer.h	2026-02-25 00:43:19.747474729 +0100
+diff -up glibc-2.44/include/alloc_buffer.h.omv~ glibc-2.44/include/alloc_buffer.h
+--- glibc-2.44/include/alloc_buffer.h.omv~	2026-02-25 00:41:26.872662105 +0100
++++ glibc-2.44/include/alloc_buffer.h	2026-02-25 00:43:19.747474729 +0100
 @@ -213,13 +213,13 @@ __alloc_buffer_assert_size (size_t size)
  {
    if (!__builtin_constant_p (size))
@@ -126,9 +114,9 @@ diff -up glibc-2.43/include/alloc_buffer.h.omv~ glibc-2.43/include/alloc_buffer.
      }
    return align;
  }
-diff -up glibc-2.43/include/float.h.omv~ glibc-2.43/include/float.h
---- glibc-2.43/include/float.h.omv~	2026-02-25 00:33:32.096998304 +0100
-+++ glibc-2.43/include/float.h	2026-02-25 00:33:53.120581036 +0100
+diff -up glibc-2.44/include/float.h.omv~ glibc-2.44/include/float.h
+--- glibc-2.44/include/float.h.omv~	2026-02-25 00:33:32.096998304 +0100
++++ glibc-2.44/include/float.h	2026-02-25 00:33:53.120581036 +0100
 @@ -17,7 +17,7 @@
     in TS 18661-3.  */
  #include <features.h>
@@ -138,9 +126,9 @@ diff -up glibc-2.43/include/float.h.omv~ glibc-2.43/include/float.h
  
  # if __HAVE_FLOAT128
  #  define FLT128_MANT_DIG	113
-diff -up glibc-2.43/intl/localealias.c.omv~ glibc-2.43/intl/localealias.c
---- glibc-2.43/intl/localealias.c.omv~	2026-02-25 00:18:12.823394880 +0100
-+++ glibc-2.43/intl/localealias.c	2026-02-25 00:18:22.905008801 +0100
+diff -up glibc-2.44/intl/localealias.c.omv~ glibc-2.44/intl/localealias.c
+--- glibc-2.44/intl/localealias.c.omv~	2026-02-25 00:18:12.823394880 +0100
++++ glibc-2.44/intl/localealias.c	2026-02-25 00:18:22.905008801 +0100
 @@ -316,7 +316,7 @@ read_alias_file (const char *fname, int
  		    {
  #pragma GCC diagnostic push
@@ -150,9 +138,9 @@ diff -up glibc-2.43/intl/localealias.c.omv~ glibc-2.43/intl/localealias.c
    /* Suppress the valid GCC 12 warning until the code below is changed
       to avoid using pointers to the reallocated block.  */
  #  pragma GCC diagnostic ignored "-Wuse-after-free"
-diff -up glibc-2.43/libio/tst-freopen.c.omv~ glibc-2.43/libio/tst-freopen.c
---- glibc-2.43/libio/tst-freopen.c.omv~	2026-02-25 18:00:37.156828037 +0100
-+++ glibc-2.43/libio/tst-freopen.c	2026-02-25 18:01:31.217435918 +0100
+diff -up glibc-2.44/libio/tst-freopen.c.omv~ glibc-2.44/libio/tst-freopen.c
+--- glibc-2.44/libio/tst-freopen.c.omv~	2026-02-25 18:00:37.156828037 +0100
++++ glibc-2.44/libio/tst-freopen.c	2026-02-25 18:01:31.217435918 +0100
 @@ -84,7 +84,7 @@ do_test_basic (void)
    fclose (f);
  }
@@ -171,9 +159,9 @@ diff -up glibc-2.43/libio/tst-freopen.c.omv~ glibc-2.43/libio/tst-freopen.c
  /* Pop -Wmismatched-dealloc set to error above.  */
  # pragma GCC diagnostic pop
  #endif
-diff -up glibc-2.43/libio/tst-wmemstream1.c.omv~ glibc-2.43/libio/tst-wmemstream1.c
---- glibc-2.43/libio/tst-wmemstream1.c.omv~	2026-02-25 18:02:20.695352264 +0100
-+++ glibc-2.43/libio/tst-wmemstream1.c	2026-02-25 18:02:34.117025971 +0100
+diff -up glibc-2.44/libio/tst-wmemstream1.c.omv~ glibc-2.44/libio/tst-wmemstream1.c
+--- glibc-2.44/libio/tst-wmemstream1.c.omv~	2026-02-25 18:02:20.695352264 +0100
++++ glibc-2.44/libio/tst-wmemstream1.c	2026-02-25 18:02:34.117025971 +0100
 @@ -2,7 +2,7 @@
  
  extern int fclose (FILE*);
@@ -192,9 +180,9 @@ diff -up glibc-2.43/libio/tst-wmemstream1.c.omv~ glibc-2.43/libio/tst-wmemstream
  /* Restore -Wmismatched-dealloc setting.  */
  # pragma GCC diagnostic pop
  #endif
-diff -up glibc-2.43/libio/tst-wmemstream5.c.omv~ glibc-2.43/libio/tst-wmemstream5.c
---- glibc-2.43/libio/tst-wmemstream5.c.omv~	2026-02-25 18:02:44.139555603 +0100
-+++ glibc-2.43/libio/tst-wmemstream5.c	2026-02-25 18:02:58.114242023 +0100
+diff -up glibc-2.44/libio/tst-wmemstream5.c.omv~ glibc-2.44/libio/tst-wmemstream5.c
+--- glibc-2.44/libio/tst-wmemstream5.c.omv~	2026-02-25 18:02:44.139555603 +0100
++++ glibc-2.44/libio/tst-wmemstream5.c	2026-02-25 18:02:58.114242023 +0100
 @@ -19,7 +19,7 @@
  
  extern int fclose (FILE*);
@@ -213,10 +201,10 @@ diff -up glibc-2.43/libio/tst-wmemstream5.c.omv~ glibc-2.43/libio/tst-wmemstream
  /* Restore -Wmismatched-dealloc setting.  */
  # pragma GCC diagnostic pop
  #endif
-diff -up glibc-2.43/malloc/tst-malloc-backtrace.c.omv~ glibc-2.43/malloc/tst-malloc-backtrace.c
---- glibc-2.43/malloc/tst-malloc-backtrace.c.omv~	2026-02-25 23:45:01.119197479 +0100
-+++ glibc-2.43/malloc/tst-malloc-backtrace.c	2026-02-25 23:45:15.136224320 +0100
-@@ -32,13 +32,13 @@ __attribute__((noinline))
+diff -up glibc-2.44/malloc/tst-malloc-backtrace.c.omv~ glibc-2.44/malloc/tst-malloc-backtrace.c
+--- glibc-2.44/malloc/tst-malloc-backtrace.c.omv~
++++ glibc-2.44/malloc/tst-malloc-backtrace.c
+@@ -33,7 +33,7 @@ __attribute__((noinline))
  call_free (void *ptr)
  {
    free (ptr);
@@ -225,16 +213,18 @@ diff -up glibc-2.43/malloc/tst-malloc-backtrace.c.omv~ glibc-2.43/malloc/tst-mal
    /* Ignore a valid warning about using a pointer made indeterminate
       by a prior call to free().  */
    DIAG_IGNORE_NEEDS_COMMENT (12, "-Wuse-after-free");
- #endif
-   *(size_t *)(ptr - sizeof (size_t)) = 1;
+@@ -42,7 +42,7 @@ call_free (void *ptr)
+      If memory tagging is used, we need to make sure that tag in ptr
+      is cleared.  */
+   *(size_t *)(support_ptr_after_free (ptr) - sizeof (size_t)) = 1;
 -#if __GNUC_PREREQ (12, 0)
 +#if __GNUC_PREREQ (12, 0) && !defined(__clang__)
    DIAG_POP_NEEDS_COMMENT;
  #endif
  }
-diff -up glibc-2.43/malloc/tst-malloc-check.c.omv~ glibc-2.43/malloc/tst-malloc-check.c
---- glibc-2.43/malloc/tst-malloc-check.c.omv~	2026-02-25 23:46:09.534347415 +0100
-+++ glibc-2.43/malloc/tst-malloc-check.c	2026-02-25 23:47:24.137119257 +0100
+diff -up glibc-2.44/malloc/tst-malloc-check.c.omv~ glibc-2.44/malloc/tst-malloc-check.c
+--- glibc-2.44/malloc/tst-malloc-check.c.omv~	2026-02-25 23:46:09.534347415 +0100
++++ glibc-2.44/malloc/tst-malloc-check.c	2026-02-25 23:47:24.137119257 +0100
 @@ -39,7 +39,7 @@ do_test (void)
    errno = 0;
  
@@ -294,9 +284,9 @@ diff -up glibc-2.43/malloc/tst-malloc-check.c.omv~ glibc-2.43/malloc/tst-malloc-
    DIAG_POP_NEEDS_COMMENT;
  #endif
    free (q);
-diff -up glibc-2.43/malloc/tst-malloc-too-large.c.omv~ glibc-2.43/malloc/tst-malloc-too-large.c
---- glibc-2.43/malloc/tst-malloc-too-large.c.omv~	2026-02-25 23:48:49.962163116 +0100
-+++ glibc-2.43/malloc/tst-malloc-too-large.c	2026-02-25 23:49:48.333670648 +0100
+diff -up glibc-2.44/malloc/tst-malloc-too-large.c.omv~ glibc-2.44/malloc/tst-malloc-too-large.c
+--- glibc-2.44/malloc/tst-malloc-too-large.c.omv~	2026-02-25 23:48:49.962163116 +0100
++++ glibc-2.44/malloc/tst-malloc-too-large.c	2026-02-25 23:49:48.333670648 +0100
 @@ -74,13 +74,13 @@ test_large_allocations (size_t size)
  
    test_setup ();
@@ -434,9 +424,9 @@ diff -up glibc-2.43/malloc/tst-malloc-too-large.c.omv~ glibc-2.43/malloc/tst-mal
    /* GCC 7 warns about too-large allocations; here we want to test
       that they fail.  */
    DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
-diff -up glibc-2.43/malloc/tst-malloc.c.omv~ glibc-2.43/malloc/tst-malloc.c
---- glibc-2.43/malloc/tst-malloc.c.omv~	2026-02-25 23:41:07.837912734 +0100
-+++ glibc-2.43/malloc/tst-malloc.c	2026-02-25 23:41:24.133885667 +0100
+diff -up glibc-2.44/malloc/tst-malloc.c.omv~ glibc-2.44/malloc/tst-malloc.c
+--- glibc-2.44/malloc/tst-malloc.c.omv~	2026-02-25 23:41:07.837912734 +0100
++++ glibc-2.44/malloc/tst-malloc.c	2026-02-25 23:41:24.133885667 +0100
 @@ -44,7 +44,7 @@ do_test (void)
    errno = 0;
  
@@ -455,9 +445,9 @@ diff -up glibc-2.43/malloc/tst-malloc.c.omv~ glibc-2.43/malloc/tst-malloc.c
    /* GCC 7 warns about too-large allocations; here we want to test
       that they fail.  */
    DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
-diff -up glibc-2.43/malloc/tst-memalign.c.omv~ glibc-2.43/malloc/tst-memalign.c
---- glibc-2.43/malloc/tst-memalign.c.omv~	2026-02-26 00:10:21.086557057 +0100
-+++ glibc-2.43/malloc/tst-memalign.c	2026-02-26 00:10:32.881372994 +0100
+diff -up glibc-2.44/malloc/tst-memalign.c.omv~ glibc-2.44/malloc/tst-memalign.c
+--- glibc-2.44/malloc/tst-memalign.c.omv~	2026-02-26 00:10:21.086557057 +0100
++++ glibc-2.44/malloc/tst-memalign.c	2026-02-26 00:10:32.881372994 +0100
 @@ -45,7 +45,7 @@ do_test (void)
    errno = 0;
  
@@ -476,9 +466,9 @@ diff -up glibc-2.43/malloc/tst-memalign.c.omv~ glibc-2.43/malloc/tst-memalign.c
    DIAG_POP_NEEDS_COMMENT;
  #endif
  
-diff -up glibc-2.43/malloc/tst-posix_memalign.c.omv~ glibc-2.43/malloc/tst-posix_memalign.c
---- glibc-2.43/malloc/tst-posix_memalign.c.omv~	2026-02-26 00:23:22.551382313 +0100
-+++ glibc-2.43/malloc/tst-posix_memalign.c	2026-02-26 00:23:35.874554067 +0100
+diff -up glibc-2.44/malloc/tst-posix_memalign.c.omv~ glibc-2.44/malloc/tst-posix_memalign.c
+--- glibc-2.44/malloc/tst-posix_memalign.c.omv~	2026-02-26 00:23:22.551382313 +0100
++++ glibc-2.44/malloc/tst-posix_memalign.c	2026-02-26 00:23:35.874554067 +0100
 @@ -43,7 +43,7 @@ do_test (void)
    p = NULL;
  
@@ -497,9 +487,9 @@ diff -up glibc-2.43/malloc/tst-posix_memalign.c.omv~ glibc-2.43/malloc/tst-posix
    DIAG_POP_NEEDS_COMMENT;
  #endif
  
-diff -up glibc-2.43/malloc/tst-pvalloc.c.omv~ glibc-2.43/malloc/tst-pvalloc.c
---- glibc-2.43/malloc/tst-pvalloc.c.omv~	2026-02-26 00:23:48.882361113 +0100
-+++ glibc-2.43/malloc/tst-pvalloc.c	2026-02-26 00:23:56.731988210 +0100
+diff -up glibc-2.44/malloc/tst-pvalloc.c.omv~ glibc-2.44/malloc/tst-pvalloc.c
+--- glibc-2.44/malloc/tst-pvalloc.c.omv~	2026-02-26 00:23:48.882361113 +0100
++++ glibc-2.44/malloc/tst-pvalloc.c	2026-02-26 00:23:56.731988210 +0100
 @@ -44,7 +44,7 @@ do_test (void)
    errno = 0;
  
@@ -518,9 +508,9 @@ diff -up glibc-2.43/malloc/tst-pvalloc.c.omv~ glibc-2.43/malloc/tst-pvalloc.c
    DIAG_POP_NEEDS_COMMENT;
  #endif
  
-diff -up glibc-2.43/malloc/tst-realloc.c.omv~ glibc-2.43/malloc/tst-realloc.c
---- glibc-2.43/malloc/tst-realloc.c.omv~	2026-02-26 00:24:10.654222358 +0100
-+++ glibc-2.43/malloc/tst-realloc.c	2026-02-26 00:24:22.625938095 +0100
+diff -up glibc-2.44/malloc/tst-realloc.c.omv~ glibc-2.44/malloc/tst-realloc.c
+--- glibc-2.44/malloc/tst-realloc.c.omv~	2026-02-26 00:24:10.654222358 +0100
++++ glibc-2.44/malloc/tst-realloc.c	2026-02-26 00:24:22.625938095 +0100
 @@ -36,7 +36,7 @@ do_test (void)
  
    /* realloc (NULL, ...) behaves similarly to malloc (C89).  */
@@ -539,9 +529,9 @@ diff -up glibc-2.43/malloc/tst-realloc.c.omv~ glibc-2.43/malloc/tst-realloc.c
    /* GCC 7 warns about too-large allocations; here we want to test
       that they fail.  */
    DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
-diff -up glibc-2.43/malloc/tst-reallocarray.c.omv~ glibc-2.43/malloc/tst-reallocarray.c
---- glibc-2.43/malloc/tst-reallocarray.c.omv~	2026-02-26 00:25:05.917462192 +0100
-+++ glibc-2.43/malloc/tst-reallocarray.c	2026-02-26 00:25:11.151551039 +0100
+diff -up glibc-2.44/malloc/tst-reallocarray.c.omv~ glibc-2.44/malloc/tst-reallocarray.c
+--- glibc-2.44/malloc/tst-reallocarray.c.omv~	2026-02-26 00:25:05.917462192 +0100
++++ glibc-2.44/malloc/tst-reallocarray.c	2026-02-26 00:25:11.151551039 +0100
 @@ -26,13 +26,13 @@
  static void *
  reallocarray_nowarn (void *ptr, size_t nmemb, size_t size)
@@ -558,9 +548,9 @@ diff -up glibc-2.43/malloc/tst-reallocarray.c.omv~ glibc-2.43/malloc/tst-realloc
    DIAG_POP_NEEDS_COMMENT;
  #endif
    return ret;
-diff -up glibc-2.43/malloc/tst-valloc.c.omv~ glibc-2.43/malloc/tst-valloc.c
---- glibc-2.43/malloc/tst-valloc.c.omv~	2026-02-26 00:47:48.905715691 +0100
-+++ glibc-2.43/malloc/tst-valloc.c	2026-02-26 00:47:56.862154511 +0100
+diff -up glibc-2.44/malloc/tst-valloc.c.omv~ glibc-2.44/malloc/tst-valloc.c
+--- glibc-2.44/malloc/tst-valloc.c.omv~	2026-02-26 00:47:48.905715691 +0100
++++ glibc-2.44/malloc/tst-valloc.c	2026-02-26 00:47:56.862154511 +0100
 @@ -45,7 +45,7 @@ do_test (void)
    errno = 0;
  
@@ -579,10 +569,10 @@ diff -up glibc-2.43/malloc/tst-valloc.c.omv~ glibc-2.43/malloc/tst-valloc.c
    DIAG_POP_NEEDS_COMMENT;
  #endif
  
-diff -up glibc-2.43/math/libm-test-acos.inc.omv~ glibc-2.43/math/libm-test-acos.inc
-diff -up glibc-2.43/math/math.h.omv~ glibc-2.43/math/math.h
---- glibc-2.43/math/math.h.omv~	2026-02-25 00:51:10.871173459 +0100
-+++ glibc-2.43/math/math.h	2026-02-25 00:53:06.362185108 +0100
+diff -up glibc-2.44/math/libm-test-acos.inc.omv~ glibc-2.44/math/libm-test-acos.inc
+diff -up glibc-2.44/math/math.h.omv~ glibc-2.44/math/math.h
+--- glibc-2.44/math/math.h.omv~	2026-02-25 00:51:10.871173459 +0100
++++ glibc-2.44/math/math.h	2026-02-25 00:53:06.362185108 +0100
 @@ -1017,12 +1017,12 @@ extern int signgam;
    (sizeof (TG_ARG) == sizeof (float) ? FUNC ## f ARGS : FUNC ARGS)
  #elif __HAVE_DISTINCT_FLOAT128
@@ -598,9 +588,9 @@ diff -up glibc-2.43/math/math.h.omv~ glibc-2.43/math/math.h
  #   if __HAVE_FLOAT64X_LONG_DOUBLE
  #    define __MATH_TG_F64X(FUNC, ARGS) _Float64x: FUNC ## l ARGS,
  #   else
-diff -up glibc-2.43/nptl/pthread_create.c.omv~ glibc-2.43/nptl/pthread_create.c
---- glibc-2.43/nptl/pthread_create.c.omv~	2026-02-25 00:35:55.942361171 +0100
-+++ glibc-2.43/nptl/pthread_create.c	2026-02-25 00:36:03.660026872 +0100
+diff -up glibc-2.44/nptl/pthread_create.c.omv~ glibc-2.44/nptl/pthread_create.c
+--- glibc-2.44/nptl/pthread_create.c.omv~	2026-02-25 00:35:55.942361171 +0100
++++ glibc-2.44/nptl/pthread_create.c	2026-02-25 00:36:03.660026872 +0100
 @@ -402,7 +402,7 @@ start_thread (void *arg)
  
    int not_first_call;
@@ -610,9 +600,9 @@ diff -up glibc-2.43/nptl/pthread_create.c.omv~ glibc-2.43/nptl/pthread_create.c
    /* This call results in a -Wstringop-overflow warning because struct
       pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
       do not use anything beyond the common prefix (they never access
-diff -up glibc-2.43/nptl/tst-attr3.c.omv~ glibc-2.43/nptl/tst-attr3.c
---- glibc-2.43/nptl/tst-attr3.c.omv~	2026-02-25 18:04:04.687232103 +0100
-+++ glibc-2.43/nptl/tst-attr3.c	2026-02-25 18:04:19.067134109 +0100
+diff -up glibc-2.44/nptl/tst-attr3.c.omv~ glibc-2.44/nptl/tst-attr3.c
+--- glibc-2.44/nptl/tst-attr3.c.omv~	2026-02-25 18:04:04.687232103 +0100
++++ glibc-2.44/nptl/tst-attr3.c	2026-02-25 18:04:19.067134109 +0100
 @@ -363,7 +363,7 @@ do_test (void)
      }
  
@@ -631,9 +621,9 @@ diff -up glibc-2.43/nptl/tst-attr3.c.omv~ glibc-2.43/nptl/tst-attr3.c
    /* GCC 8 warns about aliasing of the restrict-qualified arguments
       passed &a.  Since pthread_create does not dereference its fourth
       argument, this aliasing, which is deliberate in this test, cannot
-diff -up glibc-2.43/nptl/unwind.c.omv~ glibc-2.43/nptl/unwind.c
---- glibc-2.43/nptl/unwind.c.omv~	2026-02-25 00:38:48.401136973 +0100
-+++ glibc-2.43/nptl/unwind.c	2026-02-25 00:38:56.186222285 +0100
+diff -up glibc-2.44/nptl/unwind.c.omv~ glibc-2.44/nptl/unwind.c
+--- glibc-2.44/nptl/unwind.c.omv~	2026-02-25 00:38:48.401136973 +0100
++++ glibc-2.44/nptl/unwind.c	2026-02-25 00:38:56.186222285 +0100
 @@ -91,7 +91,7 @@ unwind_stop (int version, _Unwind_Action
      }
  
@@ -643,9 +633,9 @@ diff -up glibc-2.43/nptl/unwind.c.omv~ glibc-2.43/nptl/unwind.c
    /* This call results in a -Wstringop-overflow warning because struct
       pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
       do not use anything beyond the common prefix (they never access
-diff -up glibc-2.43/posix/test-errno.c.omv~ glibc-2.43/posix/test-errno.c
---- glibc-2.43/posix/test-errno.c.omv~	2026-02-26 19:18:30.381837365 +0100
-+++ glibc-2.43/posix/test-errno.c	2026-02-26 20:39:42.940620405 +0100
+diff -up glibc-2.44/posix/test-errno.c.omv~ glibc-2.44/posix/test-errno.c
+--- glibc-2.44/posix/test-errno.c.omv~	2026-02-26 19:18:30.381837365 +0100
++++ glibc-2.44/posix/test-errno.c	2026-02-26 20:39:42.940620405 +0100
 @@ -19,7 +19,7 @@
  
  #include <sys/cdefs.h>
@@ -671,9 +661,9 @@ diff -up glibc-2.43/posix/test-errno.c.omv~ glibc-2.43/posix/test-errno.c
    DIAG_POP_NEEDS_COMMENT;
  #endif
    fails |= test_wrp (EBADF, getpeername, -1, &sa, &sl);
-diff -up glibc-2.43/resolv/res_debug.c.omv~ glibc-2.43/resolv/res_debug.c
---- glibc-2.43/resolv/res_debug.c.omv~	2026-02-25 00:56:17.422290619 +0100
-+++ glibc-2.43/resolv/res_debug.c	2026-02-25 00:56:24.990314620 +0100
+diff -up glibc-2.44/resolv/res_debug.c.omv~ glibc-2.44/resolv/res_debug.c
+--- glibc-2.44/resolv/res_debug.c.omv~	2026-02-25 00:56:17.422290619 +0100
++++ glibc-2.44/resolv/res_debug.c	2026-02-25 00:56:24.990314620 +0100
 @@ -1083,7 +1083,7 @@ __p_secstodate (u_long secs) {
  	   that, even given range checks on all fields with
  	   __builtin_unreachable called for out-of-range values.  */
@@ -683,9 +673,9 @@ diff -up glibc-2.43/resolv/res_debug.c.omv~ glibc-2.43/resolv/res_debug.c
  	DIAG_IGNORE_NEEDS_COMMENT (8, "-Wformat-overflow=");
  # endif
  	sprintf(output, "%04d%02d%02d%02d%02d%02d",
-diff -up glibc-2.43/stdio-common/Makefile.omv~ glibc-2.43/stdio-common/Makefile
---- glibc-2.43/stdio-common/Makefile.omv~	2026-02-25 03:29:57.951082143 +0100
-+++ glibc-2.43/stdio-common/Makefile	2026-02-25 04:51:30.885244009 +0100
+diff -up glibc-2.44/stdio-common/Makefile.omv~ glibc-2.44/stdio-common/Makefile
+--- glibc-2.44/stdio-common/Makefile.omv~	2026-02-25 03:29:57.951082143 +0100
++++ glibc-2.44/stdio-common/Makefile	2026-02-25 04:51:30.885244009 +0100
 @@ -761,6 +761,14 @@ CFLAGS-tst-scanf-binary-c23.c += -std=c1
  CFLAGS-tst-scanf-binary-gnu11.c += -std=gnu11 -DOBJPFX=\"$(objpfx)\"
  CFLAGS-tst-scanf-binary-gnu89.c += -std=gnu89 -DOBJPFX=\"$(objpfx)\"
@@ -701,9 +691,9 @@ diff -up glibc-2.43/stdio-common/Makefile.omv~ glibc-2.43/stdio-common/Makefile
  CPPFLAGS += $(libio-mtsafe)
  
  make-tst-freopen4-out = \
-diff -up glibc-2.43/stdio-common/bug22.c.omv~ glibc-2.43/stdio-common/bug22.c
---- glibc-2.43/stdio-common/bug22.c.omv~	2026-02-25 03:26:39.106979531 +0100
-+++ glibc-2.43/stdio-common/bug22.c	2026-02-25 03:27:00.463483479 +0100
+diff -up glibc-2.44/stdio-common/bug22.c.omv~ glibc-2.44/stdio-common/bug22.c
+--- glibc-2.44/stdio-common/bug22.c.omv~	2026-02-25 03:26:39.106979531 +0100
++++ glibc-2.44/stdio-common/bug22.c	2026-02-25 03:27:00.463483479 +0100
 @@ -34,7 +34,7 @@ do_test (void)
    /* GCC 9 warns about output of more than INT_MAX characters; this is
       deliberately tested here.  */
@@ -731,10 +721,10 @@ diff -up glibc-2.43/stdio-common/bug22.c.omv~ glibc-2.43/stdio-common/bug22.c
    DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
  #endif
    ret = fprintf (fp, "%" SN2 "d%" SN2 "d", 1, 1);
-diff -up glibc-2.43/stdio-common/tst-freopen.c.omv~ glibc-2.43/stdio-common/tst-freopen.c
-diff -up glibc-2.43/stdio-common/tst-printf.c.omv~ glibc-2.43/stdio-common/tst-printf.c
---- glibc-2.43/stdio-common/tst-printf.c.omv~	2026-02-25 17:58:46.766380787 +0100
-+++ glibc-2.43/stdio-common/tst-printf.c	2026-02-25 17:58:53.149690264 +0100
+diff -up glibc-2.44/stdio-common/tst-freopen.c.omv~ glibc-2.44/stdio-common/tst-freopen.c
+diff -up glibc-2.44/stdio-common/tst-printf.c.omv~ glibc-2.44/stdio-common/tst-printf.c
+--- glibc-2.44/stdio-common/tst-printf.c.omv~	2026-02-25 17:58:46.766380787 +0100
++++ glibc-2.44/stdio-common/tst-printf.c	2026-02-25 17:58:53.149690264 +0100
 @@ -113,7 +113,7 @@ I am ready for my first lesson today.";
    /* GCC 9 warns about the NULL format argument; this is deliberately
       tested here.  */
@@ -744,20 +734,9 @@ diff -up glibc-2.43/stdio-common/tst-printf.c.omv~ glibc-2.43/stdio-common/tst-p
    DIAG_IGNORE_NEEDS_COMMENT (9, "-Wformat-overflow=");
  #endif
    printf("null string:\t\"%s\"\n", (char *)NULL);
-diff -up glibc-2.43/stdlib/Makefile.omv~ glibc-2.43/stdlib/Makefile
---- glibc-2.43/stdlib/Makefile.omv~	2026-02-25 01:51:34.026912301 +0100
-+++ glibc-2.43/stdlib/Makefile	2026-02-25 01:53:46.412682318 +0100
-@@ -625,6 +625,7 @@ endif
- $(objpfx)isomac.out: $(objpfx)isomac
- 	$(dir $<)$(notdir $<) '$(CC)'  \
- 	'-I../include $(+sysdep-includes) $(sysincludes) -I..' > $@; \
-+	$(dir $<)$(notdir $<) '$(CC)' \
- 	'$(isomac-includes)' > $<.out \
- 	$(evaluate-test)
- 
-diff -up glibc-2.43/stdlib/stdbit.h.omv~ glibc-2.43/stdlib/stdbit.h
---- glibc-2.43/stdlib/stdbit.h.omv~	2026-02-25 01:46:24.757611096 +0100
-+++ glibc-2.43/stdlib/stdbit.h	2026-02-25 01:46:34.121076728 +0100
+diff -up glibc-2.44/stdlib/stdbit.h.omv~ glibc-2.44/stdlib/stdbit.h
+--- glibc-2.44/stdlib/stdbit.h.omv~	2026-02-25 01:46:24.757611096 +0100
++++ glibc-2.44/stdlib/stdbit.h	2026-02-25 01:46:34.121076728 +0100
 @@ -44,7 +44,7 @@ __BEGIN_DECLS
  /* Use __pacify_uint16 (N) instead of (uint16_t) (N) when the cast is helpful
     only to pacify older GCC (e.g., GCC 10 -Wconversion) or non-GCC (e.g
@@ -767,9 +746,9 @@ diff -up glibc-2.43/stdlib/stdbit.h.omv~ glibc-2.43/stdlib/stdbit.h
  # define __pacify_uint8(n)  (n)
  # define __pacify_uint16(n) (n)
  #else
-diff -up glibc-2.43/stdlib/tst-realpath.c.omv~ glibc-2.43/stdlib/tst-realpath.c
---- glibc-2.43/stdlib/tst-realpath.c.omv~	2026-02-25 01:35:55.000867140 +0100
-+++ glibc-2.43/stdlib/tst-realpath.c	2026-02-25 01:37:12.359807844 +0100
+diff -up glibc-2.44/stdlib/tst-realpath.c.omv~ glibc-2.44/stdlib/tst-realpath.c
+--- glibc-2.44/stdlib/tst-realpath.c.omv~	2026-02-25 01:35:55.000867140 +0100
++++ glibc-2.44/stdlib/tst-realpath.c	2026-02-25 01:37:12.359807844 +0100
 @@ -29,7 +29,7 @@
  #include <stdlib.h>
  #include <malloc.h>
@@ -788,10 +767,10 @@ diff -up glibc-2.43/stdlib/tst-realpath.c.omv~ glibc-2.43/stdlib/tst-realpath.c
  /* Restore -Wmismatched-dealloc setting.  */
  #  pragma GCC diagnostic pop
  #endif
-diff -up glibc-2.43/stdlib/tst-stdbit-Wconversion.c.omv~ glibc-2.43/stdlib/tst-stdbit-Wconversion.c
-diff -up glibc-2.43/string/Makefile.omv~ glibc-2.43/string/Makefile
---- glibc-2.43/string/Makefile.omv~	2026-02-26 07:59:36.326035427 +0100
-+++ glibc-2.43/string/Makefile	2026-02-26 08:00:19.055824576 +0100
+diff -up glibc-2.44/stdlib/tst-stdbit-Wconversion.c.omv~ glibc-2.44/stdlib/tst-stdbit-Wconversion.c
+diff -up glibc-2.44/string/Makefile.omv~ glibc-2.44/string/Makefile
+--- glibc-2.44/string/Makefile.omv~	2026-02-26 07:59:36.326035427 +0100
++++ glibc-2.44/string/Makefile	2026-02-26 08:00:19.055824576 +0100
 @@ -20,6 +20,8 @@
  #
  subdir	:= string
@@ -801,9 +780,9 @@ diff -up glibc-2.43/string/Makefile.omv~ glibc-2.43/string/Makefile
  include ../Makeconfig
  
  headers := \
-diff -up glibc-2.43/string/bug-strncat1.c.omv~ glibc-2.43/string/bug-strncat1.c
---- glibc-2.43/string/bug-strncat1.c.omv~	2026-02-26 05:15:00.798162458 +0100
-+++ glibc-2.43/string/bug-strncat1.c	2026-02-26 05:15:14.388355067 +0100
+diff -up glibc-2.44/string/bug-strncat1.c.omv~ glibc-2.44/string/bug-strncat1.c
+--- glibc-2.44/string/bug-strncat1.c.omv~	2026-02-26 05:15:00.798162458 +0100
++++ glibc-2.44/string/bug-strncat1.c	2026-02-26 05:15:14.388355067 +0100
 @@ -2,7 +2,7 @@
  #define __USE_STRING_INLINES
  #include <sys/cdefs.h>
@@ -813,9 +792,9 @@ diff -up glibc-2.43/string/bug-strncat1.c.omv~ glibc-2.43/string/bug-strncat1.c
  /* GCC warns about strncat truncating output; this is deliberately
     tested here.  If fortify is enabled, it is also triggered by the
     wrappers. */
-diff -up glibc-2.43/string/tester.c.omv~ glibc-2.43/string/tester.c
---- glibc-2.43/string/tester.c.omv~	2026-02-26 05:27:13.615017375 +0100
-+++ glibc-2.43/string/tester.c	2026-02-26 07:56:52.251669775 +0100
+diff -up glibc-2.44/string/tester.c.omv~ glibc-2.44/string/tester.c
+--- glibc-2.44/string/tester.c.omv~	2026-02-26 05:27:13.615017375 +0100
++++ glibc-2.44/string/tester.c	2026-02-26 07:56:52.251669775 +0100
 @@ -30,7 +30,7 @@
  #include <libc-diag.h>
  
@@ -843,9 +822,9 @@ diff -up glibc-2.43/string/tester.c.omv~ glibc-2.43/string/tester.c
  DIAG_IGNORE_NEEDS_COMMENT (9, "-Wrestrict");
  DIAG_IGNORE_NEEDS_COMMENT (7, "-Wstringop-overflow=");
  #endif
-diff -up glibc-2.43/string/tst-cmp.c.omv~ glibc-2.43/string/tst-cmp.c
---- glibc-2.43/string/tst-cmp.c.omv~	2026-02-26 17:16:54.098525504 +0100
-+++ glibc-2.43/string/tst-cmp.c	2026-02-26 17:17:15.432333447 +0100
+diff -up glibc-2.44/string/tst-cmp.c.omv~ glibc-2.44/string/tst-cmp.c
+--- glibc-2.44/string/tst-cmp.c.omv~	2026-02-26 17:16:54.098525504 +0100
++++ glibc-2.44/string/tst-cmp.c	2026-02-26 17:17:15.432333447 +0100
 @@ -100,12 +100,12 @@ static int
  strncmp_max (const char *left, const char *right)
  {
@@ -876,9 +855,9 @@ diff -up glibc-2.43/string/tst-cmp.c.omv~ glibc-2.43/string/tst-cmp.c
    /* Likewise GCC 11, with a different warning option.  */
    DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
  #endif
-diff -up glibc-2.43/string/tst-memmove-overflow.c.omv~ glibc-2.43/string/tst-memmove-overflow.c
---- glibc-2.43/string/tst-memmove-overflow.c.omv~	2026-02-26 18:15:10.136514592 +0100
-+++ glibc-2.43/string/tst-memmove-overflow.c	2026-02-26 18:15:26.584393449 +0100
+diff -up glibc-2.44/string/tst-memmove-overflow.c.omv~ glibc-2.44/string/tst-memmove-overflow.c
+--- glibc-2.44/string/tst-memmove-overflow.c.omv~	2026-02-26 18:15:10.136514592 +0100
++++ glibc-2.44/string/tst-memmove-overflow.c	2026-02-26 18:15:26.584393449 +0100
 @@ -142,8 +142,10 @@ test_main (void)
  #if __GNUC_PREREQ (8, 0)
        /* GCC 8 warns about string function argument overflows.  */
@@ -890,9 +869,9 @@ diff -up glibc-2.43/string/tst-memmove-overflow.c.omv~ glibc-2.43/string/tst-mem
        memmove (start, start + 1, allocation_size - 1);
        DIAG_POP_NEEDS_COMMENT;
  
-diff -up glibc-2.43/sysdeps/nptl/libc_start_call_main.h.omv~ glibc-2.43/sysdeps/nptl/libc_start_call_main.h
---- glibc-2.43/sysdeps/nptl/libc_start_call_main.h.omv~	2026-02-25 00:17:03.668083580 +0100
-+++ glibc-2.43/sysdeps/nptl/libc_start_call_main.h	2026-02-25 00:17:13.947420935 +0100
+diff -up glibc-2.44/sysdeps/nptl/libc_start_call_main.h.omv~ glibc-2.44/sysdeps/nptl/libc_start_call_main.h
+--- glibc-2.44/sysdeps/nptl/libc_start_call_main.h.omv~	2026-02-25 00:17:03.668083580 +0100
++++ glibc-2.44/sysdeps/nptl/libc_start_call_main.h	2026-02-25 00:17:13.947420935 +0100
 @@ -35,7 +35,7 @@ __libc_start_call_main (int (*main) (int
  
    int not_first_call;
@@ -902,9 +881,9 @@ diff -up glibc-2.43/sysdeps/nptl/libc_start_call_main.h.omv~ glibc-2.43/sysdeps/
    /* This call results in a -Wstringop-overflow warning because struct
       pthread_unwind_buf is smaller than jmp_buf.  setjmp and longjmp
       do not use anything beyond the common prefix (they never access
-diff -up glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~ glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c
---- glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~	2026-02-26 20:58:17.695706735 +0100
-+++ glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c	2026-02-26 20:58:25.258302070 +0100
+diff -up glibc-2.44/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~ glibc-2.44/sysdeps/unix/sysv/linux/test-errno-linux.c
+--- glibc-2.44/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~	2026-02-26 20:58:17.695706735 +0100
++++ glibc-2.44/sysdeps/unix/sysv/linux/test-errno-linux.c	2026-02-26 20:58:25.258302070 +0100
 @@ -175,7 +175,7 @@ do_test (void)
  
    DIAG_PUSH_NEEDS_COMMENT;
@@ -914,10 +893,10 @@ diff -up glibc-2.43/sysdeps/unix/sysv/linux/test-errno-linux.c.omv~ glibc-2.43/s
    /* Suppress valid GCC warning:
       'poll' specified size 18446744073709551608 exceeds maximum object size
    */
-diff -up glibc-2.43/sysdeps/x86/fpu/powl_helper.c.omv~ glibc-2.43/sysdeps/x86/fpu/powl_helper.c
-diff -up glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c.omv~ glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c
---- glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c.omv~	2026-02-26 23:13:45.888253520 +0100
-+++ glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c	2026-02-26 23:19:17.357400530 +0100
+diff -up glibc-2.44/sysdeps/x86/fpu/powl_helper.c.omv~ glibc-2.44/sysdeps/x86/fpu/powl_helper.c
+diff -up glibc-2.44/sysdeps/x86/tst-cpu-features-supports.c.omv~ glibc-2.44/sysdeps/x86/tst-cpu-features-supports.c
+--- glibc-2.44/sysdeps/x86/tst-cpu-features-supports.c.omv~	2026-02-26 23:13:45.888253520 +0100
++++ glibc-2.44/sysdeps/x86/tst-cpu-features-supports.c	2026-02-26 23:19:17.357400530 +0100
 @@ -92,7 +92,7 @@ do_test (int argc, char **argv)
  #if __GNUC_PREREQ (6, 0)
    fails += CHECK_FEATURE_ACTIVE (avx512bw, AVX512BW);
@@ -985,9 +964,9 @@ diff -up glibc-2.43/sysdeps/x86/tst-cpu-features-supports.c.omv~ glibc-2.43/sysd
    fails += CHECK_FEATURE_ACTIVE (prefetchwt1, PREFETCHWT1);
  # endif
    fails += CHECK_FEATURE_ACTIVE (ptwrite, PTWRITE);
-diff -up glibc-2.43/time/tst-strftime3.c.omv~ glibc-2.43/time/tst-strftime3.c
---- glibc-2.43/time/tst-strftime3.c.omv~	2026-02-26 18:57:44.589330365 +0100
-+++ glibc-2.43/time/tst-strftime3.c	2026-02-26 18:57:52.632429718 +0100
+diff -up glibc-2.44/time/tst-strftime3.c.omv~ glibc-2.44/time/tst-strftime3.c
+--- glibc-2.44/time/tst-strftime3.c.omv~	2026-02-26 18:57:44.589330365 +0100
++++ glibc-2.44/time/tst-strftime3.c	2026-02-26 18:57:52.632429718 +0100
 @@ -442,7 +442,7 @@ tm_to_printed (struct tm *tm, char *buff
      }
  
@@ -997,9 +976,9 @@ diff -up glibc-2.43/time/tst-strftime3.c.omv~ glibc-2.43/time/tst-strftime3.c
    /* GCC 9 warns that strncmp may truncate its output, but that's why
       we're using it.  When it needs to truncate, it got corrupted
       data, and we only care that the string is different than valid
-diff -up glibc-2.43/wcsmbs/Makefile.omv~ glibc-2.43/wcsmbs/Makefile
---- glibc-2.43/wcsmbs/Makefile.omv~	2026-02-26 18:45:28.968168441 +0100
-+++ glibc-2.43/wcsmbs/Makefile	2026-02-26 18:45:50.832167991 +0100
+diff -up glibc-2.44/wcsmbs/Makefile.omv~ glibc-2.44/wcsmbs/Makefile
+--- glibc-2.44/wcsmbs/Makefile.omv~	2026-02-26 18:45:28.968168441 +0100
++++ glibc-2.44/wcsmbs/Makefile	2026-02-26 18:45:50.832167991 +0100
 @@ -20,6 +20,8 @@
  #
  subdir	:= wcsmbs
@@ -1009,9 +988,9 @@ diff -up glibc-2.43/wcsmbs/Makefile.omv~ glibc-2.43/wcsmbs/Makefile
  include ../Makeconfig
  
  headers := \
-diff -up glibc-2.43/include/libc-symbols.h.omv~ glibc-2.43/include/libc-symbols.h
---- glibc-2.43/include/libc-symbols.h.omv~	2026-02-28 03:55:02.362656759 +0100
-+++ glibc-2.43/include/libc-symbols.h	2026-02-28 03:55:38.398045756 +0100
+diff -up glibc-2.44/include/libc-symbols.h.omv~ glibc-2.44/include/libc-symbols.h
+--- glibc-2.44/include/libc-symbols.h.omv~	2026-02-28 03:55:02.362656759 +0100
++++ glibc-2.44/include/libc-symbols.h	2026-02-28 03:55:38.398045756 +0100
 @@ -656,6 +656,10 @@ for linking")
  # define libanl_hidden_proto(name, attrs...)
  #endif
@@ -1023,9 +1002,9 @@ diff -up glibc-2.43/include/libc-symbols.h.omv~ glibc-2.43/include/libc-symbols.
  /* Get some dirty hacks.  */
  #include <symbol-hacks.h>
  
-diff -up glibc-2.43/string/memchr.c.omv~ glibc-2.43/string/memchr.c
---- glibc-2.43/string/memchr.c.omv~	2026-02-28 03:48:15.448153891 +0100
-+++ glibc-2.43/string/memchr.c	2026-02-28 03:48:43.892271800 +0100
+diff -up glibc-2.44/string/memchr.c.omv~ glibc-2.44/string/memchr.c
+--- glibc-2.44/string/memchr.c.omv~	2026-02-28 03:48:15.448153891 +0100
++++ glibc-2.44/string/memchr.c	2026-02-28 03:48:43.892271800 +0100
 @@ -29,6 +29,10 @@
  # define __memchr MEMCHR
  #endif
@@ -1037,9 +1016,9 @@ diff -up glibc-2.43/string/memchr.c.omv~ glibc-2.43/string/memchr.c
  static __always_inline const char *
  sadd (uintptr_t x, uintptr_t y)
  {
-diff -up glibc-2.43/string/rawmemchr.c.omv~ glibc-2.43/string/rawmemchr.c
---- glibc-2.43/string/rawmemchr.c.omv~	2026-02-28 03:39:03.345571317 +0100
-+++ glibc-2.43/string/rawmemchr.c	2026-02-28 03:39:35.675650865 +0100
+diff -up glibc-2.44/string/rawmemchr.c.omv~ glibc-2.44/string/rawmemchr.c
+--- glibc-2.44/string/rawmemchr.c.omv~	2026-02-28 03:39:03.345571317 +0100
++++ glibc-2.44/string/rawmemchr.c	2026-02-28 03:39:35.675650865 +0100
 @@ -25,12 +25,12 @@
  /* The pragmata should be nested inside RAWMEMCHR below, but that
     triggers GCC PR 98512.  */
@@ -1055,9 +1034,9 @@ diff -up glibc-2.43/string/rawmemchr.c.omv~ glibc-2.43/string/rawmemchr.c
  /* Likewise GCC 11, with a different warning option.  */
  DIAG_IGNORE_NEEDS_COMMENT (11, "-Wstringop-overread");
  #endif
-diff -up glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h.omv~ glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h
---- glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h.omv~	2026-02-28 16:41:53.058990495 +0100
-+++ glibc-2.43/sysdeps/unix/sysv/linux/sys/mount.h	2026-02-28 16:42:15.906682046 +0100
+diff -up glibc-2.44/sysdeps/unix/sysv/linux/sys/mount.h.omv~ glibc-2.44/sysdeps/unix/sysv/linux/sys/mount.h
+--- glibc-2.44/sysdeps/unix/sysv/linux/sys/mount.h.omv~	2026-02-28 16:41:53.058990495 +0100
++++ glibc-2.44/sysdeps/unix/sysv/linux/sys/mount.h	2026-02-28 16:42:15.906682046 +0100
 @@ -30,6 +30,7 @@
  #ifdef __has_include
  # if __has_include ("linux/mount.h")

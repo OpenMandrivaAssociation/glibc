@@ -47,7 +47,7 @@
 
 %define _disable_rebuild_configure 1
 
-# As of 2.43, glibc can compile with clang with a limited number
+# As of 2.43+, glibc can compile with clang with a limited number
 # of patches on many, but not all, platforms:
 # Any 32-bit: strtod_l.c:876:18: error: result of comparison of constant 9223372036854775807 with expression of type 'size_t' (aka 'unsigned int') is always true [-Werror,-Wtautological-constant-out-of-range-compare]
 # ARMv7: "unsupported-floating-point-opt"
@@ -185,12 +185,12 @@ end}
 Summary:	The GNU libc libraries
 Name:		%{cross_prefix}%{oname}
 Epoch:		6
-Version:	2.43
+Version:	2.44
 Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	8
+Release:	1
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -216,53 +216,9 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 #
 # Taken from git://sourceware.org/git/glibc.git
 # release branch
-# git format-patch glibc-2.43
+# git format-patch glibc-2.44
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-Patch0:		0001-Replace-advisories-directory-with-file-ADVISORIES.patch
-Patch1:		0002-NEWS-add-new-section-2.43.1.patch
-Patch2:		0003-Fix-ldbl-128ibm-ceill-floorl-roundl-and-truncl-zero-.patch
-Patch3:		0004-po-Incorporate-translatins-nl-updated-ar-new.patch
-Patch4:		0005-Don-t-include-bits-openat2.h-directly-bug-33848.patch
-Patch5:		0006-nss-Introduce-dedicated-struct-nss_database_for_fork.patch
-Patch6:		0007-Linux-In-getlogin_r-use-utmp-fallback-only-for-speci.patch
-Patch7:		0008-nss-Missing-checks-in-__nss_configure_lookup-__nss_d.patch
-Patch8:		0009-debug-Fix-build-with-enable-fortify-source-1-BZ-3390.patch
-Patch9:		0010-Add-BZ-33904-entry-to-NEWS.patch
-Patch10:	0011-malloc-Avoid-accessing-sys-kernel-mm-files.patch
-Patch11:	0012-tests-aarch64-fix-makefile-dependencies-for-dlopen-t.patch
-Patch12:	0013-aarch64-Lock-GCS-status-at-startup.patch
-Patch13:	0014-aarch64-Tests-for-locking-GCS.patch
-Patch14:	0015-posix-Run-tst-wordexp-reuse-mem-test.patch
-Patch15:	0016-resolv-Count-records-correctly-CVE-2026-4437.patch
-Patch16:	0017-resolv-Check-hostname-for-validity-CVE-2026-4438.patch
-Patch17:	0018-elf-parse-proc-self-maps-as-the-last-resort-to-find-.patch
-Patch18:	0019-elf-Use-dl-symbol-redir-ifunc.h-instead-_dl_strlen.patch
-Patch19:	0020-riscv-Resolve-calls-to-memcpy-using-memcpy-generic-i.patch
-Patch20:	0021-tests-fix-tst-rseq-with-Linux-7.0.patch
-Patch21:	0022-Use-pending-character-state-in-IBM1390-IBM1399-chara.patch
-Patch22:	0023-include-isolate-__O_CLOEXEC-flag-for-sys-mount.h-and.patch
-Patch23:	0024-Linux-Only-define-OPEN_TREE_-macros-in-sys-mount.h-i.patch
-Patch24:	0025-abilist.awk-Handle-weak-unversioned-defined-symbols.patch
-Patch25:	0026-libio-Fix-ungetwc-operating-on-byte-stream-BZ-33998.patch
-Patch26:	0027-stdio-common-Fix-buffer-overflow-in-scanf-mc-BZ-3400.patch
-Patch27:	0028-math-Fix-fma-alignment-when-exponent-difference-is-e.patch
-Patch28:	0029-Rename-__unused-fields-to-__glibc_reserved.patch
-Patch29:	0030-elf-don-t-clobber-ld.so.conf-in-tst-glibc-hwcaps-pre.patch
-Patch30:	0031-Hurd-comment-PF_LINK-AF_LINK-defines.patch
-Patch31:	0032-Hurd-comment-PF_ROUTE-AF_ROUTE-defines.patch
-Patch32:	0033-Hurd-comment-ioctls-which-cannot-currently-compile.patch
-Patch33:	0034-Hurd-restore-some-SIOC-ioctls.patch
-Patch34:	0035-iconv-Suppress-intermediate-errors-with-TRANSLIT-bug.patch
-Patch35:	0036-arm-Save-restore-VFP-registers-in-PLT-trampolines-BZ.patch
-Patch36:	0037-hppa-Fix-missing-call-to-__feraiseexcept-BZ-34306.patch
-Patch37:	0038-resolv-Declare-__p_class_syms-__p_type_syms-for-inte.patch
-Patch38:	0039-resolv-Fix-ns_sprintrrf-formatting-of-class-type-val.patch
-Patch39:	0040-resolv-Improve-formatting-of-unknown-records-in-ns_s.patch
-Patch40:	0041-resolv-Check-for-inet_ntop-failure-in-ns_sprintrrf.patch
-Patch41:	0042-resolv-More-types-as-unknown-in-ns_sprintrrf-CVE-202.patch
-Patch42:	0043-resolv-Fix-buffer-overreads-in-ns_sprintrrf-CVE-2026.patch
-Patch43:	0044-resolv-Add-test-case-tst-ns_sprintrr-bug-34033-bug-3.patch
-Patch44:	0045-posix-Fix-stack-overflow-in-wordexp-tilde-expansion-.patch
+# (none yet for 2.44)
 
 #-----------------------------------------------------------------------
 # fedora patches
@@ -311,7 +267,6 @@ Patch1007:	eglibc-mandriva-nscd-no-host-cache.patch
 Patch1008:	glibc-loongarch64.patch
 Patch1010:	eglibc-mandriva-timezone.patch
 Patch1018:	eglibc-mandriva-testsuite-ldbl-bits.patch
-Patch1019:	eglibc-mandriva-testsuite-rt-notparallel.patch
 Patch1020:	glibc-2.19-no-__builtin_va_arg_pack-with-clang.patch
 # http://sourceware.org/bugzilla/show_bug.cgi?id=14995
 # http://sourceware.org/bugzilla/attachment.cgi?id=6795
@@ -331,9 +286,9 @@ Patch1044:	glibc-2.34-allow-zstd-compressed-locales.patch
 # https://sourceware.org/bugzilla/show_bug.cgi?id=29456
 # Based on https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
 Patch1051:	https://raw.githubusercontent.com/archlinux/svntogit-packages/e1d69d80d07494e3c086ee2c5458594d5261d2e4/trunk/reenable_DT_HASH.patch
-Patch1052:	glibc-2.43-allow-autoconf-2.73.patch
+Patch1052:	glibc-2.44-allow-autoconf-2.73.patch
 # Clang support
-Patch1060:	glibc-2.43-clang.patch
+Patch1060:	glibc-2.44-clang.patch
 # Performance optimizations
 Patch1061:	glibc-grok-performance-opts.patch
 # Pluggable mallocs
@@ -1398,8 +1353,8 @@ find . -type f -size 0 -o -name "*.orig" -exec rm {} \;
 #rm localedata/locales/[a-z_]*.*
 
 # Regenerate autoconf files, some of our patches touch them
-# Remove the autoconf 2.71 hardcode...
-sed -e "s,2.71,$(autoconf --version |head -n1 |cut -d' ' -f4)," -i aclocal.m4
+# Remove the autoconf version hardcode (currently 2.72 in upstream)...
+sed -e "s,2.72,$(autoconf --version |head -n1 |cut -d' ' -f4)," -i aclocal.m4
 # fix nss headers location
 sed -e 's@<hasht.h>@<nss/hasht.h>@g' -e 's@<nsslowhash.h>@<nss/nsslowhash.h>@g' -i configure*
 
@@ -1537,7 +1492,7 @@ function BuildGlibc() {
     # Can't use BuildCC anymore with previous changes.
 %if %{with clang}
     if [[ "%{target_cpu}" == armv* || "%{target_cpu}" == i?86 || "%{_target_platform}" == *x32 || "%{_target_platform}" == riscv* || "%{_target_platform}" == ppc* || "%{target_cpu}" == loongarch* ]]; then
-      # As of 2.43, glibc doesn't compile for 32-bit platforms or RISC-V with clang
+      # As of 2.43+, glibc doesn't compile for 32-bit platforms or RISC-V with clang
       BuildCC="%{target_cpu}-gcc $BuildCompFlags"
       BuildCXX="%{target_cpu}-g++ $BuildCompFlags"
     else
@@ -1597,10 +1552,8 @@ function BuildGlibc() {
    fi
 %endif
 
-# (tpg) enable Memory Tagging Extension (MTE) for aarch64
-   if [ "$arch" = 'aarch64' ]; then
-    ExtraFlags="$ExtraFlags --enable-memory-tagging"
-   fi
+# --enable-memory-tagging was removed in glibc 2.44 along with the
+# corresponding AArch64 MTE build option.
 
   # Add-ons
   AddOns="libidn"

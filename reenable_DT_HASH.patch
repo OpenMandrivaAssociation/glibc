@@ -1,7 +1,6 @@
-diff -up glibc-2.43/Makeconfig.49~ glibc-2.43/Makeconfig
---- glibc-2.43/Makeconfig.49~	2026-02-20 22:34:12.280658596 +0100
-+++ glibc-2.43/Makeconfig	2026-02-20 22:34:12.344263653 +0100
-@@ -383,6 +383,15 @@ relro-LDFLAGS = -Wl,-z,relro
+--- a/Makeconfig	2026-07-24 15:16:45.000000000 +0200
++++ b/Makeconfig	2026-07-25 21:17:13.323444235 +0200
+@@ -380,6 +380,15 @@
  LDFLAGS.so += $(relro-LDFLAGS)
  LDFLAGS-rtld += $(relro-LDFLAGS)
  
@@ -17,67 +16,21 @@ diff -up glibc-2.43/Makeconfig.49~ glibc-2.43/Makeconfig
  # Linker options to enable and disable DT_RELR.
  ifeq ($(have-dt-relr),yes)
  dt-relr-ldflag = -Wl,-z,pack-relative-relocs
-diff -up glibc-2.43/config.make.in.49~ glibc-2.43/config.make.in
---- glibc-2.43/config.make.in.49~	2026-01-23 21:54:00.000000000 +0100
-+++ glibc-2.43/config.make.in	2026-02-20 22:34:12.344369854 +0100
-@@ -71,6 +71,7 @@ have-libaudit = @have_libaudit@
+--- a/config.make.in	2026-07-24 15:16:45.000000000 +0200
++++ b/config.make.in	2026-07-25 21:17:13.323498055 +0200
+@@ -70,6 +70,7 @@
+ have-libaudit = @have_libaudit@
  have-libcap = @have_libcap@
- have-cc-with-libunwind = @libc_cv_cc_with_libunwind@
  bind-now = @bindnow@
 +have-hash-style = @libc_cv_hashstyle@
  have-cxx-thread_local = @libc_cv_cxx_thread_local@
  have-loop-to-function = @libc_cv_cc_loop_to_function@
  have-textrel_ifunc = @libc_cv_textrel_ifunc@
-diff -up glibc-2.43/configure.49~ glibc-2.43/configure
---- glibc-2.43/configure.49~	2026-01-23 21:54:00.000000000 +0100
-+++ glibc-2.43/configure	2026-02-20 22:36:28.483977864 +0100
-@@ -656,6 +656,7 @@ libc_cv_test_cc_signaling_nans
- libc_cv_cc_submachine
- libc_cv_cc_nofma
- libc_cv_has_glob_dat
-+libc_cv_hashstyle
- libc_cv_fpie
- libc_cv_test_static_pie
- libc_cv_z_execstack
-@@ -7478,6 +7479,32 @@ printf "%s\n" "$libc_cv_cflags_wno_disca
- config_vars="$config_vars
- config-cflags-wno-discarded-qualifiers = $libc_cv_cflags_wno_discarded_qualifiers"
+--- a/configure.ac	2026-07-24 15:16:45.000000000 +0200
++++ b/configure.ac	2026-07-25 21:17:13.323518136 +0200
+@@ -1343,6 +1343,22 @@
  
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for --hash-style option" >&5
-+$as_echo_n "checking for --hash-style option... " >&6; }
-+if ${libc_cv_hashstyle+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  cat > conftest.c <<EOF
-+int _start (void) { return 42; }
-+EOF
-+if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS $no_ssp
-+                           -fPIC -shared -o conftest.so conftest.c
-+                           -Wl,--hash-style=both -nostdlib 1>&5'
-+  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
-+  (eval $ac_try) 2>&5
-+  ac_status=$?
-+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-+  test $ac_status = 0; }; }
-+then
-+  libc_cv_hashstyle=yes
-+else
-+  libc_cv_hashstyle=no
-+fi
-+rm -f conftest*
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_hashstyle" >&5
-+$as_echo "$libc_cv_hashstyle" >&6; }
-+
- { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for GLOB_DAT reloc" >&5
- printf %s "checking for GLOB_DAT reloc... " >&6; }
- if test ${libc_cv_has_glob_dat+y}
-diff -up glibc-2.43/configure.ac.49~ glibc-2.43/configure.ac
---- glibc-2.43/configure.ac.49~	2026-01-23 21:54:00.000000000 +0100
-+++ glibc-2.43/configure.ac	2026-02-20 22:35:04.464796290 +0100
-@@ -1386,6 +1386,22 @@ fi
- LIBC_CONFIG_VAR([config-cflags-wno-discarded-qualifiers],
- 		[$libc_cv_cflags_wno_discarded_qualifiers])
+ AC_SUBST(libc_cv_fpie)
  
 +AC_CACHE_CHECK(for --hash-style option,
 +	       libc_cv_hashstyle, [dnl

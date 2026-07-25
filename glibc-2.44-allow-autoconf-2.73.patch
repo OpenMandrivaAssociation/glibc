@@ -1,6 +1,6 @@
-diff -up glibc-2.43/aclocal.m4.omv~ glibc-2.43/aclocal.m4
---- glibc-2.43/aclocal.m4.omv~	2026-04-08 14:55:58.018287282 +0200
-+++ glibc-2.43/aclocal.m4	2026-04-08 14:56:04.146284315 +0200
+diff -up glibc-2.44/aclocal.m4.omv~ glibc-2.44/aclocal.m4
+--- glibc-2.44/aclocal.m4.omv~	2026-04-08 14:55:58.018287282 +0200
++++ glibc-2.44/aclocal.m4	2026-04-08 14:56:04.146284315 +0200
 @@ -2,7 +2,7 @@ dnl We require that everyone use exactly
  dnl the internal functions defined and used by the main configure script
  dnl match those expected by the fragments.  When changing this version,

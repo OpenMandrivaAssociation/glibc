@@ -1,102 +1,7 @@
-From 99a48d9e0081acdd6883372e15cae434e924ea83 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:17 +0200
-Subject: [PATCH 01/20] Add pluggable multi-implementation malloc
- infrastructure
-
----
- Makeconfig                                    |   22 +-
- Makerules                                     |    4 +
- config.make.in                                |   10 +
- configure                                     |  311 +++
- configure.ac                                  |  275 +++
- elf/Makefile                                  |   12 +
- elf/dl-malloc-impl.c                          |  825 ++++++++
- elf/dl-support.c                              |    8 +
- elf/rtld.c                                    |    4 +
- elf/static-stubs.c                            |   27 +-
- malloc/Makefile                               |  898 ++++++++-
- malloc/UPSTREAM-REVISIONS.txt                 |   11 +
- malloc/Versions                               |    5 +
- malloc/arena.c                                |    4 +-
- malloc/malloc-backend.h                       |   90 +
- malloc/malloc-glibc-register.c                |   79 +
- malloc/malloc-glibc-rename.h                  |   35 +
- malloc/malloc-multi-smoke.sh                  |   50 +
- malloc/malloc-pref.h                          |  264 +++
- malloc/malloc-profile.sh                      |  291 +++
- malloc/malloc-query.c                         |  112 ++
- malloc/malloc-scan.c                          |  111 ++
- malloc/malloc-select.c                        | 1713 +++++++++++++++++
- malloc/malloc-shim-compat.h                   |   94 +
- malloc/malloc.c                               |   52 +-
- malloc/malloc.d-README                        |   57 +
- malloc/malloc.h                               |    7 +
- malloc/tst-aligned-alloc.c                    |   78 +-
- malloc/tst-malloc-dynamic-conf.c              |   71 +
- malloc/tst-malloc-dynamic-default.c           |   59 +
- malloc/tst-malloc-dynamic-pref-fallback.c     |   71 +
- malloc/tst-malloc-dynamic-pref.c              |   71 +
- malloc/tst-malloc-dynamic-version.c           |   51 +
- sysdeps/generic/ldsodefs.h                    |   17 +
- sysdeps/mach/hurd/i386/libc.abilist           |    3 +
- sysdeps/mach/hurd/x86_64/libc.abilist         |    3 +
- sysdeps/unix/sysv/linux/aarch64/libc.abilist  |    3 +
- sysdeps/unix/sysv/linux/alpha/libc.abilist    |    3 +
- sysdeps/unix/sysv/linux/arc/libc.abilist      |    3 +
- sysdeps/unix/sysv/linux/arm/be/libc.abilist   |    3 +
- sysdeps/unix/sysv/linux/arm/le/libc.abilist   |    3 +
- sysdeps/unix/sysv/linux/csky/libc.abilist     |    3 +
- sysdeps/unix/sysv/linux/hppa/libc.abilist     |    3 +
- sysdeps/unix/sysv/linux/i386/libc.abilist     |    3 +
- .../sysv/linux/loongarch/lp64/libc.abilist    |    3 +
- .../sysv/linux/m68k/coldfire/libc.abilist     |    3 +
- .../unix/sysv/linux/m68k/m680x0/libc.abilist  |    3 +
- .../sysv/linux/microblaze/be/libc.abilist     |    3 +
- .../sysv/linux/microblaze/le/libc.abilist     |    3 +
- .../sysv/linux/mips/mips32/fpu/libc.abilist   |    3 +
- .../sysv/linux/mips/mips32/nofpu/libc.abilist |    3 +
- .../sysv/linux/mips/mips64/n32/libc.abilist   |    3 +
- .../sysv/linux/mips/mips64/n64/libc.abilist   |    3 +
- sysdeps/unix/sysv/linux/or1k/libc.abilist     |    3 +
- .../linux/powerpc/powerpc32/fpu/libc.abilist  |    3 +
- .../powerpc/powerpc32/nofpu/libc.abilist      |    3 +
- .../linux/powerpc/powerpc64/be/libc.abilist   |    3 +
- .../linux/powerpc/powerpc64/le/libc.abilist   |    3 +
- .../unix/sysv/linux/riscv/rv32/libc.abilist   |    3 +
- .../unix/sysv/linux/riscv/rv64/libc.abilist   |    3 +
- .../unix/sysv/linux/s390/s390-64/libc.abilist |    3 +
- sysdeps/unix/sysv/linux/sh/be/libc.abilist    |    3 +
- sysdeps/unix/sysv/linux/sh/le/libc.abilist    |    3 +
- .../sysv/linux/sparc/sparc32/libc.abilist     |    3 +
- .../sysv/linux/sparc/sparc64/libc.abilist     |    3 +
- .../unix/sysv/linux/x86_64/64/libc.abilist    |    3 +
- .../unix/sysv/linux/x86_64/x32/libc.abilist   |    3 +
- 67 files changed, 5856 insertions(+), 32 deletions(-)
- create mode 100644 elf/dl-malloc-impl.c
- create mode 100644 malloc/UPSTREAM-REVISIONS.txt
- create mode 100644 malloc/malloc-backend.h
- create mode 100644 malloc/malloc-glibc-register.c
- create mode 100644 malloc/malloc-glibc-rename.h
- create mode 100755 malloc/malloc-multi-smoke.sh
- create mode 100644 malloc/malloc-pref.h
- create mode 100755 malloc/malloc-profile.sh
- create mode 100644 malloc/malloc-query.c
- create mode 100644 malloc/malloc-scan.c
- create mode 100644 malloc/malloc-select.c
- create mode 100644 malloc/malloc-shim-compat.h
- create mode 100644 malloc/malloc.d-README
- create mode 100644 malloc/tst-malloc-dynamic-conf.c
- create mode 100644 malloc/tst-malloc-dynamic-default.c
- create mode 100644 malloc/tst-malloc-dynamic-pref-fallback.c
- create mode 100644 malloc/tst-malloc-dynamic-pref.c
- create mode 100644 malloc/tst-malloc-dynamic-version.c
-
 diff --git a/Makeconfig b/Makeconfig
-index 01d02180b9..ee080cdb55 100644
---- a/Makeconfig
-+++ b/Makeconfig
-@@ -666,8 +666,12 @@ link-extra-libs-static = $(link-extra-libs)
+--- a/Makeconfig	2026-07-24 15:16:45.000000000 +0200
++++ b/Makeconfig	2026-07-25 21:02:50.709214352 +0200
+@@ -666,8 +666,12 @@
  endif
  
  # The static libraries.
@@ -111,7 +16,7 @@ index 01d02180b9..ee080cdb55 100644
  
  # How to link against libgcc.  Some libgcc functions, such as those
  # for "long long" arithmetic or software floating point, can always be
-@@ -1051,9 +1055,19 @@ endif
+@@ -1072,9 +1076,19 @@
  # include files (including ones given in angle brackets) in the parent
  # library source directory, in the include directory, and in the
  # current directory.
@@ -134,10 +39,9 @@ index 01d02180b9..ee080cdb55 100644
  
  # Since libio has several internal header files, we use a -I instead
 diff --git a/Makerules b/Makerules
-index 30c3559a28..3e9c2a9094 100644
---- a/Makerules
-+++ b/Makerules
-@@ -603,6 +603,10 @@ build-shlib-objlist = $(build-module-helper-objlist) \
+--- a/Makerules	2026-07-24 15:16:45.000000000 +0200
++++ b/Makerules	2026-07-25 21:02:50.709394513 +0200
+@@ -604,6 +604,10 @@
  LDFLAGS-c.so = -nostdlib -nostartfiles
  # But we still want to link libc.so against $(libc.so-gnulib).
  LDLIBS-c.so += $(libc.so-gnulib)
@@ -149,10 +53,9 @@ index 30c3559a28..3e9c2a9094 100644
  LDFLAGS-c.so += -e __libc_main
  # Pre-link the objects of libc_pic.a for .gnu.glibc-stub.* processing.
 diff --git a/config.make.in b/config.make.in
-index fca75ab5d3..61806225e3 100644
---- a/config.make.in
-+++ b/config.make.in
-@@ -139,4 +139,14 @@ PKGVERSION_TEXI = @PKGVERSION_TEXI@
+--- a/config.make.in	2026-07-24 15:16:45.000000000 +0200
++++ b/config.make.in	2026-07-25 21:02:50.709502554 +0200
+@@ -134,4 +134,14 @@
  REPORT_BUGS_TO = @REPORT_BUGS_TO@
  REPORT_BUGS_TEXI = @REPORT_BUGS_TEXI@
  
@@ -168,11 +71,10 @@ index fca75ab5d3..61806225e3 100644
 +
  # More variables may be inserted below by configure.
 diff --git a/configure b/configure
-index 0cd2269859..b9a9cdabfb 100755
---- a/configure
-+++ b/configure
-@@ -615,6 +615,13 @@ LIBOBJS
- pthread_in_libc
+--- a/configure	2026-07-24 15:16:45.000000000 +0200
++++ b/configure	2026-07-25 21:02:50.710307987 +0200
+@@ -614,6 +614,13 @@
+ LIBOBJS
  RELEASE
  VERSION
 +malloc_impl
@@ -184,8 +86,8 @@ index 0cd2269859..b9a9cdabfb 100755
 +malloc_embedded
  mach_interface_list
  DEFINES
- static_nss
-@@ -790,6 +797,9 @@ enable_static_c___link_check
+ profile
+@@ -787,6 +794,9 @@
  with_gd
  with_gd_include
  with_gd_lib
@@ -195,7 +97,7 @@ index 0cd2269859..b9a9cdabfb 100755
  with_binutils
  with_selinux
  with_headers
-@@ -1517,6 +1527,18 @@ Optional Packages:
+@@ -1509,6 +1519,18 @@
    --with-gd=DIR           find libgd include dir and library with prefix DIR
    --with-gd-include=DIR   find libgd include files in DIR
    --with-gd-lib=DIR       find libgd library files in DIR
@@ -214,7 +116,7 @@ index 0cd2269859..b9a9cdabfb 100755
    --with-binutils=PATH    specify location of binutils (as and ld)
    --with-selinux          if building with SELinux support
    --with-headers=PATH     location of system headers to use (for example
-@@ -4383,6 +4405,9 @@ fi
+@@ -4375,6 +4397,9 @@
  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_cxx_link_ok" >&5
  printf "%s\n" "$libc_cv_cxx_link_ok" >&6; }
  CXX="$saved_CXX"
@@ -224,7 +126,7 @@ index 0cd2269859..b9a9cdabfb 100755
  if test $libc_cv_cxx_link_ok != yes
  then :
    CXX=; TEST_CXX=
-@@ -4438,6 +4463,292 @@ libgd-LDFLAGS = $libgd_ldflags"
+@@ -4430,6 +4455,292 @@
  fi
  
  
@@ -518,10 +420,9 @@ index 0cd2269859..b9a9cdabfb 100755
  if test ${with_binutils+y}
  then :
 diff --git a/configure.ac b/configure.ac
-index 3e4a601c01..cb1acd05ef 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -110,6 +110,9 @@ main()
+--- a/configure.ac	2026-07-24 15:16:45.000000000 +0200
++++ b/configure.ac	2026-07-25 21:02:50.711143821 +0200
+@@ -110,6 +110,9 @@
  fi
  AC_LANG_POP([C++])])
  CXX="$saved_CXX"
@@ -531,7 +432,7 @@ index 3e4a601c01..cb1acd05ef 100644
  AS_IF([test $libc_cv_cxx_link_ok != yes], [CXX=; TEST_CXX=])
  
  if test "`cd $srcdir; pwd -P`" = "`pwd -P`"; then
-@@ -155,6 +158,278 @@ if test -n "$libgd_ldflags"; then
+@@ -155,6 +158,278 @@
  libgd-LDFLAGS = $libgd_ldflags"
  fi
  
@@ -811,10 +712,9 @@ index 3e4a601c01..cb1acd05ef 100644
  AC_ARG_WITH([binutils],
  	    AS_HELP_STRING([--with-binutils=PATH],
 diff --git a/elf/Makefile b/elf/Makefile
-index 11029be0ae..90a4928dd1 100644
---- a/elf/Makefile
-+++ b/elf/Makefile
-@@ -133,6 +133,7 @@ rtld-routines = \
+--- a/elf/Makefile	2026-07-24 15:16:45.000000000 +0200
++++ b/elf/Makefile	2026-07-25 21:02:50.711425562 +0200
+@@ -134,6 +134,7 @@
    dl-hwcaps-subdirs \
    dl-hwcaps_split \
    dl-libc_freeres \
@@ -822,7 +722,7 @@ index 11029be0ae..90a4928dd1 100644
    dl-minimal \
    dl-mutex \
    dl-profile \
-@@ -151,6 +152,17 @@ CFLAGS-dl-iteratephdr.c += $(uses-callbacks)
+@@ -152,6 +153,17 @@
  # off for non-shared builds.
  CFLAGS-dl-minimal-malloc.o = $(no-stack-protector)
  CFLAGS-dl-minimal-malloc.op = $(no-stack-protector)
@@ -841,10 +741,8 @@ index 11029be0ae..90a4928dd1 100644
  # On targets without __builtin_memset, rtld.c uses a hand-coded loop
  # in _dl_start.  Make sure this isn't turned into a call to regular memset.
 diff --git a/elf/dl-malloc-impl.c b/elf/dl-malloc-impl.c
-new file mode 100644
-index 0000000000..a857fa2353
---- /dev/null
-+++ b/elf/dl-malloc-impl.c
+--- a/elf/dl-malloc-impl.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/dl-malloc-impl.c	2026-07-25 21:02:50.711781074 +0200
 @@ -0,0 +1,825 @@
 +/* Early selection of dynamically loaded malloc backends.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -1672,10 +1570,9 @@ index 0000000000..a857fa2353
 +}
 +#endif
 diff --git a/elf/dl-support.c b/elf/dl-support.c
-index 7505e149e2..c623a8f55f 100644
---- a/elf/dl-support.c
-+++ b/elf/dl-support.c
-@@ -195,6 +195,14 @@ struct link_map *_dl_sysinfo_map;
+--- a/elf/dl-support.c	2026-07-24 15:16:45.000000000 +0200
++++ b/elf/dl-support.c	2026-07-25 21:02:50.711900304 +0200
+@@ -198,6 +198,14 @@
  
  # include "get-dynamic-info.h"
  #endif
@@ -1691,10 +1588,9 @@ index 7505e149e2..c623a8f55f 100644
  /* Define the vDSO function pointers.  */
  #include <dl-vdso-setup.c>
 diff --git a/elf/rtld.c b/elf/rtld.c
-index 29e7a4ddfa..a8178785a7 100644
---- a/elf/rtld.c
-+++ b/elf/rtld.c
-@@ -1918,6 +1918,10 @@ dl_main (const ElfW(Phdr) *phdr,
+--- a/elf/rtld.c	2026-07-24 15:16:45.000000000 +0200
++++ b/elf/rtld.c	2026-07-25 21:02:50.712034055 +0200
+@@ -1911,6 +1911,10 @@
  	}
      }
  
@@ -1706,9 +1602,8 @@ index 29e7a4ddfa..a8178785a7 100644
      {
        /* Set up PRELOADS with a vector of the preloaded libraries.  */
 diff --git a/elf/static-stubs.c b/elf/static-stubs.c
-index d676aa5a27..352feacfa1 100644
---- a/elf/static-stubs.c
-+++ b/elf/static-stubs.c
+--- a/elf/static-stubs.c	2026-07-24 15:16:45.000000000 +0200
++++ b/elf/static-stubs.c	2026-07-25 21:02:50.712200846 +0200
 @@ -25,15 +25,18 @@
  #include <unwind.h>
  
@@ -1731,7 +1626,7 @@ index d676aa5a27..352feacfa1 100644
  __gcc_personality_v0 (int version __attribute__ ((unused)),
  		      _Unwind_Action actions __attribute__ ((unused)),
  		      _Unwind_Exception_Class exception_class
-@@ -44,3 +47,21 @@ __gcc_personality_v0 (int version __attribute__ ((unused)),
+@@ -44,3 +47,21 @@
  {
    abort ();
  }
@@ -1754,10 +1649,9 @@ index d676aa5a27..352feacfa1 100644
 +  abort ();
 +}
 diff --git a/malloc/Makefile b/malloc/Makefile
-index bd7383dc64..3abf3bf4a7 100644
---- a/malloc/Makefile
-+++ b/malloc/Makefile
-@@ -195,7 +195,235 @@ tests-exclude-mcheck = \
+--- a/malloc/Makefile	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/Makefile	2026-07-25 21:02:50.712335706 +0200
+@@ -199,7 +199,235 @@
  tests-mcheck = $(filter-out $(tests-exclude-mcheck) $(tests-static), $(tests))
  endif
  
@@ -1994,7 +1888,7 @@ index bd7383dc64..3abf3bf4a7 100644
    scratch_buffer_grow scratch_buffer_grow_preserve \
    scratch_buffer_set_array_size \
    dynarray_at_failure \
-@@ -212,7 +440,9 @@ routines = malloc mcheck mtrace obstack reallocarray \
+@@ -216,7 +444,9 @@
  install-lib := libmcheck.a
  non-lib.a := libmcheck.a
  
@@ -2005,7 +1899,7 @@ index bd7383dc64..3abf3bf4a7 100644
  extra-libs = libmemusage libc_malloc_debug
  extra-libs-others = $(extra-libs)
  
-@@ -325,13 +555,43 @@ $(addprefix $(objpfx), $(tests-threaded-worker)): $(shared-thread-library)
+@@ -329,13 +559,43 @@
  
  tests += $(tests-threaded-main) $(tests-threaded-worker)
  
@@ -2054,7 +1948,7 @@ index bd7383dc64..3abf3bf4a7 100644
  
  # These should be removed by `make clean'.
  extra-objs = mcheck-init.o libmcheck.a
-@@ -399,6 +659,8 @@ ifeq ($(run-built-tests),yes)
+@@ -416,6 +676,8 @@
  ifeq (yes,$(build-shared))
  ifneq ($(PERL),no)
  tests-special += $(objpfx)tst-mtrace.out
@@ -2063,7 +1957,7 @@ index bd7383dc64..3abf3bf4a7 100644
  tests-special += $(objpfx)tst-dynarray-mem.out
  tests-special += $(objpfx)tst-dynarray-fail-mem.out
  tests-special += $(objpfx)tst-free-aligned-sized-mtrace.out
-@@ -406,6 +668,8 @@ tests-special += $(objpfx)tst-free-sized-mtrace.out
+@@ -423,6 +685,8 @@
  endif
  endif
  endif
@@ -2072,7 +1966,7 @@ index bd7383dc64..3abf3bf4a7 100644
  
  include ../Rules
  
-@@ -451,6 +715,626 @@ CPPFLAGS-malloc.c += -DUSE_TCACHE=1
+@@ -470,6 +734,626 @@
  # Uncomment this for test releases.  For public releases it is too expensive.
  #CPPFLAGS-malloc.o += -DMALLOC_DEBUG=1
  
@@ -2700,10 +2594,8 @@ index bd7383dc64..3abf3bf4a7 100644
  
  sLIBdir := $(shell echo $(slibdir) | sed 's,lib\(\|64\)$$,\\\\$$LIB,')
 diff --git a/malloc/UPSTREAM-REVISIONS.txt b/malloc/UPSTREAM-REVISIONS.txt
-new file mode 100644
-index 0000000000..c7e301ed51
---- /dev/null
-+++ b/malloc/UPSTREAM-REVISIONS.txt
+--- a/malloc/UPSTREAM-REVISIONS.txt	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/UPSTREAM-REVISIONS.txt	2026-07-25 21:02:50.712722538 +0200
 @@ -0,0 +1,11 @@
 +Synced upstreams at 2026-07-03T03:59:30+02:00
 +mimalloc fef6b0dd70f9d7fa0750b0d0b9fbb471203b94cd 2026-04-29 15:46:57 -0700 Merge pull request #1284 from microsoft/dev-main
@@ -2717,10 +2609,9 @@ index 0000000000..c7e301ed51
 +partition_alloc 24aadfa94c4e04a0a1cb66c03f15e8110fa073f1
 +tcmalloc(gperftools) 07c5e9226bda1720bdf783a11f5df0f515e3c9d3 2026-03-08 13:04:58 -0400 bazel: yank publish-to-bcr workflow
 diff --git a/malloc/Versions b/malloc/Versions
-index a9ce4a035f..b39f7076ff 100644
---- a/malloc/Versions
-+++ b/malloc/Versions
-@@ -71,6 +71,11 @@ libc {
+--- a/malloc/Versions	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/Versions	2026-07-25 21:02:50.712771198 +0200
+@@ -71,6 +71,11 @@
      free_aligned_sized;
      free_sized;
    }
@@ -2733,10 +2624,9 @@ index a9ce4a035f..b39f7076ff 100644
      # Internal startup hook for libpthread.
      __libc_malloc_pthread_startup;
 diff --git a/malloc/arena.c b/malloc/arena.c
-index d83b4db068..8abc2a2b4b 100644
---- a/malloc/arena.c
-+++ b/malloc/arena.c
-@@ -94,7 +94,7 @@ static __thread mstate thread_arena attribute_tls_model_ie;
+--- a/malloc/arena.c	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/arena.c	2026-07-25 21:02:50.712831588 +0200
+@@ -94,7 +94,7 @@
     acquired after free_list_lock has been acquired.  */
  
  __libc_lock_define_initialized (static, free_list_lock);
@@ -2745,7 +2635,7 @@ index d83b4db068..8abc2a2b4b 100644
  static size_t narenas = 1;
  #endif
  static mstate free_list;
-@@ -609,7 +609,7 @@ heap_trim (heap_info *heap, size_t pad)
+@@ -580,7 +580,7 @@
  
  /* Create a new arena with initial size "size".  */
  
@@ -2755,10 +2645,8 @@ index d83b4db068..8abc2a2b4b 100644
     called while free_list_lock is held.  */
  static void
 diff --git a/malloc/malloc-backend.h b/malloc/malloc-backend.h
-new file mode 100644
-index 0000000000..1b314bac53
---- /dev/null
-+++ b/malloc/malloc-backend.h
+--- a/malloc/malloc-backend.h	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-backend.h	2026-07-25 21:02:50.712925439 +0200
 @@ -0,0 +1,90 @@
 +/* Backend operations for pluggable in-process malloc selection.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -2851,10 +2739,8 @@ index 0000000000..1b314bac53
 +
 +#endif /* _MALLOC_BACKEND_H */
 diff --git a/malloc/malloc-glibc-register.c b/malloc/malloc-glibc-register.c
-new file mode 100644
-index 0000000000..ec55e86ba2
---- /dev/null
-+++ b/malloc/malloc-glibc-register.c
+--- a/malloc/malloc-glibc-register.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-glibc-register.c	2026-07-25 21:02:50.712951909 +0200
 @@ -0,0 +1,79 @@
 +/* Register ptmalloc2 as a selectable malloc backend.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -2936,10 +2822,8 @@ index 0000000000..ec55e86ba2
 +  .check_init = NULL,
 +};
 diff --git a/malloc/malloc-glibc-rename.h b/malloc/malloc-glibc-rename.h
-new file mode 100644
-index 0000000000..82e18ba348
---- /dev/null
-+++ b/malloc/malloc-glibc-rename.h
+--- a/malloc/malloc-glibc-rename.h	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-glibc-rename.h	2026-07-25 21:02:50.713018859 +0200
 @@ -0,0 +1,35 @@
 +#ifndef _MALLOC_GLIBC_RENAME_H
 +#define _MALLOC_GLIBC_RENAME_H
@@ -2977,10 +2861,8 @@ index 0000000000..82e18ba348
 +#define MALLOC_MULTI_BACKEND 1
 +#endif
 diff --git a/malloc/malloc-multi-smoke.sh b/malloc/malloc-multi-smoke.sh
-new file mode 100755
-index 0000000000..cfdfbc6448
---- /dev/null
-+++ b/malloc/malloc-multi-smoke.sh
+--- a/malloc/malloc-multi-smoke.sh	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-multi-smoke.sh	2026-07-25 21:02:50.713070849 +0200
 @@ -0,0 +1,50 @@
 +#!/bin/bash
 +# Minimal multi-malloc smoke against a built libc tree.
@@ -3033,10 +2915,8 @@ index 0000000000..cfdfbc6448
 +test "$got" = "$def"
 +echo OK
 diff --git a/malloc/malloc-pref.h b/malloc/malloc-pref.h
-new file mode 100644
-index 0000000000..20bae69111
---- /dev/null
-+++ b/malloc/malloc-pref.h
+--- a/malloc/malloc-pref.h	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-pref.h	2026-07-25 21:02:50.713119670 +0200
 @@ -0,0 +1,264 @@
 +/* Preference-list parsing for pluggable malloc selection.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -3303,10 +3183,8 @@ index 0000000000..20bae69111
 +
 +#endif /* _MALLOC_PREF_H */
 diff --git a/malloc/malloc-profile.sh b/malloc/malloc-profile.sh
-new file mode 100755
-index 0000000000..02e810e33b
---- /dev/null
-+++ b/malloc/malloc-profile.sh
+--- a/malloc/malloc-profile.sh	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-profile.sh	2026-07-25 21:02:50.713230290 +0200
 @@ -0,0 +1,291 @@
 +#!/bin/bash
 +# Copyright (C) 2026 Free Software Foundation, Inc.
@@ -3600,10 +3478,8 @@ index 0000000000..02e810e33b
 +CONF
 +printf 'wrote %s\n' "$output_path"
 diff --git a/malloc/malloc-query.c b/malloc/malloc-query.c
-new file mode 100644
-index 0000000000..04a99f80b5
---- /dev/null
-+++ b/malloc/malloc-query.c
+--- a/malloc/malloc-query.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-query.c	2026-07-25 21:02:50.713362761 +0200
 @@ -0,0 +1,112 @@
 +/* Query APIs for single-implementation malloc builds.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -3718,10 +3594,8 @@ index 0000000000..04a99f80b5
 +  return -1;
 +}
 diff --git a/malloc/malloc-scan.c b/malloc/malloc-scan.c
-new file mode 100644
-index 0000000000..20d6bb4dd1
---- /dev/null
-+++ b/malloc/malloc-scan.c
+--- a/malloc/malloc-scan.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-scan.c	2026-07-25 21:02:50.713426811 +0200
 @@ -0,0 +1,111 @@
 +/* Scan installed libglibc_malloc_*.so dynamic backends.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -3835,10 +3709,8 @@ index 0000000000..20d6bb4dd1
 +}
 +libc_hidden_def (__libc_malloc_scan_installed)
 diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
-new file mode 100644
-index 0000000000..1746b375b7
---- /dev/null
-+++ b/malloc/malloc-select.c
+--- a/malloc/malloc-select.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-select.c	2026-07-25 21:02:50.716674144 +0200
 @@ -0,0 +1,1713 @@
 +#define _GNU_SOURCE 1
 +/* Select and dispatch among embedded malloc implementations.
@@ -5554,10 +5426,8 @@ index 0000000000..1746b375b7
 +  return -1;
 +}
 diff --git a/malloc/malloc-shim-compat.h b/malloc/malloc-shim-compat.h
-new file mode 100644
-index 0000000000..06fb8f946a
---- /dev/null
-+++ b/malloc/malloc-shim-compat.h
+--- a/malloc/malloc-shim-compat.h	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-shim-compat.h	2026-07-25 21:02:50.718089011 +0200
 @@ -0,0 +1,94 @@
 +/* Shared glibc-compatibility helpers for alternate malloc shims.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -5654,12 +5524,11 @@ index 0000000000..06fb8f946a
 +
 +#endif /* _MALLOC_SHIM_COMPAT_H */
 diff --git a/malloc/malloc.c b/malloc/malloc.c
-index 771e7d40b7..b6c3fa1119 100644
---- a/malloc/malloc.c
-+++ b/malloc/malloc.c
-@@ -259,6 +259,18 @@
- #include <sys/random.h>
- #include <not-cancel.h>
+--- a/malloc/malloc.c	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/malloc.c	2026-07-25 21:02:50.764752540 +0200
+@@ -251,6 +251,18 @@
+ verify (sizeof (void *) == 4 || sizeof (void *) == 8);
+ verify (PTRDIFF_MAX <= SIZE_MAX / 2);
  
 +/* Public ptmalloc2 entry points are built into libc and into the
 +   selectable libglibc_malloc_glibc.so DSO.  The DSO is compiled as
@@ -5676,7 +5545,7 @@ index 771e7d40b7..b6c3fa1119 100644
  /*
    Debugging:
  
-@@ -557,7 +569,7 @@ tag_at (void *ptr)
+@@ -458,7 +470,7 @@
  
  /* ---------- description of public routines ------------ */
  
@@ -5685,7 +5554,7 @@ index 771e7d40b7..b6c3fa1119 100644
  /*
    malloc(size_t n)
    Returns a pointer to a newly allocated chunk of at least n bytes, or null
-@@ -756,7 +768,7 @@ void     __malloc_stats(void);
+@@ -657,7 +669,7 @@
    POSIX wrapper like memalign(), checking for validity of size.
  */
  int      __posix_memalign(void **, size_t, size_t);
@@ -5694,7 +5563,7 @@ index 771e7d40b7..b6c3fa1119 100644
  
  /*
    mallopt(int parameter_number, int parameter_value)
-@@ -779,7 +791,7 @@ int      __posix_memalign(void **, size_t, size_t);
+@@ -680,7 +692,7 @@
    M_MMAP_MAX       -4         65536      any   (0 disables use of mmap)
  */
  int      __libc_mallopt(int, int);
@@ -5703,7 +5572,7 @@ index 771e7d40b7..b6c3fa1119 100644
  libc_hidden_proto (__libc_mallopt)
  #endif
  
-@@ -1039,7 +1051,7 @@ static void _int_free_maybe_trim (mstate, INTERNAL_SIZE_T);
+@@ -940,7 +952,7 @@
  static void*  _int_realloc(mstate, mchunkptr, INTERNAL_SIZE_T,
  			   INTERNAL_SIZE_T);
  static void*  _int_memalign(mstate, size_t, size_t);
@@ -5712,7 +5581,7 @@ index 771e7d40b7..b6c3fa1119 100644
  static void*  _mid_memalign(size_t, size_t);
  #endif
  
-@@ -2227,7 +2239,7 @@ do_check_malloc_state (mstate av)
+@@ -2055,7 +2067,7 @@
  
  
  /* ----------------- Support for debugging hooks -------------------- */
@@ -5721,7 +5590,7 @@ index 771e7d40b7..b6c3fa1119 100644
  #include "hooks.c"
  #endif
  
-@@ -3240,7 +3252,7 @@ tcache_thread_shutdown (void)
+@@ -3060,7 +3072,7 @@
  
  #endif /* !USE_TCACHE  */
  
@@ -5730,7 +5599,7 @@ index 771e7d40b7..b6c3fa1119 100644
  
  static void * __attribute_noinline__
  __libc_malloc2 (size_t bytes)
-@@ -3779,7 +3791,7 @@ __libc_calloc (size_t n, size_t elem_size)
+@@ -3544,7 +3556,7 @@
  #endif
    return __libc_calloc2 (bytes);
  }
@@ -5739,7 +5608,7 @@ index 771e7d40b7..b6c3fa1119 100644
  
  /*
     ------------------------------ malloc ------------------------------
-@@ -4842,7 +4854,7 @@ musable (void *mem)
+@@ -4540,7 +4552,7 @@
    return 0;
  }
  
@@ -5748,56 +5617,59 @@ index 771e7d40b7..b6c3fa1119 100644
  size_t
  __malloc_usable_size (void *m)
  {
-@@ -5118,14 +5130,24 @@ do_set_hugetlb (size_t value)
-     mp_.thp_mode = malloc_thp_mode_never;
+@@ -4848,6 +4860,7 @@
+     }
    else if (value == 1)
      {
 +#if IS_IN (libc)
+       /* Avoid querying the THP page size/mode since accessing /sys/kernel/mm
+ 	 is relatively slow and might not be accessible in containers.  */
+       if (MALLOC_DEFAULT_THP_PAGESIZE > 0)
+@@ -4874,10 +4887,19 @@
+ 	  else
+ 	    mp_.thp_pagesize = get_dl_elf_thp_pagesize ();
+ 	}
++#else
 +      /* THP helpers are libc-internal (attribute_hidden); the selectable
 +	 glibc DSO cannot reference them, so leave THP disabled there.  */
-       mp_.thp_mode = __malloc_thp_mode ();
-       if (mp_.thp_mode == malloc_thp_mode_madvise
-           || mp_.thp_mode == malloc_thp_mode_always)
- 	mp_.thp_pagesize = __malloc_default_thp_pagesize ();
-+#else
-+      mp_.thp_mode = malloc_thp_mode_never;
++      mp_.thp_mode = thp_mode_never;
 +#endif
      }
    else if (value >= 2)
--    __malloc_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
+-    __get_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
 -			      &mp_.hp_flags);
 +    {
 +#if IS_IN (libc)
-+      __malloc_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
-+				&mp_.hp_flags);
++      __get_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
++			    &mp_.hp_flags);
 +#endif
 +    }
    return 0;
  }
  
-@@ -5359,7 +5381,7 @@ malloc_printerr_tail (const char *str)
+@@ -5111,7 +5133,7 @@
  }
- #endif
+ #endif /* USE_TCACHE */
  
 -#if IS_IN (libc)
 +#if MALLOC_ENTRY_POINTS
  /* We need a wrapper function for one of the additions of POSIX.  */
  int
  __posix_memalign (void **memptr, size_t alignment, size_t size)
-@@ -5545,7 +5567,7 @@ __malloc_info (int options, FILE *fp)
- 
+@@ -5290,7 +5312,7 @@
    return 0;
  }
+ 
 -#if IS_IN (libc)
 +#if IS_IN (libc) && !defined (MALLOC_MULTI_BACKEND)
- weak_alias (__malloc_info, malloc_info)
- 
- strong_alias (__libc_calloc, __calloc) weak_alias (__libc_calloc, calloc)
-@@ -5565,11 +5587,11 @@ strong_alias (__libc_mallopt, __mallopt) weak_alias (__libc_mallopt, mallopt)
+ strong_alias (__libc_malloc, malloc)
+ strong_alias (__libc_realloc, realloc)
+ strong_alias (__libc_free, free)
+@@ -5307,11 +5329,11 @@
+ weak_alias (__libc_mallopt, mallopt)
  weak_alias (__malloc_stats, malloc_stats)
- weak_alias (__malloc_usable_size, malloc_usable_size)
  weak_alias (__malloc_trim, malloc_trim)
--#endif
+-#endif /* IS_IN (libc) */
  
 -#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
 +# if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_26)
@@ -5809,10 +5681,8 @@ index 771e7d40b7..b6c3fa1119 100644
  /* ------------------------------------------------------------
     History:
 diff --git a/malloc/malloc.d-README b/malloc/malloc.d-README
-new file mode 100644
-index 0000000000..99fbbfd78a
---- /dev/null
-+++ b/malloc/malloc.d-README
+--- a/malloc/malloc.d-README	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc.d-README	2026-07-25 21:02:50.718991354 +0200
 @@ -0,0 +1,57 @@
 +# Drop-in malloc implementation selection
 +#
@@ -5872,10 +5742,9 @@ index 0000000000..99fbbfd78a
 +# DATADIR/glibc/malloc.d (e.g. /usr/share/glibc/malloc.d); keep user
 +# overrides in /etc/glibc/malloc.conf or /etc/glibc/malloc.d.
 diff --git a/malloc/malloc.h b/malloc/malloc.h
-index c0de74512e..76a57ee40d 100644
---- a/malloc/malloc.h
-+++ b/malloc/malloc.h
-@@ -157,5 +157,12 @@ extern void malloc_stats (void) __THROW;
+--- a/malloc/malloc.h	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/malloc.h	2026-07-25 21:02:50.719034714 +0200
+@@ -157,5 +157,12 @@
  /* Output information about state of allocator to stream FP.  */
  extern int malloc_info (int __options, FILE *__fp) __THROW;
  
@@ -5889,16 +5758,15 @@ index c0de74512e..76a57ee40d 100644
  __END_DECLS
  #endif /* malloc.h */
 diff --git a/malloc/tst-aligned-alloc.c b/malloc/tst-aligned-alloc.c
-index e321bf3d6d..d55cced1e7 100644
---- a/malloc/tst-aligned-alloc.c
-+++ b/malloc/tst-aligned-alloc.c
+--- a/malloc/tst-aligned-alloc.c	2026-07-24 15:16:45.000000000 +0200
++++ b/malloc/tst-aligned-alloc.c	2026-07-25 21:02:50.719091065 +0200
 @@ -1,4 +1,4 @@
 -/* Test for C17 alignment requirements.
 +/* Test for aligned_alloc alignment requirements (C23).
     Copyright (C) 2023-2026 Free Software Foundation, Inc.
     This file is part of the GNU C Library.
  
-@@ -75,6 +75,82 @@ do_test (void)
+@@ -75,6 +75,82 @@
  
    free (p1);
    free (p2);
@@ -5982,10 +5850,8 @@ index e321bf3d6d..d55cced1e7 100644
  }
  
 diff --git a/malloc/tst-malloc-dynamic-conf.c b/malloc/tst-malloc-dynamic-conf.c
-new file mode 100644
-index 0000000000..674470e459
---- /dev/null
-+++ b/malloc/tst-malloc-dynamic-conf.c
+--- a/malloc/tst-malloc-dynamic-conf.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/tst-malloc-dynamic-conf.c	2026-07-25 21:02:50.719136665 +0200
 @@ -0,0 +1,71 @@
 +/* Dynamic malloc: default= from conf file via GLIBC_MALLOC_CONF.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -6059,10 +5925,8 @@ index 0000000000..674470e459
 +#define PREPARE init
 +#include <support/test-driver.c>
 diff --git a/malloc/tst-malloc-dynamic-default.c b/malloc/tst-malloc-dynamic-default.c
-new file mode 100644
-index 0000000000..c80cd39567
---- /dev/null
-+++ b/malloc/tst-malloc-dynamic-default.c
+--- a/malloc/tst-malloc-dynamic-default.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/tst-malloc-dynamic-default.c	2026-07-25 21:02:50.719164835 +0200
 @@ -0,0 +1,59 @@
 +/* Dynamic malloc: default embeds, no DSO mapped.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -6124,10 +5988,8 @@ index 0000000000..c80cd39567
 +
 +#include <support/test-driver.c>
 diff --git a/malloc/tst-malloc-dynamic-pref-fallback.c b/malloc/tst-malloc-dynamic-pref-fallback.c
-new file mode 100644
-index 0000000000..dbdd53e4b7
---- /dev/null
-+++ b/malloc/tst-malloc-dynamic-pref-fallback.c
+--- a/malloc/tst-malloc-dynamic-pref-fallback.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/tst-malloc-dynamic-pref-fallback.c	2026-07-25 21:02:50.719204065 +0200
 @@ -0,0 +1,71 @@
 +/* Dynamic malloc: pref list skips missing tokens, falls back to installed.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -6201,10 +6063,8 @@ index 0000000000..dbdd53e4b7
 +#define PREPARE init
 +#include <support/test-driver.c>
 diff --git a/malloc/tst-malloc-dynamic-pref.c b/malloc/tst-malloc-dynamic-pref.c
-new file mode 100644
-index 0000000000..dbdd53e4b7
---- /dev/null
-+++ b/malloc/tst-malloc-dynamic-pref.c
+--- a/malloc/tst-malloc-dynamic-pref.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/tst-malloc-dynamic-pref.c	2026-07-25 21:02:50.719243725 +0200
 @@ -0,0 +1,71 @@
 +/* Dynamic malloc: pref list skips missing tokens, falls back to installed.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -6278,10 +6138,8 @@ index 0000000000..dbdd53e4b7
 +#define PREPARE init
 +#include <support/test-driver.c>
 diff --git a/malloc/tst-malloc-dynamic-version.c b/malloc/tst-malloc-dynamic-version.c
-new file mode 100644
-index 0000000000..cb0baba1b7
---- /dev/null
-+++ b/malloc/tst-malloc-dynamic-version.c
+--- a/malloc/tst-malloc-dynamic-version.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/tst-malloc-dynamic-version.c	2026-07-25 21:02:50.719292446 +0200
 @@ -0,0 +1,51 @@
 +/* Dynamic malloc DSO exports only GLIBC_PRIVATE backend symbol.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -6335,10 +6193,9 @@ index 0000000000..cb0baba1b7
 +#define PREPARE init
 +#include <support/test-driver.c>
 diff --git a/sysdeps/generic/ldsodefs.h b/sysdeps/generic/ldsodefs.h
-index 0fcc14999c..927ec5d31c 100644
---- a/sysdeps/generic/ldsodefs.h
-+++ b/sysdeps/generic/ldsodefs.h
-@@ -679,6 +679,18 @@ struct rtld_global_ro
+--- a/sysdeps/generic/ldsodefs.h	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/generic/ldsodefs.h	2026-07-25 21:02:50.719396486 +0200
+@@ -685,6 +685,18 @@
    /* List of auditing interfaces.  */
    struct audit_ifaces *_dl_audit;
    unsigned int _dl_naudit;
@@ -6357,7 +6214,7 @@ index 0fcc14999c..927ec5d31c 100644
  };
  # define __rtld_global_attribute__
  # if IS_IN (rtld)
-@@ -915,6 +927,11 @@ struct link_map *_dl_lookup_map (Lmid_t nsid, const char *name)
+@@ -921,6 +933,11 @@
  /* Open the shared object NAME and map in its segments.
     LOADER's DT_RPATH is used in searching for NAME.
     If the object is already opened, returns its existing map.  */
@@ -6370,38 +6227,35 @@ index 0fcc14999c..927ec5d31c 100644
  					const char *name,
  					int type, int trace_mode, int mode,
 diff --git a/sysdeps/mach/hurd/i386/libc.abilist b/sysdeps/mach/hurd/i386/libc.abilist
-index 08dcd85cd9..8612e6731e 100644
---- a/sysdeps/mach/hurd/i386/libc.abilist
-+++ b/sysdeps/mach/hurd/i386/libc.abilist
-@@ -2760,6 +2760,9 @@ GLIBC_2.43 tss_delete F
- GLIBC_2.43 tss_get F
- GLIBC_2.43 tss_set F
- GLIBC_2.43 umaxabs F
+--- a/sysdeps/mach/hurd/i386/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/mach/hurd/i386/libc.abilist	2026-07-25 21:02:50.719702617 +0200
+@@ -2760,6 +2760,9 @@
+ GLIBC_2.43 pthread_getattr_np F
+ GLIBC_2.43 pthread_getconcurrency F
+ GLIBC_2.43 pthread_getcpuclockid F
 +GLIBC_2.44 gnu_get_libc_malloc_active F
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
- GLIBC_2.5 __readlinkat_chk F
- GLIBC_2.5 inet6_opt_append F
- GLIBC_2.5 inet6_opt_find F
+ GLIBC_2.43 pthread_getname_np F
+ GLIBC_2.43 pthread_hurd_cond_timedwait_np F
+ GLIBC_2.43 pthread_hurd_cond_wait_np F
 diff --git a/sysdeps/mach/hurd/x86_64/libc.abilist b/sysdeps/mach/hurd/x86_64/libc.abilist
-index c17d5399e4..4ce74d9e7d 100644
---- a/sysdeps/mach/hurd/x86_64/libc.abilist
-+++ b/sysdeps/mach/hurd/x86_64/libc.abilist
-@@ -2437,6 +2437,9 @@ GLIBC_2.43 tss_delete F
- GLIBC_2.43 tss_get F
- GLIBC_2.43 tss_set F
- GLIBC_2.43 umaxabs F
+--- a/sysdeps/mach/hurd/x86_64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/mach/hurd/x86_64/libc.abilist	2026-07-25 21:02:50.720006359 +0200
+@@ -2437,6 +2437,9 @@
+ GLIBC_2.43 pthread_getconcurrency F
+ GLIBC_2.43 pthread_getcpuclockid F
+ GLIBC_2.43 pthread_getname_np F
 +GLIBC_2.44 gnu_get_libc_malloc_active F
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
- HURD_CTHREADS_0.3 __mutex_init F
- HURD_CTHREADS_0.3 __mutex_lock F
- HURD_CTHREADS_0.3 __mutex_trylock F
+ GLIBC_2.43 pthread_hurd_cond_timedwait_np F
+ GLIBC_2.43 pthread_hurd_cond_wait_np F
+ GLIBC_2.43 pthread_join F
 diff --git a/sysdeps/unix/sysv/linux/aarch64/libc.abilist b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-index 3156688add..0facdcf8ee 100644
---- a/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-@@ -2775,3 +2775,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/aarch64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/aarch64/libc.abilist	2026-07-25 21:02:50.720177689 +0200
+@@ -2775,3 +2775,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6409,10 +6263,9 @@ index 3156688add..0facdcf8ee 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/alpha/libc.abilist b/sysdeps/unix/sysv/linux/alpha/libc.abilist
-index 8af5b0b581..42395f8edf 100644
---- a/sysdeps/unix/sysv/linux/alpha/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/alpha/libc.abilist
-@@ -3122,6 +3122,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/alpha/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/alpha/libc.abilist	2026-07-25 21:02:50.720349350 +0200
+@@ -3122,6 +3122,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6423,10 +6276,9 @@ index 8af5b0b581..42395f8edf 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/arc/libc.abilist b/sysdeps/unix/sysv/linux/arc/libc.abilist
-index 35fcef2cc4..f3707f9412 100644
---- a/sysdeps/unix/sysv/linux/arc/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arc/libc.abilist
-@@ -2536,3 +2536,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/arc/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/arc/libc.abilist	2026-07-25 21:02:50.720524351 +0200
+@@ -2536,3 +2536,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6434,10 +6286,9 @@ index 35fcef2cc4..f3707f9412 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/arm/be/libc.abilist b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-index a6c6b951bf..2b022801e0 100644
---- a/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-@@ -2828,6 +2828,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/arm/be/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/arm/be/libc.abilist	2026-07-25 21:02:50.720686061 +0200
+@@ -2828,6 +2828,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6448,10 +6299,9 @@ index a6c6b951bf..2b022801e0 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/arm/le/libc.abilist b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-index e76015fe66..1911a07c54 100644
---- a/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-@@ -2825,6 +2825,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/arm/le/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/arm/le/libc.abilist	2026-07-25 21:02:50.720847582 +0200
+@@ -2825,6 +2825,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6462,10 +6312,9 @@ index e76015fe66..1911a07c54 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/csky/libc.abilist b/sysdeps/unix/sysv/linux/csky/libc.abilist
-index 1fb7cdcad5..a4754227cf 100644
---- a/sysdeps/unix/sysv/linux/csky/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/csky/libc.abilist
-@@ -2812,3 +2812,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/csky/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/csky/libc.abilist	2026-07-25 21:02:50.721010333 +0200
+@@ -2812,3 +2812,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6473,10 +6322,9 @@ index 1fb7cdcad5..a4754227cf 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/hppa/libc.abilist b/sysdeps/unix/sysv/linux/hppa/libc.abilist
-index 0710ccecf9..b86c12551d 100644
---- a/sysdeps/unix/sysv/linux/hppa/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/hppa/libc.abilist
-@@ -2849,6 +2849,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/hppa/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/hppa/libc.abilist	2026-07-25 21:02:50.721177613 +0200
+@@ -2849,6 +2849,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6487,10 +6335,9 @@ index 0710ccecf9..b86c12551d 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/i386/libc.abilist b/sysdeps/unix/sysv/linux/i386/libc.abilist
-index 3afe3a88eb..f7d3d91aaa 100644
---- a/sysdeps/unix/sysv/linux/i386/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/i386/libc.abilist
-@@ -3032,6 +3032,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/i386/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/i386/libc.abilist	2026-07-25 21:02:50.721344854 +0200
+@@ -3032,6 +3032,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6501,10 +6348,9 @@ index 3afe3a88eb..f7d3d91aaa 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-index c2b3a66d3a..90a8c572b4 100644
---- a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-@@ -2296,3 +2296,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist	2026-07-25 21:02:50.721524905 +0200
+@@ -2296,3 +2296,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6512,10 +6358,9 @@ index c2b3a66d3a..90a8c572b4 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-index d6855131e8..5010327d76 100644
---- a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-@@ -2808,6 +2808,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist	2026-07-25 21:02:50.721699916 +0200
+@@ -2808,6 +2808,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6526,10 +6371,9 @@ index d6855131e8..5010327d76 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-index 4e3fe9c42f..431eb47b5c 100644
---- a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-@@ -2975,6 +2975,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist	2026-07-25 21:02:50.721873416 +0200
+@@ -2975,6 +2975,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6540,10 +6384,9 @@ index 4e3fe9c42f..431eb47b5c 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-index 29f0c5f954..4c51353bff 100644
---- a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-@@ -2861,3 +2861,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist	2026-07-25 21:02:50.722051267 +0200
+@@ -2861,3 +2861,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6551,10 +6394,9 @@ index 29f0c5f954..4c51353bff 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-index 2ef62838f7..6743bcf95f 100644
---- a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-@@ -2858,3 +2858,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist	2026-07-25 21:02:50.722220978 +0200
+@@ -2858,3 +2858,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6562,10 +6404,9 @@ index 2ef62838f7..6743bcf95f 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-index 031e8961ac..e382943a0f 100644
---- a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-@@ -2938,6 +2938,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist	2026-07-25 21:02:50.722389059 +0200
+@@ -2938,6 +2938,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6576,10 +6417,9 @@ index 031e8961ac..e382943a0f 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-index 8dc99d81b4..736d0f7b62 100644
---- a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-@@ -2936,6 +2936,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist	2026-07-25 21:02:50.722559339 +0200
+@@ -2936,6 +2936,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6590,10 +6430,9 @@ index 8dc99d81b4..736d0f7b62 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-index 054c5b6391..0ea6f52434 100644
---- a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-@@ -2944,6 +2944,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist	2026-07-25 21:02:50.722729300 +0200
+@@ -2944,6 +2944,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6604,10 +6443,9 @@ index 054c5b6391..0ea6f52434 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-index 13f0148bc0..0b93ed6963 100644
---- a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-@@ -2846,6 +2846,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist	2026-07-25 21:02:50.722901261 +0200
+@@ -2846,6 +2846,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6618,10 +6456,9 @@ index 13f0148bc0..0b93ed6963 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/or1k/libc.abilist b/sysdeps/unix/sysv/linux/or1k/libc.abilist
-index e7ffe07dd8..8e2af47f7a 100644
---- a/sysdeps/unix/sysv/linux/or1k/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/or1k/libc.abilist
-@@ -2286,3 +2286,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/or1k/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/or1k/libc.abilist	2026-07-25 21:02:50.723062142 +0200
+@@ -2286,3 +2286,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6629,10 +6466,9 @@ index e7ffe07dd8..8e2af47f7a 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-index dea4b20f05..f9d981ca3f 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-@@ -3165,6 +3165,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist	2026-07-25 21:02:50.723223352 +0200
+@@ -3165,6 +3165,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6643,10 +6479,9 @@ index dea4b20f05..f9d981ca3f 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-index b45e127463..20d7d5ec36 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-@@ -3210,6 +3210,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist	2026-07-25 21:02:50.723405863 +0200
+@@ -3210,6 +3210,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6657,10 +6492,9 @@ index b45e127463..20d7d5ec36 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-index 942cf6a027..578c100389 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-@@ -2919,6 +2919,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist	2026-07-25 21:02:50.723586434 +0200
+@@ -2919,6 +2919,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6671,10 +6505,9 @@ index 942cf6a027..578c100389 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-index 65d78e5076..4001a8005a 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-@@ -2995,3 +2995,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist	2026-07-25 21:02:50.723752495 +0200
+@@ -2995,3 +2995,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6682,10 +6515,9 @@ index 65d78e5076..4001a8005a 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-index dcab30d72e..13b3e9df43 100644
---- a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-@@ -2539,3 +2539,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist	2026-07-25 21:02:50.723917985 +0200
+@@ -2539,3 +2539,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6693,21 +6525,19 @@ index dcab30d72e..13b3e9df43 100644
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
 diff --git a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-index 796ef35e26..0d4b7699f3 100644
---- a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-@@ -2739,3 +2739,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist	2026-07-25 21:02:50.724067046 +0200
+@@ -2739,3 +2739,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
 +GLIBC_2.44 gnu_get_libc_malloc_active F
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
-diff --git a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-index 8f2350ee0b..bb24f1f6c0 100644
---- a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-@@ -2956,6 +2956,9 @@ GLIBC_2.43 memset_explicit F
+diff --git a/sysdeps/unix/sysv/linux/s390/libc.abilist b/sysdeps/unix/sysv/linux/s390/libc.abilist
+--- a/sysdeps/unix/sysv/linux/s390/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/s390/libc.abilist	2026-07-25 21:02:50.765810454 +0200
+@@ -2956,6 +2956,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6718,10 +6548,9 @@ index 8f2350ee0b..bb24f1f6c0 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sh/be/libc.abilist b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-index 7aa98c5aed..f94f45ff95 100644
---- a/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-@@ -2855,6 +2855,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/sh/be/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/sh/be/libc.abilist	2026-07-25 21:02:50.724305867 +0200
+@@ -2855,6 +2855,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6732,10 +6561,9 @@ index 7aa98c5aed..f94f45ff95 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sh/le/libc.abilist b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-index 6bd4f8f63a..8499460409 100644
---- a/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-@@ -2852,6 +2852,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/sh/le/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/sh/le/libc.abilist	2026-07-25 21:02:50.724493578 +0200
+@@ -2852,6 +2852,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6746,10 +6574,9 @@ index 6bd4f8f63a..8499460409 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-index b52cab2a35..ab94365cdf 100644
---- a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-@@ -3186,6 +3186,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist	2026-07-25 21:02:50.724684699 +0200
+@@ -3186,6 +3186,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6760,10 +6587,9 @@ index b52cab2a35..ab94365cdf 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-index ff99cd4f21..9129d1c053 100644
---- a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-@@ -2822,6 +2822,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist	2026-07-25 21:02:50.724871040 +0200
+@@ -2822,6 +2822,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6774,10 +6600,9 @@ index ff99cd4f21..9129d1c053 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-index 306cd627fd..ca1bfaceca 100644
---- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-@@ -2771,6 +2771,9 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist	2026-07-25 21:02:50.725054210 +0200
+@@ -2771,6 +2771,9 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
@@ -6788,16 +6613,12 @@ index 306cd627fd..ca1bfaceca 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-index 8b9c448742..54b45c3ec9 100644
---- a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-@@ -2790,3 +2790,6 @@ GLIBC_2.43 memset_explicit F
+--- a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist	2026-07-24 15:16:45.000000000 +0200
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist	2026-07-25 21:02:50.725230701 +0200
+@@ -2790,3 +2790,6 @@
  GLIBC_2.43 mseal F
  GLIBC_2.43 openat2 F
  GLIBC_2.43 umaxabs F
 +GLIBC_2.44 gnu_get_libc_malloc_active F
 +GLIBC_2.44 gnu_get_libc_malloc_default F
 +GLIBC_2.44 gnu_get_libc_malloc_impls F
--- 
-2.53.0
-

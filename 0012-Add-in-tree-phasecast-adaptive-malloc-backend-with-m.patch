@@ -1,62 +1,7 @@
-From 97181955f8f07802ce933cd02968c311e16395b6 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:32 +0200
-Subject: [PATCH 12/20] Add in-tree phasecast adaptive malloc backend
- (--with-malloc=phasecast)
-
----
- malloc/Makefile                               |   1 -
- malloc/Versions                               |   4 +
- malloc/malloc-phasecast-impl.c                |   5 +
- malloc/malloc-phasecast.c                     | 469 ++++++++++
- malloc/malloc-select.c                        |  23 +-
- malloc/malloc.h                               |   7 +
- malloc/phasecast/phasecast.c                  | 841 ++++++++++++++++++
- malloc/phasecast/phasecast.h                  |  36 +
- sysdeps/mach/hurd/i386/libc.abilist           |   4 +
- sysdeps/mach/hurd/x86_64/libc.abilist         |   4 +
- sysdeps/unix/sysv/linux/aarch64/libc.abilist  |   4 +
- sysdeps/unix/sysv/linux/alpha/libc.abilist    |   4 +
- sysdeps/unix/sysv/linux/arc/libc.abilist      |   4 +
- sysdeps/unix/sysv/linux/arm/be/libc.abilist   |   4 +
- sysdeps/unix/sysv/linux/arm/le/libc.abilist   |   4 +
- sysdeps/unix/sysv/linux/csky/libc.abilist     |   4 +
- sysdeps/unix/sysv/linux/hppa/libc.abilist     |   4 +
- sysdeps/unix/sysv/linux/i386/libc.abilist     |   4 +
- .../sysv/linux/loongarch/lp64/libc.abilist    |   4 +
- .../sysv/linux/m68k/coldfire/libc.abilist     |   4 +
- .../unix/sysv/linux/m68k/m680x0/libc.abilist  |   4 +
- .../sysv/linux/microblaze/be/libc.abilist     |   4 +
- .../sysv/linux/microblaze/le/libc.abilist     |   4 +
- .../sysv/linux/mips/mips32/fpu/libc.abilist   |   4 +
- .../sysv/linux/mips/mips32/nofpu/libc.abilist |   4 +
- .../sysv/linux/mips/mips64/n32/libc.abilist   |   4 +
- .../sysv/linux/mips/mips64/n64/libc.abilist   |   4 +
- sysdeps/unix/sysv/linux/or1k/libc.abilist     |   4 +
- .../linux/powerpc/powerpc32/fpu/libc.abilist  |   4 +
- .../powerpc/powerpc32/nofpu/libc.abilist      |   4 +
- .../linux/powerpc/powerpc64/be/libc.abilist   |   4 +
- .../linux/powerpc/powerpc64/le/libc.abilist   |   4 +
- .../unix/sysv/linux/riscv/rv32/libc.abilist   |   4 +
- .../unix/sysv/linux/riscv/rv64/libc.abilist   |   4 +
- .../unix/sysv/linux/s390/s390-64/libc.abilist |   4 +
- sysdeps/unix/sysv/linux/sh/be/libc.abilist    |   4 +
- sysdeps/unix/sysv/linux/sh/le/libc.abilist    |   4 +
- .../sysv/linux/sparc/sparc32/libc.abilist     |   4 +
- .../sysv/linux/sparc/sparc64/libc.abilist     |   4 +
- .../unix/sysv/linux/x86_64/64/libc.abilist    |   4 +
- .../unix/sysv/linux/x86_64/x32/libc.abilist   |   4 +
- 41 files changed, 1503 insertions(+), 15 deletions(-)
- create mode 100644 malloc/malloc-phasecast-impl.c
- create mode 100644 malloc/malloc-phasecast.c
- create mode 100644 malloc/phasecast/phasecast.c
- create mode 100644 malloc/phasecast/phasecast.h
-
 diff --git a/malloc/Makefile b/malloc/Makefile
-index 3abf3bf4a7..323de8fc40 100644
---- a/malloc/Makefile
-+++ b/malloc/Makefile
-@@ -1177,7 +1177,6 @@ ifeq ($(datadir),)
+--- a/malloc/Makefile	2026-07-25 21:02:50.712335706 +0200
++++ b/malloc/Makefile	2026-07-25 21:03:53.483235523 +0200
+@@ -1196,7 +1196,6 @@
  $(error datadir must be set for multi-malloc builds so DATADIR drop-ins resolve)
  endif
  CPPFLAGS-malloc-select.c += -DDATADIR='"$(datadir)"'
@@ -65,10 +10,9 @@ index 3abf3bf4a7..323de8fc40 100644
  CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR_BUILD='"$(common-objpfx)glibc/malloc"'
  CPPFLAGS-malloc-scan.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
 diff --git a/malloc/Versions b/malloc/Versions
-index b39f7076ff..3f0ba3a19f 100644
---- a/malloc/Versions
-+++ b/malloc/Versions
-@@ -75,6 +75,10 @@ libc {
+--- a/malloc/Versions	2026-07-25 21:02:50.712771198 +0200
++++ b/malloc/Versions	2026-07-25 21:03:53.483376173 +0200
+@@ -75,6 +75,10 @@
      gnu_get_libc_malloc_impls;
      gnu_get_libc_malloc_default;
      gnu_get_libc_malloc_active;
@@ -80,10 +24,8 @@ index b39f7076ff..3f0ba3a19f 100644
    GLIBC_PRIVATE {
      # Internal startup hook for libpthread.
 diff --git a/malloc/malloc-phasecast-impl.c b/malloc/malloc-phasecast-impl.c
-new file mode 100644
-index 0000000000..5534be980b
---- /dev/null
-+++ b/malloc/malloc-phasecast-impl.c
+--- a/malloc/malloc-phasecast-impl.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-phasecast-impl.c	2026-07-25 21:03:53.483410494 +0200
 @@ -0,0 +1,5 @@
 +/* Compile phasecast core into glibc.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -91,10 +33,8 @@ index 0000000000..5534be980b
 +
 +#include "phasecast/phasecast.c"
 diff --git a/malloc/malloc-phasecast.c b/malloc/malloc-phasecast.c
-new file mode 100644
-index 0000000000..cce2401a12
---- /dev/null
-+++ b/malloc/malloc-phasecast.c
+--- a/malloc/malloc-phasecast.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/malloc-phasecast.c	2026-07-25 21:03:53.483441854 +0200
 @@ -0,0 +1,469 @@
 +/* Shim to use phasecast as the malloc implementation inside glibc.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -566,10 +506,9 @@ index 0000000000..cce2401a12
 +};
 +#endif /* MALLOC_MULTI_BACKEND */
 diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
-index 1746b375b7..4373651798 100644
---- a/malloc/malloc-select.c
-+++ b/malloc/malloc-select.c
-@@ -330,13 +330,13 @@ struct match_result
+--- a/malloc/malloc-select.c	2026-07-25 21:02:50.716674144 +0200
++++ b/malloc/malloc-select.c	2026-07-25 21:03:53.483982007 +0200
+@@ -330,13 +330,13 @@
  
  /* Selection tiers (effective priority, higher wins).  In-file priority=
     only orders within a drop-in tier and is clamped to [0, 99] so a
@@ -588,7 +527,7 @@ index 1746b375b7..4373651798 100644
        <0        heuristics / compile-time default (fallthrough)  */
  enum
    {
-@@ -1017,15 +1017,10 @@ choose_backend (int *external_out)
+@@ -1017,15 +1017,10 @@
    }
  
    /* Scan all sources; effective priorities enforce:
@@ -609,10 +548,9 @@ index 1746b375b7..4373651798 100644
    scan_dropin_dir (DATADIR "/glibc/malloc.d", exe_path_p, exe_base_p,
  		   PRIO_DATA_MALLOCD_BASE, &best);
 diff --git a/malloc/malloc.h b/malloc/malloc.h
-index 76a57ee40d..dfdda69dae 100644
---- a/malloc/malloc.h
-+++ b/malloc/malloc.h
-@@ -164,5 +164,12 @@ extern int gnu_get_libc_malloc_impls (char *__buf, size_t __len) __THROW;
+--- a/malloc/malloc.h	2026-07-25 21:02:50.719034714 +0200
++++ b/malloc/malloc.h	2026-07-25 21:03:53.484090877 +0200
+@@ -164,5 +164,12 @@
  extern const char *gnu_get_libc_malloc_default (void) __THROW;
  extern const char *gnu_get_libc_malloc_active (void) __THROW;
  
@@ -626,10 +564,8 @@ index 76a57ee40d..dfdda69dae 100644
  __END_DECLS
  #endif /* malloc.h */
 diff --git a/malloc/phasecast/phasecast.c b/malloc/phasecast/phasecast.c
-new file mode 100644
-index 0000000000..d23d4e39ce
---- /dev/null
-+++ b/malloc/phasecast/phasecast.c
+--- a/malloc/phasecast/phasecast.c	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/phasecast/phasecast.c	2026-07-25 21:03:53.484310399 +0200
 @@ -0,0 +1,841 @@
 +/* Phasecast adaptive malloc implementation.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -1473,10 +1409,8 @@ index 0000000000..d23d4e39ce
 +  return 0;
 +}
 diff --git a/malloc/phasecast/phasecast.h b/malloc/phasecast/phasecast.h
-new file mode 100644
-index 0000000000..00761e326f
---- /dev/null
-+++ b/malloc/phasecast/phasecast.h
+--- a/malloc/phasecast/phasecast.h	1970-01-01 01:00:00.000000000 +0100
++++ b/malloc/phasecast/phasecast.h	2026-07-25 21:03:53.484390329 +0200
 @@ -0,0 +1,36 @@
 +/* Phasecast adaptive allocator — internal API.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -1515,10 +1449,9 @@ index 0000000000..00761e326f
 +
 +#endif
 diff --git a/sysdeps/mach/hurd/i386/libc.abilist b/sysdeps/mach/hurd/i386/libc.abilist
-index 8612e6731e..fc14936cf6 100644
---- a/sysdeps/mach/hurd/i386/libc.abilist
-+++ b/sysdeps/mach/hurd/i386/libc.abilist
-@@ -2763,6 +2763,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/mach/hurd/i386/libc.abilist	2026-07-25 21:02:50.719702617 +0200
++++ b/sysdeps/mach/hurd/i386/libc.abilist	2026-07-25 21:03:53.484682381 +0200
+@@ -2763,6 +2763,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1526,14 +1459,13 @@ index 8612e6731e..fc14936cf6 100644
 +GLIBC_2.44 gnu_malloc_phase_pop F
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
- GLIBC_2.5 __readlinkat_chk F
- GLIBC_2.5 inet6_opt_append F
- GLIBC_2.5 inet6_opt_find F
+ GLIBC_2.43 pthread_getname_np F
+ GLIBC_2.43 pthread_hurd_cond_timedwait_np F
+ GLIBC_2.43 pthread_hurd_cond_wait_np F
 diff --git a/sysdeps/mach/hurd/x86_64/libc.abilist b/sysdeps/mach/hurd/x86_64/libc.abilist
-index 4ce74d9e7d..a16218e9b6 100644
---- a/sysdeps/mach/hurd/x86_64/libc.abilist
-+++ b/sysdeps/mach/hurd/x86_64/libc.abilist
-@@ -2440,6 +2440,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/mach/hurd/x86_64/libc.abilist	2026-07-25 21:02:50.720006359 +0200
++++ b/sysdeps/mach/hurd/x86_64/libc.abilist	2026-07-25 21:03:53.484952352 +0200
+@@ -2440,6 +2440,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1541,14 +1473,13 @@ index 4ce74d9e7d..a16218e9b6 100644
 +GLIBC_2.44 gnu_malloc_phase_pop F
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
- HURD_CTHREADS_0.3 __mutex_init F
- HURD_CTHREADS_0.3 __mutex_lock F
- HURD_CTHREADS_0.3 __mutex_trylock F
+ GLIBC_2.43 pthread_hurd_cond_timedwait_np F
+ GLIBC_2.43 pthread_hurd_cond_wait_np F
+ GLIBC_2.43 pthread_join F
 diff --git a/sysdeps/unix/sysv/linux/aarch64/libc.abilist b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-index 0facdcf8ee..7b7bf611f5 100644
---- a/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/aarch64/libc.abilist
-@@ -2778,3 +2778,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/aarch64/libc.abilist	2026-07-25 21:02:50.720177689 +0200
++++ b/sysdeps/unix/sysv/linux/aarch64/libc.abilist	2026-07-25 21:03:53.485110973 +0200
+@@ -2778,3 +2778,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1557,10 +1488,9 @@ index 0facdcf8ee..7b7bf611f5 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/alpha/libc.abilist b/sysdeps/unix/sysv/linux/alpha/libc.abilist
-index 42395f8edf..d2105abbe6 100644
---- a/sysdeps/unix/sysv/linux/alpha/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/alpha/libc.abilist
-@@ -3125,6 +3125,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/alpha/libc.abilist	2026-07-25 21:02:50.720349350 +0200
++++ b/sysdeps/unix/sysv/linux/alpha/libc.abilist	2026-07-25 21:03:53.485282744 +0200
+@@ -3125,6 +3125,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1572,10 +1502,9 @@ index 42395f8edf..d2105abbe6 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/arc/libc.abilist b/sysdeps/unix/sysv/linux/arc/libc.abilist
-index f3707f9412..aa6f667672 100644
---- a/sysdeps/unix/sysv/linux/arc/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arc/libc.abilist
-@@ -2539,3 +2539,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/arc/libc.abilist	2026-07-25 21:02:50.720524351 +0200
++++ b/sysdeps/unix/sysv/linux/arc/libc.abilist	2026-07-25 21:03:53.485448635 +0200
+@@ -2539,3 +2539,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1584,10 +1513,9 @@ index f3707f9412..aa6f667672 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/arm/be/libc.abilist b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-index 2b022801e0..f136d025d2 100644
---- a/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arm/be/libc.abilist
-@@ -2831,6 +2831,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/arm/be/libc.abilist	2026-07-25 21:02:50.720686061 +0200
++++ b/sysdeps/unix/sysv/linux/arm/be/libc.abilist	2026-07-25 21:03:53.485631486 +0200
+@@ -2831,6 +2831,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1599,10 +1527,9 @@ index 2b022801e0..f136d025d2 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/arm/le/libc.abilist b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-index 1911a07c54..d9e4a7b9be 100644
---- a/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/arm/le/libc.abilist
-@@ -2828,6 +2828,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/arm/le/libc.abilist	2026-07-25 21:02:50.720847582 +0200
++++ b/sysdeps/unix/sysv/linux/arm/le/libc.abilist	2026-07-25 21:03:53.485799657 +0200
+@@ -2828,6 +2828,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1614,10 +1541,9 @@ index 1911a07c54..d9e4a7b9be 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/csky/libc.abilist b/sysdeps/unix/sysv/linux/csky/libc.abilist
-index a4754227cf..ad3ab8d7a5 100644
---- a/sysdeps/unix/sysv/linux/csky/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/csky/libc.abilist
-@@ -2815,3 +2815,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/csky/libc.abilist	2026-07-25 21:02:50.721010333 +0200
++++ b/sysdeps/unix/sysv/linux/csky/libc.abilist	2026-07-25 21:03:53.486001718 +0200
+@@ -2815,3 +2815,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1626,10 +1552,9 @@ index a4754227cf..ad3ab8d7a5 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/hppa/libc.abilist b/sysdeps/unix/sysv/linux/hppa/libc.abilist
-index b86c12551d..81d101c371 100644
---- a/sysdeps/unix/sysv/linux/hppa/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/hppa/libc.abilist
-@@ -2852,6 +2852,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/hppa/libc.abilist	2026-07-25 21:02:50.721177613 +0200
++++ b/sysdeps/unix/sysv/linux/hppa/libc.abilist	2026-07-25 21:03:53.486175959 +0200
+@@ -2852,6 +2852,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1641,10 +1566,9 @@ index b86c12551d..81d101c371 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/i386/libc.abilist b/sysdeps/unix/sysv/linux/i386/libc.abilist
-index f7d3d91aaa..6f27d75f32 100644
---- a/sysdeps/unix/sysv/linux/i386/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/i386/libc.abilist
-@@ -3035,6 +3035,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/i386/libc.abilist	2026-07-25 21:02:50.721344854 +0200
++++ b/sysdeps/unix/sysv/linux/i386/libc.abilist	2026-07-25 21:03:53.486376830 +0200
+@@ -3035,6 +3035,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1656,10 +1580,9 @@ index f7d3d91aaa..6f27d75f32 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-index 90a8c572b4..3d6d5f77e4 100644
---- a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist
-@@ -2299,3 +2299,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist	2026-07-25 21:02:50.721524905 +0200
++++ b/sysdeps/unix/sysv/linux/loongarch/lp64/libc.abilist	2026-07-25 21:03:53.486549011 +0200
+@@ -2299,3 +2299,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1668,10 +1591,9 @@ index 90a8c572b4..3d6d5f77e4 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-index 5010327d76..516b407ade 100644
---- a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist
-@@ -2811,6 +2811,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist	2026-07-25 21:02:50.721699916 +0200
++++ b/sysdeps/unix/sysv/linux/m68k/coldfire/libc.abilist	2026-07-25 21:03:53.486711152 +0200
+@@ -2811,6 +2811,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1683,10 +1605,9 @@ index 5010327d76..516b407ade 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-index 431eb47b5c..c7415e22b2 100644
---- a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist
-@@ -2978,6 +2978,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist	2026-07-25 21:02:50.721873416 +0200
++++ b/sysdeps/unix/sysv/linux/m68k/m680x0/libc.abilist	2026-07-25 21:03:53.486888053 +0200
+@@ -2978,6 +2978,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1698,10 +1619,9 @@ index 431eb47b5c..c7415e22b2 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-index 4c51353bff..cd90aed898 100644
---- a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist
-@@ -2864,3 +2864,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist	2026-07-25 21:02:50.722051267 +0200
++++ b/sysdeps/unix/sysv/linux/microblaze/be/libc.abilist	2026-07-25 21:03:53.487079464 +0200
+@@ -2864,3 +2864,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1710,10 +1630,9 @@ index 4c51353bff..cd90aed898 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-index 6743bcf95f..3a02fddfca 100644
---- a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist
-@@ -2861,3 +2861,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist	2026-07-25 21:02:50.722220978 +0200
++++ b/sysdeps/unix/sysv/linux/microblaze/le/libc.abilist	2026-07-25 21:03:53.487263505 +0200
+@@ -2861,3 +2861,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1722,10 +1641,9 @@ index 6743bcf95f..3a02fddfca 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-index e382943a0f..a627487ea4 100644
---- a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist
-@@ -2941,6 +2941,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist	2026-07-25 21:02:50.722389059 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips32/fpu/libc.abilist	2026-07-25 21:03:53.487445116 +0200
+@@ -2941,6 +2941,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1737,10 +1655,9 @@ index e382943a0f..a627487ea4 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-index 736d0f7b62..d35117c553 100644
---- a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist
-@@ -2939,6 +2939,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist	2026-07-25 21:02:50.722559339 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips32/nofpu/libc.abilist	2026-07-25 21:03:53.487609487 +0200
+@@ -2939,6 +2939,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1752,10 +1669,9 @@ index 736d0f7b62..d35117c553 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-index 0ea6f52434..702381b80d 100644
---- a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist
-@@ -2947,6 +2947,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist	2026-07-25 21:02:50.722729300 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n32/libc.abilist	2026-07-25 21:03:53.487775128 +0200
+@@ -2947,6 +2947,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1767,10 +1683,9 @@ index 0ea6f52434..702381b80d 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-index 0b93ed6963..e9b81c95f9 100644
---- a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist
-@@ -2849,6 +2849,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist	2026-07-25 21:02:50.722901261 +0200
++++ b/sysdeps/unix/sysv/linux/mips/mips64/n64/libc.abilist	2026-07-25 21:03:53.487953999 +0200
+@@ -2849,6 +2849,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1782,10 +1697,9 @@ index 0b93ed6963..e9b81c95f9 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/or1k/libc.abilist b/sysdeps/unix/sysv/linux/or1k/libc.abilist
-index 8e2af47f7a..ffc5448cfb 100644
---- a/sysdeps/unix/sysv/linux/or1k/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/or1k/libc.abilist
-@@ -2289,3 +2289,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/or1k/libc.abilist	2026-07-25 21:02:50.723062142 +0200
++++ b/sysdeps/unix/sysv/linux/or1k/libc.abilist	2026-07-25 21:03:53.488114449 +0200
+@@ -2289,3 +2289,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1794,10 +1708,9 @@ index 8e2af47f7a..ffc5448cfb 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-index f9d981ca3f..198dce05cd 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist
-@@ -3168,6 +3168,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist	2026-07-25 21:02:50.723223352 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/fpu/libc.abilist	2026-07-25 21:03:53.488276300 +0200
+@@ -3168,6 +3168,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1809,10 +1722,9 @@ index f9d981ca3f..198dce05cd 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-index 20d7d5ec36..f091b40fe7 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist
-@@ -3213,6 +3213,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist	2026-07-25 21:02:50.723405863 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc32/nofpu/libc.abilist	2026-07-25 21:03:53.488536702 +0200
+@@ -3213,6 +3213,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1824,10 +1736,9 @@ index 20d7d5ec36..f091b40fe7 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-index 578c100389..8c17ac1702 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist
-@@ -2922,6 +2922,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist	2026-07-25 21:02:50.723586434 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/be/libc.abilist	2026-07-25 21:03:53.488728523 +0200
+@@ -2922,6 +2922,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1839,10 +1750,9 @@ index 578c100389..8c17ac1702 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-index 4001a8005a..13f71060b6 100644
---- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist
-@@ -2998,3 +2998,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist	2026-07-25 21:02:50.723752495 +0200
++++ b/sysdeps/unix/sysv/linux/powerpc/powerpc64/le/libc.abilist	2026-07-25 21:03:53.488908804 +0200
+@@ -2998,3 +2998,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1851,10 +1761,9 @@ index 4001a8005a..13f71060b6 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-index 13b3e9df43..8fee8100a6 100644
---- a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist
-@@ -2542,3 +2542,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist	2026-07-25 21:02:50.723917985 +0200
++++ b/sysdeps/unix/sysv/linux/riscv/rv32/libc.abilist	2026-07-25 21:03:53.489087915 +0200
+@@ -2542,3 +2542,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1863,10 +1772,9 @@ index 13b3e9df43..8fee8100a6 100644
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
 diff --git a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-index 0d4b7699f3..76f883be64 100644
---- a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist
-@@ -2742,3 +2742,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist	2026-07-25 21:02:50.724067046 +0200
++++ b/sysdeps/unix/sysv/linux/riscv/rv64/libc.abilist	2026-07-25 21:03:53.489241086 +0200
+@@ -2742,3 +2742,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1874,11 +1782,10 @@ index 0d4b7699f3..76f883be64 100644
 +GLIBC_2.44 gnu_malloc_phase_pop F
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
-diff --git a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-index bb24f1f6c0..349d60b87d 100644
---- a/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/s390/s390-64/libc.abilist
-@@ -2959,6 +2959,10 @@ GLIBC_2.43 umaxabs F
+diff --git a/sysdeps/unix/sysv/linux/s390/libc.abilist b/sysdeps/unix/sysv/linux/s390/libc.abilist
+--- a/sysdeps/unix/sysv/linux/s390/libc.abilist	2026-07-25 21:02:50.765810454 +0200
++++ b/sysdeps/unix/sysv/linux/s390/libc.abilist	2026-07-25 21:03:53.549509983 +0200
+@@ -2959,6 +2959,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1890,10 +1797,9 @@ index bb24f1f6c0..349d60b87d 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sh/be/libc.abilist b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-index f94f45ff95..fad3ee292f 100644
---- a/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sh/be/libc.abilist
-@@ -2858,6 +2858,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/sh/be/libc.abilist	2026-07-25 21:02:50.724305867 +0200
++++ b/sysdeps/unix/sysv/linux/sh/be/libc.abilist	2026-07-25 21:03:53.489490017 +0200
+@@ -2858,6 +2858,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1905,10 +1811,9 @@ index f94f45ff95..fad3ee292f 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sh/le/libc.abilist b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-index 8499460409..80f300e235 100644
---- a/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sh/le/libc.abilist
-@@ -2855,6 +2855,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/sh/le/libc.abilist	2026-07-25 21:02:50.724493578 +0200
++++ b/sysdeps/unix/sysv/linux/sh/le/libc.abilist	2026-07-25 21:03:53.489726158 +0200
+@@ -2855,6 +2855,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1920,10 +1825,9 @@ index 8499460409..80f300e235 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-index ab94365cdf..0cc90e4a0c 100644
---- a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist
-@@ -3189,6 +3189,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist	2026-07-25 21:02:50.724684699 +0200
++++ b/sysdeps/unix/sysv/linux/sparc/sparc32/libc.abilist	2026-07-25 21:03:53.489898229 +0200
+@@ -3189,6 +3189,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1935,10 +1839,9 @@ index ab94365cdf..0cc90e4a0c 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-index 9129d1c053..4f59bdd6d0 100644
---- a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist
-@@ -2825,6 +2825,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist	2026-07-25 21:02:50.724871040 +0200
++++ b/sysdeps/unix/sysv/linux/sparc/sparc64/libc.abilist	2026-07-25 21:03:53.490065790 +0200
+@@ -2825,6 +2825,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1950,10 +1853,9 @@ index 9129d1c053..4f59bdd6d0 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-index ca1bfaceca..59980537c4 100644
---- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
-@@ -2774,6 +2774,10 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist	2026-07-25 21:02:50.725054210 +0200
++++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist	2026-07-25 21:03:53.490224121 +0200
+@@ -2774,6 +2774,10 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1965,10 +1867,9 @@ index ca1bfaceca..59980537c4 100644
  GLIBC_2.5 inet6_opt_append F
  GLIBC_2.5 inet6_opt_find F
 diff --git a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-index 54b45c3ec9..19c02d547a 100644
---- a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-+++ b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist
-@@ -2793,3 +2793,7 @@ GLIBC_2.43 umaxabs F
+--- a/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist	2026-07-25 21:02:50.725230701 +0200
++++ b/sysdeps/unix/sysv/linux/x86_64/x32/libc.abilist	2026-07-25 21:03:53.490394832 +0200
+@@ -2793,3 +2793,7 @@
  GLIBC_2.44 gnu_get_libc_malloc_active F
  GLIBC_2.44 gnu_get_libc_malloc_default F
  GLIBC_2.44 gnu_get_libc_malloc_impls F
@@ -1976,6 +1877,3 @@ index 54b45c3ec9..19c02d547a 100644
 +GLIBC_2.44 gnu_malloc_phase_pop F
 +GLIBC_2.44 gnu_malloc_phase_push F
 +GLIBC_2.44 gnu_malloc_phase_save_profile F
--- 
-2.53.0
-
