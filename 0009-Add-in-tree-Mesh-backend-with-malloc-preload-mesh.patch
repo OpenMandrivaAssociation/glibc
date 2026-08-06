@@ -1,7 +1,7 @@
-From d4fe367c3e1a701693f30f8a6960eec443129a35 Mon Sep 17 00:00:00 2001
+From 882e784b59415c1ef96b513393dc611226f9dd25 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:25 +0200
-Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
+Date: Thu, 6 Aug 2026 23:50:19 +0200
+Subject: [PATCH 09/13] Add in-tree Mesh backend (--with-malloc-preload=mesh)
 
 ---
  malloc/malloc-mesh-impl.cc                    |   38 +
@@ -12,7 +12,6 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
  malloc/mesh/README-upstream.md                |   97 +
  malloc/mesh/src/BUILD                         |  436 ++++
  malloc/mesh/src/CMakeLists.txt                |  100 +
- .../.github/workflows/build-and-test.yml      |  143 ++
  malloc/mesh/src/Heap-Layers/.gitignore        |    8 +
  .../Alexandrescu-memory-allocation.screen.pdf |  Bin 0 -> 265736 bytes
  malloc/mesh/src/Heap-Layers/BUILD             |    8 +
@@ -104,7 +103,7 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
  malloc/mesh/src/Heap-Layers/locks/all.h       |    6 +
  malloc/mesh/src/Heap-Layers/locks/maclock.h   |   91 +
  .../mesh/src/Heap-Layers/locks/oldspinlock.h  |  276 +++
- malloc/mesh/src/Heap-Layers/locks/posixlock.h |   73 +
+ malloc/mesh/src/Heap-Layers/locks/posixlock.h |   69 +
  .../src/Heap-Layers/locks/recursivelock.h     |   78 +
  .../mesh/src/Heap-Layers/locks/spinlock-old.h |  276 +++
  malloc/mesh/src/Heap-Layers/locks/spinlock.h  |  168 ++
@@ -127,7 +126,7 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
  malloc/mesh/src/Heap-Layers/utility/dllist.h  |  105 +
  .../mesh/src/Heap-Layers/utility/dynarray.h   |  133 ++
  .../mesh/src/Heap-Layers/utility/exactlyone.h |   48 +
- .../mesh/src/Heap-Layers/utility/freesllist.h |   74 +
+ .../mesh/src/Heap-Layers/utility/freesllist.h |   82 +
  malloc/mesh/src/Heap-Layers/utility/gcd.h     |   29 +
  malloc/mesh/src/Heap-Layers/utility/hash.h    |   43 +
  malloc/mesh/src/Heap-Layers/utility/ilog2.cpp |   20 +
@@ -202,7 +201,7 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
  malloc/mesh/src/thread_local_heap.cc          |   12 +
  malloc/mesh/src/thread_local_heap.h           |  439 ++++
  malloc/mesh/src/wrapper.cc                    |  554 +++++
- 198 files changed, 29105 insertions(+)
+ 197 files changed, 28966 insertions(+)
  create mode 100644 malloc/malloc-mesh-impl.cc
  create mode 100644 malloc/malloc-mesh-preload.cc
  create mode 100644 malloc/malloc-mesh.c
@@ -211,7 +210,6 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
  create mode 100644 malloc/mesh/README-upstream.md
  create mode 100644 malloc/mesh/src/BUILD
  create mode 100644 malloc/mesh/src/CMakeLists.txt
- create mode 100644 malloc/mesh/src/Heap-Layers/.github/workflows/build-and-test.yml
  create mode 100644 malloc/mesh/src/Heap-Layers/.gitignore
  create mode 100644 malloc/mesh/src/Heap-Layers/Alexandrescu-memory-allocation.screen.pdf
  create mode 100644 malloc/mesh/src/Heap-Layers/BUILD
@@ -404,7 +402,7 @@ Subject: [PATCH 09/20] Add in-tree Mesh backend (--with-malloc-preload=mesh)
 
 diff --git a/malloc/malloc-mesh-impl.cc b/malloc/malloc-mesh-impl.cc
 new file mode 100644
-index 0000000000..014eebaad7
+index 00000000..014eebaa
 --- /dev/null
 +++ b/malloc/malloc-mesh-impl.cc
 @@ -0,0 +1,38 @@
@@ -448,7 +446,7 @@ index 0000000000..014eebaad7
 +}
 diff --git a/malloc/malloc-mesh-preload.cc b/malloc/malloc-mesh-preload.cc
 new file mode 100644
-index 0000000000..cf43dae246
+index 00000000..cf43dae2
 --- /dev/null
 +++ b/malloc/malloc-mesh-preload.cc
 @@ -0,0 +1,57 @@
@@ -511,7 +509,7 @@ index 0000000000..cf43dae246
 +}
 diff --git a/malloc/malloc-mesh.c b/malloc/malloc-mesh.c
 new file mode 100644
-index 0000000000..cbc8afe2b2
+index 00000000..cbc8afe2
 --- /dev/null
 +++ b/malloc/malloc-mesh.c
 @@ -0,0 +1,428 @@
@@ -945,7 +943,7 @@ index 0000000000..cbc8afe2b2
 +#endif
 diff --git a/malloc/mesh/LICENSE b/malloc/mesh/LICENSE
 new file mode 100644
-index 0000000000..261eeb9e9f
+index 00000000..261eeb9e
 --- /dev/null
 +++ b/malloc/mesh/LICENSE
 @@ -0,0 +1,201 @@
@@ -1152,7 +1150,7 @@ index 0000000000..261eeb9e9f
 +   limitations under the License.
 diff --git a/malloc/mesh/README-GLIBC.md b/malloc/mesh/README-GLIBC.md
 new file mode 100644
-index 0000000000..01e2d4bb40
+index 00000000..01e2d4bb
 --- /dev/null
 +++ b/malloc/mesh/README-GLIBC.md
 @@ -0,0 +1,6 @@
@@ -1164,7 +1162,7 @@ index 0000000000..01e2d4bb40
 +and refreshing Heap-Layers.
 diff --git a/malloc/mesh/README-upstream.md b/malloc/mesh/README-upstream.md
 new file mode 100644
-index 0000000000..25073a8696
+index 00000000..25073a86
 --- /dev/null
 +++ b/malloc/mesh/README-upstream.md
 @@ -0,0 +1,97 @@
@@ -1267,7 +1265,7 @@ index 0000000000..25073a8696
 +  that enables randomized allocation with bump-pointer-like speed.
 diff --git a/malloc/mesh/src/BUILD b/malloc/mesh/src/BUILD
 new file mode 100644
-index 0000000000..57fa7df000
+index 00000000..57fa7df0
 --- /dev/null
 +++ b/malloc/mesh/src/BUILD
 @@ -0,0 +1,436 @@
@@ -1709,7 +1707,7 @@ index 0000000000..57fa7df000
 +)
 diff --git a/malloc/mesh/src/CMakeLists.txt b/malloc/mesh/src/CMakeLists.txt
 new file mode 100644
-index 0000000000..e9d59f360b
+index 00000000..e9d59f36
 --- /dev/null
 +++ b/malloc/mesh/src/CMakeLists.txt
 @@ -0,0 +1,100 @@
@@ -1813,158 +1811,9 @@ index 0000000000..e9d59f360b
 +    #        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coverage/
 +    #        DEPENDS unit.test)
 +endif()
-diff --git a/malloc/mesh/src/Heap-Layers/.github/workflows/build-and-test.yml b/malloc/mesh/src/Heap-Layers/.github/workflows/build-and-test.yml
-new file mode 100644
-index 0000000000..e5909293cc
---- /dev/null
-+++ b/malloc/mesh/src/Heap-Layers/.github/workflows/build-and-test.yml
-@@ -0,0 +1,143 @@
-+name: Build and Test
-+
-+on:
-+  push:
-+    branches: [master]
-+  pull_request:
-+    branches: [master]
-+
-+jobs:
-+  # ── Kingsley example (lives in this repo) ──────────────────────────
-+  kingsley:
-+    strategy:
-+      fail-fast: false
-+      matrix:
-+        os: [ubuntu-latest, macos-latest]
-+    runs-on: ${{ matrix.os }}
-+    steps:
-+      - uses: actions/checkout@v4
-+
-+      - name: Configure
-+        run: |
-+          cd examples/kingsley
-+          mkdir -p build && cd build
-+          cmake ..
-+
-+      - name: Build
-+        run: cmake --build examples/kingsley/build --parallel
-+
-+      - name: Verify library
-+        run: |
-+          if [ "$RUNNER_OS" = "macOS" ]; then
-+            ls -la examples/kingsley/build/libkingsley.dylib
-+          else
-+            ls -la examples/kingsley/build/libkingsley.so
-+          fi
-+
-+      - name: Smoke test (Linux)
-+        if: runner.os == 'Linux'
-+        run: LD_PRELOAD=./examples/kingsley/build/libkingsley.so ls /tmp
-+
-+  # ── DieHard (external repo, Linux + macOS) ─────────────────────────
-+  diehard:
-+    strategy:
-+      fail-fast: false
-+      matrix:
-+        os: [ubuntu-latest, macos-latest]
-+    runs-on: ${{ matrix.os }}
-+    steps:
-+      - uses: actions/checkout@v4
-+        with:
-+          path: heap-layers
-+
-+      - name: Clone DieHard
-+        run: git clone --depth 1 https://github.com/emeryberger/DieHard.git
-+
-+      - name: Configure
-+        run: |
-+          cd DieHard
-+          mkdir -p build && cd build
-+          cmake \
-+            "-DFETCHCONTENT_SOURCE_DIR_HEAP-LAYERS=${{ github.workspace }}/heap-layers" \
-+            -DBUILD_TESTS=ON \
-+            ..
-+
-+      - name: Build
-+        run: cmake --build DieHard/build --parallel
-+
-+      - name: Run tests (Linux)
-+        if: runner.os == 'Linux'
-+        run: |
-+          cd DieHard
-+          ./build/tests/test_globalfreepool
-+          LD_PRELOAD=./build/libdiehard.so ./build/tests/test_remote_free
-+          LD_PRELOAD=./build/libdiehard.so ./build/tests/test_doublefree
-+          LD_PRELOAD=./build/libdiehard.so ./build/tests/test_invalidfree
-+          LD_PRELOAD=./build/libdiehard.so ./build/tests/threadtest 2 10 1000 0 8
-+
-+      - name: Run tests (macOS)
-+        if: runner.os == 'macOS'
-+        run: |
-+          cd DieHard
-+          ./build/tests/test_globalfreepool
-+          DYLD_INSERT_LIBRARIES=./build/libdiehard.dylib ./build/tests/test_remote_free
-+          DYLD_INSERT_LIBRARIES=./build/libdiehard.dylib ./build/tests/test_doublefree
-+          DYLD_INSERT_LIBRARIES=./build/libdiehard.dylib ./build/tests/test_invalidfree
-+          DYLD_INSERT_LIBRARIES=./build/libdiehard.dylib ./build/tests/threadtest 2 10 1000 0 8
-+
-+  # ── Hoard (external repo, Linux + macOS + Windows) ─────────────────
-+  hoard:
-+    strategy:
-+      fail-fast: false
-+      matrix:
-+        os: [ubuntu-latest, macos-latest, windows-latest]
-+    runs-on: ${{ matrix.os }}
-+    steps:
-+      - uses: actions/checkout@v4
-+        with:
-+          path: heap-layers
-+
-+      - name: Clone Hoard
-+        run: git clone --depth 1 https://github.com/emeryberger/Hoard.git
-+
-+      - name: Configure (Unix)
-+        if: runner.os != 'Windows'
-+        run: |
-+          cd Hoard
-+          mkdir -p build && cd build
-+          cmake \
-+            "-DFETCHCONTENT_SOURCE_DIR_HEAP-LAYERS=${{ github.workspace }}/heap-layers" \
-+            ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=arm64' || '' }} \
-+            ..
-+
-+      - name: Configure (Windows)
-+        if: runner.os == 'Windows'
-+        run: |
-+          cd Hoard
-+          mkdir build
-+          cd build
-+          cmake "-DFETCHCONTENT_SOURCE_DIR_HEAP-LAYERS=${{ github.workspace }}/heap-layers" ..
-+
-+      - name: Build (Unix)
-+        if: runner.os != 'Windows'
-+        run: cmake --build Hoard/build --parallel
-+
-+      - name: Build (Windows)
-+        if: runner.os == 'Windows'
-+        run: cmake --build Hoard/build --config Release --parallel
-+
-+      - name: Verify library (Linux)
-+        if: runner.os == 'Linux'
-+        run: ls -la Hoard/build/libhoard.so
-+
-+      - name: Verify library (macOS)
-+        if: runner.os == 'macOS'
-+        run: ls -la Hoard/build/libhoard.dylib
-+
-+      - name: Verify library (Windows)
-+        if: runner.os == 'Windows'
-+        run: dir Hoard\build\Release\hoard.dll
-+
-+      - name: Smoke test (Linux)
-+        if: runner.os == 'Linux'
-+        run: LD_PRELOAD=./Hoard/build/libhoard.so ls /tmp
 diff --git a/malloc/mesh/src/Heap-Layers/.gitignore b/malloc/mesh/src/Heap-Layers/.gitignore
 new file mode 100644
-index 0000000000..d17a36d6e5
+index 00000000..d17a36d6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/.gitignore
 @@ -0,0 +1,8 @@
@@ -5825,7 +5674,7 @@ HcmV?d00001
 
 diff --git a/malloc/mesh/src/Heap-Layers/BUILD b/malloc/mesh/src/Heap-Layers/BUILD
 new file mode 100644
-index 0000000000..19a7060c42
+index 00000000..19a7060c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/BUILD
 @@ -0,0 +1,8 @@
@@ -5839,7 +5688,7 @@ index 0000000000..19a7060c42
 +)
 diff --git a/malloc/mesh/src/Heap-Layers/CLAUDE.md b/malloc/mesh/src/Heap-Layers/CLAUDE.md
 new file mode 100644
-index 0000000000..d53a26e850
+index 00000000..d53a26e8
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/CLAUDE.md
 @@ -0,0 +1,127 @@
@@ -5972,7 +5821,7 @@ index 0000000000..d53a26e850
 +- `examples/kingsley/libkingsley.cpp` - Complete example allocator
 diff --git a/malloc/mesh/src/Heap-Layers/COPYING b/malloc/mesh/src/Heap-Layers/COPYING
 new file mode 100644
-index 0000000000..d645695673
+index 00000000..d6456956
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/COPYING
 @@ -0,0 +1,202 @@
@@ -6180,7 +6029,7 @@ index 0000000000..d645695673
 +   limitations under the License.
 diff --git a/malloc/mesh/src/Heap-Layers/NOTICE b/malloc/mesh/src/Heap-Layers/NOTICE
 new file mode 100644
-index 0000000000..bed1d07138
+index 00000000..bed1d071
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/NOTICE
 @@ -0,0 +1,80 @@
@@ -6266,7 +6115,7 @@ index 0000000000..bed1d07138
 +
 diff --git a/malloc/mesh/src/Heap-Layers/README.md b/malloc/mesh/src/Heap-Layers/README.md
 new file mode 100644
-index 0000000000..2236767bcc
+index 00000000..2236767b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/README.md
 @@ -0,0 +1,80 @@
@@ -6352,7 +6201,7 @@ index 0000000000..2236767bcc
 +
 diff --git a/malloc/mesh/src/Heap-Layers/WORKSPACE b/malloc/mesh/src/Heap-Layers/WORKSPACE
 new file mode 100644
-index 0000000000..881465ab88
+index 00000000..881465ab
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/WORKSPACE
 @@ -0,0 +1 @@
@@ -8624,7 +8473,7 @@ HcmV?d00001
 
 diff --git a/malloc/mesh/src/Heap-Layers/examples/kingsley/CMakeLists.txt b/malloc/mesh/src/Heap-Layers/examples/kingsley/CMakeLists.txt
 new file mode 100644
-index 0000000000..1898220ab8
+index 00000000..1898220a
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/examples/kingsley/CMakeLists.txt
 @@ -0,0 +1,60 @@
@@ -8690,7 +8539,7 @@ index 0000000000..1898220ab8
 +endif()
 diff --git a/malloc/mesh/src/Heap-Layers/examples/kingsley/compile b/malloc/mesh/src/Heap-Layers/examples/kingsley/compile
 new file mode 100755
-index 0000000000..b44abef4b2
+index 00000000..b44abef4
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/examples/kingsley/compile
 @@ -0,0 +1,21 @@
@@ -8717,7 +8566,7 @@ index 0000000000..b44abef4b2
 +
 diff --git a/malloc/mesh/src/Heap-Layers/examples/kingsley/libkingsley.cpp b/malloc/mesh/src/Heap-Layers/examples/kingsley/libkingsley.cpp
 new file mode 100644
-index 0000000000..701d6f58a7
+index 00000000..701d6f58
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/examples/kingsley/libkingsley.cpp
 @@ -0,0 +1,95 @@
@@ -8818,14 +8667,14 @@ index 0000000000..701d6f58a7
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaplayers b/malloc/mesh/src/Heap-Layers/heaplayers
 new file mode 100644
-index 0000000000..f22c5e4ef8
+index 00000000..f22c5e4e
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaplayers
 @@ -0,0 +1 @@
 +#include "heaplayers.h"
 diff --git a/malloc/mesh/src/Heap-Layers/heaplayers.h b/malloc/mesh/src/Heap-Layers/heaplayers.h
 new file mode 100644
-index 0000000000..e407e93f50
+index 00000000..e407e93f
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaplayers.h
 @@ -0,0 +1,120 @@
@@ -8951,7 +8800,7 @@ index 0000000000..e407e93f50
 +#endif // _HEAPLAYERS_H_
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/README b/malloc/mesh/src/Heap-Layers/heaps/README
 new file mode 100644
-index 0000000000..d06fe3f618
+index 00000000..d06fe3f6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/README
 @@ -0,0 +1,12 @@
@@ -8969,7 +8818,7 @@ index 0000000000..d06fe3f618
 +utility/   - currently a grab-bag
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/all.h b/malloc/mesh/src/Heap-Layers/heaps/all.h
 new file mode 100644
-index 0000000000..5da08cc0e3
+index 00000000..5da08cc0
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/all.h
 @@ -0,0 +1,9 @@
@@ -8984,7 +8833,7 @@ index 0000000000..5da08cc0e3
 +#include "./special/all.h"
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/adaptheap.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/adaptheap.h
 new file mode 100644
-index 0000000000..675a0061e2
+index 00000000..675a0061
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/adaptheap.h
 @@ -0,0 +1,88 @@
@@ -9078,7 +8927,7 @@ index 0000000000..675a0061e2
 +#endif // HL_ADAPTHEAP
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/all.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/all.h
 new file mode 100644
-index 0000000000..0b78929078
+index 00000000..0b789290
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/all.h
 @@ -0,0 +1,6 @@
@@ -9090,7 +8939,7 @@ index 0000000000..0b78929078
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/boundedfreelistheap.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/boundedfreelistheap.h
 new file mode 100644
-index 0000000000..b5dd7ba81b
+index 00000000..b5dd7ba8
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/boundedfreelistheap.h
 @@ -0,0 +1,61 @@
@@ -9157,7 +9006,7 @@ index 0000000000..b5dd7ba81b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/chunkheap.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/chunkheap.h
 new file mode 100644
-index 0000000000..57a5fe71ef
+index 00000000..57a5fe71
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/chunkheap.h
 @@ -0,0 +1,96 @@
@@ -9259,7 +9108,7 @@ index 0000000000..57a5fe71ef
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/coalesceheap.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/coalesceheap.h
 new file mode 100644
-index 0000000000..f69dcf4b82
+index 00000000..f69dcf4b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/coalesceheap.h
 @@ -0,0 +1,126 @@
@@ -9391,7 +9240,7 @@ index 0000000000..f69dcf4b82
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/buildingblock/freelistheap.h b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/freelistheap.h
 new file mode 100644
-index 0000000000..104ef3e949
+index 00000000..104ef3e9
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/buildingblock/freelistheap.h
 @@ -0,0 +1,73 @@
@@ -9470,7 +9319,7 @@ index 0000000000..104ef3e949
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/combining/all.h b/malloc/mesh/src/Heap-Layers/heaps/combining/all.h
 new file mode 100644
-index 0000000000..66623b2e0a
+index 00000000..66623b2e
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/combining/all.h
 @@ -0,0 +1,5 @@
@@ -9481,7 +9330,7 @@ index 0000000000..66623b2e0a
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/combining/hybridheap.h b/malloc/mesh/src/Heap-Layers/heaps/combining/hybridheap.h
 new file mode 100644
-index 0000000000..ac2e42b147
+index 00000000..ac2e42b1
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/combining/hybridheap.h
 @@ -0,0 +1,86 @@
@@ -9573,7 +9422,7 @@ index 0000000000..ac2e42b147
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/combining/segheap.h b/malloc/mesh/src/Heap-Layers/heaps/combining/segheap.h
 new file mode 100644
-index 0000000000..3bda01314d
+index 00000000..3bda0131
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/combining/segheap.h
 @@ -0,0 +1,243 @@
@@ -9822,7 +9671,7 @@ index 0000000000..3bda01314d
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/combining/strictsegheap.h b/malloc/mesh/src/Heap-Layers/heaps/combining/strictsegheap.h
 new file mode 100644
-index 0000000000..b9f6afef08
+index 00000000..b9f6afef
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/combining/strictsegheap.h
 @@ -0,0 +1,144 @@
@@ -9972,7 +9821,7 @@ index 0000000000..b9f6afef08
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/combining/tryheap.h b/malloc/mesh/src/Heap-Layers/heaps/combining/tryheap.h
 new file mode 100644
-index 0000000000..b9ebe54cbc
+index 00000000..b9ebe54c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/combining/tryheap.h
 @@ -0,0 +1,49 @@
@@ -10027,7 +9876,7 @@ index 0000000000..b9ebe54cbc
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/all.h b/malloc/mesh/src/Heap-Layers/heaps/debug/all.h
 new file mode 100644
-index 0000000000..7f4a6d5606
+index 00000000..7f4a6d56
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/all.h
 @@ -0,0 +1,6 @@
@@ -10039,7 +9888,7 @@ index 0000000000..7f4a6d5606
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/checkheap.h b/malloc/mesh/src/Heap-Layers/heaps/debug/checkheap.h
 new file mode 100644
-index 0000000000..53410cf616
+index 00000000..53410cf6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/checkheap.h
 @@ -0,0 +1,67 @@
@@ -10112,7 +9961,7 @@ index 0000000000..53410cf616
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/debugheap.h b/malloc/mesh/src/Heap-Layers/heaps/debug/debugheap.h
 new file mode 100644
-index 0000000000..bf47237f81
+index 00000000..bf47237f
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/debugheap.h
 @@ -0,0 +1,66 @@
@@ -10184,7 +10033,7 @@ index 0000000000..bf47237f81
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/logheap.h b/malloc/mesh/src/Heap-Layers/heaps/debug/logheap.h
 new file mode 100644
-index 0000000000..dec12296dd
+index 00000000..dec12296
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/logheap.h
 @@ -0,0 +1,277 @@
@@ -10467,7 +10316,7 @@ index 0000000000..dec12296dd
 +#endif // HL_LOGHEAP_H_
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/sanitycheckheap.h b/malloc/mesh/src/Heap-Layers/heaps/debug/sanitycheckheap.h
 new file mode 100644
-index 0000000000..74305f4b78
+index 00000000..74305f4b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/sanitycheckheap.h
 @@ -0,0 +1,115 @@
@@ -10588,7 +10437,7 @@ index 0000000000..74305f4b78
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/debug/statsheap.h b/malloc/mesh/src/Heap-Layers/heaps/debug/statsheap.h
 new file mode 100644
-index 0000000000..0f35fcfbad
+index 00000000..0f35fcfb
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/debug/statsheap.h
 @@ -0,0 +1,106 @@
@@ -10700,7 +10549,7 @@ index 0000000000..0f35fcfbad
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/general/all.h b/malloc/mesh/src/Heap-Layers/heaps/general/all.h
 new file mode 100644
-index 0000000000..7251d7dc76
+index 00000000..7251d7dc
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/general/all.h
 @@ -0,0 +1,4 @@
@@ -10710,7 +10559,7 @@ index 0000000000..7251d7dc76
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/general/dlheap.h b/malloc/mesh/src/Heap-Layers/heaps/general/dlheap.h
 new file mode 100644
-index 0000000000..8b40c5670c
+index 00000000..8b40c567
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/general/dlheap.h
 @@ -0,0 +1,405 @@
@@ -11121,7 +10970,7 @@ index 0000000000..8b40c5670c
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/general/kingsleyheap.h b/malloc/mesh/src/Heap-Layers/heaps/general/kingsleyheap.h
 new file mode 100644
-index 0000000000..570adbb616
+index 00000000..570adbb6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/general/kingsleyheap.h
 @@ -0,0 +1,70 @@
@@ -11197,7 +11046,7 @@ index 0000000000..570adbb616
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/general/leamallocheap.h b/malloc/mesh/src/Heap-Layers/heaps/general/leamallocheap.h
 new file mode 100755
-index 0000000000..0dd39c50de
+index 00000000..0dd39c50
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/general/leamallocheap.h
 @@ -0,0 +1,56 @@
@@ -11259,7 +11108,7 @@ index 0000000000..0dd39c50de
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/general/oldkingsleyheap.h b/malloc/mesh/src/Heap-Layers/heaps/general/oldkingsleyheap.h
 new file mode 100644
-index 0000000000..312731608a
+index 00000000..31273160
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/general/oldkingsleyheap.h
 @@ -0,0 +1,116 @@
@@ -11381,7 +11230,7 @@ index 0000000000..312731608a
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/addheap.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/addheap.h
 new file mode 100644
-index 0000000000..787c7329bf
+index 00000000..787c7329
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/addheap.h
 @@ -0,0 +1,60 @@
@@ -11447,7 +11296,7 @@ index 0000000000..787c7329bf
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/all.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/all.h
 new file mode 100644
-index 0000000000..de543aca48
+index 00000000..de543aca
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/all.h
 @@ -0,0 +1,7 @@
@@ -11460,7 +11309,7 @@ index 0000000000..de543aca48
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/coalesceableheap.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/coalesceableheap.h
 new file mode 100644
-index 0000000000..c30a163657
+index 00000000..c30a1636
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/coalesceableheap.h
 @@ -0,0 +1,331 @@
@@ -11797,7 +11646,7 @@ index 0000000000..c30a163657
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/headerheap.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/headerheap.h
 new file mode 100644
-index 0000000000..9717c7a73e
+index 00000000..9717c7a7
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/headerheap.h
 @@ -0,0 +1,60 @@
@@ -11863,7 +11712,7 @@ index 0000000000..9717c7a73e
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeheap.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeheap.h
 new file mode 100644
-index 0000000000..8d99a64530
+index 00000000..8d99a645
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeheap.h
 @@ -0,0 +1,94 @@
@@ -11963,7 +11812,7 @@ index 0000000000..8d99a64530
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeownerheap.h b/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeownerheap.h
 new file mode 100644
-index 0000000000..7b191e05fa
+index 00000000..7b191e05
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/objectrep/sizeownerheap.h
 @@ -0,0 +1,80 @@
@@ -12049,7 +11898,7 @@ index 0000000000..7b191e05fa
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/all.h b/malloc/mesh/src/Heap-Layers/heaps/special/all.h
 new file mode 100644
-index 0000000000..d967f86849
+index 00000000..d967f868
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/all.h
 @@ -0,0 +1,9 @@
@@ -12064,7 +11913,7 @@ index 0000000000..d967f86849
 +//#include "obstackreap.h"
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/bumpalloc.h b/malloc/mesh/src/Heap-Layers/heaps/special/bumpalloc.h
 new file mode 100644
-index 0000000000..a875926392
+index 00000000..a8759263
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/bumpalloc.h
 @@ -0,0 +1,109 @@
@@ -12179,7 +12028,7 @@ index 0000000000..a875926392
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/nestedheap.h b/malloc/mesh/src/Heap-Layers/heaps/special/nestedheap.h
 new file mode 100644
-index 0000000000..4a865a606f
+index 00000000..4a865a60
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/nestedheap.h
 @@ -0,0 +1,143 @@
@@ -12328,7 +12177,7 @@ index 0000000000..4a865a606f
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/obstack.h b/malloc/mesh/src/Heap-Layers/heaps/special/obstack.h
 new file mode 100644
-index 0000000000..289c0092d2
+index 00000000..289c0092
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/obstack.h
 @@ -0,0 +1,287 @@
@@ -12621,7 +12470,7 @@ index 0000000000..289c0092d2
 +#endif // HL_OBSTACK_H
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/obstackheap.h b/malloc/mesh/src/Heap-Layers/heaps/special/obstackheap.h
 new file mode 100644
-index 0000000000..ed6f50f76a
+index 00000000..ed6f50f7
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/obstackheap.h
 @@ -0,0 +1,278 @@
@@ -12905,7 +12754,7 @@ index 0000000000..ed6f50f76a
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/obstackreap.h b/malloc/mesh/src/Heap-Layers/heaps/special/obstackreap.h
 new file mode 100755
-index 0000000000..009065b760
+index 00000000..009065b7
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/obstackreap.h
 @@ -0,0 +1,311 @@
@@ -13222,7 +13071,7 @@ index 0000000000..009065b760
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/sbrk.c b/malloc/mesh/src/Heap-Layers/heaps/special/sbrk.c
 new file mode 100644
-index 0000000000..772c00ee48
+index 00000000..772c00ee
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/sbrk.c
 @@ -0,0 +1,122 @@
@@ -13350,7 +13199,7 @@ index 0000000000..772c00ee48
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/xallocheap.h b/malloc/mesh/src/Heap-Layers/heaps/special/xallocheap.h
 new file mode 100644
-index 0000000000..23fddd029f
+index 00000000..23fddd02
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/xallocheap.h
 @@ -0,0 +1,116 @@
@@ -13472,7 +13321,7 @@ index 0000000000..23fddd029f
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/special/zoneheap.h b/malloc/mesh/src/Heap-Layers/heaps/special/zoneheap.h
 new file mode 100644
-index 0000000000..f2b6a46319
+index 00000000..f2b6a463
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/special/zoneheap.h
 @@ -0,0 +1,149 @@
@@ -13627,7 +13476,7 @@ index 0000000000..f2b6a46319
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/all.h b/malloc/mesh/src/Heap-Layers/heaps/threads/all.h
 new file mode 100644
-index 0000000000..849cb289ee
+index 00000000..849cb289
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/all.h
 @@ -0,0 +1,6 @@
@@ -13639,7 +13488,7 @@ index 0000000000..849cb289ee
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/lockedheap.h b/malloc/mesh/src/Heap-Layers/heaps/threads/lockedheap.h
 new file mode 100644
-index 0000000000..4c22cf7485
+index 00000000..4c22cf74
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/lockedheap.h
 @@ -0,0 +1,78 @@
@@ -13723,7 +13572,7 @@ index 0000000000..4c22cf7485
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/phothreadheap.h b/malloc/mesh/src/Heap-Layers/heaps/threads/phothreadheap.h
 new file mode 100644
-index 0000000000..bc95a74753
+index 00000000..bc95a747
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/phothreadheap.h
 @@ -0,0 +1,108 @@
@@ -13837,7 +13686,7 @@ index 0000000000..bc95a74753
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/sizethreadheap.h b/malloc/mesh/src/Heap-Layers/heaps/threads/sizethreadheap.h
 new file mode 100644
-index 0000000000..efbd3be360
+index 00000000..efbd3be3
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/sizethreadheap.h
 @@ -0,0 +1,55 @@
@@ -13898,7 +13747,7 @@ index 0000000000..efbd3be360
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/threadheap.h b/malloc/mesh/src/Heap-Layers/heaps/threads/threadheap.h
 new file mode 100644
-index 0000000000..907101effb
+index 00000000..907101ef
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/threadheap.h
 @@ -0,0 +1,92 @@
@@ -13996,7 +13845,7 @@ index 0000000000..907101effb
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/threads/threadspecificheap.h b/malloc/mesh/src/Heap-Layers/heaps/threads/threadspecificheap.h
 new file mode 100644
-index 0000000000..da49b1a073
+index 00000000..da49b1a0
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/threads/threadspecificheap.h
 @@ -0,0 +1,246 @@
@@ -14248,7 +14097,7 @@ index 0000000000..da49b1a073
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/top/all.h b/malloc/mesh/src/Heap-Layers/heaps/top/all.h
 new file mode 100644
-index 0000000000..0b1a214c53
+index 00000000..0b1a214c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/top/all.h
 @@ -0,0 +1,4 @@
@@ -14258,7 +14107,7 @@ index 0000000000..0b1a214c53
 +#include "staticbufferheap.h"
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/top/mallocheap.h b/malloc/mesh/src/Heap-Layers/heaps/top/mallocheap.h
 new file mode 100644
-index 0000000000..1f2c0a1154
+index 00000000..1f2c0a11
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/top/mallocheap.h
 @@ -0,0 +1,76 @@
@@ -14340,7 +14189,7 @@ index 0000000000..1f2c0a1154
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/top/mmapheap.h b/malloc/mesh/src/Heap-Layers/heaps/top/mmapheap.h
 new file mode 100644
-index 0000000000..6e562a8080
+index 00000000..6e562a80
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/top/mmapheap.h
 @@ -0,0 +1,208 @@
@@ -14554,7 +14403,7 @@ index 0000000000..6e562a8080
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/top/staticbufferheap.h b/malloc/mesh/src/Heap-Layers/heaps/top/staticbufferheap.h
 new file mode 100644
-index 0000000000..221c60018b
+index 00000000..221c6001
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/top/staticbufferheap.h
 @@ -0,0 +1,127 @@
@@ -14687,7 +14536,7 @@ index 0000000000..221c60018b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/top/staticheap.h b/malloc/mesh/src/Heap-Layers/heaps/top/staticheap.h
 new file mode 100644
-index 0000000000..0885cee3df
+index 00000000..0885cee3
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/top/staticheap.h
 @@ -0,0 +1,74 @@
@@ -14767,7 +14616,7 @@ index 0000000000..0885cee3df
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/all.h b/malloc/mesh/src/Heap-Layers/heaps/utility/all.h
 new file mode 100644
-index 0000000000..30483505a3
+index 00000000..30483505
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/all.h
 @@ -0,0 +1,12 @@
@@ -14785,7 +14634,7 @@ index 0000000000..30483505a3
 +
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/exactlyoneheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/exactlyoneheap.h
 new file mode 100644
-index 0000000000..6d3842897e
+index 00000000..6d384289
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/exactlyoneheap.h
 @@ -0,0 +1,59 @@
@@ -14850,7 +14699,7 @@ index 0000000000..6d3842897e
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/exceptionheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/exceptionheap.h
 new file mode 100644
-index 0000000000..549f21b591
+index 00000000..549f21b5
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/exceptionheap.h
 @@ -0,0 +1,64 @@
@@ -14920,7 +14769,7 @@ index 0000000000..549f21b591
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/nullheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/nullheap.h
 new file mode 100644
-index 0000000000..ecf727c4c8
+index 00000000..ecf727c4
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/nullheap.h
 @@ -0,0 +1,44 @@
@@ -14970,7 +14819,7 @@ index 0000000000..ecf727c4c8
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/old/oneheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/old/oneheap.h
 new file mode 100644
-index 0000000000..1688bc34d8
+index 00000000..1688bc34
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/old/oneheap.h
 @@ -0,0 +1,65 @@
@@ -15041,7 +14890,7 @@ index 0000000000..1688bc34d8
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/oneheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/oneheap.h
 new file mode 100644
-index 0000000000..b78b1cb09b
+index 00000000..b78b1cb0
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/oneheap.h
 @@ -0,0 +1,36 @@
@@ -15083,7 +14932,7 @@ index 0000000000..b78b1cb09b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/perclassheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/perclassheap.h
 new file mode 100644
-index 0000000000..7b006b1ce7
+index 00000000..7b006b1c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/perclassheap.h
 @@ -0,0 +1,69 @@
@@ -15158,7 +15007,7 @@ index 0000000000..7b006b1ce7
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/profileheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/profileheap.h
 new file mode 100644
-index 0000000000..184459f83a
+index 00000000..184459f8
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/profileheap.h
 @@ -0,0 +1,75 @@
@@ -15239,7 +15088,7 @@ index 0000000000..184459f83a
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/slopheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/slopheap.h
 new file mode 100644
-index 0000000000..b0a977f106
+index 00000000..b0a977f1
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/slopheap.h
 @@ -0,0 +1,106 @@
@@ -15351,7 +15200,7 @@ index 0000000000..b0a977f106
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/sysmallocheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/sysmallocheap.h
 new file mode 100644
-index 0000000000..e5bf9efd0b
+index 00000000..e5bf9efd
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/sysmallocheap.h
 @@ -0,0 +1,113 @@
@@ -15470,7 +15319,7 @@ index 0000000000..e5bf9efd0b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/traceheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/traceheap.h
 new file mode 100644
-index 0000000000..121f47d056
+index 00000000..121f47d0
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/traceheap.h
 @@ -0,0 +1,248 @@
@@ -15724,7 +15573,7 @@ index 0000000000..121f47d056
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/heaps/utility/uniqueheap.h b/malloc/mesh/src/Heap-Layers/heaps/utility/uniqueheap.h
 new file mode 100644
-index 0000000000..f3ef8783b6
+index 00000000..f3ef8783
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/heaps/utility/uniqueheap.h
 @@ -0,0 +1,133 @@
@@ -15863,14 +15712,14 @@ index 0000000000..f3ef8783b6
 +#endif // _UNIQUE_H_
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/README.md b/malloc/mesh/src/Heap-Layers/legacy/README.md
 new file mode 100644
-index 0000000000..b11a2b6f15
+index 00000000..b11a2b6f
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/README.md
 @@ -0,0 +1 @@
 +This code is here for historical reasons. It may have suffered from bitrot and has not been tested recently.
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/README b/malloc/mesh/src/Heap-Layers/legacy/reap/README
 new file mode 100644
-index 0000000000..93cd962aaa
+index 00000000..93cd962a
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/README
 @@ -0,0 +1,14 @@
@@ -15890,7 +15739,7 @@ index 0000000000..93cd962aaa
 +experimental purposes in the paper mentioned above.
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/addheader.h b/malloc/mesh/src/Heap-Layers/legacy/reap/addheader.h
 new file mode 100644
-index 0000000000..216b6c8211
+index 00000000..216b6c82
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/addheader.h
 @@ -0,0 +1,54 @@
@@ -15950,7 +15799,7 @@ index 0000000000..216b6c8211
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/clearoptimizeheap.h b/malloc/mesh/src/Heap-Layers/legacy/reap/clearoptimizeheap.h
 new file mode 100644
-index 0000000000..2fe2509253
+index 00000000..2fe25092
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/clearoptimizeheap.h
 @@ -0,0 +1,75 @@
@@ -16031,7 +15880,7 @@ index 0000000000..2fe2509253
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/compile b/malloc/mesh/src/Heap-Layers/legacy/reap/compile
 new file mode 100755
-index 0000000000..7a251818dd
+index 00000000..7a251818
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/compile
 @@ -0,0 +1,22 @@
@@ -16059,7 +15908,7 @@ index 0000000000..7a251818dd
 +
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/libreap.cpp b/malloc/mesh/src/Heap-Layers/legacy/reap/libreap.cpp
 new file mode 100644
-index 0000000000..79a828ef94
+index 00000000..79a828ef
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/libreap.cpp
 @@ -0,0 +1,116 @@
@@ -16181,7 +16030,7 @@ index 0000000000..79a828ef94
 +
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/reap.h b/malloc/mesh/src/Heap-Layers/legacy/reap/reap.h
 new file mode 100644
-index 0000000000..58169ac488
+index 00000000..58169ac4
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/reap.h
 @@ -0,0 +1,46 @@
@@ -16233,7 +16082,7 @@ index 0000000000..58169ac488
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.cpp b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.cpp
 new file mode 100644
-index 0000000000..6e089c1d3d
+index 00000000..6e089c1d
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.cpp
 @@ -0,0 +1,119 @@
@@ -16358,7 +16207,7 @@ index 0000000000..6e089c1d3d
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.h b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.h
 new file mode 100644
-index 0000000000..921686d683
+index 00000000..921686d6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheap.h
 @@ -0,0 +1,277 @@
@@ -16641,7 +16490,7 @@ index 0000000000..921686d683
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/regionheapapi.h b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheapapi.h
 new file mode 100644
-index 0000000000..d43c24aa29
+index 00000000..d43c24aa
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/regionheapapi.h
 @@ -0,0 +1,17 @@
@@ -16664,7 +16513,7 @@ index 0000000000..d43c24aa29
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.cpp b/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.cpp
 new file mode 100644
-index 0000000000..688c584ca6
+index 00000000..688c584c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.cpp
 @@ -0,0 +1,217 @@
@@ -16887,7 +16736,7 @@ index 0000000000..688c584ca6
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.h b/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.h
 new file mode 100644
-index 0000000000..9ee6ec7b59
+index 00000000..9ee6ec7b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/legacy/reap/regionsimulator.h
 @@ -0,0 +1,684 @@
@@ -17577,7 +17426,7 @@ index 0000000000..9ee6ec7b59
 +
 diff --git a/malloc/mesh/src/Heap-Layers/locks/all.h b/malloc/mesh/src/Heap-Layers/locks/all.h
 new file mode 100644
-index 0000000000..65ea6881e3
+index 00000000..65ea6881
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/all.h
 @@ -0,0 +1,6 @@
@@ -17589,7 +17438,7 @@ index 0000000000..65ea6881e3
 +
 diff --git a/malloc/mesh/src/Heap-Layers/locks/maclock.h b/malloc/mesh/src/Heap-Layers/locks/maclock.h
 new file mode 100644
-index 0000000000..ccbf56a4d9
+index 00000000..ccbf56a4
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/maclock.h
 @@ -0,0 +1,91 @@
@@ -17686,7 +17535,7 @@ index 0000000000..ccbf56a4d9
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/locks/oldspinlock.h b/malloc/mesh/src/Heap-Layers/locks/oldspinlock.h
 new file mode 100644
-index 0000000000..21f6fdf905
+index 00000000..21f6fdf9
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/oldspinlock.h
 @@ -0,0 +1,276 @@
@@ -17968,10 +17817,10 @@ index 0000000000..21f6fdf905
 +#endif // _SPINLOCK_H_
 diff --git a/malloc/mesh/src/Heap-Layers/locks/posixlock.h b/malloc/mesh/src/Heap-Layers/locks/posixlock.h
 new file mode 100644
-index 0000000000..ea9ea99caf
+index 00000000..a60ac45d
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/posixlock.h
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,69 @@
 +/* -*- C++ -*- */
 +
 +/*
@@ -18010,11 +17859,7 @@ index 0000000000..ea9ea99caf
 +    {
 +      int r = pthread_mutex_init (&mutex, NULL);
 +      if (r) {
-+#if __cpp_exceptions
 +	throw 0;
-+#else
-+	abort ();
-+#endif
 +      }
 +    }
 +  
@@ -18047,7 +17892,7 @@ index 0000000000..ea9ea99caf
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/locks/recursivelock.h b/malloc/mesh/src/Heap-Layers/locks/recursivelock.h
 new file mode 100644
-index 0000000000..6269b12aaa
+index 00000000..6269b12a
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/recursivelock.h
 @@ -0,0 +1,78 @@
@@ -18131,7 +17976,7 @@ index 0000000000..6269b12aaa
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/locks/spinlock-old.h b/malloc/mesh/src/Heap-Layers/locks/spinlock-old.h
 new file mode 100644
-index 0000000000..c285a1a9a6
+index 00000000..c285a1a9
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/spinlock-old.h
 @@ -0,0 +1,276 @@
@@ -18413,7 +18258,7 @@ index 0000000000..c285a1a9a6
 +#endif // _SPINLOCK_H_
 diff --git a/malloc/mesh/src/Heap-Layers/locks/spinlock.h b/malloc/mesh/src/Heap-Layers/locks/spinlock.h
 new file mode 100644
-index 0000000000..4cfc7a07a8
+index 00000000..4cfc7a07
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/spinlock.h
 @@ -0,0 +1,168 @@
@@ -18587,7 +18432,7 @@ index 0000000000..4cfc7a07a8
 +#endif // _SPINLOCK_H_
 diff --git a/malloc/mesh/src/Heap-Layers/locks/winlock.h b/malloc/mesh/src/Heap-Layers/locks/winlock.h
 new file mode 100644
-index 0000000000..357355b843
+index 00000000..357355b8
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/locks/winlock.h
 @@ -0,0 +1,79 @@
@@ -18672,7 +18517,7 @@ index 0000000000..357355b843
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/threads/all.h b/malloc/mesh/src/Heap-Layers/threads/all.h
 new file mode 100644
-index 0000000000..ed5555d7cf
+index 00000000..ed5555d7
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/threads/all.h
 @@ -0,0 +1,2 @@
@@ -18680,7 +18525,7 @@ index 0000000000..ed5555d7cf
 +#include "fred.h"
 diff --git a/malloc/mesh/src/Heap-Layers/threads/cpuinfo.cpp b/malloc/mesh/src/Heap-Layers/threads/cpuinfo.cpp
 new file mode 100644
-index 0000000000..98b49b92a5
+index 00000000..98b49b92
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/threads/cpuinfo.cpp
 @@ -0,0 +1,48 @@
@@ -18734,7 +18579,7 @@ index 0000000000..98b49b92a5
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/threads/cpuinfo.h b/malloc/mesh/src/Heap-Layers/threads/cpuinfo.h
 new file mode 100644
-index 0000000000..43bf094b3e
+index 00000000..43bf094b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/threads/cpuinfo.h
 @@ -0,0 +1,171 @@
@@ -18911,7 +18756,7 @@ index 0000000000..43bf094b3e
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/threads/fred.h b/malloc/mesh/src/Heap-Layers/threads/fred.h
 new file mode 100644
-index 0000000000..8113bb5ae4
+index 00000000..8113bb5a
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/threads/fred.h
 @@ -0,0 +1,100 @@
@@ -19017,7 +18862,7 @@ index 0000000000..8113bb5ae4
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/align.h b/malloc/mesh/src/Heap-Layers/utility/align.h
 new file mode 100644
-index 0000000000..c3d890c899
+index 00000000..c3d890c8
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/align.h
 @@ -0,0 +1,31 @@
@@ -19054,7 +18899,7 @@ index 0000000000..c3d890c899
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/all.h b/malloc/mesh/src/Heap-Layers/utility/all.h
 new file mode 100644
-index 0000000000..e5751e875a
+index 00000000..e5751e87
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/all.h
 @@ -0,0 +1,25 @@
@@ -19085,7 +18930,7 @@ index 0000000000..e5751e875a
 +
 diff --git a/malloc/mesh/src/Heap-Layers/utility/arch.h b/malloc/mesh/src/Heap-Layers/utility/arch.h
 new file mode 100644
-index 0000000000..daa535a67b
+index 00000000..daa535a6
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/arch.h
 @@ -0,0 +1,13 @@
@@ -19104,7 +18949,7 @@ index 0000000000..daa535a67b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/bins.h b/malloc/mesh/src/Heap-Layers/utility/bins.h
 new file mode 100644
-index 0000000000..df18d38620
+index 00000000..df18d386
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/bins.h
 @@ -0,0 +1,98 @@
@@ -19208,7 +19053,7 @@ index 0000000000..df18d38620
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/bins16k.h b/malloc/mesh/src/Heap-Layers/utility/bins16k.h
 new file mode 100644
-index 0000000000..1158c1fce1
+index 00000000..1158c1fc
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/bins16k.h
 @@ -0,0 +1,53 @@
@@ -19267,7 +19112,7 @@ index 0000000000..1158c1fce1
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/bins4k.h b/malloc/mesh/src/Heap-Layers/utility/bins4k.h
 new file mode 100644
-index 0000000000..862650bef8
+index 00000000..862650be
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/bins4k.h
 @@ -0,0 +1,64 @@
@@ -19337,7 +19182,7 @@ index 0000000000..862650bef8
 +
 diff --git a/malloc/mesh/src/Heap-Layers/utility/bins64k.h b/malloc/mesh/src/Heap-Layers/utility/bins64k.h
 new file mode 100755
-index 0000000000..1658c5eeb9
+index 00000000..1658c5ee
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/bins64k.h
 @@ -0,0 +1,88 @@
@@ -19431,7 +19276,7 @@ index 0000000000..1658c5eeb9
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/bins8k.h b/malloc/mesh/src/Heap-Layers/utility/bins8k.h
 new file mode 100644
-index 0000000000..ebb45f05eb
+index 00000000..ebb45f05
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/bins8k.h
 @@ -0,0 +1,52 @@
@@ -19489,7 +19334,7 @@ index 0000000000..ebb45f05eb
 +
 diff --git a/malloc/mesh/src/Heap-Layers/utility/binspow2.h b/malloc/mesh/src/Heap-Layers/utility/binspow2.h
 new file mode 100644
-index 0000000000..bb89a299e2
+index 00000000..bb89a299
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/binspow2.h
 @@ -0,0 +1,90 @@
@@ -19585,7 +19430,7 @@ index 0000000000..bb89a299e2
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/checkpoweroftwo.h b/malloc/mesh/src/Heap-Layers/utility/checkpoweroftwo.h
 new file mode 100644
-index 0000000000..8fc5bdcb4c
+index 00000000..8fc5bdcb
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/checkpoweroftwo.h
 @@ -0,0 +1,45 @@
@@ -19636,7 +19481,7 @@ index 0000000000..8fc5bdcb4c
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/cpp23compat.h b/malloc/mesh/src/Heap-Layers/utility/cpp23compat.h
 new file mode 100644
-index 0000000000..80e90f1e9b
+index 00000000..80e90f1e
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/cpp23compat.h
 @@ -0,0 +1,228 @@
@@ -19870,7 +19715,7 @@ index 0000000000..80e90f1e9b
 +#endif // HL_CPP23COMPAT_H
 diff --git a/malloc/mesh/src/Heap-Layers/utility/dllist.h b/malloc/mesh/src/Heap-Layers/utility/dllist.h
 new file mode 100644
-index 0000000000..aebf7b40b4
+index 00000000..aebf7b40
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/dllist.h
 @@ -0,0 +1,105 @@
@@ -19981,7 +19826,7 @@ index 0000000000..aebf7b40b4
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/dynarray.h b/malloc/mesh/src/Heap-Layers/utility/dynarray.h
 new file mode 100644
-index 0000000000..a953ae33b7
+index 00000000..a953ae33
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/dynarray.h
 @@ -0,0 +1,133 @@
@@ -20120,7 +19965,7 @@ index 0000000000..a953ae33b7
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/exactlyone.h b/malloc/mesh/src/Heap-Layers/utility/exactlyone.h
 new file mode 100644
-index 0000000000..780be4274e
+index 00000000..780be427
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/exactlyone.h
 @@ -0,0 +1,48 @@
@@ -20174,10 +20019,10 @@ index 0000000000..780be4274e
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/freesllist.h b/malloc/mesh/src/Heap-Layers/utility/freesllist.h
 new file mode 100644
-index 0000000000..5577893eac
+index 00000000..4decae86
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/freesllist.h
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,82 @@
 +// -*- C++ -*-
 +
 +#ifndef HL_FREESLLIST_H_
@@ -20197,6 +20042,10 @@ index 0000000000..5577893eac
 +
 +class FreeSLList {
 +public:
++
++  FreeSLList() {
++    clear();
++  }
 +
 +  inline void clear() {
 +    head.next = nullptr;
@@ -20231,11 +20080,15 @@ index 0000000000..5577893eac
 +    head.next = entry;
 +  }
 +
++  // Entry must be an implicit-lifetime type: insert() materializes it
++  // over freed object memory via std::start_lifetime_as, which requires
++  // (and MSVC 14.51+ statically asserts) implicit lifetime. That means
++  // a trivial default constructor: no user-provided constructor and no
++  // default member initializer. Zero-initialization of the list head
++  // happens in FreeSLList's constructor instead.
 +  class Entry {
 +  public:
-+    Entry()
-+      : next (nullptr)
-+    {}
++    Entry() = default;
 +    Entry * next;
 +  private:
 +    Entry (const Entry&);
@@ -20254,7 +20107,7 @@ index 0000000000..5577893eac
 +
 diff --git a/malloc/mesh/src/Heap-Layers/utility/gcd.h b/malloc/mesh/src/Heap-Layers/utility/gcd.h
 new file mode 100644
-index 0000000000..d887e0d258
+index 00000000..d887e0d2
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/gcd.h
 @@ -0,0 +1,29 @@
@@ -20289,7 +20142,7 @@ index 0000000000..d887e0d258
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/hash.h b/malloc/mesh/src/Heap-Layers/utility/hash.h
 new file mode 100644
-index 0000000000..75d7146910
+index 00000000..75d71469
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/hash.h
 @@ -0,0 +1,43 @@
@@ -20338,7 +20191,7 @@ index 0000000000..75d7146910
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/ilog2.cpp b/malloc/mesh/src/Heap-Layers/utility/ilog2.cpp
 new file mode 100644
-index 0000000000..1923704c3b
+index 00000000..1923704c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/ilog2.cpp
 @@ -0,0 +1,20 @@
@@ -20364,7 +20217,7 @@ index 0000000000..1923704c3b
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/utility/ilog2.h b/malloc/mesh/src/Heap-Layers/utility/ilog2.h
 new file mode 100644
-index 0000000000..88986364d8
+index 00000000..88986364
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/ilog2.h
 @@ -0,0 +1,61 @@
@@ -20431,7 +20284,7 @@ index 0000000000..88986364d8
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/istrue.h b/malloc/mesh/src/Heap-Layers/utility/istrue.h
 new file mode 100644
-index 0000000000..1cbfe28b2e
+index 00000000..1cbfe28b
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/istrue.h
 @@ -0,0 +1,40 @@
@@ -20477,7 +20330,7 @@ index 0000000000..1cbfe28b2e
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/lcm.h b/malloc/mesh/src/Heap-Layers/utility/lcm.h
 new file mode 100644
-index 0000000000..43b67ecf6b
+index 00000000..43b67ecf
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/lcm.h
 @@ -0,0 +1,23 @@
@@ -20506,7 +20359,7 @@ index 0000000000..43b67ecf6b
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/modulo.h b/malloc/mesh/src/Heap-Layers/utility/modulo.h
 new file mode 100644
-index 0000000000..4040cdd4e1
+index 00000000..4040cdd4
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/modulo.h
 @@ -0,0 +1,32 @@
@@ -20544,7 +20397,7 @@ index 0000000000..4040cdd4e1
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/singleton.h b/malloc/mesh/src/Heap-Layers/utility/singleton.h
 new file mode 100644
-index 0000000000..a4d6c47941
+index 00000000..a4d6c479
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/singleton.h
 @@ -0,0 +1,37 @@
@@ -20587,7 +20440,7 @@ index 0000000000..a4d6c47941
 +
 diff --git a/malloc/mesh/src/Heap-Layers/utility/sllist.h b/malloc/mesh/src/Heap-Layers/utility/sllist.h
 new file mode 100644
-index 0000000000..b126b61173
+index 00000000..b126b611
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/sllist.h
 @@ -0,0 +1,100 @@
@@ -20693,7 +20546,7 @@ index 0000000000..b126b61173
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/testalign.cpp b/malloc/mesh/src/Heap-Layers/utility/testalign.cpp
 new file mode 100644
-index 0000000000..65bd2c8d31
+index 00000000..65bd2c8d
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/testalign.cpp
 @@ -0,0 +1,14 @@
@@ -20713,7 +20566,7 @@ index 0000000000..65bd2c8d31
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/utility/timer-old.h b/malloc/mesh/src/Heap-Layers/utility/timer-old.h
 new file mode 100644
-index 0000000000..7c7ff4898d
+index 00000000..7c7ff489
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/timer-old.h
 @@ -0,0 +1,356 @@
@@ -21075,7 +20928,7 @@ index 0000000000..7c7ff4898d
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/timer.h b/malloc/mesh/src/Heap-Layers/utility/timer.h
 new file mode 100644
-index 0000000000..46bd48e0de
+index 00000000..46bd48e0
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/timer.h
 @@ -0,0 +1,79 @@
@@ -21160,7 +21013,7 @@ index 0000000000..46bd48e0de
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/utility/tprintf.h b/malloc/mesh/src/Heap-Layers/utility/tprintf.h
 new file mode 100644
-index 0000000000..161ca45cf8
+index 00000000..161ca45c
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/utility/tprintf.h
 @@ -0,0 +1,146 @@
@@ -21312,7 +21165,7 @@ index 0000000000..161ca45cf8
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/all.h b/malloc/mesh/src/Heap-Layers/wrappers/all.h
 new file mode 100644
-index 0000000000..79c751901e
+index 00000000..79c75190
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/all.h
 @@ -0,0 +1,4 @@
@@ -21322,7 +21175,7 @@ index 0000000000..79c751901e
 +#include "stlallocator.h"
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/ansiwrapper.h b/malloc/mesh/src/Heap-Layers/wrappers/ansiwrapper.h
 new file mode 100644
-index 0000000000..05022ecc8f
+index 00000000..05022ecc
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/ansiwrapper.h
 @@ -0,0 +1,129 @@
@@ -21457,7 +21310,7 @@ index 0000000000..05022ecc8f
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/sparc-interchange.il b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/sparc-interchange.il
 new file mode 100644
-index 0000000000..b3b8975787
+index 00000000..b3b89757
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/sparc-interchange.il
 @@ -0,0 +1,7 @@
@@ -21470,7 +21323,7 @@ index 0000000000..b3b8975787
 +.end
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86-interchange.il b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86-interchange.il
 new file mode 100644
-index 0000000000..ce21e93d95
+index 00000000..ce21e93d
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86-interchange.il
 @@ -0,0 +1,8 @@
@@ -21484,7 +21337,7 @@ index 0000000000..ce21e93d95
 +.end
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86_64-interchange.il b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86_64-interchange.il
 new file mode 100644
-index 0000000000..9b377b5912
+index 00000000..9b377b59
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/arch-specific/x86_64-interchange.il
 @@ -0,0 +1,7 @@
@@ -21497,7 +21350,7 @@ index 0000000000..9b377b5912
 +.end
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/generic-memalign.cpp b/malloc/mesh/src/Heap-Layers/wrappers/generic-memalign.cpp
 new file mode 100644
-index 0000000000..cf6833ed47
+index 00000000..cf6833ed
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/generic-memalign.cpp
 @@ -0,0 +1,47 @@
@@ -21550,7 +21403,7 @@ index 0000000000..cf6833ed47
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper-hooks.cpp b/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper-hooks.cpp
 new file mode 100644
-index 0000000000..51c1bf6a53
+index 00000000..51c1bf6a
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper-hooks.cpp
 @@ -0,0 +1,135 @@
@@ -21691,7 +21544,7 @@ index 0000000000..51c1bf6a53
 +}
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper.cpp b/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper.cpp
 new file mode 100644
-index 0000000000..b2478d21e3
+index 00000000..b2478d21
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/gnuwrapper.cpp
 @@ -0,0 +1,94 @@
@@ -21791,7 +21644,7 @@ index 0000000000..b2478d21e3
 +#include "wrapper.cpp"
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/heapredirect.h b/malloc/mesh/src/Heap-Layers/wrappers/heapredirect.h
 new file mode 100644
-index 0000000000..dec928abce
+index 00000000..dec928ab
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/heapredirect.h
 @@ -0,0 +1,299 @@
@@ -22096,7 +21949,7 @@ index 0000000000..dec928abce
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/macinterpose.h b/malloc/mesh/src/Heap-Layers/wrappers/macinterpose.h
 new file mode 100644
-index 0000000000..42c47a5235
+index 00000000..42c47a52
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/macinterpose.h
 @@ -0,0 +1,20 @@
@@ -22122,7 +21975,7 @@ index 0000000000..42c47a5235
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/macwrapper.cpp b/malloc/mesh/src/Heap-Layers/wrappers/macwrapper.cpp
 new file mode 100644
-index 0000000000..08b794197e
+index 00000000..08b79419
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/macwrapper.cpp
 @@ -0,0 +1,562 @@
@@ -22690,7 +22543,7 @@ index 0000000000..08b794197e
 +
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/mallocinfo.h b/malloc/mesh/src/Heap-Layers/wrappers/mallocinfo.h
 new file mode 100644
-index 0000000000..68bfa19338
+index 00000000..68bfa193
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/mallocinfo.h
 @@ -0,0 +1,41 @@
@@ -22737,7 +22590,7 @@ index 0000000000..68bfa19338
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/mmapwrapper.h b/malloc/mesh/src/Heap-Layers/wrappers/mmapwrapper.h
 new file mode 100644
-index 0000000000..ade55e86b9
+index 00000000..ade55e86
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/mmapwrapper.h
 @@ -0,0 +1,223 @@
@@ -22966,7 +22819,7 @@ index 0000000000..ade55e86b9
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/stlallocator.h b/malloc/mesh/src/Heap-Layers/wrappers/stlallocator.h
 new file mode 100644
-index 0000000000..2834cebd37
+index 00000000..2834cebd
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/stlallocator.h
 @@ -0,0 +1,173 @@
@@ -23145,7 +22998,7 @@ index 0000000000..2834cebd37
 +#endif
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/winwrapper.cpp b/malloc/mesh/src/Heap-Layers/wrappers/winwrapper.cpp
 new file mode 100755
-index 0000000000..66ecf2408c
+index 00000000..66ecf240
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/winwrapper.cpp
 @@ -0,0 +1,618 @@
@@ -23769,7 +23622,7 @@ index 0000000000..66ecf2408c
 +
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/wrapper.cpp b/malloc/mesh/src/Heap-Layers/wrappers/wrapper.cpp
 new file mode 100644
-index 0000000000..6fd25ff7c4
+index 00000000..6fd25ff7
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/wrapper.cpp
 @@ -0,0 +1,650 @@
@@ -24425,7 +24278,7 @@ index 0000000000..6fd25ff7c4
 +
 diff --git a/malloc/mesh/src/Heap-Layers/wrappers/x86jump.h b/malloc/mesh/src/Heap-Layers/wrappers/x86jump.h
 new file mode 100644
-index 0000000000..0597df0ed5
+index 00000000..0597df0e
 --- /dev/null
 +++ b/malloc/mesh/src/Heap-Layers/wrappers/x86jump.h
 @@ -0,0 +1,84 @@
@@ -24515,7 +24368,7 @@ index 0000000000..0597df0ed5
 +#endif
 diff --git a/malloc/mesh/src/bitmap.h b/malloc/mesh/src/bitmap.h
 new file mode 100644
-index 0000000000..e007c6f24b
+index 00000000..e007c6f2
 --- /dev/null
 +++ b/malloc/mesh/src/bitmap.h
 @@ -0,0 +1,598 @@
@@ -25119,7 +24972,7 @@ index 0000000000..e007c6f24b
 +#endif  // MESH_BITMAP_H
 diff --git a/malloc/mesh/src/cheap_heap.h b/malloc/mesh/src/cheap_heap.h
 new file mode 100644
-index 0000000000..9c8651fbc7
+index 00000000..9c8651fb
 --- /dev/null
 +++ b/malloc/mesh/src/cheap_heap.h
 @@ -0,0 +1,170 @@
@@ -25295,7 +25148,7 @@ index 0000000000..9c8651fbc7
 +#endif  // MESH_CHEAP_HEAP_H
 diff --git a/malloc/mesh/src/common.h b/malloc/mesh/src/common.h
 new file mode 100644
-index 0000000000..2ed9a2e2cf
+index 00000000..2ed9a2e2
 --- /dev/null
 +++ b/malloc/mesh/src/common.h
 @@ -0,0 +1,468 @@
@@ -25770,7 +25623,7 @@ index 0000000000..2ed9a2e2cf
 \ No newline at end of file
 diff --git a/malloc/mesh/src/copts.bzl b/malloc/mesh/src/copts.bzl
 new file mode 100644
-index 0000000000..41d586bfe7
+index 00000000..41d586bf
 --- /dev/null
 +++ b/malloc/mesh/src/copts.bzl
 @@ -0,0 +1,70 @@
@@ -25846,7 +25699,7 @@ index 0000000000..41d586bfe7
 +MESH_DEFAULT_LINKOPTS = LINKER_FLAGS + LTO_LINKOPTS
 diff --git a/malloc/mesh/src/d_assert.cc b/malloc/mesh/src/d_assert.cc
 new file mode 100644
-index 0000000000..e4bfb1ddd2
+index 00000000..e4bfb1dd
 --- /dev/null
 +++ b/malloc/mesh/src/d_assert.cc
 @@ -0,0 +1,75 @@
@@ -25927,7 +25780,7 @@ index 0000000000..e4bfb1ddd2
 +}
 diff --git a/malloc/mesh/src/dispatch_utils.h b/malloc/mesh/src/dispatch_utils.h
 new file mode 100644
-index 0000000000..19b46c092e
+index 00000000..19b46c09
 --- /dev/null
 +++ b/malloc/mesh/src/dispatch_utils.h
 @@ -0,0 +1,89 @@
@@ -26023,7 +25876,7 @@ index 0000000000..19b46c092e
 \ No newline at end of file
 diff --git a/malloc/mesh/src/fbsd_wrapper.cc b/malloc/mesh/src/fbsd_wrapper.cc
 new file mode 100644
-index 0000000000..3255ba17c8
+index 00000000..3255ba17
 --- /dev/null
 +++ b/malloc/mesh/src/fbsd_wrapper.cc
 @@ -0,0 +1,82 @@
@@ -26111,7 +25964,7 @@ index 0000000000..3255ba17c8
 +#include "wrapper.cc"
 diff --git a/malloc/mesh/src/fixed_array.h b/malloc/mesh/src/fixed_array.h
 new file mode 100644
-index 0000000000..524a120e88
+index 00000000..524a120e
 --- /dev/null
 +++ b/malloc/mesh/src/fixed_array.h
 @@ -0,0 +1,131 @@
@@ -26248,7 +26101,7 @@ index 0000000000..524a120e88
 +#endif  // MESH_FIXED_ARRAY_H
 diff --git a/malloc/mesh/src/global_heap.cc b/malloc/mesh/src/global_heap.cc
 new file mode 100644
-index 0000000000..630e63ba71
+index 00000000..630e63ba
 --- /dev/null
 +++ b/malloc/mesh/src/global_heap.cc
 @@ -0,0 +1,6 @@
@@ -26261,7 +26114,7 @@ index 0000000000..630e63ba71
 \ No newline at end of file
 diff --git a/malloc/mesh/src/global_heap.h b/malloc/mesh/src/global_heap.h
 new file mode 100644
-index 0000000000..ac40c83bef
+index 00000000..ac40c83b
 --- /dev/null
 +++ b/malloc/mesh/src/global_heap.h
 @@ -0,0 +1,778 @@
@@ -27045,7 +26898,7 @@ index 0000000000..ac40c83bef
 +#endif  // MESH_GLOBAL_HEAP_H
 diff --git a/malloc/mesh/src/global_heap_impl.h b/malloc/mesh/src/global_heap_impl.h
 new file mode 100644
-index 0000000000..8e2eefac77
+index 00000000..8e2eefac
 --- /dev/null
 +++ b/malloc/mesh/src/global_heap_impl.h
 @@ -0,0 +1,613 @@
@@ -27664,7 +27517,7 @@ index 0000000000..8e2eefac77
 +#endif  // MESH_GLOBAL_HEAP_IMPL_H
 diff --git a/malloc/mesh/src/gnu_wrapper.cc b/malloc/mesh/src/gnu_wrapper.cc
 new file mode 100644
-index 0000000000..8da725e811
+index 00000000..8da725e8
 --- /dev/null
 +++ b/malloc/mesh/src/gnu_wrapper.cc
 @@ -0,0 +1,85 @@
@@ -27755,7 +27608,7 @@ index 0000000000..8da725e811
 +#include "wrapper.cc"
 diff --git a/malloc/mesh/src/ifunc_resolver.h b/malloc/mesh/src/ifunc_resolver.h
 new file mode 100644
-index 0000000000..c4d7a0b958
+index 00000000..c4d7a0b9
 --- /dev/null
 +++ b/malloc/mesh/src/ifunc_resolver.h
 @@ -0,0 +1,140 @@
@@ -27901,7 +27754,7 @@ index 0000000000..c4d7a0b958
 +#endif  // MESH__IFUNC_RESOLVER_H
 diff --git a/malloc/mesh/src/internal.h b/malloc/mesh/src/internal.h
 new file mode 100644
-index 0000000000..76aa269b40
+index 00000000..76aa269b
 --- /dev/null
 +++ b/malloc/mesh/src/internal.h
 @@ -0,0 +1,365 @@
@@ -28272,7 +28125,7 @@ index 0000000000..76aa269b40
 +#endif  // MESH_INTERNAL_H
 diff --git a/malloc/mesh/src/libmesh.cc b/malloc/mesh/src/libmesh.cc
 new file mode 100644
-index 0000000000..2c9464ec9b
+index 00000000..2c9464ec
 --- /dev/null
 +++ b/malloc/mesh/src/libmesh.cc
 @@ -0,0 +1,504 @@
@@ -28783,7 +28636,7 @@ index 0000000000..2c9464ec9b
 \ No newline at end of file
 diff --git a/malloc/mesh/src/mac_wrapper.cc b/malloc/mesh/src/mac_wrapper.cc
 new file mode 100644
-index 0000000000..f9d092161f
+index 00000000..f9d09216
 --- /dev/null
 +++ b/malloc/mesh/src/mac_wrapper.cc
 @@ -0,0 +1,541 @@
@@ -29330,7 +29183,7 @@ index 0000000000..f9d092161f
 +#endif
 diff --git a/malloc/mesh/src/memory_stats.h b/malloc/mesh/src/memory_stats.h
 new file mode 100644
-index 0000000000..eea4eb08d8
+index 00000000..eea4eb08
 --- /dev/null
 +++ b/malloc/mesh/src/memory_stats.h
 @@ -0,0 +1,41 @@
@@ -29377,7 +29230,7 @@ index 0000000000..eea4eb08d8
 +#endif  // MESH__MEMORY_STATS_H
 diff --git a/malloc/mesh/src/memory_stats_linux.cc b/malloc/mesh/src/memory_stats_linux.cc
 new file mode 100644
-index 0000000000..d21112360a
+index 00000000..d2111236
 --- /dev/null
 +++ b/malloc/mesh/src/memory_stats_linux.cc
 @@ -0,0 +1,177 @@
@@ -29560,7 +29413,7 @@ index 0000000000..d21112360a
 +#endif  // __linux__
 diff --git a/malloc/mesh/src/memory_stats_macos.cc b/malloc/mesh/src/memory_stats_macos.cc
 new file mode 100644
-index 0000000000..37c1c2f67b
+index 00000000..37c1c2f6
 --- /dev/null
 +++ b/malloc/mesh/src/memory_stats_macos.cc
 @@ -0,0 +1,160 @@
@@ -29726,7 +29579,7 @@ index 0000000000..37c1c2f67b
 +#endif  // __APPLE__
 diff --git a/malloc/mesh/src/memory_stats_macos.h b/malloc/mesh/src/memory_stats_macos.h
 new file mode 100644
-index 0000000000..9530aa705a
+index 00000000..9530aa70
 --- /dev/null
 +++ b/malloc/mesh/src/memory_stats_macos.h
 @@ -0,0 +1,48 @@
@@ -29781,7 +29634,7 @@ index 0000000000..9530aa705a
 \ No newline at end of file
 diff --git a/malloc/mesh/src/meshable_arena.cc b/malloc/mesh/src/meshable_arena.cc
 new file mode 100644
-index 0000000000..b2f63a4a22
+index 00000000..b2f63a4a
 --- /dev/null
 +++ b/malloc/mesh/src/meshable_arena.cc
 @@ -0,0 +1,167 @@
@@ -29954,7 +29807,7 @@ index 0000000000..b2f63a4a22
 +}  // namespace mesh
 diff --git a/malloc/mesh/src/meshable_arena.h b/malloc/mesh/src/meshable_arena.h
 new file mode 100644
-index 0000000000..8960d91270
+index 00000000..8960d912
 --- /dev/null
 +++ b/malloc/mesh/src/meshable_arena.h
 @@ -0,0 +1,929 @@
@@ -30889,7 +30742,7 @@ index 0000000000..8960d91270
 +#endif  // MESH_MESHABLE_ARENA_H
 diff --git a/malloc/mesh/src/meshing.h b/malloc/mesh/src/meshing.h
 new file mode 100644
-index 0000000000..bc6ebb55b6
+index 00000000..bc6ebb55
 --- /dev/null
 +++ b/malloc/mesh/src/meshing.h
 @@ -0,0 +1,63 @@
@@ -30958,7 +30811,7 @@ index 0000000000..bc6ebb55b6
 +#endif  // MESH_MESHING_H
 diff --git a/malloc/mesh/src/mini_heap.h b/malloc/mesh/src/mini_heap.h
 new file mode 100644
-index 0000000000..58827b9950
+index 00000000..58827b99
 --- /dev/null
 +++ b/malloc/mesh/src/mini_heap.h
 @@ -0,0 +1,582 @@
@@ -31547,7 +31400,7 @@ index 0000000000..58827b9950
 \ No newline at end of file
 diff --git a/malloc/mesh/src/mmap_heap.h b/malloc/mesh/src/mmap_heap.h
 new file mode 100644
-index 0000000000..b8e512d060
+index 00000000..b8e512d0
 --- /dev/null
 +++ b/malloc/mesh/src/mmap_heap.h
 @@ -0,0 +1,104 @@
@@ -31657,7 +31510,7 @@ index 0000000000..b8e512d060
 +#endif  // MESH_MESH_MMAP_H
 diff --git a/malloc/mesh/src/one_way_mmap_heap.h b/malloc/mesh/src/one_way_mmap_heap.h
 new file mode 100644
-index 0000000000..cdb625e6bf
+index 00000000..cdb625e6
 --- /dev/null
 +++ b/malloc/mesh/src/one_way_mmap_heap.h
 @@ -0,0 +1,78 @@
@@ -31741,7 +31594,7 @@ index 0000000000..cdb625e6bf
 +#endif  // MESH_ONE_WAY_MMAP_HEAP_H
 diff --git a/malloc/mesh/src/partitioned_heap.h b/malloc/mesh/src/partitioned_heap.h
 new file mode 100644
-index 0000000000..8f360518ed
+index 00000000..8f360518
 --- /dev/null
 +++ b/malloc/mesh/src/partitioned_heap.h
 @@ -0,0 +1,111 @@
@@ -31858,7 +31711,7 @@ index 0000000000..8f360518ed
 +#endif  // MESH_PARTITIONED_HEAP_H
 diff --git a/malloc/mesh/src/plasma/mesh.h b/malloc/mesh/src/plasma/mesh.h
 new file mode 100644
-index 0000000000..3fa694660a
+index 00000000..3fa69466
 --- /dev/null
 +++ b/malloc/mesh/src/plasma/mesh.h
 @@ -0,0 +1,33 @@
@@ -31897,7 +31750,7 @@ index 0000000000..3fa694660a
 +#endif /* PLASMA__MESH_H */
 diff --git a/malloc/mesh/src/real.cc b/malloc/mesh/src/real.cc
 new file mode 100644
-index 0000000000..acc72c944c
+index 00000000..acc72c94
 --- /dev/null
 +++ b/malloc/mesh/src/real.cc
 @@ -0,0 +1,90 @@
@@ -31993,7 +31846,7 @@ index 0000000000..acc72c944c
 +}  // namespace mesh
 diff --git a/malloc/mesh/src/real.h b/malloc/mesh/src/real.h
 new file mode 100644
-index 0000000000..9fc1728199
+index 00000000..9fc17281
 --- /dev/null
 +++ b/malloc/mesh/src/real.h
 @@ -0,0 +1,44 @@
@@ -32043,7 +31896,7 @@ index 0000000000..9fc1728199
 +#endif  // MESH_REAL_H
 diff --git a/malloc/mesh/src/rng/mwc.h b/malloc/mesh/src/rng/mwc.h
 new file mode 100644
-index 0000000000..d3a99d9655
+index 00000000..d3a99d96
 --- /dev/null
 +++ b/malloc/mesh/src/rng/mwc.h
 @@ -0,0 +1,296 @@
@@ -32345,7 +32198,7 @@ index 0000000000..d3a99d9655
 +#endif
 diff --git a/malloc/mesh/src/rng/mwc64.h b/malloc/mesh/src/rng/mwc64.h
 new file mode 100644
-index 0000000000..845fea5c96
+index 00000000..845fea5c
 --- /dev/null
 +++ b/malloc/mesh/src/rng/mwc64.h
 @@ -0,0 +1,58 @@
@@ -32409,7 +32262,7 @@ index 0000000000..845fea5c96
 +#endif
 diff --git a/malloc/mesh/src/rpl_printf.c b/malloc/mesh/src/rpl_printf.c
 new file mode 100644
-index 0000000000..11306b4f78
+index 00000000..11306b4f
 --- /dev/null
 +++ b/malloc/mesh/src/rpl_printf.c
 @@ -0,0 +1,1991 @@
@@ -34406,7 +34259,7 @@ index 0000000000..11306b4f78
 +/* vim: set joinspaces noexpandtab textwidth=80 cinoptions=(4,u0: */
 diff --git a/malloc/mesh/src/runtime.cc b/malloc/mesh/src/runtime.cc
 new file mode 100644
-index 0000000000..1c66a38233
+index 00000000..1c66a382
 --- /dev/null
 +++ b/malloc/mesh/src/runtime.cc
 @@ -0,0 +1,98 @@
@@ -34510,7 +34363,7 @@ index 0000000000..1c66a38233
 +}  // namespace mesh
 diff --git a/malloc/mesh/src/runtime.h b/malloc/mesh/src/runtime.h
 new file mode 100644
-index 0000000000..38ae90b1ed
+index 00000000..38ae90b1
 --- /dev/null
 +++ b/malloc/mesh/src/runtime.h
 @@ -0,0 +1,135 @@
@@ -34652,7 +34505,7 @@ index 0000000000..38ae90b1ed
 \ No newline at end of file
 diff --git a/malloc/mesh/src/runtime_impl.h b/malloc/mesh/src/runtime_impl.h
 new file mode 100644
-index 0000000000..97b7c7226e
+index 00000000..97b7c722
 --- /dev/null
 +++ b/malloc/mesh/src/runtime_impl.h
 @@ -0,0 +1,394 @@
@@ -35052,7 +34905,7 @@ index 0000000000..97b7c7226e
 +#endif  // MESH_RUNTIME_IMPL_H
 diff --git a/malloc/mesh/src/shuffle_vector.h b/malloc/mesh/src/shuffle_vector.h
 new file mode 100644
-index 0000000000..7837a467f2
+index 00000000..7837a467
 --- /dev/null
 +++ b/malloc/mesh/src/shuffle_vector.h
 @@ -0,0 +1,293 @@
@@ -35352,7 +35205,7 @@ index 0000000000..7837a467f2
 \ No newline at end of file
 diff --git a/malloc/mesh/src/size_class_reciprocals.h b/malloc/mesh/src/size_class_reciprocals.h
 new file mode 100644
-index 0000000000..95cba56acc
+index 00000000..95cba56a
 --- /dev/null
 +++ b/malloc/mesh/src/size_class_reciprocals.h
 @@ -0,0 +1,76 @@
@@ -35434,7 +35287,7 @@ index 0000000000..95cba56acc
 +#endif  // MESH_SIZE_CLASS_RECIPROCALS_H
 diff --git a/malloc/mesh/src/size_classes.def b/malloc/mesh/src/size_classes.def
 new file mode 100644
-index 0000000000..a2ac2f379a
+index 00000000..a2ac2f37
 --- /dev/null
 +++ b/malloc/mesh/src/size_classes.def
 @@ -0,0 +1,251 @@
@@ -35691,7 +35544,7 @@ index 0000000000..a2ac2f379a
 +	24,	// 16384 -> 16384
 diff --git a/malloc/mesh/src/static/if.h b/malloc/mesh/src/static/if.h
 new file mode 100644
-index 0000000000..24159030a8
+index 00000000..24159030
 --- /dev/null
 +++ b/malloc/mesh/src/static/if.h
 @@ -0,0 +1,36 @@
@@ -35733,7 +35586,7 @@ index 0000000000..24159030a8
 +#endif
 diff --git a/malloc/mesh/src/static/log.h b/malloc/mesh/src/static/log.h
 new file mode 100644
-index 0000000000..2616a01b56
+index 00000000..2616a01b
 --- /dev/null
 +++ b/malloc/mesh/src/static/log.h
 @@ -0,0 +1,43 @@
@@ -35782,7 +35635,7 @@ index 0000000000..2616a01b56
 +#endif
 diff --git a/malloc/mesh/src/thread_local_heap.cc b/malloc/mesh/src/thread_local_heap.cc
 new file mode 100644
-index 0000000000..173abc688a
+index 00000000..173abc68
 --- /dev/null
 +++ b/malloc/mesh/src/thread_local_heap.cc
 @@ -0,0 +1,12 @@
@@ -35801,7 +35654,7 @@ index 0000000000..173abc688a
 \ No newline at end of file
 diff --git a/malloc/mesh/src/thread_local_heap.h b/malloc/mesh/src/thread_local_heap.h
 new file mode 100644
-index 0000000000..3bc4c434b1
+index 00000000..3bc4c434
 --- /dev/null
 +++ b/malloc/mesh/src/thread_local_heap.h
 @@ -0,0 +1,439 @@
@@ -36247,7 +36100,7 @@ index 0000000000..3bc4c434b1
 \ No newline at end of file
 diff --git a/malloc/mesh/src/wrapper.cc b/malloc/mesh/src/wrapper.cc
 new file mode 100644
-index 0000000000..dac6d38423
+index 00000000..dac6d384
 --- /dev/null
 +++ b/malloc/mesh/src/wrapper.cc
 @@ -0,0 +1,554 @@
@@ -36806,5 +36659,5 @@ index 0000000000..dac6d38423
 +
 +#endif
 -- 
-2.53.0
+2.55.0
 

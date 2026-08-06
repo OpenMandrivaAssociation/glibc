@@ -1,14 +1,14 @@
-From 3b1078864152589b8fc3465799594abead00e765 Mon Sep 17 00:00:00 2001
+From 0c28db4eee4a593039a710fb970fd411ee124b54 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:23 +0200
-Subject: [PATCH 07/20] Add in-tree mallocng backend (--with-malloc=mallocng)
+Date: Thu, 6 Aug 2026 23:50:18 +0200
+Subject: [PATCH 07/13] Add in-tree mallocng backend (--with-malloc=mallocng)
 
 ---
  malloc/malloc-mallocng-impl.c |  19 +
  malloc/malloc-mallocng.c      | 400 ++++++++++++++
  malloc/mallocng/README.md     |   6 +
- malloc/mallocng/mallocng.c    | 962 ++++++++++++++++++++++++++++++++++
- 4 files changed, 1387 insertions(+)
+ malloc/mallocng/mallocng.c    | 963 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 1388 insertions(+)
  create mode 100644 malloc/malloc-mallocng-impl.c
  create mode 100644 malloc/malloc-mallocng.c
  create mode 100644 malloc/mallocng/README.md
@@ -16,7 +16,7 @@ Subject: [PATCH 07/20] Add in-tree mallocng backend (--with-malloc=mallocng)
 
 diff --git a/malloc/malloc-mallocng-impl.c b/malloc/malloc-mallocng-impl.c
 new file mode 100644
-index 0000000000..c877324bca
+index 00000000..c877324b
 --- /dev/null
 +++ b/malloc/malloc-mallocng-impl.c
 @@ -0,0 +1,19 @@
@@ -41,7 +41,7 @@ index 0000000000..c877324bca
 +#include "mallocng/mallocng.c"
 diff --git a/malloc/malloc-mallocng.c b/malloc/malloc-mallocng.c
 new file mode 100644
-index 0000000000..191a5ee3ac
+index 00000000..191a5ee3
 --- /dev/null
 +++ b/malloc/malloc-mallocng.c
 @@ -0,0 +1,400 @@
@@ -447,7 +447,7 @@ index 0000000000..191a5ee3ac
 +#endif /* MALLOC_MULTI_BACKEND */
 diff --git a/malloc/mallocng/README.md b/malloc/mallocng/README.md
 new file mode 100644
-index 0000000000..6e5dc7c620
+index 00000000..6e5dc7c6
 --- /dev/null
 +++ b/malloc/mallocng/README.md
 @@ -0,0 +1,6 @@
@@ -459,10 +459,10 @@ index 0000000000..6e5dc7c620
 +The glibc `__libc_*` entry points live in `malloc/malloc-mallocng.c`.
 diff --git a/malloc/mallocng/mallocng.c b/malloc/mallocng/mallocng.c
 new file mode 100644
-index 0000000000..4348d2f231
+index 00000000..dd5415d7
 --- /dev/null
 +++ b/malloc/mallocng/mallocng.c
-@@ -0,0 +1,962 @@
+@@ -0,0 +1,963 @@
 +/* musl mallocng allocator core embedded in glibc.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -735,12 +735,13 @@ index 0000000000..4348d2f231
 +static inline struct meta *get_meta(const unsigned char *p)
 +{
 +  assert(!((uintptr_t)p & 15));
-+  int offset = *(const uint16_t *)(p - 2);
++  size_t offset = *(const uint16_t *)(p - 2);
 +  int index = get_slot_index(p);
 +  if (p[-4]) {
 +    assert(!offset);
 +    offset = *(uint32_t *)(p - 8);
 +    assert(offset > 0xffff);
++    assert(offset < PTRDIFF_MAX/UNIT);
 +  }
 +  const struct group *base = (const void *)(p - UNIT*offset - UNIT);
 +  const struct meta *meta = base->meta;
@@ -1426,5 +1427,5 @@ index 0000000000..4348d2f231
 +void mallocng_fork_unlock(void) { UNLOCK(__mallocng_lock); }
 +void mallocng_fork_unlock_child(void) { resetlock(); }
 -- 
-2.53.0
+2.55.0
 

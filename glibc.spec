@@ -190,7 +190,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	1
+Release:	2
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -305,6 +305,7 @@ Patch1079:	0010-Add-in-tree-PartitionAlloc-backend-with-malloc-prelo.patch
 Patch1080:	0011-Add-full-tcmalloc-as-LD_PRELOAD-DSO-with-malloc-prel.patch
 Patch1081:	0012-Add-in-tree-phasecast-adaptive-malloc-backend-with-m.patch
 Patch1082:	0013-Add-malloc-backend-documentation-and-benchmark-resul.patch
+Patch1083:	0014-Add-in-tree-mimalloc2-v2-backend-with-malloc-mimallo.patch
 
 BuildRequires:	automake
 BuildRequires:	slibtool
@@ -1620,7 +1621,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
 %if %{with mallocs}
-		--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
+		--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng \
 		--with-malloc-preload=tcmalloc \
 		--with-default-malloc=glibc \
 %else
@@ -1646,7 +1647,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --infodir=%{_infodir} \
     --localedir=%{_localedir} \
 %if %{with mallocs}
-    --with-malloc=glibc,snmalloc,rpmalloc,mimalloc,jemalloc,hardened-malloc,phasecast,mallocng \
+    --with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng \
     --with-malloc-preload=tcmalloc \
     --with-default-malloc=glibc \
 %else
@@ -1675,11 +1676,11 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --with-bugurl=%{bugurl}
 %endif
 
-  # FIXME drop -j1 if the Makefiles ever get fixed for parallel build
+  # Parallel build works with glibc 2.44+ multi-malloc (verified with -j32).
   if [ "$BuildAltArch" = "yes" ]; then
-    %make_build -j1 -r all subdir_stubs LIBGD=no
+    %make_build -r all subdir_stubs LIBGD=no
   else
-    %make_build -j1 -r all subdir_stubs
+    %make_build -r all subdir_stubs
   fi
   cd -
 

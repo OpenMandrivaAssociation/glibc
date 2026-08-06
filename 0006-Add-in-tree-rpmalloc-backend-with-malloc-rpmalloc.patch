@@ -1,16 +1,16 @@
-From a6912294761adb08a648c05db88ea0a355cb6119 Mon Sep 17 00:00:00 2001
+From 6c40afa820f43a9e12d13899c03aeef527f7c8f9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:22 +0200
-Subject: [PATCH 06/20] Add in-tree rpmalloc backend (--with-malloc=rpmalloc)
+Date: Thu, 6 Aug 2026 23:50:18 +0200
+Subject: [PATCH 06/13] Add in-tree rpmalloc backend (--with-malloc=rpmalloc)
 
 ---
  malloc/malloc-rpmalloc-impl.c |   24 +
  malloc/malloc-rpmalloc.c      |  496 +++++
  malloc/rpmalloc/LICENSE       |   21 +
  malloc/rpmalloc/README.md     |    8 +
- malloc/rpmalloc/rpmalloc.c    | 3373 +++++++++++++++++++++++++++++++++
+ malloc/rpmalloc/rpmalloc.c    | 3423 +++++++++++++++++++++++++++++++++
  malloc/rpmalloc/rpmalloc.h    |  418 ++++
- 6 files changed, 4340 insertions(+)
+ 6 files changed, 4390 insertions(+)
  create mode 100644 malloc/malloc-rpmalloc-impl.c
  create mode 100644 malloc/malloc-rpmalloc.c
  create mode 100644 malloc/rpmalloc/LICENSE
@@ -20,7 +20,7 @@ Subject: [PATCH 06/20] Add in-tree rpmalloc backend (--with-malloc=rpmalloc)
 
 diff --git a/malloc/malloc-rpmalloc-impl.c b/malloc/malloc-rpmalloc-impl.c
 new file mode 100644
-index 0000000000..66069f2986
+index 00000000..66069f29
 --- /dev/null
 +++ b/malloc/malloc-rpmalloc-impl.c
 @@ -0,0 +1,24 @@
@@ -50,7 +50,7 @@ index 0000000000..66069f2986
 +#include "rpmalloc/rpmalloc.c"
 diff --git a/malloc/malloc-rpmalloc.c b/malloc/malloc-rpmalloc.c
 new file mode 100644
-index 0000000000..a4056f1e35
+index 00000000..a4056f1e
 --- /dev/null
 +++ b/malloc/malloc-rpmalloc.c
 @@ -0,0 +1,496 @@
@@ -552,7 +552,7 @@ index 0000000000..a4056f1e35
 +#endif /* MALLOC_MULTI_BACKEND */
 diff --git a/malloc/rpmalloc/LICENSE b/malloc/rpmalloc/LICENSE
 new file mode 100644
-index 0000000000..74f442e570
+index 00000000..74f442e5
 --- /dev/null
 +++ b/malloc/rpmalloc/LICENSE
 @@ -0,0 +1,21 @@
@@ -579,7 +579,7 @@ index 0000000000..74f442e570
 +SOFTWARE.
 diff --git a/malloc/rpmalloc/README.md b/malloc/rpmalloc/README.md
 new file mode 100644
-index 0000000000..5298504f8a
+index 00000000..5298504f
 --- /dev/null
 +++ b/malloc/rpmalloc/README.md
 @@ -0,0 +1,8 @@
@@ -593,10 +593,10 @@ index 0000000000..5298504f8a
 +`#if ENABLE_OVERRIDE` so the core builds without that file.
 diff --git a/malloc/rpmalloc/rpmalloc.c b/malloc/rpmalloc/rpmalloc.c
 new file mode 100644
-index 0000000000..f7c8275c82
+index 00000000..ed988ee8
 --- /dev/null
 +++ b/malloc/rpmalloc/rpmalloc.c
-@@ -0,0 +1,3373 @@
+@@ -0,0 +1,3423 @@
 +/* rpmalloc.c  -  Memory allocator  -  2016-2020 Mattias Jansson
 + *
 + * SPDX-FileCopyrightText: 2016-2020 Mattias Jansson
@@ -988,8 +988,29 @@ index 0000000000..f7c8275c82
 +#endif
 +}
 +
++//! Yield the rest of this thread's scheduling quantum so another runnable thread (e.g. a lock
++//! holder that has been preempted) can run. This is a real scheduler yield, unlike the per-arch
++//! CPU pause/yield hint used by wait_spin below.
 +static inline void
-+wait_spin(void) {
++thread_yield(void) {
++#if PLATFORM_WINDOWS
++	SwitchToThread();
++#else
++	sched_yield();
++#endif
++}
++
++#ifndef WAIT_SPIN_YIELD_THRESHOLD
++//! Number of cheap CPU-pause spins before wait_spin escalates to a real OS scheduler yield.
++#define WAIT_SPIN_YIELD_THRESHOLD 100
++#endif
++
++static inline void
++wait_spin(uint32_t* spin_count) {
++	if (++(*spin_count) >= WAIT_SPIN_YIELD_THRESHOLD) {
++		thread_yield();
++		return;
++	}
 +#if defined(_MSC_VER)
 +#if defined(_M_ARM64)
 +	__yield();
@@ -1240,8 +1261,16 @@ index 0000000000..f7c8275c82
 +static atomic_uintptr_t global_heap_lock;
 +//! Heap ID counter
 +static atomic_uint global_heap_id = 1;
-+//! Initialized flag
-+static int global_rpmalloc_initialized;
++//! Global initialization state. rpmalloc_initialize can be called concurrently from multiple
++//! threads (the first allocation on any thread may trigger it), so it is driven as an atomic
++//! state machine: exactly one thread performs the global setup while the others wait for it to
++//! complete before allocating - they must never observe, or allocate against, a partially
++//! written global_config. Release/acquire ordering on the DONE transition publishes all of the
++//! global_config writes to threads that observe completion.
++#define RPMALLOC_INIT_UNINIT 0
++#define RPMALLOC_INIT_RUNNING 1
++#define RPMALLOC_INIT_DONE 2
++static atomic_int global_rpmalloc_init_state;
 +//! Memory interface
 +static rpmalloc_interface_t* global_memory_interface;
 +//! Default memory interface
@@ -1944,9 +1973,10 @@ index 0000000000..f7c8275c82
 +	unsigned long long thread_free = atomic_load_explicit(&page->thread_free, memory_order_relaxed);
 +	if (thread_free != 0) {
 +		// Other threads can only replace with another valid list head, this will never change to 0 in other threads
++		uint32_t spin = 0;
 +		while (!atomic_compare_exchange_weak_explicit(&page->thread_free, &thread_free, 0, memory_order_acquire,
 +		                                              memory_order_relaxed))
-+			wait_spin();
++			wait_spin(&spin);
 +		page->local_free_count = page_block_from_thread_free_list(page, thread_free, &page->local_free);
 +		rpmalloc_assert(page->local_free_count <= page->block_used, "Page thread free list count internal failure");
 +		page->block_used -= page->local_free_count;
@@ -1963,10 +1993,11 @@ index 0000000000..f7c8275c82
 +		heap_t* heap = page->heap;
 +		uintptr_t prev_head = atomic_load_explicit(&heap->thread_free[page->page_type], memory_order_relaxed);
 +		block->next = (void*)prev_head;
++		uint32_t spin = 0;
 +		while (!atomic_compare_exchange_weak_explicit(&heap->thread_free[page->page_type], &prev_head, (uintptr_t)block,
 +		                                              memory_order_release, memory_order_relaxed)) {
 +			block->next = (void*)prev_head;
-+			wait_spin();
++			wait_spin(&spin);
 +		}
 +	} else {
 +		unsigned long long prev_thread_free = atomic_load_explicit(&page->thread_free, memory_order_relaxed);
@@ -1974,11 +2005,12 @@ index 0000000000..f7c8275c82
 +		rpmalloc_assert(page_block(page, block_index) == block, "Block pointer is not aligned to start of block");
 +		uint32_t list_size = page_block_from_thread_free_list(page, prev_thread_free, &block->next) + 1;
 +		uint64_t thread_free = page_block_to_thread_free_list(page, block_index, list_size);
++		uint32_t spin = 0;
 +		while (!atomic_compare_exchange_weak_explicit(&page->thread_free, &prev_thread_free, thread_free,
 +		                                              memory_order_release, memory_order_relaxed)) {
 +			list_size = page_block_from_thread_free_list(page, prev_thread_free, &block->next) + 1;
 +			thread_free = page_block_to_thread_free_list(page, block_index, list_size);
-+			wait_spin();
++			wait_spin(&spin);
 +		}
 +	}
 +}
@@ -2181,10 +2213,11 @@ index 0000000000..f7c8275c82
 +static inline void
 +huge_cache_lock_acquire(void) {
 +	uintptr_t lock = 0;
++	uint32_t spin = 0;
 +	while (!atomic_compare_exchange_weak_explicit(&global_huge_cache.lock, &lock, 1, memory_order_acquire,
 +	                                              memory_order_relaxed)) {
 +		lock = 0;
-+		wait_spin();
++		wait_spin(&spin);
 +	}
 +}
 +
@@ -2403,9 +2436,10 @@ index 0000000000..f7c8275c82
 +heap_lock_acquire(void) {
 +	uintptr_t lock = 0;
 +	uintptr_t this_lock = get_thread_id();
++	uint32_t spin = 0;
 +	while (!atomic_compare_exchange_strong(&global_heap_lock, &lock, this_lock)) {
 +		lock = 0;
-+		wait_spin();
++		wait_spin(&spin);
 +	}
 +}
 +
@@ -2442,6 +2476,7 @@ index 0000000000..f7c8275c82
 +		rpmalloc_initialize(0);
 +
 +	heap_lock_acquire();
++	uint32_t spin = 0;
 +	while (1) {
 +		if (!first_class && global_heap_queue) {
 +			heap_t* heap = global_heap_queue;
@@ -2458,7 +2493,7 @@ index 0000000000..f7c8275c82
 +		if (!global_heap_creating)
 +			break;
 +		heap_lock_release();
-+		wait_spin();
++		wait_spin(&spin);
 +		heap_lock_acquire();
 +	}
 +	global_heap_creating = 1;
@@ -2696,9 +2731,10 @@ index 0000000000..f7c8275c82
 +	// Check if there is a free page from multithreaded deallocations
 +	uintptr_t block_mt = atomic_load_explicit(&heap->thread_free[page_type], memory_order_relaxed);
 +	if (UNEXPECTED(block_mt != 0)) {
++		uint32_t spin = 0;
 +		while (!atomic_compare_exchange_weak_explicit(&heap->thread_free[page_type], &block_mt, 0, memory_order_acquire,
 +		                                              memory_order_relaxed)) {
-+			wait_spin();
++			wait_spin(&spin);
 +		}
 +		block_t* block = (void*)block_mt;
 +		while (block) {
@@ -2972,7 +3008,7 @@ index 0000000000..f7c8275c82
 +			// Huge block
 +			void* block_start = pointer_offset(span, SPAN_HEADER_SIZE);
 +			if (!old_size)
-+				old_size = ((size_t)span->page_size * (size_t)span->page_count) - SPAN_HEADER_SIZE;
++				old_size = ((size_t)span->page_size * (size_t)span->page_count) - (size_t)pointer_diff(block, span);
 +			if ((size < old_size) && (size >= (old_size / 2)) && (size > LARGE_BLOCK_SIZE_LIMIT)) {
 +				// Still fits in block, still huge and saves less than half the memory,
 +				// never mind trying to save memory, but preserve data if alignment changed
@@ -3265,7 +3301,7 @@ index 0000000000..f7c8275c82
 +
 +extern int
 +rpmalloc_initialize_config(rpmalloc_interface_t* memory_interface, rpmalloc_config_t* config) {
-+	if (global_rpmalloc_initialized) {
++	if (atomic_load_explicit(&global_rpmalloc_init_state, memory_order_acquire) == RPMALLOC_INIT_DONE) {
 +		rpmalloc_thread_initialize();
 +		if (config)
 +			*config = global_config;
@@ -3285,12 +3321,24 @@ index 0000000000..f7c8275c82
 +
 +extern int
 +rpmalloc_initialize(rpmalloc_interface_t* memory_interface) {
-+	if (global_rpmalloc_initialized) {
-+		rpmalloc_thread_initialize();
-+		return 0;
++	for (;;) {
++		int state = atomic_load_explicit(&global_rpmalloc_init_state, memory_order_acquire);
++		if (state == RPMALLOC_INIT_DONE) {
++			rpmalloc_thread_initialize();
++			return 0;
++		}
++		if (state == RPMALLOC_INIT_RUNNING) {
++			while (atomic_load_explicit(&global_rpmalloc_init_state, memory_order_acquire) ==
++			       RPMALLOC_INIT_RUNNING)
++				thread_yield();
++			continue;
++		}
++		int expected = RPMALLOC_INIT_UNINIT;
++		if (atomic_compare_exchange_strong_explicit(&global_rpmalloc_init_state, &expected,
++		                                            RPMALLOC_INIT_RUNNING, memory_order_acq_rel,
++		                                            memory_order_acquire))
++			break;
 +	}
-+
-+	global_rpmalloc_initialized = 1;
 +
 +	// Remember whether the caller explicitly requested huge pages, the detection below
 +	// overwrites global_config.enable_huge_pages with what is actually available.
@@ -3449,7 +3497,7 @@ index 0000000000..f7c8275c82
 +		// huge page size. Leave the allocator uninitialized (and the requested flag cleared)
 +		// so the caller can detect this and re-initialize without huge pages if desired.
 +		global_config.enable_huge_pages = 0;
-+		global_rpmalloc_initialized = 0;
++		atomic_store_explicit(&global_rpmalloc_init_state, RPMALLOC_INIT_UNINIT, memory_order_release);
 +		return -1;
 +	}
 +
@@ -3506,6 +3554,8 @@ index 0000000000..f7c8275c82
 +#endif
 +
 +	global_main_thread_id = get_thread_id();
++
++	atomic_store_explicit(&global_rpmalloc_init_state, RPMALLOC_INIT_DONE, memory_order_release);
 +
 +	rpmalloc_thread_initialize();
 +
@@ -3654,7 +3704,7 @@ index 0000000000..f7c8275c82
 +
 +	global_heap_creating = 0;
 +	global_main_thread_id = 0;
-+	global_rpmalloc_initialized = 0;
++	atomic_store_explicit(&global_rpmalloc_init_state, RPMALLOC_INIT_UNINIT, memory_order_release);
 +}
 +
 +extern void
@@ -3972,7 +4022,7 @@ index 0000000000..f7c8275c82
 +#endif
 diff --git a/malloc/rpmalloc/rpmalloc.h b/malloc/rpmalloc/rpmalloc.h
 new file mode 100644
-index 0000000000..a8d7aaf877
+index 00000000..565c5110
 --- /dev/null
 +++ b/malloc/rpmalloc/rpmalloc.h
 @@ -0,0 +1,418 @@
@@ -3997,10 +4047,10 @@ index 0000000000..a8d7aaf877
 +//! rpmalloc version. RPMALLOC_VERSION is a human-readable string and may carry a pre-release
 +//  suffix such as "-rc1". RPMALLOC_VERSION_NUMBER is a monotonic integer for comparisons,
 +//  computed as major*10000 + minor*100 + patch (pre-release suffixes are not encoded).
-+#define RPMALLOC_VERSION "2.0.0-rc1"
++#define RPMALLOC_VERSION "2.0.1"
 +#define RPMALLOC_VERSION_MAJOR 2
 +#define RPMALLOC_VERSION_MINOR 0
-+#define RPMALLOC_VERSION_PATCH 0
++#define RPMALLOC_VERSION_PATCH 1
 +#define RPMALLOC_VERSION_NUMBER \
 +	(RPMALLOC_VERSION_MAJOR * 10000 + RPMALLOC_VERSION_MINOR * 100 + RPMALLOC_VERSION_PATCH)
 +
@@ -4395,5 +4445,5 @@ index 0000000000..a8d7aaf877
 +}
 +#endif
 -- 
-2.53.0
+2.55.0
 

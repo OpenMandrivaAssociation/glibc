@@ -1,7 +1,7 @@
-From fbadaf06c2dd3602d4e29d5764e0559125fe2bab Mon Sep 17 00:00:00 2001
+From 1cacdb073e1e666cce52b207f06fe9d16974dca4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:22 +0200
-Subject: [PATCH 05/20] Add in-tree snmalloc backend (--with-malloc=snmalloc)
+Date: Thu, 6 Aug 2026 23:50:18 +0200
+Subject: [PATCH 05/13] Add in-tree snmalloc backend (--with-malloc=snmalloc)
 
 ---
  benchtests/bench-memcpy-snmalloc.c            |   19 +
@@ -16,7 +16,7 @@ Subject: [PATCH 05/20] Add in-tree snmalloc backend (--with-malloc=snmalloc)
  malloc/snmalloc/aal/aal_concept.h             |   91 +
  malloc/snmalloc/aal/aal_consts.h              |   44 +
  malloc/snmalloc/aal/aal_powerpc.h             |   37 +
- malloc/snmalloc/aal/aal_riscv.h               |   54 +
+ malloc/snmalloc/aal/aal_riscv.h               |   74 +
  malloc/snmalloc/aal/aal_sparc.h               |   62 +
  malloc/snmalloc/aal/aal_x86.h                 |  125 ++
  malloc/snmalloc/aal/aal_x86_sgx.h             |   70 +
@@ -146,7 +146,7 @@ Subject: [PATCH 05/20] Add in-tree snmalloc backend (--with-malloc=snmalloc)
  malloc/snmalloc/stl/new.h                     |   35 +
  malloc/snmalloc/stl/type_traits.h             |    7 +
  malloc/snmalloc/stl/utility.h                 |    7 +
- 142 files changed, 22428 insertions(+)
+ 142 files changed, 22448 insertions(+)
  create mode 100644 benchtests/bench-memcpy-snmalloc.c
  create mode 100644 benchtests/bench-memcpy-snmalloc.cc
  create mode 100644 malloc/malloc-snmalloc-impl.cc
@@ -292,7 +292,7 @@ Subject: [PATCH 05/20] Add in-tree snmalloc backend (--with-malloc=snmalloc)
 
 diff --git a/benchtests/bench-memcpy-snmalloc.c b/benchtests/bench-memcpy-snmalloc.c
 new file mode 100644
-index 0000000000..c0cf8f64aa
+index 00000000..c0cf8f64
 --- /dev/null
 +++ b/benchtests/bench-memcpy-snmalloc.c
 @@ -0,0 +1,19 @@
@@ -317,7 +317,7 @@ index 0000000000..c0cf8f64aa
 +/* Stub: the real benchmark is bench-memcpy-snmalloc.cc (C++).  */
 diff --git a/benchtests/bench-memcpy-snmalloc.cc b/benchtests/bench-memcpy-snmalloc.cc
 new file mode 100644
-index 0000000000..8f4fa24726
+index 00000000..8f4fa247
 --- /dev/null
 +++ b/benchtests/bench-memcpy-snmalloc.cc
 @@ -0,0 +1,160 @@
@@ -484,7 +484,7 @@ index 0000000000..8f4fa24726
 \ No newline at end of file
 diff --git a/malloc/malloc-snmalloc-impl.cc b/malloc/malloc-snmalloc-impl.cc
 new file mode 100644
-index 0000000000..b15c86e4b7
+index 00000000..b15c86e4
 --- /dev/null
 +++ b/malloc/malloc-snmalloc-impl.cc
 @@ -0,0 +1,52 @@
@@ -542,7 +542,7 @@ index 0000000000..b15c86e4b7
 +}
 diff --git a/malloc/malloc-snmalloc.c b/malloc/malloc-snmalloc.c
 new file mode 100644
-index 0000000000..5f92853de8
+index 00000000..5f92853d
 --- /dev/null
 +++ b/malloc/malloc-snmalloc.c
 @@ -0,0 +1,430 @@
@@ -978,7 +978,7 @@ index 0000000000..5f92853de8
 +#endif /* MALLOC_MULTI_BACKEND */
 diff --git a/malloc/snmalloc/LICENSE b/malloc/snmalloc/LICENSE
 new file mode 100644
-index 0000000000..21071075c2
+index 00000000..21071075
 --- /dev/null
 +++ b/malloc/snmalloc/LICENSE
 @@ -0,0 +1,21 @@
@@ -1005,14 +1005,14 @@ index 0000000000..21071075c2
 +    SOFTWARE
 diff --git a/malloc/snmalloc/README.md b/malloc/snmalloc/README.md
 new file mode 100644
-index 0000000000..83c7381b10
+index 00000000..83c7381b
 --- /dev/null
 +++ b/malloc/snmalloc/README.md
 @@ -0,0 +1 @@
 +In-tree copy of Microsoft snmalloc headers for embedding into glibc.
 diff --git a/malloc/snmalloc/aal/aal.h b/malloc/snmalloc/aal/aal.h
 new file mode 100644
-index 0000000000..a584809f11
+index 00000000..4c176672
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal.h
 @@ -0,0 +1,325 @@
@@ -1192,7 +1192,7 @@ index 0000000000..a584809f11
 +      {
 +#if __has_builtin(__builtin_readcyclecounter) && !defined(__APPLE__) && \
 +  !defined(__aarch64__) && !defined(_M_ARM64) && !defined(_M_ARM64EC) && \
-+  !defined(SNMALLOC_NO_AAL_BUILTINS)
++  !defined(__riscv) && !defined(SNMALLOC_NO_AAL_BUILTINS)
 +        return __builtin_readcyclecounter();
 +#else
 +        return Arch::tick();
@@ -1343,7 +1343,7 @@ index 0000000000..a584809f11
 +#include "address.h"
 diff --git a/malloc/snmalloc/aal/aal_arm.h b/malloc/snmalloc/aal/aal_arm.h
 new file mode 100644
-index 0000000000..cc6abab9ab
+index 00000000..cc6abab9
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_arm.h
 @@ -0,0 +1,121 @@
@@ -1470,7 +1470,7 @@ index 0000000000..cc6abab9ab
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_cheri.h b/malloc/snmalloc/aal/aal_cheri.h
 new file mode 100644
-index 0000000000..84f11c038d
+index 00000000..84f11c03
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_cheri.h
 @@ -0,0 +1,132 @@
@@ -1608,7 +1608,7 @@ index 0000000000..84f11c038d
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_concept.h b/malloc/snmalloc/aal/aal_concept.h
 new file mode 100644
-index 0000000000..1ea35da989
+index 00000000..1ea35da9
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_concept.h
 @@ -0,0 +1,91 @@
@@ -1705,7 +1705,7 @@ index 0000000000..1ea35da989
 +#endif
 diff --git a/malloc/snmalloc/aal/aal_consts.h b/malloc/snmalloc/aal/aal_consts.h
 new file mode 100644
-index 0000000000..a680237297
+index 00000000..a6802372
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_consts.h
 @@ -0,0 +1,44 @@
@@ -1755,7 +1755,7 @@ index 0000000000..a680237297
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_powerpc.h b/malloc/snmalloc/aal/aal_powerpc.h
 new file mode 100644
-index 0000000000..60b9f125d1
+index 00000000..60b9f125
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_powerpc.h
 @@ -0,0 +1,37 @@
@@ -1798,10 +1798,10 @@ index 0000000000..60b9f125d1
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_riscv.h b/malloc/snmalloc/aal/aal_riscv.h
 new file mode 100644
-index 0000000000..2d2f7a4f1a
+index 00000000..f0dee91f
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_riscv.h
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,74 @@
 +#pragma once
 +
 +#if __riscv_xlen == 64
@@ -1824,6 +1824,26 @@ index 0000000000..2d2f7a4f1a
 +    static constexpr size_t smallest_page_size = 0x1000;
 +
 +    static constexpr AalName aal_name = RISCV;
++
++    static inline uint64_t tick() noexcept
++    {
++#if __riscv_xlen == 64
++      uint64_t t;
++      __asm__ volatile("rdtime %0" : "=r"(t));
++      return t;
++#else
++      uint32_t hi;
++      uint32_t hi2;
++      uint32_t lo;
++      do
++      {
++        __asm__ volatile("rdtimeh %0" : "=r"(hi));
++        __asm__ volatile("rdtime %0" : "=r"(lo));
++        __asm__ volatile("rdtimeh %0" : "=r"(hi2));
++      } while (hi != hi2);
++      return (static_cast<uint64_t>(hi) << 32) | lo;
++#endif
++    }
 +
 +    static void inline pause()
 +    {
@@ -1858,7 +1878,7 @@ index 0000000000..2d2f7a4f1a
 +}
 diff --git a/malloc/snmalloc/aal/aal_sparc.h b/malloc/snmalloc/aal/aal_sparc.h
 new file mode 100644
-index 0000000000..3bbf8405ed
+index 00000000..3bbf8405
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_sparc.h
 @@ -0,0 +1,62 @@
@@ -1926,7 +1946,7 @@ index 0000000000..3bbf8405ed
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_x86.h b/malloc/snmalloc/aal/aal_x86.h
 new file mode 100644
-index 0000000000..150de26451
+index 00000000..150de264
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_x86.h
 @@ -0,0 +1,125 @@
@@ -2057,7 +2077,7 @@ index 0000000000..150de26451
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/aal_x86_sgx.h b/malloc/snmalloc/aal/aal_x86_sgx.h
 new file mode 100644
-index 0000000000..87808a4dea
+index 00000000..87808a4d
 --- /dev/null
 +++ b/malloc/snmalloc/aal/aal_x86_sgx.h
 @@ -0,0 +1,70 @@
@@ -2133,7 +2153,7 @@ index 0000000000..87808a4dea
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/aal/address.h b/malloc/snmalloc/aal/address.h
 new file mode 100644
-index 0000000000..91cce94216
+index 00000000..91cce942
 --- /dev/null
 +++ b/malloc/snmalloc/aal/address.h
 @@ -0,0 +1,309 @@
@@ -2448,7 +2468,7 @@ index 0000000000..91cce94216
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend/backend.h b/malloc/snmalloc/backend/backend.h
 new file mode 100644
-index 0000000000..2772cf319d
+index 00000000..2772cf31
 --- /dev/null
 +++ b/malloc/snmalloc/backend/backend.h
 @@ -0,0 +1,214 @@
@@ -2668,7 +2688,7 @@ index 0000000000..2772cf319d
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend/base_constants.h b/malloc/snmalloc/backend/base_constants.h
 new file mode 100644
-index 0000000000..92385a9601
+index 00000000..92385a96
 --- /dev/null
 +++ b/malloc/snmalloc/backend/base_constants.h
 @@ -0,0 +1,21 @@
@@ -2696,7 +2716,7 @@ index 0000000000..92385a9601
 \ No newline at end of file
 diff --git a/malloc/snmalloc/backend/fixedglobalconfig.h b/malloc/snmalloc/backend/fixedglobalconfig.h
 new file mode 100644
-index 0000000000..5bd3b68b5a
+index 00000000..5bd3b68b
 --- /dev/null
 +++ b/malloc/snmalloc/backend/fixedglobalconfig.h
 @@ -0,0 +1,135 @@
@@ -2837,7 +2857,7 @@ index 0000000000..5bd3b68b5a
 +}
 diff --git a/malloc/snmalloc/backend/globalconfig.h b/malloc/snmalloc/backend/globalconfig.h
 new file mode 100644
-index 0000000000..208210b650
+index 00000000..208210b6
 --- /dev/null
 +++ b/malloc/snmalloc/backend/globalconfig.h
 @@ -0,0 +1,163 @@
@@ -3006,7 +3026,7 @@ index 0000000000..208210b650
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend/meta_protected_range.h b/malloc/snmalloc/backend/meta_protected_range.h
 new file mode 100644
-index 0000000000..857e853d28
+index 00000000..857e853d
 --- /dev/null
 +++ b/malloc/snmalloc/backend/meta_protected_range.h
 @@ -0,0 +1,132 @@
@@ -3144,7 +3164,7 @@ index 0000000000..857e853d28
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend/standard_range.h b/malloc/snmalloc/backend/standard_range.h
 new file mode 100644
-index 0000000000..78609ed2d0
+index 00000000..78609ed2
 --- /dev/null
 +++ b/malloc/snmalloc/backend/standard_range.h
 @@ -0,0 +1,95 @@
@@ -3245,7 +3265,7 @@ index 0000000000..78609ed2d0
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/authmap.h b/malloc/snmalloc/backend_helpers/authmap.h
 new file mode 100644
-index 0000000000..e2a00085be
+index 00000000..e2a00085
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/authmap.h
 @@ -0,0 +1,81 @@
@@ -3332,7 +3352,7 @@ index 0000000000..e2a00085be
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/backend_helpers.h b/malloc/snmalloc/backend_helpers/backend_helpers.h
 new file mode 100644
-index 0000000000..ee339337bc
+index 00000000..ee339337
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/backend_helpers.h
 @@ -0,0 +1,22 @@
@@ -3360,7 +3380,7 @@ index 0000000000..ee339337bc
 +#include "subrange.h"
 diff --git a/malloc/snmalloc/backend_helpers/buddy.h b/malloc/snmalloc/backend_helpers/buddy.h
 new file mode 100644
-index 0000000000..58cafacb11
+index 00000000..58cafacb
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/buddy.h
 @@ -0,0 +1,199 @@
@@ -3565,7 +3585,7 @@ index 0000000000..58cafacb11
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/commitrange.h b/malloc/snmalloc/backend_helpers/commitrange.h
 new file mode 100644
-index 0000000000..4e83a335b5
+index 00000000..4e83a335
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/commitrange.h
 @@ -0,0 +1,63 @@
@@ -3634,7 +3654,7 @@ index 0000000000..4e83a335b5
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/commonconfig.h b/malloc/snmalloc/backend_helpers/commonconfig.h
 new file mode 100644
-index 0000000000..d7fc56340a
+index 00000000..d7fc5634
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/commonconfig.h
 @@ -0,0 +1,137 @@
@@ -3777,7 +3797,7 @@ index 0000000000..d7fc56340a
 +#include "../mem/remotecache.h"
 diff --git a/malloc/snmalloc/backend_helpers/defaultpagemapentry.h b/malloc/snmalloc/backend_helpers/defaultpagemapentry.h
 new file mode 100644
-index 0000000000..5e1f703d26
+index 00000000..5e1f703d
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/defaultpagemapentry.h
 @@ -0,0 +1,77 @@
@@ -3860,7 +3880,7 @@ index 0000000000..5e1f703d26
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/empty_range.h b/malloc/snmalloc/backend_helpers/empty_range.h
 new file mode 100644
-index 0000000000..db91b9dc18
+index 00000000..db91b9dc
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/empty_range.h
 @@ -0,0 +1,23 @@
@@ -3889,7 +3909,7 @@ index 0000000000..db91b9dc18
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/globalrange.h b/malloc/snmalloc/backend_helpers/globalrange.h
 new file mode 100644
-index 0000000000..b6fdbef8bc
+index 00000000..b6fdbef8
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/globalrange.h
 @@ -0,0 +1,20 @@
@@ -3915,7 +3935,7 @@ index 0000000000..b6fdbef8bc
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/indirectrange.h b/malloc/snmalloc/backend_helpers/indirectrange.h
 new file mode 100644
-index 0000000000..932c3b2b4c
+index 00000000..932c3b2b
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/indirectrange.h
 @@ -0,0 +1,54 @@
@@ -3975,7 +3995,7 @@ index 0000000000..932c3b2b4c
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/largebuddyrange.h b/malloc/snmalloc/backend_helpers/largebuddyrange.h
 new file mode 100644
-index 0000000000..15324753ff
+index 00000000..15324753
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/largebuddyrange.h
 @@ -0,0 +1,393 @@
@@ -4374,7 +4394,7 @@ index 0000000000..15324753ff
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/lockrange.h b/malloc/snmalloc/backend_helpers/lockrange.h
 new file mode 100644
-index 0000000000..2dc796ac69
+index 00000000..2dc796ac
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/lockrange.h
 @@ -0,0 +1,53 @@
@@ -4433,7 +4453,7 @@ index 0000000000..2dc796ac69
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/logrange.h b/malloc/snmalloc/backend_helpers/logrange.h
 new file mode 100644
-index 0000000000..0a3f907de4
+index 00000000..0a3f907d
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/logrange.h
 @@ -0,0 +1,61 @@
@@ -4500,7 +4520,7 @@ index 0000000000..0a3f907de4
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/noprange.h b/malloc/snmalloc/backend_helpers/noprange.h
 new file mode 100644
-index 0000000000..45dcfdcf69
+index 00000000..45dcfdcf
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/noprange.h
 @@ -0,0 +1,36 @@
@@ -4542,7 +4562,7 @@ index 0000000000..45dcfdcf69
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/pagemap.h b/malloc/snmalloc/backend_helpers/pagemap.h
 new file mode 100644
-index 0000000000..2d6ed44b03
+index 00000000..2d6ed44b
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/pagemap.h
 @@ -0,0 +1,140 @@
@@ -4688,7 +4708,7 @@ index 0000000000..2d6ed44b03
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/pagemapregisterrange.h b/malloc/snmalloc/backend_helpers/pagemapregisterrange.h
 new file mode 100644
-index 0000000000..b4b2a2ded3
+index 00000000..b4b2a2de
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/pagemapregisterrange.h
 @@ -0,0 +1,46 @@
@@ -4740,7 +4760,7 @@ index 0000000000..b4b2a2ded3
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/palrange.h b/malloc/snmalloc/backend_helpers/palrange.h
 new file mode 100644
-index 0000000000..ade65294a8
+index 00000000..ade65294
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/palrange.h
 @@ -0,0 +1,51 @@
@@ -4797,7 +4817,7 @@ index 0000000000..ade65294a8
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/range_helpers.h b/malloc/snmalloc/backend_helpers/range_helpers.h
 new file mode 100644
-index 0000000000..77455ff493
+index 00000000..77455ff4
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/range_helpers.h
 @@ -0,0 +1,163 @@
@@ -4966,7 +4986,7 @@ index 0000000000..77455ff493
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/smallbuddyrange.h b/malloc/snmalloc/backend_helpers/smallbuddyrange.h
 new file mode 100644
-index 0000000000..6f8400e83f
+index 00000000..6f8400e8
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/smallbuddyrange.h
 @@ -0,0 +1,252 @@
@@ -5224,7 +5244,7 @@ index 0000000000..6f8400e83f
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/staticconditionalrange.h b/malloc/snmalloc/backend_helpers/staticconditionalrange.h
 new file mode 100644
-index 0000000000..682c2f1fb3
+index 00000000..682c2f1f
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/staticconditionalrange.h
 @@ -0,0 +1,78 @@
@@ -5308,7 +5328,7 @@ index 0000000000..682c2f1fb3
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/staticrange.h b/malloc/snmalloc/backend_helpers/staticrange.h
 new file mode 100644
-index 0000000000..2996c0fbe7
+index 00000000..2996c0fb
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/staticrange.h
 @@ -0,0 +1,42 @@
@@ -5356,7 +5376,7 @@ index 0000000000..2996c0fbe7
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/statsrange.h b/malloc/snmalloc/backend_helpers/statsrange.h
 new file mode 100644
-index 0000000000..d1e2137776
+index 00000000..d1e21377
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/statsrange.h
 @@ -0,0 +1,82 @@
@@ -5444,7 +5464,7 @@ index 0000000000..d1e2137776
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/backend_helpers/subrange.h b/malloc/snmalloc/backend_helpers/subrange.h
 new file mode 100644
-index 0000000000..8d886a2b8d
+index 00000000..8d886a2b
 --- /dev/null
 +++ b/malloc/snmalloc/backend_helpers/subrange.h
 @@ -0,0 +1,51 @@
@@ -5501,7 +5521,7 @@ index 0000000000..8d886a2b8d
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/aba.h b/malloc/snmalloc/ds/aba.h
 new file mode 100644
-index 0000000000..b0f67ecda8
+index 00000000..b0f67ecd
 --- /dev/null
 +++ b/malloc/snmalloc/ds/aba.h
 @@ -0,0 +1,202 @@
@@ -5709,7 +5729,7 @@ index 0000000000..b0f67ecda8
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/combininglock.h b/malloc/snmalloc/ds/combininglock.h
 new file mode 100644
-index 0000000000..e979db2b56
+index 00000000..e979db2b
 --- /dev/null
 +++ b/malloc/snmalloc/ds/combininglock.h
 @@ -0,0 +1,305 @@
@@ -6020,7 +6040,7 @@ index 0000000000..e979db2b56
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/ds.h b/malloc/snmalloc/ds/ds.h
 new file mode 100644
-index 0000000000..9c9cd0a49b
+index 00000000..9c9cd0a4
 --- /dev/null
 +++ b/malloc/snmalloc/ds/ds.h
 @@ -0,0 +1,15 @@
@@ -6041,7 +6061,7 @@ index 0000000000..9c9cd0a49b
 +#include "sizeclasstable.h"
 diff --git a/malloc/snmalloc/ds/entropy.h b/malloc/snmalloc/ds/entropy.h
 new file mode 100644
-index 0000000000..1282c29592
+index 00000000..1282c295
 --- /dev/null
 +++ b/malloc/snmalloc/ds/entropy.h
 @@ -0,0 +1,26 @@
@@ -6073,7 +6093,7 @@ index 0000000000..1282c29592
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/mpmcstack.h b/malloc/snmalloc/ds/mpmcstack.h
 new file mode 100644
-index 0000000000..57e5876370
+index 00000000..57e58763
 --- /dev/null
 +++ b/malloc/snmalloc/ds/mpmcstack.h
 @@ -0,0 +1,98 @@
@@ -6177,7 +6197,7 @@ index 0000000000..57e5876370
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/pagemap.h b/malloc/snmalloc/ds/pagemap.h
 new file mode 100644
-index 0000000000..2ee3cdd297
+index 00000000..2ee3cdd2
 --- /dev/null
 +++ b/malloc/snmalloc/ds/pagemap.h
 @@ -0,0 +1,418 @@
@@ -6601,7 +6621,7 @@ index 0000000000..2ee3cdd297
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/pool.h b/malloc/snmalloc/ds/pool.h
 new file mode 100644
-index 0000000000..2a94ec440e
+index 00000000..2a94ec44
 --- /dev/null
 +++ b/malloc/snmalloc/ds/pool.h
 @@ -0,0 +1,255 @@
@@ -6862,7 +6882,7 @@ index 0000000000..2a94ec440e
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/pooled.h b/malloc/snmalloc/ds/pooled.h
 new file mode 100644
-index 0000000000..d64716783f
+index 00000000..d6471678
 --- /dev/null
 +++ b/malloc/snmalloc/ds/pooled.h
 @@ -0,0 +1,79 @@
@@ -6947,7 +6967,7 @@ index 0000000000..d64716783f
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds/sizeclasstable.h b/malloc/snmalloc/ds/sizeclasstable.h
 new file mode 100644
-index 0000000000..5db3cb5fa4
+index 00000000..5db3cb5f
 --- /dev/null
 +++ b/malloc/snmalloc/ds/sizeclasstable.h
 @@ -0,0 +1,550 @@
@@ -7503,7 +7523,7 @@ index 0000000000..5db3cb5fa4
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_aal/ds_aal.h b/malloc/snmalloc/ds_aal/ds_aal.h
 new file mode 100644
-index 0000000000..e0b4ac202f
+index 00000000..e0b4ac20
 --- /dev/null
 +++ b/malloc/snmalloc/ds_aal/ds_aal.h
 @@ -0,0 +1,11 @@
@@ -7521,7 +7541,7 @@ index 0000000000..e0b4ac202f
 \ No newline at end of file
 diff --git a/malloc/snmalloc/ds_aal/flaglock.h b/malloc/snmalloc/ds_aal/flaglock.h
 new file mode 100644
-index 0000000000..c55b80bb12
+index 00000000..c55b80bb
 --- /dev/null
 +++ b/malloc/snmalloc/ds_aal/flaglock.h
 @@ -0,0 +1,149 @@
@@ -7676,7 +7696,7 @@ index 0000000000..c55b80bb12
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_aal/prevent_fork.h b/malloc/snmalloc/ds_aal/prevent_fork.h
 new file mode 100644
-index 0000000000..6e7635cb7c
+index 00000000..6e7635cb
 --- /dev/null
 +++ b/malloc/snmalloc/ds_aal/prevent_fork.h
 @@ -0,0 +1,174 @@
@@ -7857,7 +7877,7 @@ index 0000000000..6e7635cb7c
 \ No newline at end of file
 diff --git a/malloc/snmalloc/ds_aal/seqset.h b/malloc/snmalloc/ds_aal/seqset.h
 new file mode 100644
-index 0000000000..4955c2e730
+index 00000000..4955c2e7
 --- /dev/null
 +++ b/malloc/snmalloc/ds_aal/seqset.h
 @@ -0,0 +1,198 @@
@@ -8061,7 +8081,7 @@ index 0000000000..4955c2e730
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_aal/singleton.h b/malloc/snmalloc/ds_aal/singleton.h
 new file mode 100644
-index 0000000000..aebbcd51f4
+index 00000000..aebbcd51
 --- /dev/null
 +++ b/malloc/snmalloc/ds_aal/singleton.h
 @@ -0,0 +1,64 @@
@@ -8131,7 +8151,7 @@ index 0000000000..aebbcd51f4
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/bits.h b/malloc/snmalloc/ds_core/bits.h
 new file mode 100644
-index 0000000000..3391e70f7c
+index 00000000..3391e70f
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/bits.h
 @@ -0,0 +1,397 @@
@@ -8534,7 +8554,7 @@ index 0000000000..3391e70f7c
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/concept.h b/malloc/snmalloc/ds_core/concept.h
 new file mode 100644
-index 0000000000..d20698d307
+index 00000000..d20698d3
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/concept.h
 @@ -0,0 +1,64 @@
@@ -8604,7 +8624,7 @@ index 0000000000..d20698d307
 +#endif
 diff --git a/malloc/snmalloc/ds_core/defines.h b/malloc/snmalloc/ds_core/defines.h
 new file mode 100644
-index 0000000000..3f654ec043
+index 00000000..3f654ec0
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/defines.h
 @@ -0,0 +1,244 @@
@@ -8854,7 +8874,7 @@ index 0000000000..3f654ec043
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/ds_core.h b/malloc/snmalloc/ds_core/ds_core.h
 new file mode 100644
-index 0000000000..0c22a35bd2
+index 00000000..0c22a35b
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/ds_core.h
 @@ -0,0 +1,18 @@
@@ -8879,7 +8899,7 @@ index 0000000000..0c22a35bd2
 \ No newline at end of file
 diff --git a/malloc/snmalloc/ds_core/helpers.h b/malloc/snmalloc/ds_core/helpers.h
 new file mode 100644
-index 0000000000..7bddbfa949
+index 00000000..7bddbfa9
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/helpers.h
 @@ -0,0 +1,381 @@
@@ -9266,7 +9286,7 @@ index 0000000000..7bddbfa949
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/ptrwrap.h b/malloc/snmalloc/ds_core/ptrwrap.h
 new file mode 100644
-index 0000000000..843eb8d73d
+index 00000000..843eb8d7
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/ptrwrap.h
 @@ -0,0 +1,542 @@
@@ -9814,7 +9834,7 @@ index 0000000000..843eb8d73d
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/redblacktree.h b/malloc/snmalloc/ds_core/redblacktree.h
 new file mode 100644
-index 0000000000..e6ce73c244
+index 00000000..e6ce73c2
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/redblacktree.h
 @@ -0,0 +1,795 @@
@@ -10615,7 +10635,7 @@ index 0000000000..e6ce73c244
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/sizeclassconfig.h b/malloc/snmalloc/ds_core/sizeclassconfig.h
 new file mode 100644
-index 0000000000..05224f81ff
+index 00000000..05224f81
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/sizeclassconfig.h
 @@ -0,0 +1,85 @@
@@ -10706,7 +10726,7 @@ index 0000000000..05224f81ff
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/sizeclassstatic.h b/malloc/snmalloc/ds_core/sizeclassstatic.h
 new file mode 100644
-index 0000000000..011f698302
+index 00000000..011f6983
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/sizeclassstatic.h
 @@ -0,0 +1,77 @@
@@ -10789,7 +10809,7 @@ index 0000000000..011f698302
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/ds_core/tid.h b/malloc/snmalloc/ds_core/tid.h
 new file mode 100644
-index 0000000000..771b58560f
+index 00000000..771b5856
 --- /dev/null
 +++ b/malloc/snmalloc/ds_core/tid.h
 @@ -0,0 +1,26 @@
@@ -10822,7 +10842,7 @@ index 0000000000..771b58560f
 \ No newline at end of file
 diff --git a/malloc/snmalloc/global/bounds_checks.h b/malloc/snmalloc/global/bounds_checks.h
 new file mode 100644
-index 0000000000..22fdc58942
+index 00000000..22fdc589
 --- /dev/null
 +++ b/malloc/snmalloc/global/bounds_checks.h
 @@ -0,0 +1,113 @@
@@ -10941,7 +10961,7 @@ index 0000000000..22fdc58942
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/global/global.h b/malloc/snmalloc/global/global.h
 new file mode 100644
-index 0000000000..17699ca5a7
+index 00000000..17699ca5
 --- /dev/null
 +++ b/malloc/snmalloc/global/global.h
 @@ -0,0 +1,8 @@
@@ -10955,7 +10975,7 @@ index 0000000000..17699ca5a7
 +#include "threadalloc.h"
 diff --git a/malloc/snmalloc/global/globalalloc.h b/malloc/snmalloc/global/globalalloc.h
 new file mode 100644
-index 0000000000..7607e582a1
+index 00000000..7607e582
 --- /dev/null
 +++ b/malloc/snmalloc/global/globalalloc.h
 @@ -0,0 +1,408 @@
@@ -11369,7 +11389,7 @@ index 0000000000..7607e582a1
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/global/libc.h b/malloc/snmalloc/global/libc.h
 new file mode 100644
-index 0000000000..caa61f010b
+index 00000000..caa61f01
 --- /dev/null
 +++ b/malloc/snmalloc/global/libc.h
 @@ -0,0 +1,230 @@
@@ -11605,7 +11625,7 @@ index 0000000000..caa61f010b
 +} // namespace snmalloc::libc
 diff --git a/malloc/snmalloc/global/memcpy.h b/malloc/snmalloc/global/memcpy.h
 new file mode 100644
-index 0000000000..c1600d5173
+index 00000000..c1600d51
 --- /dev/null
 +++ b/malloc/snmalloc/global/memcpy.h
 @@ -0,0 +1,457 @@
@@ -12068,7 +12088,7 @@ index 0000000000..c1600d5173
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/global/scopedalloc.h b/malloc/snmalloc/global/scopedalloc.h
 new file mode 100644
-index 0000000000..460f0c7797
+index 00000000..460f0c77
 --- /dev/null
 +++ b/malloc/snmalloc/global/scopedalloc.h
 @@ -0,0 +1,90 @@
@@ -12164,7 +12184,7 @@ index 0000000000..460f0c7797
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/global/threadalloc.h b/malloc/snmalloc/global/threadalloc.h
 new file mode 100644
-index 0000000000..d037995e52
+index 00000000..d037995e
 --- /dev/null
 +++ b/malloc/snmalloc/global/threadalloc.h
 @@ -0,0 +1,322 @@
@@ -12492,7 +12512,7 @@ index 0000000000..d037995e52
 +#endif
 diff --git a/malloc/snmalloc/mem/backend_concept.h b/malloc/snmalloc/mem/backend_concept.h
 new file mode 100644
-index 0000000000..03a5667157
+index 00000000..03a56671
 --- /dev/null
 +++ b/malloc/snmalloc/mem/backend_concept.h
 @@ -0,0 +1,187 @@
@@ -12685,7 +12705,7 @@ index 0000000000..03a5667157
 +#endif
 diff --git a/malloc/snmalloc/mem/backend_wrappers.h b/malloc/snmalloc/mem/backend_wrappers.h
 new file mode 100644
-index 0000000000..4eb39465fa
+index 00000000..4eb39465
 --- /dev/null
 +++ b/malloc/snmalloc/mem/backend_wrappers.h
 @@ -0,0 +1,108 @@
@@ -12799,7 +12819,7 @@ index 0000000000..4eb39465fa
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/check_init.h b/malloc/snmalloc/mem/check_init.h
 new file mode 100644
-index 0000000000..7c5910a73f
+index 00000000..7c5910a7
 --- /dev/null
 +++ b/malloc/snmalloc/mem/check_init.h
 @@ -0,0 +1,33 @@
@@ -12839,7 +12859,7 @@ index 0000000000..7c5910a73f
 \ No newline at end of file
 diff --git a/malloc/snmalloc/mem/corealloc.h b/malloc/snmalloc/mem/corealloc.h
 new file mode 100644
-index 0000000000..b9d63c9574
+index 00000000..b9d63c95
 --- /dev/null
 +++ b/malloc/snmalloc/mem/corealloc.h
 @@ -0,0 +1,1606 @@
@@ -14451,7 +14471,7 @@ index 0000000000..b9d63c9574
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/entropy.h b/malloc/snmalloc/mem/entropy.h
 new file mode 100644
-index 0000000000..d05fb368c0
+index 00000000..d05fb368
 --- /dev/null
 +++ b/malloc/snmalloc/mem/entropy.h
 @@ -0,0 +1,143 @@
@@ -14600,7 +14620,7 @@ index 0000000000..d05fb368c0
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/freelist.h b/malloc/snmalloc/mem/freelist.h
 new file mode 100644
-index 0000000000..db059c5c99
+index 00000000..db059c5c
 --- /dev/null
 +++ b/malloc/snmalloc/mem/freelist.h
 @@ -0,0 +1,1022 @@
@@ -15628,7 +15648,7 @@ index 0000000000..db059c5c99
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/freelist_queue.h b/malloc/snmalloc/mem/freelist_queue.h
 new file mode 100644
-index 0000000000..4520332493
+index 00000000..45203324
 --- /dev/null
 +++ b/malloc/snmalloc/mem/freelist_queue.h
 @@ -0,0 +1,204 @@
@@ -15838,7 +15858,7 @@ index 0000000000..4520332493
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/mem.h b/malloc/snmalloc/mem/mem.h
 new file mode 100644
-index 0000000000..fb0106a9fd
+index 00000000..fb0106a9
 --- /dev/null
 +++ b/malloc/snmalloc/mem/mem.h
 @@ -0,0 +1,14 @@
@@ -15858,7 +15878,7 @@ index 0000000000..fb0106a9fd
 +#include "ticker.h"
 diff --git a/malloc/snmalloc/mem/metadata.h b/malloc/snmalloc/mem/metadata.h
 new file mode 100644
-index 0000000000..e753f125cb
+index 00000000..e753f125
 --- /dev/null
 +++ b/malloc/snmalloc/mem/metadata.h
 @@ -0,0 +1,778 @@
@@ -16642,7 +16662,7 @@ index 0000000000..e753f125cb
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/remoteallocator.h b/malloc/snmalloc/mem/remoteallocator.h
 new file mode 100644
-index 0000000000..57d7c31e0b
+index 00000000..57d7c31e
 --- /dev/null
 +++ b/malloc/snmalloc/mem/remoteallocator.h
 @@ -0,0 +1,382 @@
@@ -17030,7 +17050,7 @@ index 0000000000..57d7c31e0b
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/remotecache.h b/malloc/snmalloc/mem/remotecache.h
 new file mode 100644
-index 0000000000..c92c99a658
+index 00000000..c92c99a6
 --- /dev/null
 +++ b/malloc/snmalloc/mem/remotecache.h
 @@ -0,0 +1,389 @@
@@ -17425,7 +17445,7 @@ index 0000000000..c92c99a658
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/secondary/default.h b/malloc/snmalloc/mem/secondary/default.h
 new file mode 100644
-index 0000000000..1fc86af46a
+index 00000000..1fc86af4
 --- /dev/null
 +++ b/malloc/snmalloc/mem/secondary/default.h
 @@ -0,0 +1,47 @@
@@ -17478,7 +17498,7 @@ index 0000000000..1fc86af46a
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/secondary/gwp_asan.h b/malloc/snmalloc/mem/secondary/gwp_asan.h
 new file mode 100644
-index 0000000000..716c579353
+index 00000000..716c5793
 --- /dev/null
 +++ b/malloc/snmalloc/mem/secondary/gwp_asan.h
 @@ -0,0 +1,71 @@
@@ -17555,7 +17575,7 @@ index 0000000000..716c579353
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mem/ticker.h b/malloc/snmalloc/mem/ticker.h
 new file mode 100644
-index 0000000000..33e3819fb6
+index 00000000..33e3819f
 --- /dev/null
 +++ b/malloc/snmalloc/mem/ticker.h
 @@ -0,0 +1,100 @@
@@ -17661,7 +17681,7 @@ index 0000000000..33e3819fb6
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mitigations/allocconfig.h b/malloc/snmalloc/mitigations/allocconfig.h
 new file mode 100644
-index 0000000000..3f326a570b
+index 00000000..3f326a57
 --- /dev/null
 +++ b/malloc/snmalloc/mitigations/allocconfig.h
 @@ -0,0 +1,102 @@
@@ -17769,7 +17789,7 @@ index 0000000000..3f326a570b
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/mitigations/cheri.h b/malloc/snmalloc/mitigations/cheri.h
 new file mode 100644
-index 0000000000..f10acb4e18
+index 00000000..f10acb4e
 --- /dev/null
 +++ b/malloc/snmalloc/mitigations/cheri.h
 @@ -0,0 +1,141 @@
@@ -17917,7 +17937,7 @@ index 0000000000..f10acb4e18
 \ No newline at end of file
 diff --git a/malloc/snmalloc/mitigations/mitigations.h b/malloc/snmalloc/mitigations/mitigations.h
 new file mode 100644
-index 0000000000..5cd46911f2
+index 00000000..5cd46911
 --- /dev/null
 +++ b/malloc/snmalloc/mitigations/mitigations.h
 @@ -0,0 +1,263 @@
@@ -18186,7 +18206,7 @@ index 0000000000..5cd46911f2
 +  }
 diff --git a/malloc/snmalloc/mitigations/mitigations_all.h b/malloc/snmalloc/mitigations/mitigations_all.h
 new file mode 100644
-index 0000000000..3794556428
+index 00000000..37945564
 --- /dev/null
 +++ b/malloc/snmalloc/mitigations/mitigations_all.h
 @@ -0,0 +1,12 @@
@@ -18204,7 +18224,7 @@ index 0000000000..3794556428
 +#include "mitigations.h"
 diff --git a/malloc/snmalloc/override/jemalloc_compat.cc b/malloc/snmalloc/override/jemalloc_compat.cc
 new file mode 100644
-index 0000000000..a238b532fc
+index 00000000..a238b532
 --- /dev/null
 +++ b/malloc/snmalloc/override/jemalloc_compat.cc
 @@ -0,0 +1,387 @@
@@ -18597,7 +18617,7 @@ index 0000000000..a238b532fc
 +}
 diff --git a/malloc/snmalloc/override/malloc-extensions.cc b/malloc/snmalloc/override/malloc-extensions.cc
 new file mode 100644
-index 0000000000..c40b070e05
+index 00000000..c40b070e
 --- /dev/null
 +++ b/malloc/snmalloc/override/malloc-extensions.cc
 @@ -0,0 +1,13 @@
@@ -18616,7 +18636,7 @@ index 0000000000..c40b070e05
 +}
 diff --git a/malloc/snmalloc/override/malloc-extensions.h b/malloc/snmalloc/override/malloc-extensions.h
 new file mode 100644
-index 0000000000..1c0f5c8d99
+index 00000000..1c0f5c8d
 --- /dev/null
 +++ b/malloc/snmalloc/override/malloc-extensions.h
 @@ -0,0 +1,36 @@
@@ -18658,7 +18678,7 @@ index 0000000000..1c0f5c8d99
 +void get_malloc_info_v1(malloc_info_v1* stats);
 diff --git a/malloc/snmalloc/override/malloc.cc b/malloc/snmalloc/override/malloc.cc
 new file mode 100644
-index 0000000000..cf949680da
+index 00000000..cf949680
 --- /dev/null
 +++ b/malloc/snmalloc/override/malloc.cc
 @@ -0,0 +1,137 @@
@@ -18801,7 +18821,7 @@ index 0000000000..cf949680da
 +}
 diff --git a/malloc/snmalloc/override/memcpy.cc b/malloc/snmalloc/override/memcpy.cc
 new file mode 100644
-index 0000000000..c6053ae02a
+index 00000000..c6053ae0
 --- /dev/null
 +++ b/malloc/snmalloc/override/memcpy.cc
 @@ -0,0 +1,13 @@
@@ -18820,7 +18840,7 @@ index 0000000000..c6053ae02a
 +}
 diff --git a/malloc/snmalloc/override/new.cc b/malloc/snmalloc/override/new.cc
 new file mode 100644
-index 0000000000..667ca9c459
+index 00000000..667ca9c4
 --- /dev/null
 +++ b/malloc/snmalloc/override/new.cc
 @@ -0,0 +1,200 @@
@@ -19026,7 +19046,7 @@ index 0000000000..667ca9c459
 +#endif
 diff --git a/malloc/snmalloc/override/override.h b/malloc/snmalloc/override/override.h
 new file mode 100644
-index 0000000000..5dda309c0b
+index 00000000..5dda309c
 --- /dev/null
 +++ b/malloc/snmalloc/override/override.h
 @@ -0,0 +1,15 @@
@@ -19047,7 +19067,7 @@ index 0000000000..5dda309c0b
 +#endif
 diff --git a/malloc/snmalloc/override/rust.cc b/malloc/snmalloc/override/rust.cc
 new file mode 100644
-index 0000000000..f07e51073d
+index 00000000..f07e5107
 --- /dev/null
 +++ b/malloc/snmalloc/override/rust.cc
 @@ -0,0 +1,65 @@
@@ -19118,7 +19138,7 @@ index 0000000000..f07e51073d
 +}
 diff --git a/malloc/snmalloc/pal/pal.h b/malloc/snmalloc/pal/pal.h
 new file mode 100644
-index 0000000000..8847754594
+index 00000000..88477545
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal.h
 @@ -0,0 +1,160 @@
@@ -19284,7 +19304,7 @@ index 0000000000..8847754594
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_apple.h b/malloc/snmalloc/pal/pal_apple.h
 new file mode 100644
-index 0000000000..7e800f7618
+index 00000000..7e800f76
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_apple.h
 @@ -0,0 +1,380 @@
@@ -19670,7 +19690,7 @@ index 0000000000..7e800f7618
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_bsd.h b/malloc/snmalloc/pal/pal_bsd.h
 new file mode 100644
-index 0000000000..454a342113
+index 00000000..454a3421
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_bsd.h
 @@ -0,0 +1,49 @@
@@ -19725,7 +19745,7 @@ index 0000000000..454a342113
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_bsd_aligned.h b/malloc/snmalloc/pal/pal_bsd_aligned.h
 new file mode 100644
-index 0000000000..48b28db53d
+index 00000000..48b28db5
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_bsd_aligned.h
 @@ -0,0 +1,60 @@
@@ -19791,7 +19811,7 @@ index 0000000000..48b28db53d
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_concept.h b/malloc/snmalloc/pal/pal_concept.h
 new file mode 100644
-index 0000000000..be5678d4a4
+index 00000000..be5678d4
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_concept.h
 @@ -0,0 +1,133 @@
@@ -19930,7 +19950,7 @@ index 0000000000..be5678d4a4
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_consts.h b/malloc/snmalloc/pal/pal_consts.h
 new file mode 100644
-index 0000000000..293ad3318c
+index 00000000..293ad331
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_consts.h
 @@ -0,0 +1,96 @@
@@ -20032,7 +20052,7 @@ index 0000000000..293ad3318c
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_dragonfly.h b/malloc/snmalloc/pal/pal_dragonfly.h
 new file mode 100644
-index 0000000000..5b572d99c4
+index 00000000..5b572d99
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_dragonfly.h
 @@ -0,0 +1,43 @@
@@ -20081,7 +20101,7 @@ index 0000000000..5b572d99c4
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_ds.h b/malloc/snmalloc/pal/pal_ds.h
 new file mode 100644
-index 0000000000..59976b881c
+index 00000000..1c087110
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_ds.h
 @@ -0,0 +1,161 @@
@@ -20190,7 +20210,7 @@ index 0000000000..59976b881c
 +    template<typename T>
 +    friend class PalList;
 +
-+    stl::Atomic<PalTimerObject*> pal_next;
++    stl::Atomic<PalTimerObject*> pal_next{nullptr};
 +
 +    void (*pal_notify)(PalTimerObject* self);
 +
@@ -20248,7 +20268,7 @@ index 0000000000..59976b881c
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_freebsd.h b/malloc/snmalloc/pal/pal_freebsd.h
 new file mode 100644
-index 0000000000..8cb73bc0ea
+index 00000000..8cb73bc0
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_freebsd.h
 @@ -0,0 +1,182 @@
@@ -20436,7 +20456,7 @@ index 0000000000..8cb73bc0ea
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_freebsd_kernel.h b/malloc/snmalloc/pal/pal_freebsd_kernel.h
 new file mode 100644
-index 0000000000..444ff895ce
+index 00000000..444ff895
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_freebsd_kernel.h
 @@ -0,0 +1,107 @@
@@ -20549,7 +20569,7 @@ index 0000000000..444ff895ce
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_haiku.h b/malloc/snmalloc/pal/pal_haiku.h
 new file mode 100644
-index 0000000000..bbc9e077c0
+index 00000000..bbc9e077
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_haiku.h
 @@ -0,0 +1,42 @@
@@ -20597,7 +20617,7 @@ index 0000000000..bbc9e077c0
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_linux.h b/malloc/snmalloc/pal/pal_linux.h
 new file mode 100644
-index 0000000000..251aaf3215
+index 00000000..251aaf32
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_linux.h
 @@ -0,0 +1,306 @@
@@ -20909,7 +20929,7 @@ index 0000000000..251aaf3215
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_netbsd.h b/malloc/snmalloc/pal/pal_netbsd.h
 new file mode 100644
-index 0000000000..250826423e
+index 00000000..25082642
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_netbsd.h
 @@ -0,0 +1,64 @@
@@ -20979,7 +20999,7 @@ index 0000000000..250826423e
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_noalloc.h b/malloc/snmalloc/pal/pal_noalloc.h
 new file mode 100644
-index 0000000000..b6aae783d7
+index 00000000..b6aae783
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_noalloc.h
 @@ -0,0 +1,107 @@
@@ -21092,7 +21112,7 @@ index 0000000000..b6aae783d7
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_open_enclave.h b/malloc/snmalloc/pal/pal_open_enclave.h
 new file mode 100644
-index 0000000000..dbfd9ad1e3
+index 00000000..dbfd9ad1
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_open_enclave.h
 @@ -0,0 +1,57 @@
@@ -21155,7 +21175,7 @@ index 0000000000..dbfd9ad1e3
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_openbsd.h b/malloc/snmalloc/pal/pal_openbsd.h
 new file mode 100644
-index 0000000000..187144f971
+index 00000000..187144f9
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_openbsd.h
 @@ -0,0 +1,69 @@
@@ -21230,7 +21250,7 @@ index 0000000000..187144f971
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_plain.h b/malloc/snmalloc/pal/pal_plain.h
 new file mode 100644
-index 0000000000..ff562af439
+index 00000000..ff562af4
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_plain.h
 @@ -0,0 +1,32 @@
@@ -21268,7 +21288,7 @@ index 0000000000..ff562af439
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_posix.h b/malloc/snmalloc/pal/pal_posix.h
 new file mode 100644
-index 0000000000..3ab85bf6a7
+index 00000000..3ab85bf6
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_posix.h
 @@ -0,0 +1,474 @@
@@ -21748,7 +21768,7 @@ index 0000000000..3ab85bf6a7
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_solaris.h b/malloc/snmalloc/pal/pal_solaris.h
 new file mode 100644
-index 0000000000..a8d0739e71
+index 00000000..a8d0739e
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_solaris.h
 @@ -0,0 +1,65 @@
@@ -21819,7 +21839,7 @@ index 0000000000..a8d0739e71
 +#endif
 diff --git a/malloc/snmalloc/pal/pal_timer_default.h b/malloc/snmalloc/pal/pal_timer_default.h
 new file mode 100644
-index 0000000000..d70abd5262
+index 00000000..d70abd52
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_timer_default.h
 @@ -0,0 +1,30 @@
@@ -21855,7 +21875,7 @@ index 0000000000..d70abd5262
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/pal/pal_windows.h b/malloc/snmalloc/pal/pal_windows.h
 new file mode 100644
-index 0000000000..5199c0604e
+index 00000000..5199c060
 --- /dev/null
 +++ b/malloc/snmalloc/pal/pal_windows.h
 @@ -0,0 +1,637 @@
@@ -22498,7 +22518,7 @@ index 0000000000..5199c0604e
 +#endif
 diff --git a/malloc/snmalloc/snmalloc.h b/malloc/snmalloc/snmalloc.h
 new file mode 100644
-index 0000000000..4781dc7c91
+index 00000000..4781dc7c
 --- /dev/null
 +++ b/malloc/snmalloc/snmalloc.h
 @@ -0,0 +1,34 @@
@@ -22538,7 +22558,7 @@ index 0000000000..4781dc7c91
 +#include "snmalloc_front.h"
 diff --git a/malloc/snmalloc/snmalloc_core.h b/malloc/snmalloc/snmalloc_core.h
 new file mode 100644
-index 0000000000..633b7abeaa
+index 00000000..633b7abe
 --- /dev/null
 +++ b/malloc/snmalloc/snmalloc_core.h
 @@ -0,0 +1,3 @@
@@ -22547,7 +22567,7 @@ index 0000000000..633b7abeaa
 +#include "backend_helpers/backend_helpers.h"
 diff --git a/malloc/snmalloc/snmalloc_front.h b/malloc/snmalloc/snmalloc_front.h
 new file mode 100644
-index 0000000000..f7cedbb4b9
+index 00000000..f7cedbb4
 --- /dev/null
 +++ b/malloc/snmalloc/snmalloc_front.h
 @@ -0,0 +1,3 @@
@@ -22556,7 +22576,7 @@ index 0000000000..f7cedbb4b9
 +#include "global/global.h"
 diff --git a/malloc/snmalloc/stl/README.md b/malloc/snmalloc/stl/README.md
 new file mode 100644
-index 0000000000..1df92f613a
+index 00000000..1df92f61
 --- /dev/null
 +++ b/malloc/snmalloc/stl/README.md
 @@ -0,0 +1,4 @@
@@ -22566,7 +22586,7 @@ index 0000000000..1df92f613a
 +To use self-vendored implementations, one need to set `SNMALLOC_USE_SELF_VENDORED_STL` to `ON` when configuring cmake.
 diff --git a/malloc/snmalloc/stl/array.h b/malloc/snmalloc/stl/array.h
 new file mode 100644
-index 0000000000..8286fda2aa
+index 00000000..8286fda2
 --- /dev/null
 +++ b/malloc/snmalloc/stl/array.h
 @@ -0,0 +1,7 @@
@@ -22579,7 +22599,7 @@ index 0000000000..8286fda2aa
 +#endif
 diff --git a/malloc/snmalloc/stl/atomic.h b/malloc/snmalloc/stl/atomic.h
 new file mode 100644
-index 0000000000..45dc18a0ff
+index 00000000..45dc18a0
 --- /dev/null
 +++ b/malloc/snmalloc/stl/atomic.h
 @@ -0,0 +1,7 @@
@@ -22592,7 +22612,7 @@ index 0000000000..45dc18a0ff
 +#endif
 diff --git a/malloc/snmalloc/stl/cxx/README.md b/malloc/snmalloc/stl/cxx/README.md
 new file mode 100644
-index 0000000000..d8d5a2b41c
+index 00000000..d8d5a2b4
 --- /dev/null
 +++ b/malloc/snmalloc/stl/cxx/README.md
 @@ -0,0 +1,3 @@
@@ -22601,7 +22621,7 @@ index 0000000000..d8d5a2b41c
 +This directory provides an interface to use default STL.
 diff --git a/malloc/snmalloc/stl/cxx/array.h b/malloc/snmalloc/stl/cxx/array.h
 new file mode 100644
-index 0000000000..f4dac248a0
+index 00000000..f4dac248
 --- /dev/null
 +++ b/malloc/snmalloc/stl/cxx/array.h
 @@ -0,0 +1,15 @@
@@ -22622,7 +22642,7 @@ index 0000000000..f4dac248a0
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/cxx/atomic.h b/malloc/snmalloc/stl/cxx/atomic.h
 new file mode 100644
-index 0000000000..a85d3feb07
+index 00000000..a85d3feb
 --- /dev/null
 +++ b/malloc/snmalloc/stl/cxx/atomic.h
 @@ -0,0 +1,22 @@
@@ -22650,7 +22670,7 @@ index 0000000000..a85d3feb07
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/cxx/type_traits.h b/malloc/snmalloc/stl/cxx/type_traits.h
 new file mode 100644
-index 0000000000..4e2fbb4dd9
+index 00000000..4e2fbb4d
 --- /dev/null
 +++ b/malloc/snmalloc/stl/cxx/type_traits.h
 @@ -0,0 +1,40 @@
@@ -22696,7 +22716,7 @@ index 0000000000..4e2fbb4dd9
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/cxx/utility.h b/malloc/snmalloc/stl/cxx/utility.h
 new file mode 100644
-index 0000000000..b51d9e2708
+index 00000000..b51d9e27
 --- /dev/null
 +++ b/malloc/snmalloc/stl/cxx/utility.h
 @@ -0,0 +1,16 @@
@@ -22718,7 +22738,7 @@ index 0000000000..b51d9e2708
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/gnu/README.md b/malloc/snmalloc/stl/gnu/README.md
 new file mode 100644
-index 0000000000..7c513c1f09
+index 00000000..7c513c1f
 --- /dev/null
 +++ b/malloc/snmalloc/stl/gnu/README.md
 @@ -0,0 +1,3 @@
@@ -22727,7 +22747,7 @@ index 0000000000..7c513c1f09
 +This directory contains implementations of STL functionalities using GNU extensions. Such extensions are also available with clang.
 diff --git a/malloc/snmalloc/stl/gnu/array.h b/malloc/snmalloc/stl/gnu/array.h
 new file mode 100644
-index 0000000000..fd176fcd4b
+index 00000000..fd176fcd
 --- /dev/null
 +++ b/malloc/snmalloc/stl/gnu/array.h
 @@ -0,0 +1,117 @@
@@ -22850,7 +22870,7 @@ index 0000000000..fd176fcd4b
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/gnu/atomic.h b/malloc/snmalloc/stl/gnu/atomic.h
 new file mode 100644
-index 0000000000..7a193972e9
+index 00000000..7a193972
 --- /dev/null
 +++ b/malloc/snmalloc/stl/gnu/atomic.h
 @@ -0,0 +1,248 @@
@@ -23104,7 +23124,7 @@ index 0000000000..7a193972e9
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/gnu/type_traits.h b/malloc/snmalloc/stl/gnu/type_traits.h
 new file mode 100644
-index 0000000000..3840cdbb84
+index 00000000..3840cdbb
 --- /dev/null
 +++ b/malloc/snmalloc/stl/gnu/type_traits.h
 @@ -0,0 +1,320 @@
@@ -23430,7 +23450,7 @@ index 0000000000..3840cdbb84
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/gnu/utility.h b/malloc/snmalloc/stl/gnu/utility.h
 new file mode 100644
-index 0000000000..346b32c55b
+index 00000000..346b32c5
 --- /dev/null
 +++ b/malloc/snmalloc/stl/gnu/utility.h
 @@ -0,0 +1,77 @@
@@ -23513,7 +23533,7 @@ index 0000000000..346b32c55b
 +} // namespace snmalloc
 diff --git a/malloc/snmalloc/stl/new.h b/malloc/snmalloc/stl/new.h
 new file mode 100644
-index 0000000000..421efadaeb
+index 00000000..421efada
 --- /dev/null
 +++ b/malloc/snmalloc/stl/new.h
 @@ -0,0 +1,35 @@
@@ -23554,7 +23574,7 @@ index 0000000000..421efadaeb
 +{}
 diff --git a/malloc/snmalloc/stl/type_traits.h b/malloc/snmalloc/stl/type_traits.h
 new file mode 100644
-index 0000000000..002b173a2e
+index 00000000..002b173a
 --- /dev/null
 +++ b/malloc/snmalloc/stl/type_traits.h
 @@ -0,0 +1,7 @@
@@ -23567,7 +23587,7 @@ index 0000000000..002b173a2e
 +#endif
 diff --git a/malloc/snmalloc/stl/utility.h b/malloc/snmalloc/stl/utility.h
 new file mode 100644
-index 0000000000..19e1a7c482
+index 00000000..19e1a7c4
 --- /dev/null
 +++ b/malloc/snmalloc/stl/utility.h
 @@ -0,0 +1,7 @@
@@ -23579,5 +23599,5 @@ index 0000000000..19e1a7c482
 +#  include "snmalloc/stl/cxx/utility.h"
 +#endif
 -- 
-2.53.0
+2.55.0
 

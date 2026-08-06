@@ -1,14 +1,3 @@
-diff --git a/malloc/Makefile b/malloc/Makefile
---- a/malloc/Makefile	2026-07-25 21:02:50.712335706 +0200
-+++ b/malloc/Makefile	2026-07-25 21:03:53.483235523 +0200
-@@ -1196,7 +1196,6 @@
- $(error datadir must be set for multi-malloc builds so DATADIR drop-ins resolve)
- endif
- CPPFLAGS-malloc-select.c += -DDATADIR='"$(datadir)"'
--CPPFLAGS-malloc-select.c += -DSYSCONFDIR='"$(sysconfdir)"'
- CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
- CPPFLAGS-malloc-select.c += -DMALLOC_IMPL_DIR_BUILD='"$(common-objpfx)glibc/malloc"'
- CPPFLAGS-malloc-scan.c += -DMALLOC_IMPL_DIR='"$(malloc-impl-dir)"'
 diff --git a/malloc/Versions b/malloc/Versions
 --- a/malloc/Versions	2026-07-25 21:02:50.712771198 +0200
 +++ b/malloc/Versions	2026-07-25 21:03:53.483376173 +0200
@@ -505,48 +494,6 @@ diff --git a/malloc/malloc-phasecast.c b/malloc/malloc-phasecast.c
 +  .check_init = __malloc_phasecast_check_init,
 +};
 +#endif /* MALLOC_MULTI_BACKEND */
-diff --git a/malloc/malloc-select.c b/malloc/malloc-select.c
---- a/malloc/malloc-select.c	2026-07-25 21:02:50.716674144 +0200
-+++ b/malloc/malloc-select.c	2026-07-25 21:03:53.483982007 +0200
-@@ -330,13 +330,13 @@
- 
- /* Selection tiers (effective priority, higher wins).  In-file priority=
-    only orders within a drop-in tier and is clamped to [0, 99] so a
--   distro snippet cannot outrank $(sysconfdir)/glibc/malloc.conf.
-+   distro snippet cannot outrank /etc/glibc/malloc.conf.
- 
-      1000       GLIBC_MALLOC_IMPL
--      800       $(sysconfdir)/glibc/malloc.conf per-basename lines
--      600..699  $(sysconfdir)/glibc/malloc.d/<name>.conf  (admin / local)
--      500       $(sysconfdir)/glibc/malloc.conf default= (overrides distro)
--      400..499  $(datadir)/glibc/malloc.d/<name>.conf (distro-provided)
-+      800       /etc/glibc/malloc.conf per-basename lines
-+      600..699  /etc/glibc/malloc.d/<name>.conf  (admin / local)
-+      500       /etc/glibc/malloc.conf default= (overrides distro drop-ins)
-+      400..499  DATADIR/glibc/malloc.d/<name>.conf (distro-provided, arch-independent)
-       <0        heuristics / compile-time default (fallthrough)  */
- enum
-   {
-@@ -1017,15 +1017,10 @@
-   }
- 
-   /* Scan all sources; effective priorities enforce:
--     $(sysconfdir)/malloc.conf per-basename >
--     $(sysconfdir)/malloc.d >
--     $(sysconfdir)/malloc.conf default= >
--     distro $(datadir)/malloc.d.  */
--#ifndef SYSCONFDIR
--# define SYSCONFDIR "/etc"
--#endif
--  scan_global_conf (SYSCONFDIR "/glibc/malloc.conf", exe_base_p, &best);
--  scan_dropin_dir (SYSCONFDIR "/glibc/malloc.d", exe_path_p, exe_base_p,
-+     malloc.conf per-basename > /etc/malloc.d > malloc.conf default=
-+     > distro DATADIR/malloc.d.  */
-+  scan_global_conf ("/etc/glibc/malloc.conf", exe_base_p, &best);
-+  scan_dropin_dir ("/etc/glibc/malloc.d", exe_path_p, exe_base_p,
- 		   PRIO_ETC_MALLOCD_BASE, &best);
-   scan_dropin_dir (DATADIR "/glibc/malloc.d", exe_path_p, exe_base_p,
- 		   PRIO_DATA_MALLOCD_BASE, &best);
 diff --git a/malloc/malloc.h b/malloc/malloc.h
 --- a/malloc/malloc.h	2026-07-25 21:02:50.719034714 +0200
 +++ b/malloc/malloc.h	2026-07-25 21:03:53.484090877 +0200

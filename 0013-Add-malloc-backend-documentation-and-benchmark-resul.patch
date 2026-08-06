@@ -1,20 +1,22 @@
 diff --git a/INSTALL b/INSTALL
 --- a/INSTALL	2026-07-24 15:16:45.000000000 +0200
 +++ b/INSTALL	2026-07-25 21:03:54.784361971 +0200
-@@ -86,6 +86,26 @@
+@@ -86,6 +86,28 @@
       expected to support.  The higher the VERSION number is, the less
       compatibility code is added, and the faster the code gets.
  
 +'--with-malloc=IMPL[,IMPL...]'
 +     Select the malloc implementation(s) compiled into libc.  Supported
 +     names are 'glibc' (the historical ptmalloc2 default), 'mimalloc',
-+     'jemalloc', 'snmalloc', 'rpmalloc', and 'mallocng'.  A single name
++     'mimalloc2', 'mimalloc-secure', 'jemalloc', 'snmalloc', 'rpmalloc',
++     'mallocng', 'hardened-malloc', and 'phasecast'.  A single name
 +     embeds only that allocator with no runtime selection overhead.  A
 +     comma-separated list embeds each implementation and enables startup
-+     selection via GLIBC_MALLOC_IMPL, drop-in files in
-+     /etc/glibc/malloc.d/ and DATADIR/glibc/malloc.d/, and
-+     /etc/glibc/malloc.conf.  Distro snippets are arch-independent and
-+     live under DATADIR (typically /usr/share); per-architecture impl=
++     selection via GLIBC_MALLOC_IMPL, drop-in files under
++     sysconfdir/glibc/malloc.d/ and datadir/glibc/malloc.d/, and
++     sysconfdir/glibc/malloc.conf (from configure --sysconfdir /
++     --datadir; typically /etc and /usr/share).  Distro snippets are
++     arch-independent and live under datadir; per-architecture impl=
 +     differences are handled by availability fallback when a backend was
 +     not embedded in that libc.  Duplicates are rejected.
 +
@@ -1560,22 +1562,25 @@ diff --git a/NEWS b/NEWS
 diff --git a/manual/install.texi b/manual/install.texi
 --- a/manual/install.texi	2026-07-24 15:16:45.000000000 +0200
 +++ b/manual/install.texi	2026-07-25 21:03:54.791510460 +0200
-@@ -116,6 +116,26 @@
+@@ -116,6 +116,29 @@
  to support.  The higher the @var{version} number is, the less
  compatibility code is added, and the faster the code gets.
  
 +@item --with-malloc=@var{impl}[,@var{impl}...]
 +Select the @code{malloc} implementation(s) compiled into libc.
 +Supported names are @samp{glibc} (the historical ptmalloc2 default),
-+@samp{mimalloc}, @samp{jemalloc}, @samp{snmalloc}, @samp{rpmalloc}, and
-+@samp{mallocng}.  A single name embeds only that allocator with no runtime
-+selection overhead.  A comma-separated list embeds each implementation and
-+enables startup selection via @env{GLIBC_MALLOC_IMPL}, drop-in files in
-+@file{/etc/glibc/malloc.d/} and @file{@var{datadir}/glibc/malloc.d/}, and
-+@file{/etc/glibc/malloc.conf}.  Distro snippets are arch-independent and
-+live under @var{datadir} (typically @file{/usr/share}); per-architecture
-+@code{impl=} differences are handled by availability fallback when a
-+backend was not embedded in that libc.  Duplicates are rejected.
++@samp{mimalloc}, @samp{mimalloc2}, @samp{mimalloc-secure}, @samp{jemalloc},
++@samp{snmalloc}, @samp{rpmalloc}, @samp{mallocng}, @samp{hardened-malloc},
++and @samp{phasecast}.  A single name embeds only that allocator with no
++runtime selection overhead.  A comma-separated list embeds each
++implementation and enables startup selection via @env{GLIBC_MALLOC_IMPL},
++drop-in files in @file{@var{sysconfdir}/glibc/malloc.d/} and
++@file{@var{datadir}/glibc/malloc.d/}, and
++@file{@var{sysconfdir}/glibc/malloc.conf}.  Distro snippets are
++arch-independent and live under @var{datadir} (typically
++@file{/usr/share}); per-architecture @code{impl=} differences are handled
++by availability fallback when a backend was not embedded in that libc.
++Duplicates are rejected.
 +
 +@item --with-default-malloc=@var{name}
 +When multiple implementations are configured with @option{--with-malloc},

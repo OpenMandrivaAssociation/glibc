@@ -1,12 +1,10 @@
-From 503674d44e76c9811aa660377cf53ba00cdcf5f9 Mon Sep 17 00:00:00 2001
+From 4b14205ff4afe934c869e1b3c13ef3798e4a3961 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Mon, 13 Jul 2026 02:11:23 +0200
-Subject: [PATCH 08/20] Add in-tree hardened_malloc backend
+Date: Thu, 6 Aug 2026 23:50:18 +0200
+Subject: [PATCH 08/13] Add in-tree hardened_malloc backend
  (--with-malloc=hardened-malloc)
 
 ---
- malloc/hardened_malloc/.clang-tidy            |    6 +
- malloc/hardened_malloc/.gitignore             |    2 +
  malloc/hardened_malloc/Android.bp             |   82 +
  malloc/hardened_malloc/CREDITS                |  283 ++
  .../KERNEL_FEATURE_WISHLIST.md                |   35 +
@@ -20,13 +18,13 @@ Subject: [PATCH 08/20] Add in-tree hardened_malloc backend
  malloc/hardened_malloc/chacha.h               |   17 +
  malloc/hardened_malloc/config/default.mk      |   24 +
  malloc/hardened_malloc/config/light.mk        |   24 +
- malloc/hardened_malloc/h_malloc.c             | 2317 ++++++++++++
+ malloc/hardened_malloc/h_malloc.c             | 2310 +++++++++++
  malloc/hardened_malloc/include/h_malloc.h     |  136 +
  malloc/hardened_malloc/memory.c               |  125 +
  malloc/hardened_malloc/memory.h               |   36 +
  malloc/hardened_malloc/memtag.h               |   50 +
  malloc/hardened_malloc/mutex.h                |   28 +
- malloc/hardened_malloc/new.cc                 |  155 +
+ malloc/hardened_malloc/new.cc                 |  161 +
  malloc/hardened_malloc/pages.c                |   91 +
  malloc/hardened_malloc/pages.h                |   32 +
  malloc/hardened_malloc/preload.sh             |    6 +
@@ -37,9 +35,7 @@ Subject: [PATCH 08/20] Add in-tree hardened_malloc backend
  malloc/hardened_malloc/util.h                 |   97 +
  malloc/malloc-hardened-malloc-impl.c          |   16 +
  malloc/malloc-hardened-malloc.c               |  421 +++
- 32 files changed, 9105 insertions(+)
- create mode 100644 malloc/hardened_malloc/.clang-tidy
- create mode 100644 malloc/hardened_malloc/.gitignore
+ 30 files changed, 9096 insertions(+)
  create mode 100644 malloc/hardened_malloc/Android.bp
  create mode 100644 malloc/hardened_malloc/CREDITS
  create mode 100644 malloc/hardened_malloc/KERNEL_FEATURE_WISHLIST.md
@@ -71,29 +67,9 @@ Subject: [PATCH 08/20] Add in-tree hardened_malloc backend
  create mode 100644 malloc/malloc-hardened-malloc-impl.c
  create mode 100644 malloc/malloc-hardened-malloc.c
 
-diff --git a/malloc/hardened_malloc/.clang-tidy b/malloc/hardened_malloc/.clang-tidy
-new file mode 100644
-index 0000000000..8bc75f2088
---- /dev/null
-+++ b/malloc/hardened_malloc/.clang-tidy
-@@ -0,0 +1,6 @@
-+Checks: 'bugprone-*,-bugprone-casting-through-void,-bugprone-easily-swappable-parameters,-bugprone-macro-parentheses,-bugprone-too-small-loop-variable,cert-*,-cert-err33-c,clang-analyzer-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-clang-diagnostic-constant-logical-operand,readability-*,-readability-function-cognitive-complexity,-readability-identifier-length,-readability-implicit-bool-conversion,-readability-inconsistent-declaration-parameter-name,-readability-magic-numbers,-readability-math-missing-parentheses,-readability-named-parameter,llvm-include-order,misc-*'
-+WarningsAsErrors: '*'
-+ExcludeHeaderFilterRegex: '.*third_party/.*'
-+
-+CheckOptions:
-+  misc-include-cleaner.MissingIncludes: false
-diff --git a/malloc/hardened_malloc/.gitignore b/malloc/hardened_malloc/.gitignore
-new file mode 100644
-index 0000000000..211f0f963c
---- /dev/null
-+++ b/malloc/hardened_malloc/.gitignore
-@@ -0,0 +1,2 @@
-+/out/
-+/out-light/
 diff --git a/malloc/hardened_malloc/Android.bp b/malloc/hardened_malloc/Android.bp
 new file mode 100644
-index 0000000000..1cb24eef9d
+index 00000000..1cb24eef
 --- /dev/null
 +++ b/malloc/hardened_malloc/Android.bp
 @@ -0,0 +1,82 @@
@@ -181,7 +157,7 @@ index 0000000000..1cb24eef9d
 +}
 diff --git a/malloc/hardened_malloc/CREDITS b/malloc/hardened_malloc/CREDITS
 new file mode 100644
-index 0000000000..31b6875415
+index 00000000..31b68754
 --- /dev/null
 +++ b/malloc/hardened_malloc/CREDITS
 @@ -0,0 +1,283 @@
@@ -470,7 +446,7 @@ index 0000000000..31b6875415
 +    ==============================================================================
 diff --git a/malloc/hardened_malloc/KERNEL_FEATURE_WISHLIST.md b/malloc/hardened_malloc/KERNEL_FEATURE_WISHLIST.md
 new file mode 100644
-index 0000000000..c3a474d819
+index 00000000..c3a474d8
 --- /dev/null
 +++ b/malloc/hardened_malloc/KERNEL_FEATURE_WISHLIST.md
 @@ -0,0 +1,35 @@
@@ -511,7 +487,7 @@ index 0000000000..c3a474d819
 +      work with this too
 diff --git a/malloc/hardened_malloc/LICENSE b/malloc/hardened_malloc/LICENSE
 new file mode 100644
-index 0000000000..297b203c6b
+index 00000000..297b203c
 --- /dev/null
 +++ b/malloc/hardened_malloc/LICENSE
 @@ -0,0 +1,19 @@
@@ -536,7 +512,7 @@ index 0000000000..297b203c6b
 +THE SOFTWARE.
 diff --git a/malloc/hardened_malloc/Makefile b/malloc/hardened_malloc/Makefile
 new file mode 100644
-index 0000000000..df29f65b87
+index 00000000..df29f65b
 --- /dev/null
 +++ b/malloc/hardened_malloc/Makefile
 @@ -0,0 +1,155 @@
@@ -697,7 +673,7 @@ index 0000000000..df29f65b87
 +.PHONY: check clean tidy test
 diff --git a/malloc/hardened_malloc/README-GLIBC.md b/malloc/hardened_malloc/README-GLIBC.md
 new file mode 100644
-index 0000000000..9bdacd4294
+index 00000000..9bdacd42
 --- /dev/null
 +++ b/malloc/hardened_malloc/README-GLIBC.md
 @@ -0,0 +1,6 @@
@@ -709,7 +685,7 @@ index 0000000000..9bdacd4294
 +upstream.
 diff --git a/malloc/hardened_malloc/README.md b/malloc/hardened_malloc/README.md
 new file mode 100644
-index 0000000000..669fa35355
+index 00000000..1ae3de32
 --- /dev/null
 +++ b/malloc/hardened_malloc/README.md
 @@ -0,0 +1,1004 @@
@@ -943,7 +919,7 @@ index 0000000000..669fa35355
 +since those are currently based on the size of the largest size class):
 +
 +    make \
-+    N_ARENA=1 \
++    CONFIG_N_ARENA=1 \
 +    CONFIG_EXTENDED_SIZE_CLASSES=false
 +
 +The following boolean configuration options are available:
@@ -1719,7 +1695,7 @@ index 0000000000..669fa35355
 +* `prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, ptr, size, name)`
 diff --git a/malloc/hardened_malloc/arm_mte.h b/malloc/hardened_malloc/arm_mte.h
 new file mode 100644
-index 0000000000..5ed900dc00
+index 00000000..5ed900dc
 --- /dev/null
 +++ b/malloc/hardened_malloc/arm_mte.h
 @@ -0,0 +1,91 @@
@@ -1816,7 +1792,7 @@ index 0000000000..5ed900dc00
 +#endif
 diff --git a/malloc/hardened_malloc/calculate-waste b/malloc/hardened_malloc/calculate-waste
 new file mode 100755
-index 0000000000..e286c84a4b
+index 00000000..e286c84a
 --- /dev/null
 +++ b/malloc/hardened_malloc/calculate-waste
 @@ -0,0 +1,81 @@
@@ -1903,7 +1879,7 @@ index 0000000000..e286c84a4b
 +        print(choice)
 diff --git a/malloc/hardened_malloc/chacha.c b/malloc/hardened_malloc/chacha.c
 new file mode 100644
-index 0000000000..ca52fe5799
+index 00000000..ca52fe57
 --- /dev/null
 +++ b/malloc/hardened_malloc/chacha.c
 @@ -0,0 +1,177 @@
@@ -2086,7 +2062,7 @@ index 0000000000..ca52fe5799
 +}
 diff --git a/malloc/hardened_malloc/chacha.h b/malloc/hardened_malloc/chacha.h
 new file mode 100644
-index 0000000000..81d070f240
+index 00000000..81d070f2
 --- /dev/null
 +++ b/malloc/hardened_malloc/chacha.h
 @@ -0,0 +1,17 @@
@@ -2109,7 +2085,7 @@ index 0000000000..81d070f240
 +#endif
 diff --git a/malloc/hardened_malloc/config/default.mk b/malloc/hardened_malloc/config/default.mk
 new file mode 100644
-index 0000000000..d8f03a785b
+index 00000000..d8f03a78
 --- /dev/null
 +++ b/malloc/hardened_malloc/config/default.mk
 @@ -0,0 +1,24 @@
@@ -2139,7 +2115,7 @@ index 0000000000..d8f03a785b
 +CONFIG_LABEL_MEMORY := false
 diff --git a/malloc/hardened_malloc/config/light.mk b/malloc/hardened_malloc/config/light.mk
 new file mode 100644
-index 0000000000..da8676d99e
+index 00000000..da8676d9
 --- /dev/null
 +++ b/malloc/hardened_malloc/config/light.mk
 @@ -0,0 +1,24 @@
@@ -2169,10 +2145,10 @@ index 0000000000..da8676d99e
 +CONFIG_LABEL_MEMORY := false
 diff --git a/malloc/hardened_malloc/h_malloc.c b/malloc/hardened_malloc/h_malloc.c
 new file mode 100644
-index 0000000000..17ca358fb7
+index 00000000..46a6d481
 --- /dev/null
 +++ b/malloc/hardened_malloc/h_malloc.c
-@@ -0,0 +1,2317 @@
+@@ -0,0 +1,2310 @@
 +#include <assert.h>
 +#include <errno.h>
 +#include <inttypes.h>
@@ -3512,19 +3488,9 @@ index 0000000000..17ca358fb7
 +    mutex_unlock(&init_lock);
 +
 +    // may allocate, so wait until the allocator is initialized to avoid deadlocking
-+#ifdef MALLOC_EMBEDDED_IN_LIBC
-+    extern int __register_atfork (void (*) (void), void (*) (void),
-+				  void (*) (void), void *);
-+    extern void *__dso_handle __attribute__ ((weak));
-+    if (unlikely (__register_atfork (full_lock, full_unlock, post_fork_child,
-+				     &__dso_handle))) {
-+	fatal_error ("pthread_atfork failed");
-+    }
-+#else
 +    if (unlikely(pthread_atfork(full_lock, full_unlock, post_fork_child))) {
 +        fatal_error("pthread_atfork failed");
 +    }
-+#endif
 +}
 +
 +static inline unsigned init(void) {
@@ -3902,6 +3868,9 @@ index 0000000000..17ca358fb7
 +}
 +
 +EXPORT void *h_pvalloc(size_t size) {
++    if (!size) {
++        return alloc_aligned_simple(PAGE_SIZE, 0);
++    }
 +    size = page_align(size);
 +    if (unlikely(!size)) {
 +        errno = ENOMEM;
@@ -4492,7 +4461,7 @@ index 0000000000..17ca358fb7
 +#endif
 diff --git a/malloc/hardened_malloc/include/h_malloc.h b/malloc/hardened_malloc/include/h_malloc.h
 new file mode 100644
-index 0000000000..0dcead3487
+index 00000000..0dcead34
 --- /dev/null
 +++ b/malloc/hardened_malloc/include/h_malloc.h
 @@ -0,0 +1,136 @@
@@ -4634,7 +4603,7 @@ index 0000000000..0dcead3487
 +#endif
 diff --git a/malloc/hardened_malloc/memory.c b/malloc/hardened_malloc/memory.c
 new file mode 100644
-index 0000000000..45826f3800
+index 00000000..45826f38
 --- /dev/null
 +++ b/malloc/hardened_malloc/memory.c
 @@ -0,0 +1,125 @@
@@ -4765,7 +4734,7 @@ index 0000000000..45826f3800
 +}
 diff --git a/malloc/hardened_malloc/memory.h b/malloc/hardened_malloc/memory.h
 new file mode 100644
-index 0000000000..b115638699
+index 00000000..b1156386
 --- /dev/null
 +++ b/malloc/hardened_malloc/memory.h
 @@ -0,0 +1,36 @@
@@ -4807,7 +4776,7 @@ index 0000000000..b115638699
 +#endif
 diff --git a/malloc/hardened_malloc/memtag.h b/malloc/hardened_malloc/memtag.h
 new file mode 100644
-index 0000000000..e431283517
+index 00000000..e4312835
 --- /dev/null
 +++ b/malloc/hardened_malloc/memtag.h
 @@ -0,0 +1,50 @@
@@ -4863,7 +4832,7 @@ index 0000000000..e431283517
 +#endif
 diff --git a/malloc/hardened_malloc/mutex.h b/malloc/hardened_malloc/mutex.h
 new file mode 100644
-index 0000000000..b8f77f95be
+index 00000000..b8f77f95
 --- /dev/null
 +++ b/malloc/hardened_malloc/mutex.h
 @@ -0,0 +1,28 @@
@@ -4897,10 +4866,10 @@ index 0000000000..b8f77f95be
 +#endif
 diff --git a/malloc/hardened_malloc/new.cc b/malloc/hardened_malloc/new.cc
 new file mode 100644
-index 0000000000..fba790f1ea
+index 00000000..5be520c4
 --- /dev/null
 +++ b/malloc/hardened_malloc/new.cc
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,161 @@
 +// needed with libstdc++ but not libc++
 +#if __has_include(<bits/new_throw.h>)
 +#include <bits/new_throw.h>
@@ -4925,7 +4894,10 @@ index 0000000000..fba790f1ea
 +        try {
 +            handler();
 +        } catch (const std::bad_alloc &) {
-+            break;
++            if (nothrow) {
++                return nullptr;
++            }
++            throw;
 +        }
 +
 +        ptr = h_malloc(size);
@@ -4997,7 +4969,10 @@ index 0000000000..fba790f1ea
 +        try {
 +            handler();
 +        } catch (const std::bad_alloc &) {
-+            break;
++            if (nothrow) {
++                return nullptr;
++            }
++            throw;
 +        }
 +
 +        ptr = h_aligned_alloc(alignment, size);
@@ -5058,7 +5033,7 @@ index 0000000000..fba790f1ea
 +}
 diff --git a/malloc/hardened_malloc/pages.c b/malloc/hardened_malloc/pages.c
 new file mode 100644
-index 0000000000..26045ce399
+index 00000000..26045ce3
 --- /dev/null
 +++ b/malloc/hardened_malloc/pages.c
 @@ -0,0 +1,91 @@
@@ -5155,7 +5130,7 @@ index 0000000000..26045ce399
 +}
 diff --git a/malloc/hardened_malloc/pages.h b/malloc/hardened_malloc/pages.h
 new file mode 100644
-index 0000000000..8795ddc9d7
+index 00000000..8795ddc9
 --- /dev/null
 +++ b/malloc/hardened_malloc/pages.h
 @@ -0,0 +1,32 @@
@@ -5193,7 +5168,7 @@ index 0000000000..8795ddc9d7
 +#endif
 diff --git a/malloc/hardened_malloc/preload.sh b/malloc/hardened_malloc/preload.sh
 new file mode 100755
-index 0000000000..ee6abb6a8e
+index 00000000..ee6abb6a
 --- /dev/null
 +++ b/malloc/hardened_malloc/preload.sh
 @@ -0,0 +1,6 @@
@@ -5205,7 +5180,7 @@ index 0000000000..ee6abb6a8e
 +exec "$@"
 diff --git a/malloc/hardened_malloc/random.c b/malloc/hardened_malloc/random.c
 new file mode 100644
-index 0000000000..8f75cc103e
+index 00000000..8f75cc10
 --- /dev/null
 +++ b/malloc/hardened_malloc/random.c
 @@ -0,0 +1,156 @@
@@ -5367,7 +5342,7 @@ index 0000000000..8f75cc103e
 +}
 diff --git a/malloc/hardened_malloc/random.h b/malloc/hardened_malloc/random.h
 new file mode 100644
-index 0000000000..46ac24ea06
+index 00000000..46ac24ea
 --- /dev/null
 +++ b/malloc/hardened_malloc/random.h
 @@ -0,0 +1,27 @@
@@ -5400,7 +5375,7 @@ index 0000000000..46ac24ea06
 +#endif
 diff --git a/malloc/hardened_malloc/third_party/libdivide.h b/malloc/hardened_malloc/third_party/libdivide.h
 new file mode 100644
-index 0000000000..4cd0a11d57
+index 00000000..4cd0a11d
 --- /dev/null
 +++ b/malloc/hardened_malloc/third_party/libdivide.h
 @@ -0,0 +1,3362 @@
@@ -8768,7 +8743,7 @@ index 0000000000..4cd0a11d57
 +#endif  // LIBDIVIDE_H
 diff --git a/malloc/hardened_malloc/util.c b/malloc/hardened_malloc/util.c
 new file mode 100644
-index 0000000000..a43679c228
+index 00000000..a43679c2
 --- /dev/null
 +++ b/malloc/hardened_malloc/util.c
 @@ -0,0 +1,44 @@
@@ -8818,7 +8793,7 @@ index 0000000000..a43679c228
 +}
 diff --git a/malloc/hardened_malloc/util.h b/malloc/hardened_malloc/util.h
 new file mode 100644
-index 0000000000..72c28d8b55
+index 00000000..72c28d8b
 --- /dev/null
 +++ b/malloc/hardened_malloc/util.h
 @@ -0,0 +1,97 @@
@@ -8921,7 +8896,7 @@ index 0000000000..72c28d8b55
 +#endif
 diff --git a/malloc/malloc-hardened-malloc-impl.c b/malloc/malloc-hardened-malloc-impl.c
 new file mode 100644
-index 0000000000..574cc378e7
+index 00000000..574cc378
 --- /dev/null
 +++ b/malloc/malloc-hardened-malloc-impl.c
 @@ -0,0 +1,16 @@
@@ -8943,7 +8918,7 @@ index 0000000000..574cc378e7
 +#include "hardened_malloc/h_malloc.c"
 diff --git a/malloc/malloc-hardened-malloc.c b/malloc/malloc-hardened-malloc.c
 new file mode 100644
-index 0000000000..c699e338a2
+index 00000000..c699e338
 --- /dev/null
 +++ b/malloc/malloc-hardened-malloc.c
 @@ -0,0 +1,421 @@
@@ -9369,5 +9344,5 @@ index 0000000000..c699e338a2
 +};
 +#endif
 -- 
-2.53.0
+2.55.0
 
