@@ -1676,11 +1676,13 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --with-bugurl=%{bugurl}
 %endif
 
-  # Parallel build works with glibc 2.44+ multi-malloc (verified with -j32).
+  # Keep -j1: parallel make still races in the full package build
+  # (cross-arch trees, generated headers/deps, iconvdata). Native-only
+  # multi-malloc builds can use -jN outside ABF.
   if [ "$BuildAltArch" = "yes" ]; then
-    %make_build -r all subdir_stubs LIBGD=no
+    %make_build -j1 -r all subdir_stubs LIBGD=no
   else
-    %make_build -r all subdir_stubs
+    %make_build -j1 -r all subdir_stubs
   fi
   cd -
 
