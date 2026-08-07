@@ -1,0 +1,324 @@
+From: Bernhard Rosenkränzer <bero@lindev.ch>
+Subject: [PATCH] Makerules: atomic depfiles and parallel-safe generated files
+
+Parallel recursive sub-makes (high -j package builds) race on shared
+generated files and dependency sidecars.
+
+Fix atomic depfiles (*.dtT), grouped gen-as-const targets, stubs mkdir,
+and unique temps for shared generated makefiles.  Shell recipes that set
+tmp= must keep mv $$tmp on the same continued recipe line.
+
+Package builds should run "all" and "subdir_stubs" as separate make
+invocations.
+
+
+diff --git a/Makeconfig b/Makeconfig
+--- a/Makeconfig	2026-08-07 14:38:39.639391749 +0200
++++ b/Makeconfig	2026-08-07 14:38:39.651393765 +0200
+@@ -1252,14 +1252,17 @@
+ # listing both its input files, and any header files that it may reference
+ # (but no commands).
+ %.v.i: $(common-objpfx)config.h $(..)Makeconfig
++	tmp=$@T.$$$$; \
+ 	sed '/^[ 	]*%/!s/#.*$$//;/^[ 	]*$$/d;s/^[ 	]*%/#/' \
+ 	    $(filter-out FORCE %.h $(..)Makeconfig,$^) \
+ 	| $(CC) -E -undef $(CPPFLAGS) -x assembler-with-cpp - \
+-		   > $@T
+-	mv -f $@T $@
++		   > $$tmp && \
++	mv -f $$tmp $@
+ %.v: %.v.i
+-	sed '/^[ 	]*#/d;/^[ 	]*$$/d' $< > $@T
+-	mv -f $@T $@
++	tmp=$@T.$$$$; \
++	sed '/^[ 	]*#/d;/^[ 	]*$$/d' $< > $$tmp && \
++	mv -f $$tmp $@
++
+ 
+ ifeq (yes, $(build-shared))
+ 
+@@ -1289,9 +1292,11 @@
+ 
+ $(common-objpfx)soversions.i: $(..)scripts/soversions.awk \
+ 			      $(common-objpfx)shlib-versions.v
+-	$(AWK) -f $^ > $@T
+-	mv -f $@T $@
++	tmp=$@T.$$$$; \
++	$(AWK) -f $^ > $$tmp && \
++	mv -f $$tmp $@
+ $(common-objpfx)soversions.mk: $(common-objpfx)soversions.i $(..)Makeconfig
++	tmp=$@T.$$$$; \
+ 	(while read which lib number setname; do \
+ 	   eval seen_$$which=1; \
+ 	   test x"$$which" = xDEFAULT || continue; \
+@@ -1302,8 +1307,8 @@
+ 		     echo "all-sonames+=$$lib=\$$($$lib.so-version)";;\
+ 	   esac; \
+ 	 done; \
+-	 echo soversions.mk-done = t;) < $< > $@T; exit 0
+-	mv -f $@T $@
++	 echo soversions.mk-done = t;) < $< > $$tmp; \
++	mv -f $$tmp $@
+ endif
+ endif
+ 
+@@ -1320,8 +1325,9 @@
+ $(common-objpfx)libc-modules.h: $(common-objpfx)libc-modules.stmp; @:
+ $(common-objpfx)libc-modules.stmp: $(..)scripts/gen-libc-modules.awk \
+ 				   $(common-objpfx)soversions.i
+-	$(AWK) -v buildlist="$(subst -,_,$(built-modules))" -f $^ > ${@:stmp=T}
+-	$(move-if-change) ${@:stmp=T} ${@:stmp=h}
++	tmp=${@:stmp=T}.$$$$; \
++	$(AWK) -v buildlist="$(subst -,_,$(built-modules))" -f $^ > $$tmp && \
++	$(move-if-change) $$tmp ${@:stmp=h}
+ 	touch $@
+ 
+ endif
+@@ -1368,23 +1374,26 @@
+ 
+ $(common-objpfx)Versions.def: $(..)scripts/versionlist.awk \
+ 			      $(common-objpfx)Versions.v
+-	LC_ALL=C $(AWK) -f $^ > $@T
+-	mv -f $@T $@
++	tmp=$@T.$$$$; \
++	LC_ALL=C $(AWK) -f $^ > $$tmp && \
++	mv -f $$tmp $@
+ 
+ $(common-objpfx)Versions.all: $(..)scripts/firstversions.awk \
+ 			      $(common-objpfx)soversions.i \
+ 			      $(common-objpfx)Versions.def
++	tmp=$@T.$$$$; \
+ 	{ while read which lib version setname; do \
+ 	    test x"$$which" = xDEFAULT || continue; \
+ 	    test -z "$$setname" || echo "$$lib : $$setname"; \
+ 	  done < $(word 2,$^); \
+ 	  cat $(word 3,$^); \
+-	} | LC_ALL=C $(AWK) -f $< > $@T
+-	mv -f $@T $@
++	} | LC_ALL=C $(AWK) -f $< > $$tmp && \
++	mv -f $$tmp $@
+ $(common-objpfx)Versions.mk: $(..)scripts/haveversions.awk \
+ 			     $(common-objpfx)Versions.all
+-	$(AWK) -f $^ > $@T
+-	mv -f $@T $@
++	tmp=$@T.$$$$; \
++	$(AWK) -f $^ > $$tmp && \
++	mv -f $$tmp $@
+ # See %.v/%.v.i implicit rules in Makeconfig.
+ $(common-objpfx)Versions.v.i: $(wildcard $(subdirs:%=$(..)%/Versions)) \
+ 			      $(wildcard $(sysdirs:%=%/Versions)) \
+@@ -1393,13 +1402,14 @@
+ $(common-objpfx)versions.stmp: $(common-objpfx)Versions.all \
+ 			       $(common-objpfx)Versions.v \
+ 			       $(..)scripts/versions.awk
++	tmp=$(common-objpfx)sysd-versionsT.$$$$; \
+ 	( echo 'sysd-versions-subdirs = $(subdirs) $(config-sysdirs)' ; \
+ 	  cat $(word 2,$^) \
+ 	  | LC_ALL=C $(AWK) -v buildroot=$(common-objpfx) -v defsfile=$< \
+ 			    -v move_if_change='$(move-if-change)' \
+ 			    -f $(word 3,$^); \
+-	) > $(common-objpfx)sysd-versionsT
+-	mv -f $(common-objpfx)sysd-versionsT $(common-objpfx)sysd-versions
++	) > $$tmp && \
++	mv -f $$tmp $(common-objpfx)sysd-versions
+ 	touch $@
+ endif # avoid-generated
+ endif # $(build-shared) = yes
+@@ -1409,12 +1419,14 @@
+ 
+ $(common-objpfx)time64-compat.mk: $(common-objpfx)time64-compat.mk.i \
+ 				  $(sysd-versions-force)
+-	sed '/^[        ]*#/d;/^[       ]*$$/d' $< > $@T
+-	mv -f $@T $@
++	tmp=$@T.$$$$; \
++	sed '/^[        ]*#/d;/^[       ]*$$/d' $< > $$tmp && \
++	mv -f $$tmp $@
+ $(common-objpfx)time64-compat.mk.i: $(..)Makeconfig
++	tmp=$@T.$$$$; \
+ 	printf "#include <time64-compat.h>\n#ifdef TIME64_NON_DEFAULT\nhave-time64-compat = yes\n#endif" \
+-	| $(CC) -E -undef $(CPPFLAGS) -x assembler-with-cpp - > $@T
+-	mv -f $@T $@
++	| $(CC) -E -undef $(CPPFLAGS) -x assembler-with-cpp - > $$tmp && \
++	mv -f $$tmp $@
+ 
+ 
+ endif # sysd-sorted-done
+@@ -1475,11 +1487,12 @@
+ 			     $(common-objpfx)config.make $(..)Makeconfig \
+ 			     $(wildcard $(sysdirs:=/Subdirs)) \
+ 			     $(all-Depend-files)
++	tmp=$@-tmp.$$$$; \
+ 	$(AWK) -f $< \
+ 	       -v subdirs='$(all-subdirs)' \
+ 	       -v srcpfx='$(..)' \
+-	       $(filter %/Subdirs %/Depend,$^) > $@-tmp
+-	mv -f $@-tmp $@
++	       $(filter %/Subdirs %/Depend,$^) > $$tmp && \
++	mv -f $$tmp $@
+ $(all-Depend-files): ;
+ endif
+ 
+diff --git a/Makerules b/Makerules
+--- a/Makerules	2026-08-07 14:38:39.639360919 +0200
++++ b/Makerules	2026-08-07 14:38:39.651365825 +0200
+@@ -266,17 +266,21 @@
+ # may include <tcb-offsets.h>.  Target header files can check if
+ # GEN_AS_CONST_HEADERS is defined to avoid circular dependency which
+ # may lead to build hang on a many-core machine.
+-$(common-objpfx)%.h $(common-objpfx)%.h.d: $(..)scripts/gen-as-const.py \
++# Grouped target (&:): avoid parallel race on shared *.hT / *.h.dT temps.
++$(common-objpfx)%.h $(common-objpfx)%.h.d &: $(..)scripts/gen-as-const.py \
+ 					   %.sym $(common-before-compile)
++	$(make-target-directory)
++	tmp=$(@:.h.d=.h)T.$$$$; \
++	dt=$(@:.h=.h.d)T.$$$$; \
+ 	$(PYTHON) $< --cc="$(CC) $(CFLAGS) $(CPPFLAGS) -DGEN_AS_CONST_HEADERS \
+-			   -MD -MP -MF $(@:.h=.h.d)T \
++			   -MD -MP -MF $$dt \
+ 			   -MT '$(@:.h=.h.d) $(@:.h.d=.h)'" \
+-		  $(filter %.sym,$^) > $(@:.h.d=.h)T
++		  $(filter %.sym,$^) > $$tmp && \
+ 	sed $(sed-remove-objpfx) $(sed-remove-dotdot) \
+-	    $(@:.h=.h.d)T > $(@:.h=.h.d)T2
+-	rm -f $(@:.h=.h.d)T
+-	mv -f $(@:.h=.h.d)T2 $(@:.h=.h.d)
+-	mv -f $(@:.h.d=.h)T $(@:.h.d=.h)
++	    $$dt > $$dt.2 && \
++	rm -f $$dt && \
++	mv -f $$dt.2 $(@:.h=.h.d) && \
++	mv -f $$tmp $(@:.h.d=.h)
+ vpath %.sym $(sysdirs)
+ before-compile += $(gen-as-const-headers:%.sym=$(common-objpfx)%.h)
+ 
+@@ -377,13 +381,13 @@
+ 			    $(common-objpfx)config.make $(..)Makerules \
+ 			    $(sysdep-makefiles) $(sysdep-makeconfigs) \
+ 			    $(sysd-rules-force)
+-	-@rm -f $@T
+-	LC_ALL=C $(AWK) -f $< > $@T \
++	tmp=$@T.$$$$; \
++	LC_ALL=C $(AWK) -f $< > $$tmp \
+ 			-v all_object_suffixes='$(all-object-suffixes)' \
+ 			-v inhibit_sysdep_asm='$(inhibit-sysdep-asm)' \
+ 			-v sysd_rules_patterns='$(sysd-rules-patterns)' \
+-			-v config_sysdirs='$(config-sysdirs)'
+-	mv -f $@T $@
++			-v config_sysdirs='$(config-sysdirs)' && \
++	mv -f $$tmp $@
+ 
+ ifndef sysd-rules-done
+ # Don't do deps until this exists, because it provides rules to make the deps.
+@@ -432,8 +436,10 @@
+ include $(o-iterator)
+ endif
+ 
+-# Generate .dT files as we compile.
+-compile-mkdep-flags = -MD -MP -MF $@.dt -MT $@
++# Generate dependency files as we compile.
++# Write to *.dtT; pattern rule %.dt: %.dtT publishes atomically.
++# Keep compile-command free of shell &&/|| so trailing flags still work.
++compile-mkdep-flags = -MD -MP -MF $@.dtT -MT $@
+ compile-command.S = $(compile.S) $(OUTPUT_OPTION) $(compile-mkdep-flags)
+ compile-command.c = $(compile.c) $(OUTPUT_OPTION) $(compile-mkdep-flags)
+ compile-command.cc = $(compile.cc) $(OUTPUT_OPTION) $(compile-mkdep-flags)
+@@ -441,7 +447,7 @@
+ # Like compile-mkdep-flags, but for use with $(BUILD_CC).  We don't want to
+ # track system includes here, they may spuriously trigger an install rule,
+ # and would cause the check-local-headers test to fail.
+-native-compile-mkdep-flags = -MMD -MP -MF $@.dt -MT $@
++native-compile-mkdep-flags = -MMD -MP -MF $@.dtT -MT $@
+ 
+ # GCC can grok options after the file name, and it looks nicer that way.
+ compile.c = $(CC) $< -c $(CFLAGS) $(CPPFLAGS)
+@@ -743,12 +749,19 @@
+ 			 $(filter-out $(addsuffix .d,$(omit-deps)),\
+ 				      $(+depfiles)))
+ all-dt-files := $(foreach o,$(object-suffixes-for-libc),$(+depfiles:.d=$o.dt))
++all-dtT-files := $(all-dt-files:.dt=.dtT)
+ +depfiles := $(patsubst %.dt,%.d,$(wildcard $(all-dt-files))) \
++	     $(patsubst %.dtT,%.d,$(wildcard $(all-dtT-files))) \
+ 	     $(wildcard $(all-dt-files:.dt=.d))
+ 
++%.dt: %.dtT
++	@if [ ! -s $< ]; then rm -f $<; exit 1; fi; \
++	 mv -f $< $@
++
+ # This is a funny rule in that it removes its input file.
+ %.d: %.dt
+-	@sed $(sed-remove-objpfx) $< > $(@:.d=.T) && \
++	@if [ ! -s $< ]; then rm -f $<; exit 1; fi; \
++	 sed $(sed-remove-objpfx) $< > $(@:.d=.T) && \
+ 	 mv -f $(@:.d=.T) $@ && \
+ 	 rm -f $<
+ 
+@@ -1416,7 +1429,7 @@
+ # Also remove the dependencies and generated source files.
+ common-clean: common-mostlyclean
+ 	-rm -f $(addprefix $(objpfx),$(generated))
+-	-rm -f $(objpfx)*.d $(objpfx)*.dt
++	-rm -f $(objpfx)*.d $(objpfx)*.dt $(objpfx)*.dtT
+ 	-rm -fr $(addprefix $(objpfx),$(generated-dirs))
+ 	-rm -f $(addprefix $(common-objpfx),$(common-generated))
+ 	-rm -f $(gen-as-const-headers:%.sym=$(common-objpfx)%.h)
+@@ -1431,6 +1444,7 @@
+ objs-for-stubs := $(foreach o,$(object-suffixes-for-libc),$(o-objects)) \
+ 		  $(addprefix $(objpfx),$(extra-objs))
+ $(objpfx)stubs: $(objs-for-stubs)
++	$(make-target-directory)
+ ifneq (,$(strip $(objs-for-stubs)))
+ 	(cd $(objpfx).; $(OBJDUMP) -h $(patsubst $(objpfx)%,%,$^)) | \
+ 	$(AWK) '/\.gnu\.glibc-stub\./ { \
+diff --git a/iconvdata/Makefile b/iconvdata/Makefile
+--- a/iconvdata/Makefile	2026-08-07 14:38:39.646616660 +0200
++++ b/iconvdata/Makefile	2026-08-07 14:38:39.655314060 +0200
+@@ -212,6 +212,7 @@
+ ifndef avoid-generated
+ $(objpfx)iconv-rules: Makefile
+ 	$(make-target-directory)
++	tmp=$@.new.$$$$; \
+ 	{ echo $(filter-out lib%, $(modules)); \
+ 	  echo 8bit $(gen-8bit-modules); \
+ 	  echo 8bit-gap $(gen-8bit-gap-modules); } | \
+@@ -233,8 +234,8 @@
+ 		    printf "gen-%s.sh\n", $$1; \
+ 		    printf "\t$$(generate-%s-table)\n", $$1; \
+ 		  } \
+-		}' > $@.new
+-	mv -f $@.new $@
++		}' > $$tmp && \
++	mv -f $$tmp $@
+ endif
+ 
+ $(generated-modules:%=$(objpfx)%.h): $(objpfx)%.h: $(objpfx)%.stmp
+diff --git a/sysdeps/unix/Makefile b/sysdeps/unix/Makefile
+--- a/sysdeps/unix/Makefile	2026-08-07 14:38:39.643092411 +0200
++++ b/sysdeps/unix/Makefile	2026-08-07 14:38:39.652783065 +0200
+@@ -94,14 +94,15 @@
+ 			       $(wildcard $(+sysdep_dirs:%=%/syscalls.list)) \
+ 			       $(wildcard $(+sysdep_dirs:%=%/arch-syscall.h)) \
+ 			       $(common-objpfx)libc-modules.stmp
++	tmp=$@T.$$$$; \
+ 	for dir in $(+sysdep_dirs); do \
+ 	  test -f $$dir/syscalls.list && \
+ 	  { sysdirs='$(sysdirs)' \
+ 	    asm_CPP='$(COMPILE.S) -E -x assembler-with-cpp' \
+ 	    $(SHELL) $(dir $<)$(notdir $<) $$dir || exit 1; }; \
+ 	  test $$dir = $(..)sysdeps/unix && break; \
+-	done > $@T
+-	mv -f $@T $@
++	done > $$tmp && \
++	mv -f $$tmp $@
+ endif
+ 
+ postclean-generated += sysd-syscalls
+diff --git a/sysdeps/x86_64/fpu/Makeconfig b/sysdeps/x86_64/fpu/Makeconfig
+--- a/sysdeps/x86_64/fpu/Makeconfig	2026-08-07 14:38:39.648096870 +0200
++++ b/sysdeps/x86_64/fpu/Makeconfig	2026-08-07 14:38:39.656659229 +0200
+@@ -171,5 +171,5 @@
+ 	   echo "  \$$(float-vlen16-arch-ext-cflags)"; \
+ 	   echo; \
+ 	 done; \
+-	 echo "endif") > $@T
+-	mv -f $@T $@
++	 echo "endif") > $@T.$$$$ && \
++	mv -f $@T.$$$$ $@

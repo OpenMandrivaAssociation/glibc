@@ -190,7 +190,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	2
+Release:	3
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -306,6 +306,8 @@ Patch1080:	0011-Add-full-tcmalloc-as-LD_PRELOAD-DSO-with-malloc-prel.patch
 Patch1081:	0012-Add-in-tree-phasecast-adaptive-malloc-backend-with-m.patch
 Patch1082:	0013-Add-malloc-backend-documentation-and-benchmark-resul.patch
 Patch1083:	0014-Add-in-tree-mimalloc2-v2-backend-with-malloc-mimallo.patch
+# Atomic depfiles + unique temps for shared generated makefiles (future -jN).
+Patch1084:	0015-Makerules-atomic-depfiles-parallel-safe-generated-files.patch
 
 BuildRequires:	automake
 BuildRequires:	slibtool
@@ -1598,6 +1600,13 @@ function BuildGlibc() {
     configarch=$arch
     ;;
   esac
+  # Multi-malloc backends (jemalloc, etc.) need 64-bit features such as
+  # __int128.  Biarch secondary libc (i686 on x86_64) stays on ptmalloc2 only.
+  if [ "$BuildAltArch" = "yes" ]; then
+    MallocCfg="--with-malloc=glibc --with-default-malloc=glibc"
+  else
+    MallocCfg="--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng --with-malloc-preload=tcmalloc --with-default-malloc=glibc"
+  fi
 echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -z noexecstack"
 %if %{cross_compiling}
 	export TRIPLET=%{_target_platform}
@@ -1621,9 +1630,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 		--target=${TRIPLET} \
     		--with-gnu-ld=${TRIPLET}-ld.bfd \
 %if %{with mallocs}
-		--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng \
-		--with-malloc-preload=tcmalloc \
-		--with-default-malloc=glibc \
+		$MallocCfg \
 %else
 		--with-malloc=glibc \
 		--with-default-malloc=glibc \
@@ -1647,9 +1654,7 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --infodir=%{_infodir} \
     --localedir=%{_localedir} \
 %if %{with mallocs}
-    --with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng \
-    --with-malloc-preload=tcmalloc \
-    --with-default-malloc=glibc \
+    $MallocCfg \
 %else
     --with-malloc=glibc \
     --with-default-malloc=glibc \
@@ -1676,13 +1681,16 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
     --with-bugurl=%{bugurl}
 %endif
 
-  # Keep -j1: parallel make still races in the full package build
-  # (cross-arch trees, generated headers/deps, iconvdata). Native-only
-  # multi-malloc builds can use -jN outside ABF.
+  # Parallel make: Patch1084 fixes depfiles / gen-as-const / shared temps.
+  # Build goals sequentially: "make -jN all subdir_stubs" races because both
+  # goals recurse and regenerate common-objpfx files (sysd-rules, soversions,
+  # Versions.*, maps) with concurrent fixed temps.  -j stays on within each goal.
   if [ "$BuildAltArch" = "yes" ]; then
-    %make_build -j1 -r all subdir_stubs LIBGD=no
+    %make_build -r all LIBGD=no
+    %make_build -r subdir_stubs LIBGD=no
   else
-    %make_build -j1 -r all subdir_stubs
+    %make_build -r all
+    %make_build -r subdir_stubs
   fi
   cd -
 
