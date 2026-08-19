@@ -35,6 +35,12 @@
 %define _libdirn32 %{_prefix}/lib32
 # Don't make /lib/ld-linux-aarch64.so.1 and friends relative
 %define dont_relink 1
+# Host ldconfig cannot read target ELF objects. It then treats the
+# /lib ABI compat symlink (absolute /lib64/ld-linux-*.so.1) as stale
+# and deletes it, so %files fails when cross-compiling.
+%if %{cross_compiling}
+%define dont_symlinks_libs 1
+%endif
 
 %define oname glibc
 %define major 6
@@ -190,7 +196,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	3
+Release:	4
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -2300,9 +2306,14 @@ ln -s /lib64/ld-linux-aarch64.so.1 %{buildroot}/lib/ld-linux-aarch64.so.1
 mkdir -p %{buildroot}%{_libdir}
 (cd %{buildroot}%{_libdir} && rm -f lp64d; ln -sf . lp64d)
 # Compat symlink -- some versions of ld hardcoded /lib/ld-linux-riscv64-lp64d.so.1
-# as dynamic loader
+# as dynamic loader. Use a relative target when cross-compiling so that
+# rpm -r sysroots still resolve inside the target root.
 mkdir -p %{buildroot}/lib
+%if %{cross_compiling}
+ln -s ../%{_lib}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+%else
 ln -s /%{_lib}/ld-linux-riscv64-lp64d.so.1 %{buildroot}/lib/ld-linux-riscv64-lp64d.so.1
+%endif
 %endif
 
 %ifarch %{x86_64}
