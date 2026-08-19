@@ -196,7 +196,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	4
+Release:	5
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -1611,7 +1611,12 @@ function BuildGlibc() {
   if [ "$BuildAltArch" = "yes" ]; then
     MallocCfg="--with-malloc=glibc --with-default-malloc=glibc"
   else
+%if %{cross_compiling}
+    # snmalloc and tcmalloc need C++, which is not available during bootstrap
+    MallocCfg="--with-malloc=glibc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng --with-default-malloc=glibc"
+%else
     MallocCfg="--with-malloc=glibc,snmalloc,rpmalloc,mimalloc,mimalloc2,jemalloc,hardened-malloc,phasecast,mallocng --with-malloc-preload=tcmalloc --with-default-malloc=glibc"
+%endif
   fi
 echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARFLAGS --generate-missing-build-notes=yes" LDFLAGS="%{build_ldflags}" LD="$configarch-%{platform}-ld.bfd -z noexecstack"
 %if %{cross_compiling}
@@ -1625,7 +1630,11 @@ echo CC="$BuildCC" CXX="$BuildCXX" CFLAGS="$BuildFlags -Wno-error" ARFLAGS="$ARF
 %else
 	C_COMPILER="${TRIPLET}-gcc"
 %endif
-	CC="${C_COMPILER} ${CFLAGS}" ASFLAGS="$BuildFlags -Wa,--noexecstack" \
+	# Same split as native: compile flags in CFLAGS, -Wl,--hash-style=both
+	# stays in LDFLAGS (%{build_ldflags}). Do not bake CFLAGS into CC —
+	# clang++/g++ -c -Werror then treats unused -Wl as a fatal error.
+	CC="${C_COMPILER}" CXX="${TRIPLET}-g++" CFLAGS="$BuildFlags -Wno-error" \
+	LDFLAGS="%{build_ldflags}" ASFLAGS="$BuildFlags -Wa,--noexecstack" \
 	../configure \
 		--prefix=%{_prefix} \
 		--bindir=%{_bindir} \
