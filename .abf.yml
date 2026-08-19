@@ -1,3 +1,12 @@
 sources:
   glibc-manpages.tar.bz2: ca54bfb832b703c8e35170fcc1c1f5470b45ff0f
   glibc-2.44.tar.xz: 9e89c156ef073bf5923a8f46c0ee3e619744f42c
+  mimalloc-3.5.0.tar.gz: 7f53abc12d7191d53a3cf1c442c99817ea97907f
+  mimalloc-2.4.5.tar.gz: fe5642dbd9917b8a75fd749d299ed39f57bcd572
+  mesh-2987f88.tar.xz: 3e10bdd1c09a95a3cee450a2f129020eb8a5c88a
+  tcmalloc-3efd46d.tar.xz: 8ed8bf6e75a7aac0a15d00ccce40f8617fae8fc3
+  snmalloc-a5f10eb.tar.xz: e4b839ad39fa819bafd16019656538088fc0f17f
+  rpmalloc-5dacae8.tar.xz: 7d67ef50abd66bc36c69166a679e1806edc2ba63
+  hardened_malloc-714abf5.tar.xz: e9a643cbac04b275eb78e4adbc54c086c5c3bbad
+  partition_alloc-b40bacc.tar.xz: bace397a2e82b65cc64ff4f420a8b7e8c78aae35
+  jemalloc-e36a0fa.tar.xz: 0db8202325a6e73717e8613d4cf2ca75945edd04

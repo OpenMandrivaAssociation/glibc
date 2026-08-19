@@ -1,21 +1,21 @@
-From 122feb219869ae492041e30b220a216c34c9fbb7 Mon Sep 17 00:00:00 2001
+From a9f3908033397005989741d7df297a1aa78875c8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Thu, 6 Aug 2026 23:50:18 +0200
+Date: Wed, 19 Aug 2026 18:00:00 +0200
 Subject: [PATCH 03/13] Add in-tree mimalloc-secure backend
  (--with-malloc=mimalloc-secure)
 
 ---
  malloc/malloc-mimalloc-secure-impl.c   |  29 ++
- malloc/malloc-mimalloc-secure-rename.h | 426 ++++++++++++++++++++++++
+ malloc/malloc-mimalloc-secure-rename.h | 435 ++++++++++++++++++++++++
  malloc/malloc-mimalloc-secure.c        | 444 +++++++++++++++++++++++++
- 3 files changed, 899 insertions(+)
+ 3 files changed, 908 insertions(+)
  create mode 100644 malloc/malloc-mimalloc-secure-impl.c
  create mode 100644 malloc/malloc-mimalloc-secure-rename.h
  create mode 100644 malloc/malloc-mimalloc-secure.c
 
 diff --git a/malloc/malloc-mimalloc-secure-impl.c b/malloc/malloc-mimalloc-secure-impl.c
 new file mode 100644
-index 00000000..186b1300
+index 0000000..186b130
 --- /dev/null
 +++ b/malloc/malloc-mimalloc-secure-impl.c
 @@ -0,0 +1,29 @@
@@ -50,10 +50,10 @@ index 00000000..186b1300
 +#include "mimalloc/src/static.c"
 diff --git a/malloc/malloc-mimalloc-secure-rename.h b/malloc/malloc-mimalloc-secure-rename.h
 new file mode 100644
-index 00000000..768850ec
+index 0000000..4154eb1
 --- /dev/null
 +++ b/malloc/malloc-mimalloc-secure-rename.h
-@@ -0,0 +1,426 @@
+@@ -0,0 +1,435 @@
 +/* Auto-generated: rename mimalloc symbols for the secure variant. */
 +#ifndef _MALLOC_MIMALLOC_SECURE_RENAME_H
 +#define _MALLOC_MIMALLOC_SECURE_RENAME_H
@@ -81,6 +81,7 @@ index 00000000..768850ec
 +#define _mi_bitmap_forall_set _mis_bitmap_forall_set
 +#define _mi_bitmap_forall_setc_ranges _mis_bitmap_forall_setc_ranges
 +#define _mi_bitmap_forall_setc_rangesn _mis_bitmap_forall_setc_rangesn
++#define _mi_block_next_is_corrupted _mis_block_next_is_corrupted
 +#define _mi_clock_end _mis_clock_end
 +#define _mi_clock_now _mis_clock_now
 +#define _mi_clock_start _mis_clock_start
@@ -88,6 +89,7 @@ index 00000000..768850ec
 +#define _mi_cpu_movsb_max _mis_cpu_movsb_max
 +#define _mi_cpu_stosb_max _mis_cpu_stosb_max
 +#define _mi_deferred_free _mis_deferred_free
++#define _mi_detect_cpu_features _mis_detect_cpu_features
 +#define _mi_error_message _mis_error_message
 +#define _mi_fprintf _mis_fprintf
 +#define _mi_fputs _mis_fputs
@@ -99,19 +101,20 @@ index 00000000..768850ec
 +#define _mi_heap_destroy_pages _mis_heap_destroy_pages
 +#define _mi_heap_detach_theaps _mis_heap_detach_theaps
 +#define _mi_heap_force_destroy _mis_heap_force_destroy
++#define _mi_heap_init _mis_heap_init
 +#define _mi_heap_move_pages _mis_heap_move_pages
 +#define _mi_heap_new_for_subproc _mis_heap_new_for_subproc
 +#define _mi_heap_theap_get_or_init _mis_heap_theap_get_or_init
 +#define _mi_heap_theap_set _mis_heap_theap_set
 +#define _mi_heap_visit_blocks _mis_heap_visit_blocks
 +#define _mi_is_empty_theap _mis_is_empty_theap
-+#define _mi_is_main_thread _mis_is_main_thread
-+#define _mi_is_process_heap_main _mis_is_process_heap_main
 +#define _mi_is_redirected _mis_is_redirected
 +#define _mi_malloc_generic _mis_malloc_generic
 +#define _mi_meta_free _mis_meta_free
 +#define _mi_meta_is_meta_page _mis_meta_is_meta_page
++#define _mi_meta_rezalloc _mis_meta_rezalloc
 +#define _mi_meta_zalloc _mis_meta_zalloc
++#define _mi_meta_zalloc_aligned _mis_meta_zalloc_aligned
 +#define _mi_option_get_fast _mis_option_get_fast
 +#define _mi_options_init _mis_options_init
 +#define _mi_options_post_init _mis_options_post_init
@@ -152,15 +155,13 @@ index 00000000..768850ec
 +#define _mi_os_zalloc _mis_os_zalloc
 +#define _mi_padding_shrink _mis_padding_shrink
 +#define _mi_page_abandon _mis_page_abandon
-+#define _mi_page_empty _mis_page_empty
++#define _mi_page_empty_get _mis_page_empty_get
 +#define _mi_page_free _mis_page_free
 +#define _mi_page_free_collect _mis_page_free_collect
 +#define _mi_page_free_collect_partly _mis_page_free_collect_partly
 +#define _mi_page_init _mis_page_init
 +#define _mi_page_malloc_zero _mis_page_malloc_zero
-+#define _mi_page_map _mis_page_map
 +#define _mi_page_map_init _mis_page_map_init
-+#define _mi_page_map_max_address _mis_page_map_max_address
 +#define _mi_page_map_register _mis_page_map_register
 +#define _mi_page_map_unregister _mis_page_map_unregister
 +#define _mi_page_map_unregister_range _mis_page_map_unregister_range
@@ -206,7 +207,6 @@ index 00000000..768850ec
 +#define _mi_safe_ptr_page _mis_safe_ptr_page
 +#define _mi_snprintf _mis_snprintf
 +#define _mi_stats_init _mis_stats_init
-+#define _mi_stats_main _mis_stats_main
 +#define _mi_stats_merge_into _mis_stats_merge_into
 +#define _mi_stats_print _mis_stats_print
 +#define _mi_streq _mis_streq
@@ -219,8 +219,13 @@ index 00000000..768850ec
 +#define _mi_subproc _mis_subproc
 +#define _mi_subproc_from_id _mis_subproc_from_id
 +#define _mi_subproc_heap_main _mis_subproc_heap_main
++#define _mi_subproc_is_main _mis_subproc_is_main
 +#define _mi_subproc_main _mis_subproc_main
++#define _mi_subproc_main_done _mis_subproc_main_done
++#define _mi_subproc_main_init _mis_subproc_main_init
 +#define _mi_subproc_to_id _mis_subproc_to_id
++#define _mi_subprocs_unsafe_destroy_all _mis_subprocs_unsafe_destroy_all
++#define _mi_theap_alloc _mis_theap_alloc
 +#define _mi_theap_area_visit_blocks _mis_theap_area_visit_blocks
 +#define _mi_theap_cached_set _mis_theap_cached_set
 +#define _mi_theap_collect_abandon _mis_theap_collect_abandon
@@ -231,18 +236,18 @@ index 00000000..768850ec
 +#define _mi_theap_empty _mis_theap_empty
 +#define _mi_theap_empty_get _mis_theap_empty_get
 +#define _mi_theap_empty_wrong _mis_theap_empty_wrong
-+#define _mi_theap_guarded_init _mis_theap_guarded_init
 +#define _mi_theap_incref _mis_theap_incref
 +#define _mi_theap_init _mis_theap_init
 +#define _mi_theap_malloc_zero _mis_theap_malloc_zero
 +#define _mi_theap_malloc_zero_ex _mis_theap_malloc_zero_ex
-+#define _mi_theap_options_init _mis_theap_options_init
++#define _mi_theap_merge_stats _mis_theap_merge_stats
 +#define _mi_theap_page_reclaim _mis_theap_page_reclaim
 +#define _mi_theap_random_next _mis_theap_random_next
 +#define _mi_theap_realloc_zero _mis_theap_realloc_zero
 +#define _mi_thread_done _mis_thread_done
 +#define _mi_thread_id _mis_thread_id
 +#define _mi_thread_init _mis_thread_init
++#define _mi_thread_init_with_heap _mis_thread_init_with_heap
 +#define _mi_thread_local_create _mis_thread_local_create
 +#define _mi_thread_local_free _mis_thread_local_free
 +#define _mi_thread_local_get _mis_thread_local_get
@@ -251,6 +256,8 @@ index 00000000..768850ec
 +#define _mi_thread_locals_init _mis_thread_locals_init
 +#define _mi_thread_locals_thread_done _mis_thread_locals_thread_done
 +#define _mi_tld_detach_theaps _mis_tld_detach_theaps
++#define _mi_tls_slots_done _mis_tls_slots_done
++#define _mi_tls_slots_init _mis_tls_slots_init
 +#define _mi_toupper _mis_toupper
 +#define _mi_trace_message _mis_trace_message
 +#define _mi_verbose_message _mis_verbose_message
@@ -265,6 +272,7 @@ index 00000000..768850ec
 +#define mi_arena_contains mis_arena_contains
 +#define mi_arena_from_index mis_arena_from_index
 +#define mi_arena_id_from_arena mis_arena_id_from_arena
++#define mi_arena_max_object_size mis_arena_max_object_size
 +#define mi_arena_min_alignment mis_arena_min_alignment
 +#define mi_arena_min_size mis_arena_min_size
 +#define mi_arena_page_at_slice mis_arena_page_at_slice
@@ -392,7 +400,6 @@ index 00000000..768850ec
 +#define mi_options_print_out mis_options_print_out
 +#define mi_posix_memalign mis_posix_memalign
 +#define mi_process_done mis_process_done
-+#define mi_process_heap_main mis_process_heap_main
 +#define mi_process_info mis_process_info
 +#define mi_process_info_print mis_process_info_print
 +#define mi_process_info_print_out mis_process_info_print_out
@@ -446,15 +453,17 @@ index 00000000..768850ec
 +#define mi_theap_get_default mis_theap_get_default
 +#define mi_theap_guarded_set_sample_rate mis_theap_guarded_set_sample_rate
 +#define mi_theap_guarded_set_size_bound mis_theap_guarded_set_size_bound
-+#define mi_theap_main mis_theap_main
 +#define mi_theap_malloc mis_theap_malloc
 +#define mi_theap_malloc_aligned mis_theap_malloc_aligned
 +#define mi_theap_malloc_small mis_theap_malloc_small
 +#define mi_theap_realloc mis_theap_realloc
 +#define mi_theap_realpath mis_theap_realpath
++#define mi_theap_rezalloc mis_theap_rezalloc
 +#define mi_theap_set_default mis_theap_set_default
++#define mi_theap_stats_get mis_theap_stats_get
 +#define mi_theap_visit_blocks mis_theap_visit_blocks
 +#define mi_theap_zalloc mis_theap_zalloc
++#define mi_theap_zalloc_aligned mis_theap_zalloc_aligned
 +#define mi_theap_zalloc_small mis_theap_zalloc_small
 +#define mi_thread_done mis_thread_done
 +#define mi_thread_init mis_thread_init
@@ -479,10 +488,10 @@ index 00000000..768850ec
 +#define mi_zalloc_aligned mis_zalloc_aligned
 +#define mi_zalloc_aligned_at mis_zalloc_aligned_at
 +#define mi_zalloc_small mis_zalloc_small
-+#endif /* _MALLOC_MIMALLOC_SECURE_RENAME_H */
++#endif
 diff --git a/malloc/malloc-mimalloc-secure.c b/malloc/malloc-mimalloc-secure.c
 new file mode 100644
-index 00000000..8328b5db
+index 0000000..8328b5d
 --- /dev/null
 +++ b/malloc/malloc-mimalloc-secure.c
 @@ -0,0 +1,444 @@

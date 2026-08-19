@@ -65,6 +65,10 @@
 %bcond_with clang
 # Build alternative malloc implemenations
 %bcond_without mallocs
+# Official mimalloc release tarballs (Source20 / Source21).  Bump these,
+# abb store the new archive, and point the Source tag at it.
+%global mimalloc_ver 3.5.0
+%global mimalloc2_ver 2.4.5
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
@@ -196,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	5
+Release:	6
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -216,6 +220,20 @@ Source1003:	locales.sysconfig
 
 # Ugly, temporary arch specific (x86_32) hack
 Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
+
+# Third-party malloc implementations.  The 000x patches only ship glue
+# (shims, configure/Makefile wiring).  The allocator trees come from
+# these tarballs and are unpacked into malloc/ in %prep.
+# To bump mimalloc: set mimalloc_ver, abb store mimalloc-%{mimalloc_ver}.tar.gz.
+Source20:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc_ver}.tar.gz#/mimalloc-%{mimalloc_ver}.tar.gz
+Source21:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc2_ver}.tar.gz#/mimalloc-%{mimalloc2_ver}.tar.gz
+Source22:	jemalloc-e36a0fa.tar.xz
+Source23:	snmalloc-a5f10eb.tar.xz
+Source24:	rpmalloc-5dacae8.tar.xz
+Source25:	hardened_malloc-714abf5.tar.xz
+Source26:	mesh-2987f88.tar.xz
+Source27:	partition_alloc-b40bacc.tar.xz
+Source28:	tcmalloc-3efd46d.tar.xz
 
 #
 # Patches from upstream
@@ -308,7 +326,6 @@ Patch1076:	0007-Add-in-tree-mallocng-backend-with-malloc-mallocng.patch
 Patch1077:	0008-Add-in-tree-hardened_malloc-backend-with-malloc-hard.patch
 Patch1078:	0009-Add-in-tree-Mesh-backend-with-malloc-preload-mesh.patch
 Patch1079:	0010-Add-in-tree-PartitionAlloc-backend-with-malloc-prelo.patch
-Patch1080:	0011-Add-full-tcmalloc-as-LD_PRELOAD-DSO-with-malloc-prel.patch
 Patch1081:	0012-Add-in-tree-phasecast-adaptive-malloc-backend-with-m.patch
 Patch1082:	0013-Add-malloc-backend-documentation-and-benchmark-resul.patch
 Patch1083:	0014-Add-in-tree-mimalloc2-v2-backend-with-malloc-mimallo.patch
@@ -1353,6 +1370,28 @@ done
 
 %prep
 %autosetup -p1 -n %{source_dir} -a3
+
+# Allocator trees.  Glue lives in Patch1071+; these tarballs are the
+# upstream (or configured) sources.  Official mimalloc archives are
+# subsetted to include/ + src/ + LICENSE; the rest are snapshots of the
+# tree we actually compile (jemalloc is pre-configured).
+install_mimalloc_subset() {
+	local tarball="$1"
+	local dest="$2"
+	local tmp root
+	tmp=$(mktemp -d)
+	tar -xf "$tarball" -C "$tmp"
+	root=$(echo "$tmp"/mimalloc-*)
+	mkdir -p "malloc/${dest}"
+	cp -a "${root}/include" "${root}/src" "${root}/LICENSE" "malloc/${dest}/"
+	rm -rf "$tmp"
+}
+install_mimalloc_subset %{SOURCE20} mimalloc
+install_mimalloc_subset %{SOURCE21} mimalloc2
+for _msrc in %{SOURCE22} %{SOURCE23} %{SOURCE24} %{SOURCE25} %{SOURCE26} %{SOURCE27} %{SOURCE28}; do
+	tar -xf "${_msrc}" -C malloc
+done
+unset _msrc
 
 # OM filesystem ajustments
 sed -i -e 's,/var/mail,/srv/mail,g' sysdeps/unix/sysv/linux/paths.h sysdeps/generic/paths.h
