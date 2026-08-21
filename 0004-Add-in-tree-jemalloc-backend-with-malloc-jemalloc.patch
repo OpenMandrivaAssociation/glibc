@@ -4,7 +4,10 @@ Date: Wed, 19 Aug 2026 19:00:00 +0200
 Subject: [PATCH 04/13] Add jemalloc backend glue (--with-malloc=jemalloc)
 
 Shim only.  Configured jemalloc sources come from the jemalloc tarball
-unpacked into malloc/jemalloc/ in %prep.
+unpacked into malloc/jemalloc/ in %prep.  The tarball's
+jemalloc_internal_defs.h is x86_64 configure output; Source29
+(0016-jemalloc-portable-configure-defs.patch) overlays portable
+spinwait / VA / sizeof / rdtscp / __int128 defines after unpack.
 ---
  malloc/malloc-jemalloc.c | 472 +++++++++++++++++++++++++++++++++++++++
  1 file changed, 472 insertions(+)

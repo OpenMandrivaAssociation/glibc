@@ -1,0 +1,160 @@
+The jemalloc tarball ships jemalloc_internal_defs.h produced by configure
+on x86_64.  That hard-codes pause, a 48-bit VA, LP64 sizeofs, rdtscp, and
+__int128.  Rewrite those as compile-time arch/ABI tests so the same tree
+builds on aarch64, arm, riscv64, loongarch64, ppc64, i686, and x32.
+
+Applied after the malloc tarballs are unpacked in %prep.
+
+--- a/malloc/jemalloc/include/jemalloc/internal/jemalloc_internal_defs.h
++++ b/malloc/jemalloc/include/jemalloc/internal/jemalloc_internal_defs.h
+@@ -34,18 +34,66 @@
+ 
+ /*
+  * Hyper-threaded CPUs may need a special instruction inside spin loops in
+- * order to yield to another virtual CPU.
+- */
+-#define CPU_SPINWAIT __asm__ volatile("pause")
+-/* 1 if CPU_SPINWAIT is defined, 0 otherwise. */
+-#define HAVE_CPU_SPINWAIT 1
++ * order to yield to another virtual CPU.  The tarball ships configure output
++ * generated on x86_64 ("pause"); pick a per-arch hint so the same tree
++ * compiles for every glibc target.
++ */
++#if defined(__x86_64__) || defined(__i386__) || defined(_M_IX86) \
++    || defined(_M_X64)
++#  define CPU_SPINWAIT __asm__ volatile("pause")
++#  define HAVE_CPU_SPINWAIT 1
++#elif defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
++/* isb is a conservative yield-ish barrier available on all aarch64. */
++#  define CPU_SPINWAIT __asm__ volatile("isb")
++#  define HAVE_CPU_SPINWAIT 1
++#elif defined(__arm__)
++#  if defined(__ARM_ARCH) && __ARM_ARCH >= 6
++#    define CPU_SPINWAIT __asm__ volatile("yield")
++#  else
++#    define CPU_SPINWAIT __asm__ volatile("" ::: "memory")
++#  endif
++#  define HAVE_CPU_SPINWAIT 1
++#elif defined(__riscv)
++/* PAUSE is a Zihintpause hint; a compiler barrier is enough if unavailable. */
++#  define CPU_SPINWAIT __asm__ volatile("" ::: "memory")
++#  define HAVE_CPU_SPINWAIT 1
++#elif defined(__loongarch__)
++#  define CPU_SPINWAIT __asm__ volatile("dbar 0")
++#  define HAVE_CPU_SPINWAIT 1
++#elif defined(__powerpc__) || defined(__powerpc64__) || defined(__ppc__)
++#  define CPU_SPINWAIT __asm__ volatile("or 27,27,27")
++#  define HAVE_CPU_SPINWAIT 1
++#else
++/* No known spin hint; spin.h falls back to a volatile store. */
++/* #undef CPU_SPINWAIT */
++#  define HAVE_CPU_SPINWAIT 0
++#endif
+ 
+ /*
+  * Number of significant bits in virtual addresses.  This may be less than the
+  * total number of bits in a pointer, e.g. on x64, for which the uppermost 16
+- * bits are the same as bit 47.
+- */
+-#define LG_VADDR 48
++ * bits are the same as bit 47.  Must be compile-time arch-correct (the
++ * tarball's configure output was generated on x86_64).
++ *
++ * Notes:
++ * - 32-bit pointers (including x32): full 32-bit VA.
++ * - aarch64 / x86_64 / loongarch64 Linux: 48-bit user VA is the common case.
++ * - riscv64 Linux defaults to Sv39 (39-bit VA); Sv48 is optional.
++ */
++#if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 4
++#  define LG_VADDR 32
++#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
++/* Linux default page-table mode is Sv39. */
++#  define LG_VADDR 39
++#elif defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) \
++    || defined(__powerpc64__) || defined(__s390x__) \
++    || defined(__loongarch64) || defined(__loongarch_lp64) \
++    || (defined(__mips__) && defined(_MIPS_SIM) && _MIPS_SIM == _ABI64)
++#  define LG_VADDR 48
++#else
++/* Conservative 64-bit default (canonical / 48-bit VMA). */
++#  define LG_VADDR 48
++#endif
+ 
+ /* Defined if C11 atomics are available. */
+ #define JEMALLOC_C11_ATOMICS
+@@ -237,7 +285,9 @@
+  * common sequences of mmap()/munmap() calls will cause virtual memory map
+  * holes.
+  */
+-#define JEMALLOC_RETAIN
++#if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8
++#  define JEMALLOC_RETAIN
++#endif
+ 
+ /* TLS is used to map arenas and magazine caches to threads. */
+ #define JEMALLOC_TLS
+@@ -391,16 +441,38 @@
+ /* #undef JEMALLOC_BIG_ENDIAN */
+ 
+ /* sizeof(int) == 2^LG_SIZEOF_INT. */
+-#define LG_SIZEOF_INT 2
+-
+-/* sizeof(long) == 2^LG_SIZEOF_LONG. */
+-#define LG_SIZEOF_LONG 3
++#if defined(__SIZEOF_INT__) && __SIZEOF_INT__ == 8
++#  define LG_SIZEOF_INT 3
++#else
++#  define LG_SIZEOF_INT 2
++#endif
++
++/* sizeof(long) == 2^LG_SIZEOF_LONG.  (4 on ILP32, 8 on LP64.) */
++#if defined(__SIZEOF_LONG__) && __SIZEOF_LONG__ == 8
++#  define LG_SIZEOF_LONG 3
++#elif defined(__SIZEOF_LONG__) && __SIZEOF_LONG__ == 4
++#  define LG_SIZEOF_LONG 2
++#else
++#  define LG_SIZEOF_LONG LG_SIZEOF_PTR
++#endif
+ 
+ /* sizeof(long long) == 2^LG_SIZEOF_LONG_LONG. */
+-#define LG_SIZEOF_LONG_LONG 3
++#if defined(__SIZEOF_LONG_LONG__) && __SIZEOF_LONG_LONG__ == 8
++#  define LG_SIZEOF_LONG_LONG 3
++#elif defined(__SIZEOF_LONG_LONG__) && __SIZEOF_LONG_LONG__ == 4
++#  define LG_SIZEOF_LONG_LONG 2
++#else
++#  define LG_SIZEOF_LONG_LONG 3
++#endif
+ 
+ /* sizeof(intmax_t) == 2^LG_SIZEOF_INTMAX_T. */
+-#define LG_SIZEOF_INTMAX_T 3
++#if defined(__SIZEOF_INTMAX_T__) && __SIZEOF_INTMAX_T__ == 8
++#  define LG_SIZEOF_INTMAX_T 3
++#elif defined(__SIZEOF_INTMAX_T__) && __SIZEOF_INTMAX_T__ == 4
++#  define LG_SIZEOF_INTMAX_T 2
++#else
++#  define LG_SIZEOF_INTMAX_T LG_SIZEOF_LONG_LONG
++#endif
+ 
+ /* glibc malloc hooks (__malloc_hook, __realloc_hook, __free_hook). */
+ /* #undef JEMALLOC_GLIBC_MALLOC_HOOK */
+@@ -484,12 +556,16 @@
+ 
+ /*
+  * If defined, support the use of rdtscp to get the time stamp counter
+- * and the processor ID.
++ * and the processor ID.  rdtscp is x86-only.
+  */
+-#define JEMALLOC_HAVE_RDTSCP
++#if defined(__x86_64__) || defined(__i386__)
++#  define JEMALLOC_HAVE_RDTSCP
++#endif
+ 
+ /* If defined, use __int128 for optimization. */
+-#define JEMALLOC_HAVE_INT128
++#ifdef __SIZEOF_INT128__
++#  define JEMALLOC_HAVE_INT128
++#endif
+ 
+ #include "jemalloc/internal/jemalloc_internal_overrides.h"
+ 

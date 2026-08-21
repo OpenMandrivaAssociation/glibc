@@ -234,6 +234,8 @@ Source25:	hardened_malloc-714abf5.tar.xz
 Source26:	mesh-2987f88.tar.xz
 Source27:	partition_alloc-b40bacc.tar.xz
 Source28:	tcmalloc-3efd46d.tar.xz
+# Applied in %prep after the jemalloc tarball is unpacked (not via %autosetup).
+Source29:	0016-jemalloc-portable-configure-defs.patch
 
 #
 # Patches from upstream
@@ -1374,7 +1376,9 @@ done
 # Allocator trees.  Glue lives in Patch1071+; these tarballs are the
 # upstream (or configured) sources.  Official mimalloc archives are
 # subsetted to include/ + src/ + LICENSE; the rest are snapshots of the
-# tree we actually compile (jemalloc is pre-configured).
+# tree we actually compile.  jemalloc ships configure output generated
+# on x86_64; Source29 overlays portable spinwait / VA / sizeof defines
+# after unpack so the tarball cannot clobber them.
 install_mimalloc_subset() {
 	local tarball="$1"
 	local dest="$2"
@@ -1392,6 +1396,8 @@ for _msrc in %{SOURCE22} %{SOURCE23} %{SOURCE24} %{SOURCE25} %{SOURCE26} %{SOURC
 	tar -xf "${_msrc}" -C malloc
 done
 unset _msrc
+# Not a Patch tag: %autosetup would apply it before the tarball exists.
+patch -p1 < %{SOURCE29}
 
 # OM filesystem ajustments
 sed -i -e 's,/var/mail,/srv/mail,g' sysdeps/unix/sysv/linux/paths.h sysdeps/generic/paths.h
