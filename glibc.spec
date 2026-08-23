@@ -1364,8 +1364,16 @@ Libc for crosscompiling to ${i}.
 %dir %{_prefix}/${i}/share/locale
 %{_prefix}/${i}/share/locale/locale.alias
 %optional /lib/${ldname}.so*
+EOF
+	case "$i" in
+	arm*|i[3-6]86*)
+		;;
+	*)
+		cat <<EOF
 %optional /lib64/${ldname}.so*
 EOF
+		;;
+	esac
 done
 )
 %endif
@@ -1872,21 +1880,28 @@ for i in %{targets}; do
 
 	# clang's PT_INTERP is arch-dependent (/lib on riscv64, /lib64
 	# on loongarch64). qemu prepends QEMU_LD_PREFIX, so both names
-	# must exist inside the sysroot. Relative links; the old
-	# %{buildroot} loops ran before instroot was copied and never
-	# packaged anything.
+	# must exist inside a 64-bit sysroot. 32-bit loaders stay in
+	# /lib only. Relative links; the old %{buildroot} loops ran
+	# before instroot was copied and never packaged anything.
 	sys="${DD}%{_prefix}/${TRIPLET}"
-	mkdir -p "$sys/lib" "$sys/lib64"
-	for src in "$sys/lib64"/$ldname.so* "$sys/lib"/$ldname.so*; do
-		[ -e "$src" ] || continue
-		base=$(basename "$src")
-		if [ -e "$sys/lib64/$base" ] && [ ! -e "$sys/lib/$base" ]; then
-			ln -sfn ../lib64/"$base" "$sys/lib/$base"
-		fi
-		if [ -e "$sys/lib/$base" ] && [ ! -e "$sys/lib64/$base" ]; then
-			ln -sfn ../lib/"$base" "$sys/lib64/$base"
-		fi
-	done
+	mkdir -p "$sys/lib"
+	case "$TRIPLET" in
+	arm*|i[3-6]86*)
+		;;
+	*)
+		mkdir -p "$sys/lib64"
+		for src in "$sys/lib64"/$ldname.so* "$sys/lib"/$ldname.so*; do
+			[ -e "$src" ] || continue
+			base=$(basename "$src")
+			if [ -e "$sys/lib64/$base" ] && [ ! -e "$sys/lib/$base" ]; then
+				ln -sfn ../lib64/"$base" "$sys/lib/$base"
+			fi
+			if [ -e "$sys/lib/$base" ] && [ ! -e "$sys/lib64/$base" ]; then
+				ln -sfn ../lib/"$base" "$sys/lib64/$base"
+			fi
+		done
+		;;
+	esac
 
 	# Make legacy build systems that hardcode -ldl and/or -lpthread happy
 	echo '/* GNU ld script */' >${DD}%{_prefix}/${TRIPLET}/lib/libdl.so
@@ -2015,17 +2030,24 @@ for i in %{long_targets}; do
 		;;
 	esac
 	csys="%{buildroot}%{_prefix}/${i}"
-	mkdir -p %{buildroot}/lib %{buildroot}/lib64
-	for src in "$csys/lib64"/$ldname.so* "$csys/lib"/$ldname.so*; do
+	mkdir -p %{buildroot}/lib
+	for src in "$csys/lib"/$ldname.so*; do
 		[ -e "$src" ] || continue
 		base=$(basename "$src")
-		if [ -e "$csys/lib/$base" ]; then
-			ln -sfn %{_prefix}/${i}/lib/$base %{buildroot}/lib/$base
-		fi
-		if [ -e "$csys/lib64/$base" ]; then
-			ln -sfn %{_prefix}/${i}/lib64/$base %{buildroot}/lib64/$base
-		fi
+		ln -sfn %{_prefix}/${i}/lib/$base %{buildroot}/lib/$base
 	done
+	case "$i" in
+	arm*|i[3-6]86*)
+		;;
+	*)
+		mkdir -p %{buildroot}/lib64
+		for src in "$csys/lib64"/$ldname.so*; do
+			[ -e "$src" ] || continue
+			base=$(basename "$src")
+			ln -sfn %{_prefix}/${i}/lib64/$base %{buildroot}/lib64/$base
+		done
+		;;
+	esac
 done
 %endif
 
