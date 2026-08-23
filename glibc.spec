@@ -1870,11 +1870,22 @@ for i in %{targets}; do
 		;;
 	esac
 
-	for i in "%{buildroot}/usr/$TRIPLET/lib/$ldname.so"*; do
-		[ -e "$i" ] && ln -s $(echo $i |sed -e 's,^%{buildroot},,') %{buildroot}/lib/
-	done
-	for i in "%{buildroot}/usr/$TRIPLET/lib64/$ldname.so"*; do
-		[ -e "$i" ] && ln -s $(echo $i |sed -e 's,^%{buildroot},,') %{buildroot}/lib64/
+	# clang's PT_INTERP is arch-dependent (/lib on riscv64, /lib64
+	# on loongarch64). qemu prepends QEMU_LD_PREFIX, so both names
+	# must exist inside the sysroot. Relative links; the old
+	# %{buildroot} loops ran before instroot was copied and never
+	# packaged anything.
+	sys="${DD}%{_prefix}/${TRIPLET}"
+	mkdir -p "$sys/lib" "$sys/lib64"
+	for src in "$sys/lib64"/$ldname.so* "$sys/lib"/$ldname.so*; do
+		[ -e "$src" ] || continue
+		base=$(basename "$src")
+		if [ -e "$sys/lib64/$base" ] && [ ! -e "$sys/lib/$base" ]; then
+			ln -sfn ../lib64/"$base" "$sys/lib/$base"
+		fi
+		if [ -e "$sys/lib/$base" ] && [ ! -e "$sys/lib64/$base" ]; then
+			ln -sfn ../lib/"$base" "$sys/lib64/$base"
+		fi
 	done
 
 	# Make legacy build systems that hardcode -ldl and/or -lpthread happy
@@ -1971,6 +1982,50 @@ for i in %{long_targets}; do
 	fi
 	echo "===== Installing %{_target_platform} -> $i cross libc ====="
 	cp -a instroot-${i}/* %{buildroot}
+	# Host /lib and /lib64 names so qemu-user-static finds the
+	# interpreter without QEMU_LD_PREFIX. Basename is per-arch
+	# (ld-linux-loongarch-lp64d.so.1 etc.) and does not collide
+	# with the build host's own ld.so.
+	ldname="$(echo $i |cut -d- -f1)"
+	case "$ldname" in
+	x86_64)
+		if echo $i |grep -q x32; then
+			ldname="ld-linux-x32"
+		else
+			ldname="ld-linux-x86-64"
+		fi
+		;;
+	loongarch64)
+		ldname="ld-linux-loongarch-lp64d"
+		;;
+	riscv64*)
+		ldname="ld-linux-riscv64-lp64d"
+		;;
+	arm*)
+		ldname="ld-linux-armhf"
+		;;
+	ppc*)
+		ldname="ld64"
+		;;
+	i.86*)
+		ldname="ld-linux"
+		;;
+	*)
+		ldname="ld-linux-${ldname}"
+		;;
+	esac
+	csys="%{buildroot}%{_prefix}/${i}"
+	mkdir -p %{buildroot}/lib %{buildroot}/lib64
+	for src in "$csys/lib64"/$ldname.so* "$csys/lib"/$ldname.so*; do
+		[ -e "$src" ] || continue
+		base=$(basename "$src")
+		if [ -e "$csys/lib/$base" ]; then
+			ln -sfn %{_prefix}/${i}/lib/$base %{buildroot}/lib/$base
+		fi
+		if [ -e "$csys/lib64/$base" ]; then
+			ln -sfn %{_prefix}/${i}/lib64/$base %{buildroot}/lib64/$base
+		fi
+	done
 done
 %endif
 
