@@ -4,7 +4,7 @@ Date: Wed, 19 Aug 2026 19:00:00 +0200
 Subject: [PATCH 02/13] Add mimalloc backend glue (--with-malloc=mimalloc)
 
 Shim and amalgamation TU only.  Upstream sources come from the
-mimalloc 3.5.0 tarball unpacked into malloc/mimalloc/ in %prep.
+mimalloc 3.5.2 tarball unpacked into malloc/mimalloc/ in %prep.
 ---
  malloc/malloc-mimalloc-impl.c |  23 ++
  malloc/malloc-mimalloc.c      | 444 ++++++++++++++++++++++++++++++++++

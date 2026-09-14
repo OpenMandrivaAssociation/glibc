@@ -197,11 +197,11 @@ index c7e301ed..ccf39791 100644
 -mimalloc fef6b0dd70f9d7fa0750b0d0b9fbb471203b94cd 2026-04-29 15:46:57 -0700 Merge pull request #1284 from microsoft/dev-main
 -rpmalloc c95b04df90b9fad24515830ab89307ad9235dc91 2026-07-01 13:10:48 +0200 README: fix C++ override (rpnew.h) instructions (#354) (#388)
 -hardened_malloc 53326b3ba5cab814ff9d9f88ad32ea11d94f30e6 2026-07-01 13:11:56 -0400 replace aligned attribute with alignas
-+Synced upstreams at 2026-08-19T19:55:00+02:00
-+mimalloc 18b08671c9302247bfb682286e6bf3cc1773f801 2026-08-18 23:47:38 -0700 Merge branch 'dev' into dev3
-+mimalloc2 cde3f7a0de6de5e243aacd25ba2dbe7fa64d3254 2026-08-05 10:40:45 -0700 Merge branch 'dev' into dev2
++Synced upstreams at 2026-09-15T00:14:00+02:00
++mimalloc v3.5.2
++mimalloc2 v2.5.2
 +rpmalloc 5dacae8ba4ec31100dd2ed4bffd552abbd3cb29f 2026-07-15 16:54:06 +0200 Merge main for convergence
-+hardened_malloc 714abf5a47258090016984e43c7bfbccdeb99fc7 2026-08-08 00:06:03 -0400 use pinned commit hashes for GitHub actions
++hardened_malloc 903ed6431ebce1be2a9aa8f625f69e25322537a7 2026-09-04 19:18:11 -0400 replace MAP_FIXED and fix MREMAP_FIXED ENOMEM handling
  Mesh 2987f883b8695c07a80dc40da67c61f524460dfd 2026-03-25 07:14:39 -0700 fix: remove dead lseek and fix macOS fork test path
 -Heap-Layers 2cc23cb080e3e26b72f9cef27c55389c427ef7b3 2026-06-04 22:01:43 -0400 Revert "Re-enable PAUSE/YIELD hints with exponential backoff in spinlock"
 -snmalloc f70eb82634ff280bd39a815ed5a1315bb064c164 2026-06-27 20:32:16 +0100 reallocarr overflow check ordering fix. (#863)
@@ -210,11 +210,11 @@ index c7e301ed..ccf39791 100644
 -partition_alloc 24aadfa94c4e04a0a1cb66c03f15e8110fa073f1
 -tcmalloc(gperftools) 07c5e9226bda1720bdf783a11f5df0f515e3c9d3 2026-03-08 13:04:58 -0400 bazel: yank publish-to-bcr workflow
 +Heap-Layers 9400e88e81cca2ef390f7a0c39d22180397a66e9 2026-07-09 09:08:51 -0400 Merge pull request #73 from emeryberger/fix/freesllist-implicit-lifetime
-+snmalloc a5f10eb6c048fc32bca2383daa8d6acbf82cfb7f 2026-08-13 10:07:42 +0100 Finish CI action maintenance (#871)
-+jemalloc e36a0fa5bc1e1090362505ac4af4408466ba5163 2026-08-10 09:16:09 -0400 Fix prof-sampling / guard-page interaction bug in the SAN
++snmalloc 511e91a2de604ce716841f32f5e929a066c4a978 2026-09-08 04:48:53 +0000 Read the batched remote free ring's length word without domesticating it (#877)
++jemalloc ff80bf2d0c8f162ea445533354cad8b7e5830f5c 2026-09-10 18:34:33 -0400 Cleanup LG_HUGEPAGE == 0 conditions
 +musl f21a96538f78fa8e2040831b4209b35f2fb581da 2026-07-28 19:26:37 -0400 fix toctou race in popen children's closing of other popen pipes
-+partition_alloc b40bacc8b09953dc7a59a708251f214c6ab9eacb
-+tcmalloc(gperftools) 3efd46dd74837439f5fd144b23d20284549f11ca 2026-07-25 12:16:01 -0400 Don't pick up vendored googletest from bazel
++partition_alloc 59c8c4f88fe20470be030c106f361d719127d068 2026-09-11 11:56:09 -0700 Spanification of partition_alloc_base/cpu.cc, etc.
++tcmalloc(gperftools) 0cc73303a93b27f46df9b93ee676937514e447ad 2026-09-05 18:37:48 -0400 bump version to 2.19rc
 diff --git a/malloc/malloc-mimalloc2-impl.c b/malloc/malloc-mimalloc2-impl.c
 new file mode 100644
 index 00000000..7930ec1a

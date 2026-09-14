@@ -67,8 +67,8 @@
 %bcond_without mallocs
 # Official mimalloc release tarballs (Source20 / Source21).  Bump these,
 # abb store the new archive, and point the Source tag at it.
-%global mimalloc_ver 3.5.0
-%global mimalloc2_ver 2.4.5
+%global mimalloc_ver 3.5.2
+%global mimalloc2_ver 2.5.2
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
 %define _disable_lto 1
@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	6
+Release:	7
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -227,13 +227,13 @@ Source1010:	glibc-x86_32-workaround-for-gcc-11-bug.patch
 # To bump mimalloc: set mimalloc_ver, abb store mimalloc-%{mimalloc_ver}.tar.gz.
 Source20:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc_ver}.tar.gz#/mimalloc-%{mimalloc_ver}.tar.gz
 Source21:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc2_ver}.tar.gz#/mimalloc-%{mimalloc2_ver}.tar.gz
-Source22:	jemalloc-e36a0fa.tar.xz
-Source23:	snmalloc-a5f10eb.tar.xz
+Source22:	jemalloc-ff80bf2.tar.xz
+Source23:	snmalloc-511e91a.tar.xz
 Source24:	rpmalloc-5dacae8.tar.xz
-Source25:	hardened_malloc-714abf5.tar.xz
+Source25:	hardened_malloc-903ed64.tar.xz
 Source26:	mesh-2987f88.tar.xz
-Source27:	partition_alloc-b40bacc.tar.xz
-Source28:	tcmalloc-3efd46d.tar.xz
+Source27:	partition_alloc-59c8c4f.tar.xz
+Source28:	tcmalloc-0cc7330.tar.xz
 # Applied in %%prep after the jemalloc tarball is unpacked (not via %%autosetup).
 Source29:	0016-jemalloc-portable-configure-defs.patch
 
@@ -244,7 +244,17 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # release branch
 # git format-patch glibc-2.44
 # (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-# (none yet for 2.44)
+# Security backports from release/2.44/master
+# GLIBC-SA-2026-0018 / CVE-2026-19542 (bug 34506)
+Patch0:		0000-misc-Fix-out-of-bounds-array-write-in-tdelete-bug-34.patch
+# GLIBC-SA-2026-0017 / CVE-2026-19499 (bug 34510)
+Patch1:		0001-stdlib-Fix-right-justification-in-strfmon-bug-34510-.patch
+# GLIBC-SA-2026-0019 / CVE-2026-77117 (bug 34556)
+Patch2:		0002-iconvdata-SHIFT_JISX0213-decoding-lacks-pending-char.patch
+# GLIBC-SA-2026-0020 / CVE-2026-80489 (bug 34568)
+Patch3:		0003-iconvdata-EUC_JISX0213-decoding-lacks-pending-charac.patch
+# Test for the two iconv hangs above
+Patch4:		0004-iconvdata-Test-case-for-bug-34556-bug-34568.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
