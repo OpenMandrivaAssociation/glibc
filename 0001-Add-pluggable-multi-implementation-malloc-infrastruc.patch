@@ -1966,7 +1966,7 @@ diff --git a/malloc/Makefile b/malloc/Makefile
  
  include ../Rules
  
-@@ -470,6 +734,626 @@
+@@ -470,6 +734,627 @@
  # Uncomment this for test releases.  For public releases it is too expensive.
  #CPPFLAGS-malloc.o += -DMALLOC_DEBUG=1
  
@@ -2012,6 +2012,7 @@ diff --git a/malloc/Makefile b/malloc/Makefile
 +  -Wno-strict-prototypes \
 +  -Wno-maybe-uninitialized \
 +  -Wno-shadow \
++  -Wno-stringop-overflow \
 +  $(malloc-third-party-warnings)
 +
 +ifneq ($(filter mimalloc,$(malloc-enabled-impls)),)

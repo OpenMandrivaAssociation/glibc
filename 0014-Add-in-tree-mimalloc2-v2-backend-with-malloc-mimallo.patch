@@ -159,7 +159,7 @@ index 9f148c5c..a0d86876 100644
  else ifeq ($(malloc-embedded),jemalloc)
  malloc-routines = $(jemalloc-routines) malloc-query
  else ifeq ($(malloc-embedded),snmalloc)
-@@ -808,6 +811,28 @@ CPPFLAGS-malloc-mimalloc-secure-impl.c += \
+@@ -808,6 +811,29 @@ CPPFLAGS-malloc-mimalloc-secure-impl.c += \
  endif
  endif
  
@@ -172,6 +172,7 @@ index 9f148c5c..a0d86876 100644
 +  -Wno-strict-prototypes \
 +  -Wno-maybe-uninitialized \
 +  -Wno-shadow \
++  -Wno-stringop-overflow \
 +  $(malloc-third-party-warnings)
 +
 +ifneq ($(filter mimalloc2,$(malloc-enabled-impls)),)

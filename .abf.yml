@@ -5,8 +5,8 @@ sources:
   rpmalloc-5dacae8.tar.xz: 7d67ef50abd66bc36c69166a679e1806edc2ba63
   mimalloc-3.5.2.tar.gz: 51d589d7280b3ebeac655072f815482d9cb1cab0
   mimalloc-2.5.2.tar.gz: 88113e358255b83391f498ff255cdbb33282b554
-  jemalloc-ff80bf2.tar.xz: c2df9116b03383db6016b0f432ada6859a8877b1
   snmalloc-511e91a.tar.xz: 5ed851f3617378b8e88b44d2da68c4aa45117aad
   hardened_malloc-903ed64.tar.xz: dc930660ece43dec812b263f4caeae22103734a0
   partition_alloc-59c8c4f.tar.xz: 67104d00d86c447f0b42b92abea7cf7c3e195ecf
-  tcmalloc-0cc7330.tar.xz: 1af4ebd7be80f4c62e3f72b24b2d8d4a5343ca57
+  tcmalloc-0cc7330.tar.xz: 6fe20b2f1e1cbd95d90f672cbdb129defd6b694c
+  jemalloc-ff80bf2.tar.xz: cfbdc7d5dbb8355ebbb0e4256085740a6d12896c
