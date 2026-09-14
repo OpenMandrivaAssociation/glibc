@@ -8,5 +8,5 @@ sources:
   snmalloc-511e91a.tar.xz: 5ed851f3617378b8e88b44d2da68c4aa45117aad
   hardened_malloc-903ed64.tar.xz: dc930660ece43dec812b263f4caeae22103734a0
   partition_alloc-59c8c4f.tar.xz: 67104d00d86c447f0b42b92abea7cf7c3e195ecf
-  tcmalloc-0cc7330.tar.xz: 6fe20b2f1e1cbd95d90f672cbdb129defd6b694c
-  jemalloc-ff80bf2.tar.xz: cfbdc7d5dbb8355ebbb0e4256085740a6d12896c
+  jemalloc-ff80bf2.tar.xz: 77a3a808ecbafd3ac0acd22d3c14c0ffc484e99c
+  tcmalloc-0cc7330.tar.xz: 1a1ce55fc015ce26f0ddb35352dc1a7b4698c264

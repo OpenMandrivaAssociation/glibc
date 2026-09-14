@@ -187,8 +187,8 @@ index 9f148c5c..a0d86876 100644
 +endif
 +
  ifneq ($(filter jemalloc,$(malloc-enabled-impls)),)
- jemalloc-cppflags = \
-   -I$(..)malloc/jemalloc/include \
+ # Generated include dir first: private_namespace.h is built for this
+ # compiler/ABI.  Do not ship a host-generated copy in the tarball.
 diff --git a/malloc/UPSTREAM-REVISIONS.txt b/malloc/UPSTREAM-REVISIONS.txt
 index c7e301ed..ccf39791 100644
 --- a/malloc/UPSTREAM-REVISIONS.txt

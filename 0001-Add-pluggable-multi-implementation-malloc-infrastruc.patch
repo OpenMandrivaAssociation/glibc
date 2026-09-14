@@ -1966,7 +1966,7 @@ diff --git a/malloc/Makefile b/malloc/Makefile
  
  include ../Rules
  
-@@ -470,6 +734,627 @@
+@@ -470,6 +734,651 @@
  # Uncomment this for test releases.  For public releases it is too expensive.
  #CPPFLAGS-malloc.o += -DMALLOC_DEBUG=1
  
@@ -2046,7 +2046,10 @@ diff --git a/malloc/Makefile b/malloc/Makefile
 +endif
 +
 +ifneq ($(filter jemalloc,$(malloc-enabled-impls)),)
++# Generated include dir first: private_namespace.h is built for this
++# compiler/ABI.  Do not ship a host-generated copy in the tarball.
 +jemalloc-cppflags = \
++  -I$(objpfx)jemalloc/include \
 +  -I$(..)malloc/jemalloc/include \
 +  -D_GNU_SOURCE \
 +  -D_REENTRANT \
@@ -2070,9 +2073,29 @@ diff --git a/malloc/Makefile b/malloc/Makefile
 +$(objpfx)jemalloc/src/.keep: $(before-compile)
 +	$(make-target-directory)
 +	touch $@
++# private_namespace.h #defines every global jemalloc symbol so internals
++# can be prefixed.  Which symbols exist depends on this ABI's #ifdefs
++# (32-bit vs 64-bit, RDTSCP, int128, ...), so generate it with $(CC)
++# and $(NM) from this build, not a snapshot from the packager's host.
++jemalloc-ns-hdr = $(objpfx)jemalloc/include/jemalloc/internal/private_namespace.h
++jemalloc-ns-objs = $(addprefix $(objpfx),$(addsuffix .ns.o,$(jemalloc-src-routines)))
++$(objpfx)jemalloc/src/%.ns.o: jemalloc/src/%.c $(objpfx)jemalloc/src/.keep
++	$(compile.c) $(OUTPUT_OPTION) -DJEMALLOC_NO_PRIVATE_NAMESPACE
++$(jemalloc-ns-hdr): $(jemalloc-ns-objs)
++	$(make-target-directory)
++	$(NM) -a $^ | $(AWK) -f $(..)malloc/jemalloc/include/jemalloc/internal/private_symbols.awk \
++	  | sort -u > $(@:.h=.syms)
++	$(SHELL) $(..)malloc/jemalloc/include/jemalloc/internal/private_namespace.sh \
++	  $(@:.h=.syms) > $@T
++	mv -f $@T $@
++generated += jemalloc/include/jemalloc/internal/private_namespace.h \
++	     jemalloc/include/jemalloc/internal/private_namespace.syms
 +$(foreach s,$(all-object-suffixes),\
 +  $(foreach r,$(jemalloc-src-routines),\
-+    $(eval $(objpfx)$(r)$(s): $(objpfx)jemalloc/src/.keep)))
++    $(eval $(objpfx)$(r)$(s): $(objpfx)jemalloc/src/.keep $(jemalloc-ns-hdr))))
++$(foreach d,$(filter jemalloc,$(malloc-dynamic-impls)),\
++  $(foreach r,$(jemalloc-src-routines),\
++    $(eval $(objpfx)dynamic/$(d)/$(r).os: $(jemalloc-ns-hdr))))
 +endif
 +
 +ifneq ($(filter snmalloc,$(malloc-enabled-impls)),)
@@ -2360,6 +2383,7 @@ diff --git a/malloc/Makefile b/malloc/Makefile
 +# <unistd.h> / <sys/mman.h> for this third-party code.
 +tcmalloc-preload-cxxflags = \
 +  -fPIC -shared -O2 -g \
++  -I$(..)malloc/tcmalloc/generic-config \
 +  -I$(..)malloc/tcmalloc/src \
 +  -I$(..)malloc/tcmalloc/src/base \
 +  -D_GNU_SOURCE \
