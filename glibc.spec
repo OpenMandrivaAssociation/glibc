@@ -1375,15 +1375,14 @@ Libc for crosscompiling to ${i}.
 %{_prefix}/${i}/share/locale/locale.alias
 %%optional /lib/${ldname}.so*
 EOF
-	case "$i" in
-	arm*|i?86*)
-		;;
-	*)
+	# Avoid case/esac: a closer paren would end this expansion early.
+	if echo "$i" | grep -Eq '^arm|^i.86'; then
+		:
+	else
 		cat <<EOF
 %%optional /lib64/${ldname}.so*
 EOF
-		;;
-	esac
+	fi
 done
 )
 %endif
@@ -1809,10 +1808,6 @@ for i in %{targets}; do
 		continue
 	fi
 	echo "===== Building %{_target_platform} -> $i ($TRIPLET) cross libc ====="
-	if ! echo 'int x;' | ${TRIPLET}-gcc -c -x c - -o /dev/null 2>/dev/null; then
-		echo "===== Skipping $i cross libc (${TRIPLET}-gcc cannot compile) ====="
-		continue
-	fi
 	mkdir -p obj-${TRIPLET}
 	cd obj-${TRIPLET}
 #	CFLAGS="$(rpm --target ${i} --eval '%%{optflags} -fno-strict-aliasing -Wno-error' |sed -e 's,-m[36][24],,;s,-flto,,g;s,-Werror[^ ]*,,g')" \
