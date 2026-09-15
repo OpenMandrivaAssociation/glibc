@@ -2058,7 +2058,7 @@ diff --git a/malloc/Makefile b/malloc/Makefile
 +  -Wno-implicit-fallthrough \
 +  -Wno-unused-value \
 +  -Wno-redundant-decls \
-+  -Wno-error=macro-redefined \
++  -Wno-error \
 +  $(malloc-third-party-warnings)
 +CPPFLAGS-malloc-jemalloc.c += $(malloc-third-party-warnings)
 +ifeq ($(malloc-multi),yes)
