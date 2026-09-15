@@ -1415,6 +1415,11 @@ done
 unset _msrc
 # Not a Patch tag: %%autosetup would apply it before the tarball exists.
 patch -p1 < %{SOURCE29}
+# Host configure enables process_madvise when the packager kernel UAPI
+# has SYS_process_madvise.  In-tree glibc builds use -nostdinc and
+# glibc syscall.h, which does not provide that name.
+sed -i 's/^#define JEMALLOC_HAVE_PROCESS_MADVISE$/\/\* #undef JEMALLOC_HAVE_PROCESS_MADVISE \*\//' \
+	malloc/jemalloc/include/jemalloc/internal/jemalloc_internal_defs.h
 
 # OM filesystem ajustments
 sed -i -e 's,/var/mail,/srv/mail,g' sysdeps/unix/sysv/linux/paths.h sysdeps/generic/paths.h
