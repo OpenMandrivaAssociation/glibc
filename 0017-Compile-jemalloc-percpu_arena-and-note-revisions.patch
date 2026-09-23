@@ -1,0 +1,45 @@
+malloc: build jemalloc percpu_arena and record refreshed upstreams
+
+jemalloc after 5.4.0 splits per-CPU arena selection into percpu_arena.c.
+The in-tree object list has to name that file or the new symbols are
+missing at link time.
+
+---
+ malloc/Makefile              |  1 +
+ malloc/UPSTREAM-REVISIONS.txt | 10 +++++-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/malloc/Makefile b/malloc/Makefile
+index a0d86876..b7c1e2a4 100644
+--- a/malloc/Makefile
++++ b/malloc/Makefile
+@@ -286,6 +286,7 @@ jemalloc-routines = \
+   jemalloc/src/pac \
+   jemalloc/src/pages \
+   jemalloc/src/peak_event \
++  jemalloc/src/percpu_arena \
+   jemalloc/src/prof \
+   jemalloc/src/prof_data \
+   jemalloc/src/prof_log \
+diff --git a/malloc/UPSTREAM-REVISIONS.txt b/malloc/UPSTREAM-REVISIONS.txt
+index ccf39791..7e1b0c44 100644
+--- a/malloc/UPSTREAM-REVISIONS.txt
++++ b/malloc/UPSTREAM-REVISIONS.txt
+@@ -1,12 +1,12 @@
+-Synced upstreams at 2026-09-15T00:14:00+02:00
+-mimalloc v3.5.2
++Synced upstreams at 2026-09-23T02:10:00+02:00
++mimalloc v3.5.3
+ mimalloc2 v2.5.2
+ rpmalloc 5dacae8ba4ec31100dd2ed4bffd552abbd3cb29f 2026-07-15 16:54:06 +0200 Merge main for convergence
+-hardened_malloc 903ed6431ebce1be2a9aa8f625f69e25322537a7 2026-09-04 19:18:11 -0400 replace MAP_FIXED and fix MREMAP_FIXED ENOMEM handling
++hardened_malloc a4ed3054772a06d29903cd0a162677a9ee7b332d 2026-09-20 01:02:01 -0400 add missing "cc" to clobber list for MTE assembly
+ Mesh 2987f883b8695c07a80dc40da67c61f524460dfd 2026-03-25 07:14:39 -0700 fix: remove dead lseek and fix macOS fork test path
+ Heap-Layers 9400e88e81cca2ef390f7a0c39d22180397a66e9 2026-07-09 09:08:51 -0400 Merge pull request #73 from emeryberger/fix/freesllist-implicit-lifetime
+-snmalloc 511e91a2de604ce716841f32f5e929a066c4a978 2026-09-08 04:48:53 +0000 Read the batched remote free ring's length word without domesticating it (#877)
+-jemalloc ff80bf2d0c8f162ea445533354cad8b7e5830f5c 2026-09-10 18:34:33 -0400 Cleanup LG_HUGEPAGE == 0 conditions
++snmalloc e9f7b2ebd11fcadd5913c95d90770902e8126646 2026-09-21 11:52:14 +0100 Refactor freelist MPSC queue draining (#881)
++jemalloc d398dd5b8c3756e503f8fef709b7177872372491 2026-09-21 18:52:04 -0400 5.4.0 plus per-CPU arena clamp and background-thread rollback
+ musl f21a96538f78fa8e2040831b4209b35f2fb581da 2026-07-28 19:26:37 -0400 fix toctou race in popen children's closing of other popen pipes
+ partition_alloc 59c8c4f88fe20470be030c106f361d719127d068 2026-09-11 11:56:09 -0700 Spanification of partition_alloc_base/cpu.cc, etc.
+ tcmalloc(gperftools) 0cc73303a93b27f46df9b93ee676937514e447ad 2026-09-05 18:37:48 -0400 bump version to 2.19rc

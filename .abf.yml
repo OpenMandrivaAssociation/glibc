@@ -3,10 +3,10 @@ sources:
   glibc-2.44.tar.xz: 9e89c156ef073bf5923a8f46c0ee3e619744f42c
   mesh-2987f88.tar.xz: 3e10bdd1c09a95a3cee450a2f129020eb8a5c88a
   rpmalloc-5dacae8.tar.xz: 7d67ef50abd66bc36c69166a679e1806edc2ba63
-  mimalloc-3.5.2.tar.gz: 51d589d7280b3ebeac655072f815482d9cb1cab0
   mimalloc-2.5.2.tar.gz: 88113e358255b83391f498ff255cdbb33282b554
-  snmalloc-511e91a.tar.xz: 5ed851f3617378b8e88b44d2da68c4aa45117aad
-  hardened_malloc-903ed64.tar.xz: dc930660ece43dec812b263f4caeae22103734a0
   partition_alloc-59c8c4f.tar.xz: 67104d00d86c447f0b42b92abea7cf7c3e195ecf
-  jemalloc-ff80bf2.tar.xz: 77a3a808ecbafd3ac0acd22d3c14c0ffc484e99c
   tcmalloc-0cc7330.tar.xz: 1a1ce55fc015ce26f0ddb35352dc1a7b4698c264
+  jemalloc-d398dd5.tar.xz: a0725dfffa19e692d954d9b73127ba6df897e5d1
+  snmalloc-e9f7b2e.tar.xz: f60cfd9c67131151dd9acb7fec9c9d2622e1e48a
+  hardened_malloc-a4ed305.tar.xz: be6957af4cb3b259e53f504b4afbd0d4a1a03bfb
+  mimalloc-3.5.3.tar.gz: 263f1181a607a66787144c33ea6330e689cd7e0f
