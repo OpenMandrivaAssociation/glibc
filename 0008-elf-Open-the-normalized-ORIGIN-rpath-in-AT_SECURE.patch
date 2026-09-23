@@ -21,35 +21,13 @@ Add elf/tst-origin-secure as a regression test.
 
 Reviewed-by: Florian Weimer <fweimer@redhat.com>
 
-[Backported to 2.44. The test link rules are placed before the
-run-built-tests block; master appends them after tst-pie-rpath-static,
-which this branch does not have.]
+[Backported onto release/2.44/master. Regenerated so the Makefile hunk
+matches with patch --fuzz=0.]
 ---
- elf/Makefile                             |  18 +++
- elf/dl-load.c                            |  85 ++++---------
- elf/dl-path-normalize.h                  | 118 ++++++++++++++++++
- elf/libtst-origin-secure-mod.c           |  25 ++++
- elf/tst-dl-path-normalize.c              | 142 +++++++++++++++++++++
- elf/tst-origin-secure-evilmod.c          |  28 +++++
- elf/tst-origin-secure-victim.c           |  43 +++++++
- elf/tst-origin-secure.c                  | 203 +++++++++++++++++++++++++++++++
- elf/tst-origin-secure.h                  |  41 +++++++
- elf/tst-origin-secure.root/postclean.req |   0
- 10 files changed, 645 insertions(+), 58 deletions(-)
- create mode 100644 elf/dl-path-normalize.h
- create mode 100644 elf/libtst-origin-secure-mod.c
- create mode 100644 elf/tst-dl-path-normalize.c
- create mode 100644 elf/tst-origin-secure-evilmod.c
- create mode 100644 elf/tst-origin-secure-victim.c
- create mode 100644 elf/tst-origin-secure.c
- create mode 100644 elf/tst-origin-secure.h
- create mode 100644 elf/tst-origin-secure.root/postclean.req
-
-diff --git a/elf/Makefile b/elf/Makefile
-index d2348fedc0..4d1032bb2a 100644
---- a/elf/Makefile
-+++ b/elf/Makefile
-@@ -568,6 +568,7 @@ tests-internal += \
+diff -ruN a/elf/Makefile b/elf/Makefile
+--- a/elf/Makefile	2026-09-23 04:07:37.607242196 +0200
++++ b/elf/Makefile	2026-09-23 04:07:37.621916032 +0200
+@@ -567,6 +567,7 @@
    tst-audit19a \
    tst-create_format1 \
    tst-dl-hwcaps_split \
@@ -57,7 +35,7 @@ index d2348fedc0..4d1032bb2a 100644
    tst-dl_find_object \
    tst-dl_find_object-threads \
    tst-dlmopen2 \
-@@ -594,6 +595,7 @@ tests-container += \
+@@ -592,6 +593,7 @@
    tst-dlopen-self-container \
    tst-dlopen-tlsmodid-container \
    tst-ldconfig-cache \
@@ -65,7 +43,7 @@ index d2348fedc0..4d1032bb2a 100644
    tst-pldd \
    tst-preload-pthread-libc \
    tst-ptrguard-static-dlopen \
-@@ -602,6 +604,7 @@ tests-container += \
+@@ -600,6 +602,7 @@
    # tests-container
  
  test-srcs = \
@@ -73,7 +51,7 @@ index d2348fedc0..4d1032bb2a 100644
    tst-pathopt \
    tst-sprof-basic \
    # tests-srcs
-@@ -842,6 +845,7 @@ modules-names += \
+@@ -840,6 +843,7 @@
    libtracemod3-1 \
    libtracemod4-1 \
    libtracemod5-1 \
@@ -81,7 +59,7 @@ index d2348fedc0..4d1032bb2a 100644
    ltglobmod1 \
    ltglobmod2 \
    neededobj1 \
-@@ -1037,6 +1041,7 @@ modules-names += \
+@@ -1035,6 +1039,7 @@
    tst-nodeps2-mod \
    tst-non-directory-mod \
    tst-null-argv-lib \
@@ -89,7 +67,7 @@ index d2348fedc0..4d1032bb2a 100644
    tst-p_alignmod-base \
    tst-p_alignmod3 \
    tst-ptrguard-static-dlopen-mod \
-@@ -3713,4 +3718,17 @@ $(objpfx)tst-dlopen-sgid.out: $(objpfx)tst-dlopen-sgid-mod.so
+@@ -3752,6 +3757,19 @@
  $(objpfx)tst-dlopen-sgid.out: $(objpfx)tst-dlopen-sgid-mod.so
  
  
@@ -107,10 +85,11 @@ index d2348fedc0..4d1032bb2a 100644
 +			       $(objpfx)libtst-origin-secure-mod.so \
 +			       $(objpfx)tst-origin-secure-evilmod.so
  ifeq ($(run-built-tests),yes)
-diff --git a/elf/dl-load.c b/elf/dl-load.c
-index 586af94611..1621cb1bde 100644
---- a/elf/dl-load.c
-+++ b/elf/dl-load.c
+ $(objpfx)tst-tls-debug-recursive.out: tst-tls-debug-recursive.sh \
+ 			      $(objpfx)tst-recursive-tls \
+diff -ruN a/elf/dl-load.c b/elf/dl-load.c
+--- a/elf/dl-load.c	2026-07-24 15:16:45.000000000 +0200
++++ b/elf/dl-load.c	2026-09-23 04:07:37.622087083 +0200
 @@ -34,6 +34,7 @@
  #include <gnu/lib-names.h>
  #include <dl-tunables.h>
@@ -119,7 +98,7 @@ index 586af94611..1621cb1bde 100644
  
  #include "dynamic-link.h"
  #include "get-dynamic-info.h"
-@@ -91,67 +92,30 @@ static const size_t system_dirs_len[] =
+@@ -91,67 +92,30 @@
  };
  #define nsystem_dirs_len array_length (system_dirs_len)
  
@@ -201,7 +180,7 @@ index 586af94611..1621cb1bde 100644
  }
  
  /* Given a substring starting at INPUT, just after the DST '$' start
-@@ -335,16 +299,21 @@ _dl_dst_substitute (struct link_map *l, const char *input, char *result)
+@@ -335,16 +299,21 @@
       checked for trust, the authors of the binaries themselves are
       trusted to have designed this correctly.  Only $ORIGIN is tested in
       this way because it may be manipulated in some ways with hard
@@ -230,11 +209,9 @@ index 586af94611..1621cb1bde 100644
    return result;
  }
  
-diff --git a/elf/dl-path-normalize.h b/elf/dl-path-normalize.h
-new file mode 100644
-index 0000000000..ca4b14698c
---- /dev/null
-+++ b/elf/dl-path-normalize.h
+diff -ruN a/elf/dl-path-normalize.h b/elf/dl-path-normalize.h
+--- a/elf/dl-path-normalize.h	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/dl-path-normalize.h	2026-09-23 04:07:37.622160514 +0200
 @@ -0,0 +1,118 @@
 +/* In-place lexical path normalization for the dynamic loader.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -354,11 +331,9 @@ index 0000000000..ca4b14698c
 +}
 +
 +#endif /* _DL_PATH_NORMALIZE_H */
-diff --git a/elf/libtst-origin-secure-mod.c b/elf/libtst-origin-secure-mod.c
-new file mode 100644
-index 0000000000..8d7f372094
---- /dev/null
-+++ b/elf/libtst-origin-secure-mod.c
+diff -ruN a/elf/libtst-origin-secure-mod.c b/elf/libtst-origin-secure-mod.c
+--- a/elf/libtst-origin-secure-mod.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/libtst-origin-secure-mod.c	2026-09-23 04:07:37.622181834 +0200
 @@ -0,0 +1,25 @@
 +/* Module for tst-origin-secure (the "good" copy).
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -385,11 +360,9 @@ index 0000000000..8d7f372094
 +{
 +  return ORIGIN_SECURE_ID_TRUSTED;
 +}
-diff --git a/elf/tst-dl-path-normalize.c b/elf/tst-dl-path-normalize.c
-new file mode 100644
-index 0000000000..f6d45d654f
---- /dev/null
-+++ b/elf/tst-dl-path-normalize.c
+diff -ruN a/elf/tst-dl-path-normalize.c b/elf/tst-dl-path-normalize.c
+--- a/elf/tst-dl-path-normalize.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/tst-dl-path-normalize.c	2026-09-23 04:07:37.622203565 +0200
 @@ -0,0 +1,142 @@
 +/* Unit tests for dl-path-normalize.h.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -533,11 +506,9 @@ index 0000000000..f6d45d654f
 +}
 +
 +#include <support/test-driver.c>
-diff --git a/elf/tst-origin-secure-evilmod.c b/elf/tst-origin-secure-evilmod.c
-new file mode 100644
-index 0000000000..0913e32e21
---- /dev/null
-+++ b/elf/tst-origin-secure-evilmod.c
+diff -ruN a/elf/tst-origin-secure-evilmod.c b/elf/tst-origin-secure-evilmod.c
+--- a/elf/tst-origin-secure-evilmod.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/tst-origin-secure-evilmod.c	2026-09-23 04:07:37.622239305 +0200
 @@ -0,0 +1,28 @@
 +/* Module for tst-origin-secure (the attacker-controlled copy).
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -567,11 +538,9 @@ index 0000000000..0913e32e21
 +{
 +  return ORIGIN_SECURE_ID_ATTACKER;
 +}
-diff --git a/elf/tst-origin-secure-victim.c b/elf/tst-origin-secure-victim.c
-new file mode 100644
-index 0000000000..601265aaa4
---- /dev/null
-+++ b/elf/tst-origin-secure-victim.c
+diff -ruN a/elf/tst-origin-secure-victim.c b/elf/tst-origin-secure-victim.c
+--- a/elf/tst-origin-secure-victim.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/tst-origin-secure-victim.c	2026-09-23 04:07:37.622254935 +0200
 @@ -0,0 +1,43 @@
 +/* Victim program for tst-origin-secure.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -616,11 +585,9 @@ index 0000000000..601265aaa4
 +    status |= ORIGIN_SECURE_STATUS_SECURE;
 +  return status;
 +}
-diff --git a/elf/tst-origin-secure.c b/elf/tst-origin-secure.c
-new file mode 100644
-index 0000000000..f304823b49
---- /dev/null
-+++ b/elf/tst-origin-secure.c
+diff -ruN a/elf/tst-origin-secure.c b/elf/tst-origin-secure.c
+--- a/elf/tst-origin-secure.c	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/tst-origin-secure.c	2026-09-23 04:07:37.622273325 +0200
 @@ -0,0 +1,203 @@
 +/* Test that AT_SECURE $ORIGIN rpath entries are looked up using the
 +   normalized (trusted) path, not the raw expansion (bug 34360).
@@ -825,11 +792,9 @@ index 0000000000..f304823b49
 +}
 +
 +#include <support/test-driver.c>
-diff --git a/elf/tst-origin-secure.h b/elf/tst-origin-secure.h
-new file mode 100644
-index 0000000000..2e2b944607
---- /dev/null
-+++ b/elf/tst-origin-secure.h
+diff -ruN a/elf/tst-origin-secure.h b/elf/tst-origin-secure.h
+--- a/elf/tst-origin-secure.h	1970-01-01 01:00:00.000000000 +0100
++++ b/elf/tst-origin-secure.h	2026-09-23 04:07:37.622323726 +0200
 @@ -0,0 +1,41 @@
 +/* Definitions shared by the tst-origin-secure test, its victim and modules.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -875,5 +840,3 @@ index 0000000000..2e2b944607
 diff --git a/elf/tst-origin-secure.root/postclean.req b/elf/tst-origin-secure.root/postclean.req
 new file mode 100644
 index 0000000000..e69de29bb2
--- 
-
