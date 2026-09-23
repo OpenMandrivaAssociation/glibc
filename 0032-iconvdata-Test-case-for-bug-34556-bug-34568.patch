@@ -1,7 +1,7 @@
-From ca54198decdc3be693b010687f8de716a750b0e4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Fri, 28 Aug 2026 10:26:07 +0200
-Subject: [PATCH] iconvdata: Test case for bug 34556, bug 34568
+Subject: [PATCH 32/48] iconvdata: Test case for bug 34556, bug 34568
 
 Assisted-by: LLM
 Reviewed-by: Carlos O'Donell <carlos@redhat.com>
@@ -13,7 +13,7 @@ Reviewed-by: Carlos O'Donell <carlos@redhat.com>
  create mode 100644 iconvdata/tst-jisx0213-progress.c
 
 diff --git a/iconvdata/Makefile b/iconvdata/Makefile
-index fbb0067302..ba2eec2b48 100644
+index fbb00673..ba2eec2b 100644
 --- a/iconvdata/Makefile
 +++ b/iconvdata/Makefile
 @@ -76,7 +76,8 @@ tests = bug-iconv1 bug-iconv2 tst-loading tst-e2big tst-iconv4 bug-iconv4 \
@@ -37,7 +37,7 @@ index fbb0067302..ba2eec2b48 100644
  			 $(addprefix $(objpfx), $(gconv-modules)) \
 diff --git a/iconvdata/tst-jisx0213-progress.c b/iconvdata/tst-jisx0213-progress.c
 new file mode 100644
-index 0000000000..7b2073be1f
+index 00000000..7b2073be
 --- /dev/null
 +++ b/iconvdata/tst-jisx0213-progress.c
 @@ -0,0 +1,124 @@

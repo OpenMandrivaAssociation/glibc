@@ -1,7 +1,8 @@
-From d6ff274313d79feb864cc10eb775b91c817a67e9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Florian Weimer <fweimer@redhat.com>
 Date: Fri, 14 Aug 2026 13:41:16 +0200
-Subject: [PATCH] misc: Fix out-of-bounds array write in tdelete (bug 34506)
+Subject: [PATCH 26/48] misc: Fix out-of-bounds array write in tdelete (bug
+ 34506)
 
 Allocate the maximum array sizes directly, instead of resizing
 the arrays as needed.  This eliminates alloca usage from the
@@ -16,7 +17,7 @@ Reviewed-by: Adhemerval Zanella <adhemerval.zanella@linaro.org>
  1 file changed, 11 insertions(+), 20 deletions(-)
 
 diff --git a/misc/tsearch.c b/misc/tsearch.c
-index 9b2eb34b25..e517dfa712 100644
+index 9b2eb34b..e517dfa7 100644
 --- a/misc/tsearch.c
 +++ b/misc/tsearch.c
 @@ -85,6 +85,7 @@

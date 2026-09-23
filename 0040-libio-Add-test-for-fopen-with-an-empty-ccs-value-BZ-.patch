@@ -1,7 +1,8 @@
-From 30950ce64dbc29db0aedf1d46b6b8eb70b360f0c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shamil Abdulaev <ashamil435@gmail.com>
 Date: Thu, 3 Sep 2026 20:19:42 +0300
-Subject: libio: Add test for fopen with an empty ", ccs=" value [BZ #34574]
+Subject: [PATCH 40/48] libio: Add test for fopen with an empty ", ccs=" value
+ [BZ #34574]
 
 This goes on top of the fix for CVE-2026-18374.  The test runs the
 reproducer from the bug report, plus "w,ccs=" and "w,ccs=,", and
@@ -12,12 +13,12 @@ Reviewed-by: Florian Weimer <fweimer@redhat.com>
 (cherry picked from commit cca93e5d88d3d4ed073c03100467696f652269e7)
 ---
  libio/Makefile              |  1 +
- libio/tst-fopen-ccs-empty.c | 62 +++++++++++++++++++++++++++++++++++++++++++++
+ libio/tst-fopen-ccs-empty.c | 62 +++++++++++++++++++++++++++++++++++++
  2 files changed, 63 insertions(+)
  create mode 100644 libio/tst-fopen-ccs-empty.c
 
 diff --git a/libio/Makefile b/libio/Makefile
-index 616107ee10..9aec016cca 100644
+index 616107ee..9aec016c 100644
 --- a/libio/Makefile
 +++ b/libio/Makefile
 @@ -110,6 +110,7 @@ tests = \
@@ -30,7 +31,7 @@ index 616107ee10..9aec016cca 100644
    tst-freopen \
 diff --git a/libio/tst-fopen-ccs-empty.c b/libio/tst-fopen-ccs-empty.c
 new file mode 100644
-index 0000000000..64723965e1
+index 00000000..64723965
 --- /dev/null
 +++ b/libio/tst-fopen-ccs-empty.c
 @@ -0,0 +1,62 @@
@@ -97,4 +98,5 @@ index 0000000000..64723965e1
 +
 +#include <support/test-driver.c>
 -- 
+2.55.0
 

@@ -240,32 +240,60 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 #
 # Patches from upstream
 #
-# Taken from git://sourceware.org/git/glibc.git
-# release branch
-# git format-patch glibc-2.44
-# (PN=000; for i in *patch; do echo -e "Patch$((PN)):\t$i"; PN=$((PN+1)); done)
-# Security backports from release/2.44/master, plus the $ORIGIN fixes
-# from master (GLIBC-SA-2026-0022 / 0023) retargeted onto 2.44.
-# GLIBC-SA-2026-0016 / CVE-2026-89092 (nscd unbounded alloca) is published
-# with no upstream fix commit yet.
-# GLIBC-SA-2026-0018 / CVE-2026-19542 (bug 34506)
-Patch0:		0000-misc-Fix-out-of-bounds-array-write-in-tdelete-bug-34.patch
-# GLIBC-SA-2026-0017 / CVE-2026-19499 (bug 34510)
-Patch1:		0001-stdlib-Fix-right-justification-in-strfmon-bug-34510-.patch
-# GLIBC-SA-2026-0019 / CVE-2026-77117 (bug 34556)
-Patch2:		0002-iconvdata-SHIFT_JISX0213-decoding-lacks-pending-char.patch
-# GLIBC-SA-2026-0020 / CVE-2026-80489 (bug 34568)
-Patch3:		0003-iconvdata-EUC_JISX0213-decoding-lacks-pending-charac.patch
-# Test for the two iconv hangs above
-Patch4:		0004-iconvdata-Test-case-for-bug-34556-bug-34568.patch
-# GLIBC-SA-2026-0015 / CVE-2026-18374 (bug 34574)
-Patch5:		0005-libio-Fix-CVE-2026-18374-heap-buffer-overflow-in-ccs.patch
-Patch6:		0006-libio-Add-test-for-fopen-with-an-empty-ccs-value.patch
-# GLIBC-SA-2026-0021 / CVE-2026-8674 (bug 31026)
-Patch7:		0007-resolv-Fix-assertion-failure-on-search-list-truncation.patch
+# Every commit on release/2.44/master since the 2.44 tag.
+# git format-patch glibc-2.44..origin/release/2.44/master
+# GLIBC-SA-2026-0016 / CVE-2026-89092 (nscd alloca) still has no fix commit.
+# $ORIGIN (GLIBC-SA-2026-0022 / 0023) is only on master; Patch48.
+Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
+Patch1:		0002-NEWS-start-2.44.1-section.patch
+Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
+Patch3:		0004-hurd-fix-fork-s-longjmp-demangling-on-i386.patch
+Patch4:		0005-math-Fix-sinh-worst-case-results-for-x-36.736801-BZ-.patch
+Patch5:		0006-math-Fix-x86_64-tanh-_FloatN-aliases-binding-to-the-.patch
+Patch6:		0007-io-fix-ftw-ABI-on-MIPS-n64.patch
+Patch7:		0008-hurd-Fix-build-after-the-ftw-kernel_stat.h-inclusion.patch
+Patch8:		0009-linux-Inline-syscall-cancellation-to-keep-wrapper-fr.patch
+Patch9:		0010-Fix-gen-as-const-headers-races-with-the-parallel-sub.patch
+Patch10:		0011-Makerules-Only-install-the-ABI-lib-names-header-from.patch
+Patch11:		0012-Makefile-Only-print-the-test-summary-in-the-second-p.patch
+Patch12:		0013-Makerules-Make-the-.dt-to-.d-conversion-safe-against.patch
+Patch13:		0014-Makefile-Order-the-top-level-stamp-files-before-the-.patch
+Patch14:		0015-arm-Order-the-rtld-link-after-libgcc-stubs.a.patch
+Patch15:		0016-benchtests-Create-objdir-in-the-bench-.c-generation-.patch
+Patch16:		0017-elf-test-handle-different-rootsbindir-in-tst-ldconfi.patch
+Patch17:		0018-ldbl-opt-Fix-mlong-double-128-configure-test-for-Cla.patch
+Patch18:		0019-powerpc-Fix-mlong-double-128-IBM-format-configure-te.patch
+Patch19:		0020-stdio-common-run-AWK-in-the-C-locale-in-the-printf-f.patch
+Patch20:		0021-stdio-common-avoid-repeated-regexp-matches-in-tst-pr.patch
+Patch21:		0022-string-Speed-up-strcmp-test-data-initialization.patch
+Patch22:		0023-string-Speed-up-strcasecmp-test-data-initialization.patch
+Patch23:		0024-elf-Honour-skip_ifunc-for-cross-object-IFUNC-relocat.patch
+Patch24:		0025-m68k-Fix-fmod-fmodf-infinite-recursion-BZ-34508.patch
+Patch25:		0026-misc-Fix-out-of-bounds-array-write-in-tdelete-bug-34.patch
+Patch26:		0027-m68k-remove-sysdeps-m68k-m680x0-fpu-w_fmod_compat.c-.patch
+Patch27:		0028-posix-Remove-unnecessary-overflow-check-in-wordexp-B.patch
+Patch28:		0029-stdlib-Fix-right-justification-in-strfmon-bug-34510-.patch
+Patch29:		0030-iconvdata-SHIFT_JISX0213-decoding-lacks-pending-char.patch
+Patch30:		0031-iconvdata-EUC_JISX0213-decoding-lacks-pending-charac.patch
+Patch31:		0032-iconvdata-Test-case-for-bug-34556-bug-34568.patch
+Patch32:		0033-alpha-Fix-stack-alignment-in-makecontext.patch
+Patch33:		0034-alpha-add-the-denormal-trap-enable-bit-to-FE_NOMASK_.patch
+Patch34:		0035-alpha-expect-test-float32x-float64-div-to-fail.patch
+Patch35:		0036-Add-check-symbol-version.awk.patch
+Patch36:		0037-powerpc-Fix-non-atomic-stack-pointer-update-in-forti.patch
+Patch37:		0038-powerpc-Fix-preprocessor-conditional-in-soft-float-_.patch
+Patch38:		0039-libio-Fix-CVE-2026-18374-heap-buffer-overflow-in-ccs.patch
+Patch39:		0040-libio-Add-test-for-fopen-with-an-empty-ccs-value-BZ-.patch
+Patch40:		0041-nptl-Skip-pretty-printer-tests-without-python3-BZ-34.patch
+Patch41:		0042-elf-Do-not-load-cache-extensions-from-an-old-format-.patch
+Patch42:		0043-io-drop-nonnull-attribute-for-fchmodat-faccessat-fch.patch
+Patch43:		0044-x86-64-Link-tst-shstk-legacy-1-f-g-with-Wl-no-as-nee.patch
+Patch44:		0045-Revert-io-drop-nonnull-attribute-for-fchmodat-facces.patch
+Patch45:		0046-io-drop-nonnull-attribute-for-fchmodat-faccessat-fch.patch
+Patch46:		0047-fcntl-drop-nonnull-attribute-for-openat-openat2-s-pa.patch
+Patch47:		0048-resolv-Fix-assertion-failure-on-search-list-truncati.patch
 # GLIBC-SA-2026-0022 / CVE-2026-86805 and GLIBC-SA-2026-0023 / CVE-2026-95818
-# (bug 34360)
-Patch8:		0008-elf-Open-the-normalized-ORIGIN-rpath-in-AT_SECURE.patch
+Patch48:		0008-elf-Open-the-normalized-ORIGIN-rpath-in-AT_SECURE.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
