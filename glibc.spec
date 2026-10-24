@@ -67,7 +67,7 @@
 %bcond_without mallocs
 # Official mimalloc release tarballs (Source20 / Source21).  Bump these,
 # abb store the new archive, and point the Source tag at it.
-%global mimalloc_ver 3.5.3
+%global mimalloc_ver 3.6.0
 %global mimalloc2_ver 2.5.2
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	8
+Release:	9
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/

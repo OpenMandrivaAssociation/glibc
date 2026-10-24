@@ -53,7 +53,7 @@ new file mode 100644
 index 0000000..4154eb1
 --- /dev/null
 +++ b/malloc/malloc-mimalloc-secure-rename.h
-@@ -0,0 +1,435 @@
+@@ -0,0 +1,550 @@
 +/* Auto-generated: rename mimalloc symbols for the secure variant. */
 +#ifndef _MALLOC_MIMALLOC_SECURE_RENAME_H
 +#define _MALLOC_MIMALLOC_SECURE_RENAME_H
@@ -488,6 +488,121 @@ index 0000000..4154eb1
 +#define mi_zalloc_aligned mis_zalloc_aligned
 +#define mi_zalloc_aligned_at mis_zalloc_aligned_at
 +#define mi_zalloc_small mis_zalloc_small
++#define __mi_page_map __mis_page_map
++#define __mi_stat_adjust_decrease __mis_stat_adjust_decrease
++#define __mi_stat_adjust_decrease_mt __mis_stat_adjust_decrease_mt
++#define __mi_stat_adjust_increase __mis_stat_adjust_increase
++#define __mi_stat_adjust_increase_mt __mis_stat_adjust_increase_mt
++#define __mi_stat_decrease __mis_stat_decrease
++#define __mi_stat_decrease_mt __mis_stat_decrease_mt
++#define __mi_stat_increase __mis_stat_increase
++#define __mi_stat_increase_mt __mis_stat_increase_mt
++#define __mi_theap_cached __mis_theap_cached
++#define __mi_theap_default __mis_theap_default
++#define __mi_thread_id_helper __mis_thread_id_helper
++#define _mi_arena_commit _mis_arena_commit
++#define _mi_arena_heap_main _mis_arena_heap_main
++#define _mi_arena_os_alloc_aligned _mis_arena_os_alloc_aligned
++#define _mi_arena_reserve _mis_arena_reserve
++#define _mi_arenas_try_alloc _mis_arenas_try_alloc
++#define _mi_fork_child _mis_fork_child
++#define _mi_fork_init _mis_fork_init
++#define _mi_malloc_generic_no_sample _mis_malloc_generic_no_sample
++#define _mi_memid_create _mis_memid_create
++#define _mi_memid_create_malloc _mis_memid_create_malloc
++#define _mi_memid_create_os _mis_memid_create_os
++#define _mi_memid_create_static _mis_memid_create_static
++#define _mi_memid_none _mis_memid_none
++#define _mi_memid_size _mis_memid_size
++#define _mi_os_has_thp _mis_os_has_thp
++#define _mi_page_block_unguard _mis_page_block_unguard
++#define _mi_page_extend_free _mis_page_extend_free
++#define _mi_page_fresh _mis_page_fresh
++#define _mi_page_fresh_alloc _mis_page_fresh_alloc
++#define _mi_page_profile_on_free _mis_page_profile_on_free
++#define _mi_page_to_full _mis_page_to_full
++#define _mi_page_update_sample_countdown _mis_page_update_sample_countdown
++#define _mi_page_update_stats _mis_page_update_stats
++#define _mi_pprof_profiler_done _mis_pprof_profiler_done
++#define _mi_pprof_profiler_init _mis_pprof_profiler_init
++#define _mi_prim_process_is_killed _mis_prim_process_is_killed
++#define _mi_size_of_slices _mis_size_of_slices
++#define _mi_slice_count_of_size _mis_slice_count_of_size
++#define _mi_strchr _mis_strchr
++#define _mi_strntol _mis_strntol
++#define _mi_strrchr _mis_strrchr
++#define _mi_theap_abandon_owned_pages _mis_theap_abandon_owned_pages
++#define _mi_theap_guarded_init _mis_theap_guarded_init
++#define _mi_theap_main _mis_theap_main
++#define _mi_theap_malloc_guarded _mis_theap_malloc_guarded
++#define _mi_theap_malloc_profiled _mis_theap_malloc_profiled
++#define _mi_theap_malloc_sampled _mis_theap_malloc_sampled
++#define _mi_theap_set_profile_sample_rate _mis_theap_set_profile_sample_rate
++#define _mi_theap_update_sample_rate _mis_theap_update_sample_rate
++#define mi_arenas_purge mis_arenas_purge
++#define mi_bchunk_all_are_clear_relaxed mis_bchunk_all_are_clear_relaxed
++#define mi_bchunk_all_are_set_relaxed mis_bchunk_all_are_set_relaxed
++#define mi_bchunk_bsr mis_bchunk_bsr
++#define mi_bchunk_bsr_inv mis_bchunk_bsr_inv
++#define mi_bchunk_clear mis_bchunk_clear
++#define mi_bchunk_clearN mis_bchunk_clearN
++#define mi_bchunk_clear_once_set mis_bchunk_clear_once_set
++#define mi_bchunk_is_xsetN mis_bchunk_is_xsetN
++#define mi_bchunk_popcount mis_bchunk_popcount
++#define mi_bchunk_popcountN mis_bchunk_popcountN
++#define mi_bchunk_set mis_bchunk_set
++#define mi_bchunk_setN mis_bchunk_setN
++#define mi_bchunk_try_clearN mis_bchunk_try_clearN
++#define mi_bchunk_try_find_and_clear mis_bchunk_try_find_and_clear
++#define mi_bchunk_try_find_and_clearNC mis_bchunk_try_find_and_clearNC
++#define mi_bchunk_try_find_and_clearNX mis_bchunk_try_find_and_clearNX
++#define mi_bchunk_try_find_and_clear_1 mis_bchunk_try_find_and_clear_1
++#define mi_bchunk_try_find_and_clear_8 mis_bchunk_try_find_and_clear_8
++#define mi_bchunks_unsafe_setN mis_bchunks_unsafe_setN
++#define mi_bfield_clear_least_bit mis_bfield_clear_least_bit
++#define mi_bfield_find_highest_bit mis_bfield_find_highest_bit
++#define mi_bfield_find_least_bit mis_bfield_find_least_bit
++#define mi_bfield_foreach_bit mis_bfield_foreach_bit
++#define mi_bfield_mask mis_bfield_mask
++#define mi_bfield_popcount mis_bfield_popcount
++#define mi_forall_arenas mis_forall_arenas
++#define mi_forall_suitable_arenas mis_forall_suitable_arenas
++#define mi_free_small_local mis_free_small_local
++#define mi_free_small_local_nonnull mis_free_small_local_nonnull
++#define mi_free_small_nonnull mis_free_small_nonnull
++#define mi_heap_new_qsbr mis_heap_new_qsbr
++#define mi_heap_profile mis_heap_profile
++#define mi_heap_profile_disable mis_heap_profile_disable
++#define mi_heap_set_debug_fill_preserve mis_heap_set_debug_fill_preserve
++#define mi_malloc_size mis_malloc_size
++#define mi_malloc_usable_size mis_malloc_usable_size
++#define mi_page_queue_enqueue_from mis_page_queue_enqueue_from
++#define mi_page_queue_enqueue_from_full mis_page_queue_enqueue_from_full
++#define mi_page_queue_move_to_back mis_page_queue_move_to_back
++#define mi_page_queue_move_to_front mis_page_queue_move_to_front
++#define mi_page_queue_push mis_page_queue_push
++#define mi_page_queue_push_at_end mis_page_queue_push_at_end
++#define mi_page_queue_remove mis_page_queue_remove
++#define mi_pprof_profiler_delete mis_pprof_profiler_delete
++#define mi_pprof_profiler_new mis_pprof_profiler_new
++#define mi_profile mis_profile
++#define mi_profiler_snapshot mis_profiler_snapshot
++#define mi_profiler_start mis_profiler_start
++#define mi_profiler_stop mis_profiler_stop
++#define mi_stat_free mis_stat_free
++#define mi_subproc_profile mis_subproc_profile
++#define mi_theap_alloc_new mis_theap_alloc_new
++#define mi_theap_alloc_new_n mis_theap_alloc_new_n
++#define mi_theap_alloc_new_nothrow mis_theap_alloc_new_nothrow
++#define mi_theap_delete mis_theap_delete
++#define mi_theap_page_queue_of mis_theap_page_queue_of
++#define mi_theap_quiescent_abandon mis_theap_quiescent_abandon
++#define mi_theap_stats_merge_to_heap mis_theap_stats_merge_to_heap
++#define mi_theap_wmalloc_small mis_theap_wmalloc_small
++#define mi_theap_wzalloc_small mis_theap_wzalloc_small
++#define mi_thread_id_of mis_thread_id_of
++#define mi_wmalloc_small mis_wmalloc_small
++#define mi_wzalloc_small mis_wzalloc_small
 +#endif
 diff --git a/malloc/malloc-mimalloc-secure.c b/malloc/malloc-mimalloc-secure.c
 new file mode 100644

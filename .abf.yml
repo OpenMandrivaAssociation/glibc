@@ -9,4 +9,4 @@ sources:
   jemalloc-d398dd5.tar.xz: a0725dfffa19e692d954d9b73127ba6df897e5d1
   snmalloc-e9f7b2e.tar.xz: f60cfd9c67131151dd9acb7fec9c9d2622e1e48a
   hardened_malloc-a4ed305.tar.xz: be6957af4cb3b259e53f504b4afbd0d4a1a03bfb
-  mimalloc-3.5.3.tar.gz: 263f1181a607a66787144c33ea6330e689cd7e0f
+  mimalloc-3.6.0.tar.gz: 52b00376d8d465ae0648901cdbae399550da2ea5
