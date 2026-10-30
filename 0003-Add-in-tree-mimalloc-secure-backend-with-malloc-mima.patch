@@ -53,7 +53,7 @@ new file mode 100644
 index 0000000..4154eb1
 --- /dev/null
 +++ b/malloc/malloc-mimalloc-secure-rename.h
-@@ -0,0 +1,550 @@
+@@ -0,0 +1,564 @@
 +/* Auto-generated: rename mimalloc symbols for the secure variant. */
 +#ifndef _MALLOC_MIMALLOC_SECURE_RENAME_H
 +#define _MALLOC_MIMALLOC_SECURE_RENAME_H
@@ -91,6 +91,9 @@ index 0000000..4154eb1
 +#define _mi_deferred_free _mis_deferred_free
 +#define _mi_detect_cpu_features _mis_detect_cpu_features
 +#define _mi_error_message _mis_error_message
++#define _mi_fork_child_try_collect _mis_fork_child_try_collect
++#define _mi_fork_epoch _mis_fork_epoch
++#define _mi_fork_is_torn _mis_fork_is_torn
 +#define _mi_fprintf _mis_fprintf
 +#define _mi_fputs _mis_fputs
 +#define _mi_free_generic _mis_free_generic
@@ -122,14 +125,17 @@ index 0000000..4154eb1
 +#define _mi_os_alloc_aligned _mis_os_alloc_aligned
 +#define _mi_os_alloc_aligned_at_offset _mis_os_alloc_aligned_at_offset
 +#define _mi_os_alloc_huge_os_pages _mis_os_alloc_huge_os_pages
++#define _mi_os_alloc_with_guards _mis_os_alloc_with_guards
 +#define _mi_os_canuse_large_page _mis_os_canuse_large_page
 +#define _mi_os_commit _mis_os_commit
 +#define _mi_os_commit_ex _mis_os_commit_ex
 +#define _mi_os_decommit _mis_os_decommit
 +#define _mi_os_free _mis_os_free
 +#define _mi_os_free_ex _mis_os_free_ex
++#define _mi_os_free_with_guards _mis_os_free_with_guards
 +#define _mi_os_get_aligned_hint _mis_os_get_aligned_hint
 +#define _mi_os_good_alloc_size _mis_os_good_alloc_size
++#define _mi_os_guard _mis_os_guard
 +#define _mi_os_guard_page_size _mis_os_guard_page_size
 +#define _mi_os_has_overcommit _mis_os_has_overcommit
 +#define _mi_os_has_virtual_reserve _mis_os_has_virtual_reserve
@@ -150,6 +156,9 @@ index 0000000..4154eb1
 +#define _mi_os_secure_guard_page_set_at _mis_os_secure_guard_page_set_at
 +#define _mi_os_secure_guard_page_set_before _mis_os_secure_guard_page_set_before
 +#define _mi_os_secure_guard_page_size _mis_os_secure_guard_page_size
++#define _mi_os_secure_guard_pages_set_around _mis_os_secure_guard_pages_set_around
++#define _mi_os_secure_guard_pages_set_within _mis_os_secure_guard_pages_set_within
++#define _mi_os_unguard _mis_os_unguard
 +#define _mi_os_unprotect _mis_os_unprotect
 +#define _mi_os_virtual_address_bits _mis_os_virtual_address_bits
 +#define _mi_os_zalloc _mis_os_zalloc
@@ -182,6 +191,7 @@ index 0000000..4154eb1
 +#define _mi_prim_decommit _mis_prim_decommit
 +#define _mi_prim_free _mis_prim_free
 +#define _mi_prim_getenv _mis_prim_getenv
++#define _mi_prim_guard _mis_prim_guard
 +#define _mi_prim_mem_init _mis_prim_mem_init
 +#define _mi_prim_numa_node _mis_prim_numa_node
 +#define _mi_prim_numa_node_count _mis_prim_numa_node_count
@@ -196,6 +206,7 @@ index 0000000..4154eb1
 +#define _mi_prim_thread_init_auto_done _mis_prim_thread_init_auto_done
 +#define _mi_prim_thread_is_in_threadpool _mis_prim_thread_is_in_threadpool
 +#define _mi_prim_thread_yield _mis_prim_thread_yield
++#define _mi_process _mis_process
 +#define _mi_process_is_initialized _mis_process_is_initialized
 +#define _mi_pthread_key_create _mis_pthread_key_create
 +#define _mi_random_init _mis_random_init
@@ -241,6 +252,7 @@ index 0000000..4154eb1
 +#define _mi_theap_malloc_zero _mis_theap_malloc_zero
 +#define _mi_theap_malloc_zero_ex _mis_theap_malloc_zero_ex
 +#define _mi_theap_merge_stats _mis_theap_merge_stats
++#define _mi_theap_meta_init _mis_theap_meta_init
 +#define _mi_theap_page_reclaim _mis_theap_page_reclaim
 +#define _mi_theap_random_next _mis_theap_random_next
 +#define _mi_theap_realloc_zero _mis_theap_realloc_zero
@@ -317,8 +329,10 @@ index 0000000..4154eb1
 +#define mi_expand mis_expand
 +#define mi_free mis_free
 +#define mi_free_aligned mis_free_aligned
++#define mi_free_aligned_sized mis_free_aligned_sized
 +#define mi_free_size mis_free_size
 +#define mi_free_size_aligned mis_free_size_aligned
++#define mi_free_sized mis_free_sized
 +#define mi_free_small mis_free_small
 +#define mi_good_size mis_good_size
 +#define mi_heap_alloc_new mis_heap_alloc_new

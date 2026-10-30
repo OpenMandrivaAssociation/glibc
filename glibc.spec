@@ -67,7 +67,7 @@
 %bcond_without mallocs
 # Official mimalloc release tarballs (Source20 / Source21).  Bump these,
 # abb store the new archive, and point the Source tag at it.
-%global mimalloc_ver 3.6.0
+%global mimalloc_ver 3.6.1
 %global mimalloc2_ver 2.5.2
 
 # (tpg) 2020-08-20 by default glibc is not designed to make use of LTO
@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	9
+Release:	10
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -229,9 +229,11 @@ Source20:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc_ve
 Source21:	https://github.com/microsoft/mimalloc/archive/refs/tags/v%{mimalloc2_ver}.tar.gz#/mimalloc-%{mimalloc2_ver}.tar.gz
 Source22:	jemalloc-d398dd5.tar.xz
 Source23:	snmalloc-e9f7b2e.tar.xz
-Source24:	rpmalloc-5dacae8.tar.xz
-Source25:	hardened_malloc-a4ed305.tar.xz
-Source26:	mesh-2987f88.tar.xz
+# rpmalloc.c includes malloc.c unconditionally; that file is in the
+# snapshot.  The glibc shim still builds it with ENABLE_OVERRIDE=0.
+Source24:	rpmalloc-b8455bb.tar.xz
+Source25:	hardened_malloc-bf37d54.tar.xz
+Source26:	mesh-fa1542b.tar.xz
 Source27:	partition_alloc-59c8c4f.tar.xz
 Source28:	tcmalloc-0cc7330.tar.xz
 # Applied in %%prep after the jemalloc tarball is unpacked (not via %%autosetup).
@@ -240,10 +242,15 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 #
 # Patches from upstream
 #
-# Every commit on release/2.44/master since the 2.44 tag.
+# Every commit on release/2.44/master since the 2.44 tag, through
+# 534e36bbf70c (2026-10-27).
 # git format-patch glibc-2.44..origin/release/2.44/master
-# GLIBC-SA-2026-0016 / CVE-2026-89092 (nscd alloca) still has no fix commit.
-# $ORIGIN (GLIBC-SA-2026-0022 / 0023) is only on master; Patch48.
+# Includes the $ORIGIN AT_SECURE fix (GLIBC-SA-2026-0022 / CVE-2026-86805
+# and GLIBC-SA-2026-0023 / CVE-2026-95818), the nscd alloca fix
+# (GLIBC-SA-2026-0016 / CVE-2026-89092), and the powerpc strncasecmp
+# overread fix (GLIBC-SA-2026-0024 / CVE-2026-97399).
+# GLIBC-SA-2026-0025 / CVE-2026-84243 (LANGUAGE path traversal) is not in
+# git yet.  Patch66 is libc-alpha v7, with NEWS retargeted at 2.44.1.
 Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
 Patch1:		0002-NEWS-start-2.44.1-section.patch
 Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
@@ -292,8 +299,25 @@ Patch44:		0045-Revert-io-drop-nonnull-attribute-for-fchmodat-facces.patch
 Patch45:		0046-io-drop-nonnull-attribute-for-fchmodat-faccessat-fch.patch
 Patch46:		0047-fcntl-drop-nonnull-attribute-for-openat-openat2-s-pa.patch
 Patch47:		0048-resolv-Fix-assertion-failure-on-search-list-truncati.patch
-# GLIBC-SA-2026-0022 / CVE-2026-86805 and GLIBC-SA-2026-0023 / CVE-2026-95818
-Patch48:		0008-elf-Open-the-normalized-ORIGIN-rpath-in-AT_SECURE.patch
+Patch48:		0049-elf-Open-the-normalized-ORIGIN-rpath-in-AT_SECURE-pr.patch
+Patch49:		0050-stdlib-Don-t-call-clearenv-from-__libc_setenv_freeme.patch
+Patch50:		0051-Revert-posix-Add-POSIX-aliases-to-some-spawn-functio.patch
+Patch51:		0052-LoongArch-Fix-intermittent-nptl-tst-cancel32-failure.patch
+Patch52:		0053-LoongArch-Support-pointer-guard-on-LoongArch32.patch
+Patch53:		0054-LoongArch-Add-standard-search-paths-for-32-bit.patch
+Patch54:		0055-CVE-2026-89092-nscd-replace-alloca-with-malloc-in-ai.patch
+Patch55:		0056-realloc-Fix-mmap-non-mremap-reallocation-case-BZ-346.patch
+Patch56:		0057-powerpc-Fix-one-byte-overread-in-strncasecmp-bug-346.patch
+Patch57:		0058-linux-Do-not-return-stack-garbage-in-sparc-tcgetattr.patch
+Patch58:		0059-x86-Bound-Hygon-non-temporal-threshold-BZ-34875.patch
+Patch59:		0060-Makefile.in-Run-the-build-directory-goals-serially-B.patch
+Patch60:		0061-aarch64-Return-with-ret-from-the-la_pltexit-path-of-.patch
+Patch61:		0062-configure-Fix-have-no-error-execstack-substitution.patch
+Patch62:		0063-io-Fix-fts-FTS_CWDFD-return-from-a-followed-director.patch
+Patch63:		0064-io-Fix-fts_set-FTS_FOLLOW-in-a-physical-walk-BZ-3477.patch
+Patch64:		0065-io-Fix-fts_pathlen-overflow-for-paths-longer-than-US.patch
+Patch65:		0066-io-Reject-fts_open-root-arguments-longer-than-USHRT_.patch
+Patch66:		0067-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

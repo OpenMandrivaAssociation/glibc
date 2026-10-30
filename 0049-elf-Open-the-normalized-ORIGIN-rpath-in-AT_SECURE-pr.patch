@@ -1,8 +1,8 @@
-From ed0c137b97eb940b4b64981e84ed806d3276edd9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adhemerval Zanella <adhemerval.zanella@linaro.org>
 Date: Mon, 17 Aug 2026 15:15:32 -0300
-Subject: elf: Open the normalized $ORIGIN rpath in AT_SECURE programs (BZ
- 34360)
+Subject: [PATCH] elf: Open the normalized $ORIGIN rpath in AT_SECURE programs
+ (BZ 34360)
 
 For AT_SECURE programs the loader honors $ORIGIN in DT_RPATH only when the
 expansion is rooted in a trusted directory, but it validated the lexically
@@ -20,14 +20,33 @@ cursor or appending, so it stays within the original storage.
 Add elf/tst-origin-secure as a regression test.
 
 Reviewed-by: Florian Weimer <fweimer@redhat.com>
-
-[Backported onto release/2.44/master. Regenerated so the Makefile hunk
-matches with patch --fuzz=0.]
+(cherry picked from commit ed0c137b97eb940b4b64981e84ed806d3276edd9)
 ---
-diff -ruN a/elf/Makefile b/elf/Makefile
---- a/elf/Makefile	2026-09-23 04:07:37.607242196 +0200
-+++ b/elf/Makefile	2026-09-23 04:07:37.621916032 +0200
-@@ -567,6 +567,7 @@
+ elf/Makefile                             |  18 ++
+ elf/dl-load.c                            |  85 +++-------
+ elf/dl-path-normalize.h                  | 118 +++++++++++++
+ elf/libtst-origin-secure-mod.c           |  25 +++
+ elf/tst-dl-path-normalize.c              | 142 ++++++++++++++++
+ elf/tst-origin-secure-evilmod.c          |  28 ++++
+ elf/tst-origin-secure-victim.c           |  43 +++++
+ elf/tst-origin-secure.c                  | 203 +++++++++++++++++++++++
+ elf/tst-origin-secure.h                  |  41 +++++
+ elf/tst-origin-secure.root/postclean.req |   0
+ 10 files changed, 645 insertions(+), 58 deletions(-)
+ create mode 100644 elf/dl-path-normalize.h
+ create mode 100644 elf/libtst-origin-secure-mod.c
+ create mode 100644 elf/tst-dl-path-normalize.c
+ create mode 100644 elf/tst-origin-secure-evilmod.c
+ create mode 100644 elf/tst-origin-secure-victim.c
+ create mode 100644 elf/tst-origin-secure.c
+ create mode 100644 elf/tst-origin-secure.h
+ create mode 100644 elf/tst-origin-secure.root/postclean.req
+
+diff --git a/elf/Makefile b/elf/Makefile
+index f1a8a75fdc..a9cafed56d 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -567,6 +567,7 @@ tests-internal += \
    tst-audit19a \
    tst-create_format1 \
    tst-dl-hwcaps_split \
@@ -35,7 +54,7 @@ diff -ruN a/elf/Makefile b/elf/Makefile
    tst-dl_find_object \
    tst-dl_find_object-threads \
    tst-dlmopen2 \
-@@ -592,6 +593,7 @@
+@@ -592,6 +593,7 @@ tests-container += \
    tst-dlopen-self-container \
    tst-dlopen-tlsmodid-container \
    tst-ldconfig-cache \
@@ -43,7 +62,7 @@ diff -ruN a/elf/Makefile b/elf/Makefile
    tst-pldd \
    tst-preload-pthread-libc \
    tst-ptrguard-static-dlopen \
-@@ -600,6 +602,7 @@
+@@ -600,6 +602,7 @@ tests-container += \
    # tests-container
  
  test-srcs = \
@@ -51,7 +70,7 @@ diff -ruN a/elf/Makefile b/elf/Makefile
    tst-pathopt \
    tst-sprof-basic \
    # tests-srcs
-@@ -840,6 +843,7 @@
+@@ -840,6 +843,7 @@ modules-names += \
    libtracemod3-1 \
    libtracemod4-1 \
    libtracemod5-1 \
@@ -59,7 +78,7 @@ diff -ruN a/elf/Makefile b/elf/Makefile
    ltglobmod1 \
    ltglobmod2 \
    neededobj1 \
-@@ -1035,6 +1039,7 @@
+@@ -1035,6 +1039,7 @@ modules-names += \
    tst-nodeps2-mod \
    tst-non-directory-mod \
    tst-null-argv-lib \
@@ -67,10 +86,10 @@ diff -ruN a/elf/Makefile b/elf/Makefile
    tst-p_alignmod-base \
    tst-p_alignmod3 \
    tst-ptrguard-static-dlopen-mod \
-@@ -3752,6 +3757,19 @@
- $(objpfx)tst-dlopen-sgid.out: $(objpfx)tst-dlopen-sgid-mod.so
- 
- 
+@@ -3773,3 +3778,16 @@ $(objpfx)tst-dl-debug-exclude.out: tst-dl-debug-exclude.sh \
+ 		 $(objpfx)tst-recursive-tls > $@; \
+ 	$(evaluate-test)
+ endif
 +
 +LDFLAGS-libtst-origin-secure-mod.so += -Wl,-soname,libtst-origin-secure-mod.so
 +LDFLAGS-tst-origin-secure-evilmod.so += -Wl,-soname,libtst-origin-secure-mod.so
@@ -84,12 +103,10 @@ diff -ruN a/elf/Makefile b/elf/Makefile
 +$(objpfx)tst-origin-secure.out: $(objpfx)tst-origin-secure-victim \
 +			       $(objpfx)libtst-origin-secure-mod.so \
 +			       $(objpfx)tst-origin-secure-evilmod.so
- ifeq ($(run-built-tests),yes)
- $(objpfx)tst-tls-debug-recursive.out: tst-tls-debug-recursive.sh \
- 			      $(objpfx)tst-recursive-tls \
-diff -ruN a/elf/dl-load.c b/elf/dl-load.c
---- a/elf/dl-load.c	2026-07-24 15:16:45.000000000 +0200
-+++ b/elf/dl-load.c	2026-09-23 04:07:37.622087083 +0200
+diff --git a/elf/dl-load.c b/elf/dl-load.c
+index 95404adae9..471478649b 100644
+--- a/elf/dl-load.c
++++ b/elf/dl-load.c
 @@ -34,6 +34,7 @@
  #include <gnu/lib-names.h>
  #include <dl-tunables.h>
@@ -98,7 +115,7 @@ diff -ruN a/elf/dl-load.c b/elf/dl-load.c
  
  #include "dynamic-link.h"
  #include "get-dynamic-info.h"
-@@ -91,67 +92,30 @@
+@@ -91,67 +92,30 @@ static const size_t system_dirs_len[] =
  };
  #define nsystem_dirs_len array_length (system_dirs_len)
  
@@ -180,7 +197,7 @@ diff -ruN a/elf/dl-load.c b/elf/dl-load.c
  }
  
  /* Given a substring starting at INPUT, just after the DST '$' start
-@@ -335,16 +299,21 @@
+@@ -335,16 +299,21 @@ _dl_dst_substitute (struct link_map *l, const char *input, char *result)
       checked for trust, the authors of the binaries themselves are
       trusted to have designed this correctly.  Only $ORIGIN is tested in
       this way because it may be manipulated in some ways with hard
@@ -209,9 +226,11 @@ diff -ruN a/elf/dl-load.c b/elf/dl-load.c
    return result;
  }
  
-diff -ruN a/elf/dl-path-normalize.h b/elf/dl-path-normalize.h
---- a/elf/dl-path-normalize.h	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/dl-path-normalize.h	2026-09-23 04:07:37.622160514 +0200
+diff --git a/elf/dl-path-normalize.h b/elf/dl-path-normalize.h
+new file mode 100644
+index 0000000000..ca4b14698c
+--- /dev/null
++++ b/elf/dl-path-normalize.h
 @@ -0,0 +1,118 @@
 +/* In-place lexical path normalization for the dynamic loader.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -331,9 +350,11 @@ diff -ruN a/elf/dl-path-normalize.h b/elf/dl-path-normalize.h
 +}
 +
 +#endif /* _DL_PATH_NORMALIZE_H */
-diff -ruN a/elf/libtst-origin-secure-mod.c b/elf/libtst-origin-secure-mod.c
---- a/elf/libtst-origin-secure-mod.c	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/libtst-origin-secure-mod.c	2026-09-23 04:07:37.622181834 +0200
+diff --git a/elf/libtst-origin-secure-mod.c b/elf/libtst-origin-secure-mod.c
+new file mode 100644
+index 0000000000..8d7f372094
+--- /dev/null
++++ b/elf/libtst-origin-secure-mod.c
 @@ -0,0 +1,25 @@
 +/* Module for tst-origin-secure (the "good" copy).
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -360,9 +381,11 @@ diff -ruN a/elf/libtst-origin-secure-mod.c b/elf/libtst-origin-secure-mod.c
 +{
 +  return ORIGIN_SECURE_ID_TRUSTED;
 +}
-diff -ruN a/elf/tst-dl-path-normalize.c b/elf/tst-dl-path-normalize.c
---- a/elf/tst-dl-path-normalize.c	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/tst-dl-path-normalize.c	2026-09-23 04:07:37.622203565 +0200
+diff --git a/elf/tst-dl-path-normalize.c b/elf/tst-dl-path-normalize.c
+new file mode 100644
+index 0000000000..f6d45d654f
+--- /dev/null
++++ b/elf/tst-dl-path-normalize.c
 @@ -0,0 +1,142 @@
 +/* Unit tests for dl-path-normalize.h.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -506,9 +529,11 @@ diff -ruN a/elf/tst-dl-path-normalize.c b/elf/tst-dl-path-normalize.c
 +}
 +
 +#include <support/test-driver.c>
-diff -ruN a/elf/tst-origin-secure-evilmod.c b/elf/tst-origin-secure-evilmod.c
---- a/elf/tst-origin-secure-evilmod.c	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/tst-origin-secure-evilmod.c	2026-09-23 04:07:37.622239305 +0200
+diff --git a/elf/tst-origin-secure-evilmod.c b/elf/tst-origin-secure-evilmod.c
+new file mode 100644
+index 0000000000..0913e32e21
+--- /dev/null
++++ b/elf/tst-origin-secure-evilmod.c
 @@ -0,0 +1,28 @@
 +/* Module for tst-origin-secure (the attacker-controlled copy).
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -538,9 +563,11 @@ diff -ruN a/elf/tst-origin-secure-evilmod.c b/elf/tst-origin-secure-evilmod.c
 +{
 +  return ORIGIN_SECURE_ID_ATTACKER;
 +}
-diff -ruN a/elf/tst-origin-secure-victim.c b/elf/tst-origin-secure-victim.c
---- a/elf/tst-origin-secure-victim.c	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/tst-origin-secure-victim.c	2026-09-23 04:07:37.622254935 +0200
+diff --git a/elf/tst-origin-secure-victim.c b/elf/tst-origin-secure-victim.c
+new file mode 100644
+index 0000000000..601265aaa4
+--- /dev/null
++++ b/elf/tst-origin-secure-victim.c
 @@ -0,0 +1,43 @@
 +/* Victim program for tst-origin-secure.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -585,9 +612,11 @@ diff -ruN a/elf/tst-origin-secure-victim.c b/elf/tst-origin-secure-victim.c
 +    status |= ORIGIN_SECURE_STATUS_SECURE;
 +  return status;
 +}
-diff -ruN a/elf/tst-origin-secure.c b/elf/tst-origin-secure.c
---- a/elf/tst-origin-secure.c	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/tst-origin-secure.c	2026-09-23 04:07:37.622273325 +0200
+diff --git a/elf/tst-origin-secure.c b/elf/tst-origin-secure.c
+new file mode 100644
+index 0000000000..f304823b49
+--- /dev/null
++++ b/elf/tst-origin-secure.c
 @@ -0,0 +1,203 @@
 +/* Test that AT_SECURE $ORIGIN rpath entries are looked up using the
 +   normalized (trusted) path, not the raw expansion (bug 34360).
@@ -792,9 +821,11 @@ diff -ruN a/elf/tst-origin-secure.c b/elf/tst-origin-secure.c
 +}
 +
 +#include <support/test-driver.c>
-diff -ruN a/elf/tst-origin-secure.h b/elf/tst-origin-secure.h
---- a/elf/tst-origin-secure.h	1970-01-01 01:00:00.000000000 +0100
-+++ b/elf/tst-origin-secure.h	2026-09-23 04:07:37.622323726 +0200
+diff --git a/elf/tst-origin-secure.h b/elf/tst-origin-secure.h
+new file mode 100644
+index 0000000000..2e2b944607
+--- /dev/null
++++ b/elf/tst-origin-secure.h
 @@ -0,0 +1,41 @@
 +/* Definitions shared by the tst-origin-secure test, its victim and modules.
 +   Copyright (C) 2026 Free Software Foundation, Inc.
@@ -840,3 +871,6 @@ diff -ruN a/elf/tst-origin-secure.h b/elf/tst-origin-secure.h
 diff --git a/elf/tst-origin-secure.root/postclean.req b/elf/tst-origin-secure.root/postclean.req
 new file mode 100644
 index 0000000000..e69de29bb2
+-- 
+2.56.0
+
