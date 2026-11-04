@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	10
+Release:	11
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -243,14 +243,18 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # Patches from upstream
 #
 # Every commit on release/2.44/master since the 2.44 tag, through
-# 534e36bbf70c (2026-10-27).
+# 21442dba0d0b (2026-11-02).
 # git format-patch glibc-2.44..origin/release/2.44/master
 # Includes the $ORIGIN AT_SECURE fix (GLIBC-SA-2026-0022 / CVE-2026-86805
 # and GLIBC-SA-2026-0023 / CVE-2026-95818), the nscd alloca fix
 # (GLIBC-SA-2026-0016 / CVE-2026-89092), and the powerpc strncasecmp
 # overread fix (GLIBC-SA-2026-0024 / CVE-2026-97399).
-# GLIBC-SA-2026-0025 / CVE-2026-84243 (LANGUAGE path traversal) is not in
-# git yet.  Patch66 is libc-alpha v7, with NEWS retargeted at 2.44.1.
+# GLIBC-SA-2026-0026 / CVE-2026-122054 (BIG5-HKSCS decoding hang, bug
+# 25734) was fixed in 2.32 (c580e6466d) and is already in the 2.44
+# tarball.  Affected versions are 2.18 through 2.31.
+# GLIBC-SA-2026-0025 / CVE-2026-84243 (LANGUAGE path traversal) is not on
+# the stable branch.  Patch70 is libc-alpha v7, with NEWS retargeted at
+# 2.44.1 and the bug note placed after the 2.44.1 entries from Patch66-69.
 Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
 Patch1:		0002-NEWS-start-2.44.1-section.patch
 Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
@@ -317,7 +321,11 @@ Patch62:		0063-io-Fix-fts-FTS_CWDFD-return-from-a-followed-director.patch
 Patch63:		0064-io-Fix-fts_set-FTS_FOLLOW-in-a-physical-walk-BZ-3477.patch
 Patch64:		0065-io-Fix-fts_pathlen-overflow-for-paths-longer-than-US.patch
 Patch65:		0066-io-Reject-fts_open-root-arguments-longer-than-USHRT_.patch
-Patch66:		0067-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
+Patch66:		0067-tests-elf-Fix-flaky-thp-tests.patch
+Patch67:		0068-AArch64-Fix-SVE-pow-and-powf-negative-base-predicati.patch
+Patch68:		0069-AArch64-Preserve-SVE-pow-powf-base-magnitude-across-.patch
+Patch69:		0070-linux-Add-C-and-multiple-inclusion-guards-to-sys-pid.patch
+Patch70:		0071-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

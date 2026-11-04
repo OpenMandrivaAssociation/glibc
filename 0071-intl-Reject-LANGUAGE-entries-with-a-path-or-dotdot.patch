@@ -60,10 +60,9 @@ index ee28fadf..1043343d 100644
  The following bugs are resolved with this release:
  
    [34338] libc: Cancellable syscall wrappers are missing from backtraces
-@@ -32,6 +36,7 @@
-     than USHRT_MAX
-   [34875] string: 2.44 regression: Hygon non-temporal threshold can be
-     zero
+@@ -50,4 +54,5 @@
+   [34921] math: Bug in SVE pow and powf with mixed subnormal and
+     negative base lanes with integer exponent
 +  [17142] intl: LANGUAGE path traversal in gettext (CVE-2026-84243)
  
  Version 2.44
