@@ -252,7 +252,7 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # GLIBC-SA-2026-0026 / CVE-2026-122054 (BIG5-HKSCS decoding hang, bug
 # 25734) was fixed in 2.32 (c580e6466d) and is already in the 2.44
 # tarball.  Affected versions are 2.18 through 2.31.
-# GLIBC-SA-2026-0027 / CVE-2026-115819 (wide %s/%[ extra NUL) and
+# GLIBC-SA-2026-0027 / CVE-2026-115819 (wide %%s/%%[ extra NUL) and
 # GLIBC-SA-2026-0028 / CVE-2026-100290 (regex double free on allocation
 # failure) were published as advisories only.  Patch75 and Patch76 are
 # the local fixes.
