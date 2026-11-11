@@ -33,7 +33,9 @@ This fixes bug 17142 and CVE-2026-84243 (GLIBC-SA-2026-0025).
 Not committed in glibc master or release/2.44/master as of
 f30fe087c5, which only publishes the advisory.  Taken from libc-alpha
 patch v7, Message-ID <20261012112453.47383-1-avinal.xlvii@gmail.com>.
-The master NEWS hunk is retargeted at the Version 2.44.1 section.
+The master NEWS hunk is retargeted at the Version 2.44.1 section,
+after the local GLIBC-SA-2026-0027 and GLIBC-SA-2026-0028 notes.
+The bug-list line follows [34966].
 
 Suggested-by: Adhemerval Zanella <adhemerval.zanella@linaro.org>
 Signed-off-by: Avinal Kumar <avinal.xlvii@gmail.com>
@@ -49,9 +51,9 @@ diff --git a/NEWS b/NEWS
 index ee28fadf..1043343d 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -7,6 +7,10 @@
- 
- Version 2.44.1
+@@ -16,6 +16,10 @@
+   growing an internal array fails (CVE-2026-100290,
+   GLIBC-SA-2026-0028).
  
 +* The gettext functions now reject LANGUAGE values containing '/' or
 +  equal to '..' for all programs.  Previously this check only applied
@@ -59,10 +61,10 @@ index ee28fadf..1043343d 100644
 +
  The following bugs are resolved with this release:
  
-   [34338] libc: Cancellable syscall wrappers are missing from backtraces
-@@ -50,4 +54,5 @@
-   [34921] math: Bug in SVE pow and powf with mixed subnormal and
-     negative base lanes with integer exponent
+   [33085] libc: nftw: readdir() errors are ignored
+@@ -55,4 +59,5 @@
+   [34966] dynamic-link: Static dlopen fail in elf/tst-ptrguard-static-
+     dlopen
 +  [17142] intl: LANGUAGE path traversal in gettext (CVE-2026-84243)
  
  Version 2.44

@@ -1,0 +1,536 @@
+From 54af025ad590fcc63a08b9cc6c3f99e4a5ed8320 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Wed, 11 Nov 2026 18:43:42 +0100
+Subject: [PATCH] posix: Do not double-free regex arrays when allocation fails
+ (CVE-2026-100290)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+re_dfa_add_node and build_range_exp grew several arrays and stored the
+new pointers only after every realloc had succeeded.  When a later
+realloc moves a block it frees the old one, and the error path freed
+that pointer again.  match_ctx_add_entry freed bkref_ents on realloc
+failure while leaving the pointer for match_ctx_free.
+
+Store each successful realloc before returning, and on failure leave
+the new block in place.  Do not free it and do not clear the pointer
+realloc left valid.
+
+check_arrival points state_log at path->array.  An error return left
+both pointers to be freed, including after extend_buffers replaced the
+array.  Restore the caller's state_log on every exit from that window.
+check_matching must report an allocation failure as -2.  Returning
+REG_ESPACE made the caller treat error 12 as a match index.
+A NULL state-log entry at a reported match is REG_ESPACE, not a halt
+state to dereference.
+
+Upstream published GLIBC-SA-2026-0028 with no Fix-Commit.
+
+Reported-by: Tristan <TristanInSec@gmail.com>
+Signed-off-by: Bernhard Rosenkränzer <bero@lindev.ch>
+---
+ NEWS                              |   4 +
+ posix/Makefile                    |   1 +
+ posix/regcomp.c                   |  32 +++--
+ posix/regex_internal.c            |  27 ++--
+ posix/regexec.c                   |  45 ++++---
+ posix/tst-regcomp-alloc-failure.c | 207 ++++++++++++++++++++++++++++++
+ 6 files changed, 273 insertions(+), 43 deletions(-)
+ create mode 100644 posix/tst-regcomp-alloc-failure.c
+
+diff --git a/NEWS b/NEWS
+index e5a223b4..738612c8 100644
+--- a/NEWS
++++ b/NEWS
+@@ -12,6 +12,10 @@ Version 2.44.1
+   the initial shift state already stores the terminating NUL
+   (CVE-2026-115819, GLIBC-SA-2026-0027).
+ 
++* regcomp and regexec no longer free the same allocation twice when
++  growing an internal array fails (CVE-2026-100290,
++  GLIBC-SA-2026-0028).
++
+ The following bugs are resolved with this release:
+ 
+   [33085] libc: nftw: readdir() errors are ignored
+diff --git a/posix/Makefile b/posix/Makefile
+index 7478cc21..20bf6fd5 100644
+--- a/posix/Makefile
++++ b/posix/Makefile
+@@ -307,6 +307,7 @@ tests := \
+   tst-posix_spawn-setsid \
+   tst-preadwrite \
+   tst-preadwrite64 \
++  tst-regcomp-alloc-failure \
+   tst-regcomp-bracket-free \
+   tst-regcomp-truncated \
+   tst-regex \
+diff --git a/posix/regcomp.c b/posix/regcomp.c
+index 22b4d32d..6bb7662f 100644
+--- a/posix/regcomp.c
++++ b/posix/regcomp.c
+@@ -2761,16 +2761,17 @@ build_range_exp (const reg_syntax_t syntax,
+ 	    new_array_end = re_realloc (mbcset->range_ends, wchar_t,
+ 					new_nranges);
+ 
++	    /* Store each successful realloc before returning.  A later
++	       failure must not leave range_starts or range_ends pointing
++	       at a block realloc has already freed, and must not free the
++	       new block: free_charset frees whichever pointer is stored.  */
++	    if (new_array_start != NULL)
++	      mbcset->range_starts = new_array_start;
++	    if (new_array_end != NULL)
++	      mbcset->range_ends = new_array_end;
+ 	    if (__glibc_unlikely (new_array_start == NULL
+ 				  || new_array_end == NULL))
+-	      {
+-		re_free (new_array_start);
+-		re_free (new_array_end);
+-		return REG_ESPACE;
+-	      }
+-
+-	    mbcset->range_starts = new_array_start;
+-	    mbcset->range_ends = new_array_end;
++	      return REG_ESPACE;
+ 	    *range_alloc = new_nranges;
+ 	  }
+ 
+@@ -2993,12 +2994,17 @@ build_range_exp (bitset_t sbcset, re_charset_t *mbcset, Idx *range_alloc,
+ 	  new_array_end = re_realloc (mbcset->range_ends, uint32_t,
+ 				      new_nranges);
+ 
+-          if (__glibc_unlikely (new_array_start == NULL
+-                                || new_array_end == NULL))
++	  /* Store each successful realloc before returning.  A later
++	     failure must not leave range_starts or range_ends pointing
++	     at a block realloc has already freed.  free_charset frees
++	     whichever pointer is stored.  */
++	  if (new_array_start != NULL)
++	    mbcset->range_starts = new_array_start;
++	  if (new_array_end != NULL)
++	    mbcset->range_ends = new_array_end;
++	  if (__glibc_unlikely (new_array_start == NULL
++				|| new_array_end == NULL))
+ 	    return REG_ESPACE;
+-
+-	  mbcset->range_starts = new_array_start;
+-	  mbcset->range_ends = new_array_end;
+ 	  *range_alloc = new_nranges;
+ 	}
+ 
+diff --git a/posix/regex_internal.c b/posix/regex_internal.c
+index 5e0925df..744c763e 100644
+--- a/posix/regex_internal.c
++++ b/posix/regex_internal.c
+@@ -1430,22 +1430,25 @@ re_dfa_add_node (re_dfa_t *dfa, re_token_t token)
+       if (__glibc_unlikely (new_nodes == NULL))
+ 	return -1;
+       dfa->nodes = new_nodes;
++      /* Publish each block before the next realloc.  On failure realloc
++	 leaves the old block valid, but on success the old pointer is
++	 gone.  Freeing the new pointers here and keeping the old ones
++	 for free_dfa_content / free_workarea_compile double-frees.  */
+       new_nexts = re_realloc (dfa->nexts, Idx, new_nodes_alloc);
+-      new_indices = re_realloc (dfa->org_indices, Idx, new_nodes_alloc);
+-      new_edests = re_realloc (dfa->edests, re_node_set, new_nodes_alloc);
+-      new_eclosures = re_realloc (dfa->eclosures, re_node_set, new_nodes_alloc);
+-      if (__glibc_unlikely (new_nexts == NULL || new_indices == NULL
+-			    || new_edests == NULL || new_eclosures == NULL))
+-	{
+-	   re_free (new_nexts);
+-	   re_free (new_indices);
+-	   re_free (new_edests);
+-	   re_free (new_eclosures);
+-	   return -1;
+-	}
++      if (__glibc_unlikely (new_nexts == NULL))
++	return -1;
+       dfa->nexts = new_nexts;
++      new_indices = re_realloc (dfa->org_indices, Idx, new_nodes_alloc);
++      if (__glibc_unlikely (new_indices == NULL))
++	return -1;
+       dfa->org_indices = new_indices;
++      new_edests = re_realloc (dfa->edests, re_node_set, new_nodes_alloc);
++      if (__glibc_unlikely (new_edests == NULL))
++	return -1;
+       dfa->edests = new_edests;
++      new_eclosures = re_realloc (dfa->eclosures, re_node_set, new_nodes_alloc);
++      if (__glibc_unlikely (new_eclosures == NULL))
++	return -1;
+       dfa->eclosures = new_eclosures;
+       dfa->nodes_alloc = new_nodes_alloc;
+     }
+diff --git a/posix/regexec.c b/posix/regexec.c
+index 9ac55652..f8477abe 100644
+--- a/posix/regexec.c
++++ b/posix/regexec.c
+@@ -804,6 +804,11 @@ re_search_internal (const regex_t *preg, const char *string, Idx length,
+ 	      if ((!preg->no_sub && nmatch > 1) || dfa->nbackref)
+ 		{
+ 		  re_dfastate_t *pstate = mctx.state_log[match_last];
++		  if (__glibc_unlikely (pstate == NULL))
++		    {
++		      err = REG_ESPACE;
++		      goto free_return;
++		    }
+ 		  mctx.last_node = check_halt_state_context (&mctx, pstate,
+ 							     match_last);
+ 		}
+@@ -1078,13 +1083,13 @@ check_matching (re_match_context_t *mctx, bool fl_longest_match,
+ 	  at_init_state = false;
+ 	  err = check_subexp_matching_top (mctx, &cur_state->nodes, 0);
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+-	    return err;
++	    return -2;
+ 
+ 	  if (cur_state->has_backref)
+ 	    {
+ 	      err = transit_state_bkref (mctx, &cur_state->nodes);
+ 	      if (__glibc_unlikely (err != REG_NOERROR))
+-		return err;
++		return -2;
+ 	    }
+ 	}
+     }
+@@ -2844,7 +2849,7 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+   reg_errcode_t err = REG_NOERROR;
+   Idx subexp_num, backup_cur_idx, str_idx, null_cnt;
+   re_dfastate_t *cur_state = NULL;
+-  re_node_set *cur_nodes, next_nodes;
++  re_node_set *cur_nodes = NULL, next_nodes;
+   re_dfastate_t **backup_state_log;
+   unsigned int context;
+ 
+@@ -2884,12 +2889,12 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+     {
+       err = re_node_set_init_1 (&next_nodes, top_node);
+       if (__glibc_unlikely (err != REG_NOERROR))
+-	return err;
++	goto check_arrival_restore;
+       err = check_arrival_expand_ecl (dfa, &next_nodes, subexp_num, type);
+       if (__glibc_unlikely (err != REG_NOERROR))
+ 	{
+ 	  re_node_set_free (&next_nodes);
+-	  return err;
++	  goto check_arrival_restore;
+ 	}
+     }
+   else
+@@ -2899,7 +2904,7 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	{
+ 	  err = re_node_set_init_copy (&next_nodes, &cur_state->nodes);
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+-	    return err;
++	    goto check_arrival_restore;
+ 	}
+       else
+ 	re_node_set_init_empty (&next_nodes);
+@@ -2913,14 +2918,14 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+ 	    {
+ 	      re_node_set_free (&next_nodes);
+-	      return err;
++	      goto check_arrival_restore;
+ 	    }
+ 	}
+       cur_state = re_acquire_state_context (&err, dfa, &next_nodes, context);
+       if (__glibc_unlikely (cur_state == NULL && err != REG_NOERROR))
+ 	{
+ 	  re_node_set_free (&next_nodes);
+-	  return err;
++	  goto check_arrival_restore;
+ 	}
+       mctx->state_log[str_idx] = cur_state;
+     }
+@@ -2935,7 +2940,7 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+ 	    {
+ 	      re_node_set_free (&next_nodes);
+-	      return err;
++	      goto check_arrival_restore;
+ 	    }
+ 	}
+       if (cur_state)
+@@ -2946,7 +2951,7 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+ 	    {
+ 	      re_node_set_free (&next_nodes);
+-	      return err;
++	      goto check_arrival_restore;
+ 	    }
+ 	}
+       ++str_idx;
+@@ -2956,14 +2961,14 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+ 	    {
+ 	      re_node_set_free (&next_nodes);
+-	      return err;
++	      goto check_arrival_restore;
+ 	    }
+ 	  err = expand_bkref_cache (mctx, &next_nodes, str_idx,
+ 				    subexp_num, type);
+ 	  if (__glibc_unlikely (err != REG_NOERROR))
+ 	    {
+ 	      re_node_set_free (&next_nodes);
+-	      return err;
++	      goto check_arrival_restore;
+ 	    }
+ 	}
+       context = re_string_context_at (&mctx->input, str_idx - 1, mctx->eflags);
+@@ -2971,7 +2976,7 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+       if (__glibc_unlikely (cur_state == NULL && err != REG_NOERROR))
+ 	{
+ 	  re_node_set_free (&next_nodes);
+-	  return err;
++	  goto check_arrival_restore;
+ 	}
+       mctx->state_log[str_idx] = cur_state;
+       null_cnt = cur_state == NULL ? null_cnt + 1 : 0;
+@@ -2981,9 +2986,14 @@ check_arrival (re_match_context_t *mctx, state_array_t *path, Idx top_node,
+ 	       : &mctx->state_log[last_str]->nodes);
+   path->next_idx = str_idx;
+ 
+-  /* Fix MCTX.  */
++ check_arrival_restore:
++  /* state_log aliases path->array above.  A realloc may have replaced
++     it, and an error return must not leave both pointers to be freed.  */
++  path->array = mctx->state_log;
+   mctx->state_log = backup_state_log;
+   mctx->input.cur_idx = backup_cur_idx;
++  if (err != REG_NOERROR)
++    return err;
+ 
+   /* Then check the current node set has the node LAST_NODE.  */
+   if (cur_nodes != NULL && re_node_set_contains (cur_nodes, last_node))
+@@ -4147,11 +4157,10 @@ match_ctx_add_entry (re_match_context_t *mctx, Idx node, Idx str_idx, Idx from,
+       struct re_backref_cache_entry* new_entry;
+       new_entry = re_realloc (mctx->bkref_ents, struct re_backref_cache_entry,
+ 			      mctx->abkref_ents * 2);
++      /* realloc failure leaves the old array valid.  match_ctx_free
++	 frees it.  Freeing it here as well is a double free.  */
+       if (__glibc_unlikely (new_entry == NULL))
+-	{
+-	  re_free (mctx->bkref_ents);
+-	  return REG_ESPACE;
+-	}
++	return REG_ESPACE;
+       mctx->bkref_ents = new_entry;
+       memset (mctx->bkref_ents + mctx->nbkref_ents, '\0',
+ 	      sizeof (struct re_backref_cache_entry) * mctx->abkref_ents);
+diff --git a/posix/tst-regcomp-alloc-failure.c b/posix/tst-regcomp-alloc-failure.c
+new file mode 100644
+index 00000000..9586ee6a
+--- /dev/null
++++ b/posix/tst-regcomp-alloc-failure.c
+@@ -0,0 +1,207 @@
++/* regcomp/regexec must not double-free when allocation fails
++   (CVE-2026-100290).
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <locale.h>
++#include <malloc.h>
++#include <regex.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <support/check.h>
++#include <support/namespace.h>
++#include <support/support.h>
++
++/* Shared with the subprocess so a fault index set by the parent is
++   visible, and so the allocation count can be read back.  */
++
++struct shared_data
++{
++  volatile unsigned int allocation_count;
++  volatile unsigned int failing_allocation;
++  /* When set, successful realloc always moves.  build_range_exp only
++     double-frees if realloc frees the old block, which a small
++     allocation often does not.  */
++  volatile int relocate;
++};
++
++static struct shared_data *shared;
++
++struct case_desc
++{
++  const char *pattern;
++  const char *subject; /* NULL: regcomp only.  */
++  int relocate;
++};
++
++static int
++fail_this_allocation (void)
++{
++  if (shared == NULL)
++    return 0;
++  unsigned int count = shared->allocation_count;
++  shared->allocation_count = count + 1;
++  return count == shared->failing_allocation;
++}
++
++void *
++malloc (size_t size)
++{
++  if (fail_this_allocation ())
++    {
++      errno = ENOMEM;
++      return NULL;
++    }
++  extern __typeof (malloc) __libc_malloc;
++  return __libc_malloc (size);
++}
++
++void *
++calloc (size_t a, size_t b)
++{
++  if (fail_this_allocation ())
++    {
++      errno = ENOMEM;
++      return NULL;
++    }
++  extern __typeof (calloc) __libc_calloc;
++  return __libc_calloc (a, b);
++}
++
++void *
++realloc (void *ptr, size_t size)
++{
++  extern __typeof (malloc) __libc_malloc;
++  extern __typeof (realloc) __libc_realloc;
++  extern __typeof (free) __libc_free;
++  if (fail_this_allocation ())
++    {
++      errno = ENOMEM;
++      return NULL;
++    }
++  if (shared != NULL && shared->relocate && ptr != NULL && size != 0)
++    {
++      void *next = __libc_malloc (size);
++      if (next == NULL)
++	return NULL;
++      size_t old = malloc_usable_size (ptr);
++      memcpy (next, ptr, old < size ? old : size);
++      __libc_free (ptr);
++      return next;
++    }
++  return __libc_realloc (ptr, size);
++}
++
++static void
++no_op (void *ignored)
++{
++}
++
++static int
++run_case (const struct case_desc *desc)
++{
++  regex_t reg;
++  int ret = regcomp (&reg, desc->pattern, REG_EXTENDED);
++  if (ret != 0)
++    return ret;
++  if (desc->subject != NULL)
++    {
++      regmatch_t match[2];
++      ret = regexec (&reg, desc->subject, 2, match, 0);
++    }
++  regfree (&reg);
++  return ret;
++}
++
++/* Successful call.  Counts allocations and checks the pattern works.  */
++
++static void
++initialize (void *arg)
++{
++  const struct case_desc *desc = arg;
++  shared->allocation_count = 0;
++  shared->relocate = desc->relocate;
++  TEST_COMPARE (run_case (desc), 0);
++}
++
++/* One allocation fails.  REG_ESPACE, REG_NOMATCH, or success are all
++   acceptable.  A double-free aborts the subprocess.  */
++
++static void
++test_in_subprocess (void *arg)
++{
++  const struct case_desc *desc = arg;
++  shared->allocation_count = 0;
++  shared->relocate = desc->relocate;
++  int ret = run_case (desc);
++  if (ret == 0 || ret == REG_ESPACE || ret == REG_NOMATCH)
++    return;
++  FAIL_EXIT1 ("unexpected result %d for pattern %s", ret, desc->pattern);
++}
++
++static void
++exercise (const struct case_desc *desc)
++{
++  shared->failing_allocation = ~0U;
++  shared->relocate = desc->relocate;
++  support_isolate_in_subprocess (initialize, (void *) desc);
++
++  unsigned int maximum = shared->allocation_count + 10;
++  printf ("info: %s performs %u allocations (relocate=%d)\n",
++	  desc->pattern, shared->allocation_count, desc->relocate);
++
++  for (unsigned int inject_at = 0; inject_at <= maximum; ++inject_at)
++    {
++      shared->allocation_count = 0;
++      shared->failing_allocation = inject_at;
++      shared->relocate = desc->relocate;
++      support_isolate_in_subprocess (test_in_subprocess, (void *) desc);
++    }
++}
++
++static int
++do_test (void)
++{
++  if (setlocale (LC_ALL, "C.UTF-8") == NULL)
++    FAIL_EXIT1 ("C.UTF-8 locale not available");
++
++  shared = support_shared_allocate (sizeof (*shared));
++  shared->failing_allocation = ~0U;
++  shared->relocate = 0;
++
++  support_isolate_in_subprocess (no_op, NULL);
++  TEST_COMPARE (shared->allocation_count, 0);
++
++  /* Node-array growth in re_dfa_add_node.  */
++  static const struct case_desc nodes = { "a{20}", NULL, 0 };
++  /* Multibyte bracket ranges: build_range_exp's paired realloc.  */
++  static const struct case_desc ranges =
++    { "[a-bc-de-fg-h]", NULL, 1 };
++  /* Backreference cache growth and check_arrival cleanup.  */
++  static const struct case_desc backref = { "(a)\\1", "aa", 0 };
++
++  exercise (&nodes);
++  exercise (&ranges);
++  exercise (&backref);
++
++  support_shared_free (shared);
++  return 0;
++}
++
++#include <support/test-driver.c>
+-- 
+2.56.1
+

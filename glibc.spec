@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	11
+Release:	12
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -243,7 +243,7 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # Patches from upstream
 #
 # Every commit on release/2.44/master since the 2.44 tag, through
-# 21442dba0d0b (2026-11-02).
+# 47e2b570410f (2026-11-09).
 # git format-patch glibc-2.44..origin/release/2.44/master
 # Includes the $ORIGIN AT_SECURE fix (GLIBC-SA-2026-0022 / CVE-2026-86805
 # and GLIBC-SA-2026-0023 / CVE-2026-95818), the nscd alloca fix
@@ -252,9 +252,13 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # GLIBC-SA-2026-0026 / CVE-2026-122054 (BIG5-HKSCS decoding hang, bug
 # 25734) was fixed in 2.32 (c580e6466d) and is already in the 2.44
 # tarball.  Affected versions are 2.18 through 2.31.
+# GLIBC-SA-2026-0027 / CVE-2026-115819 (wide %s/%[ extra NUL) and
+# GLIBC-SA-2026-0028 / CVE-2026-100290 (regex double free on allocation
+# failure) were published as advisories only.  Patch75 and Patch76 are
+# the local fixes.
 # GLIBC-SA-2026-0025 / CVE-2026-84243 (LANGUAGE path traversal) is not on
-# the stable branch.  Patch70 is libc-alpha v7, with NEWS retargeted at
-# 2.44.1 and the bug note placed after the 2.44.1 entries from Patch66-69.
+# the stable branch.  Patch77 is libc-alpha v7.  Its NEWS note follows
+# the 0027/0028 entries, and the bug note follows [34966].
 Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
 Patch1:		0002-NEWS-start-2.44.1-section.patch
 Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
@@ -325,7 +329,14 @@ Patch66:		0067-tests-elf-Fix-flaky-thp-tests.patch
 Patch67:		0068-AArch64-Fix-SVE-pow-and-powf-negative-base-predicati.patch
 Patch68:		0069-AArch64-Preserve-SVE-pow-powf-base-magnitude-across-.patch
 Patch69:		0070-linux-Add-C-and-multiple-inclusion-guards-to-sys-pid.patch
-Patch70:		0071-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
+Patch70:		0072-aarch64-Fix-SVE-log1p-helper-mixed-lane-shortcut-BZ-.patch
+Patch71:		0073-aarch64-Fix-SVE-log1pf-special-case-results-BZ-34940.patch
+Patch72:		0074-aarch64-Fix-SVE-tanf-mixed-lane-results-BZ-34922.patch
+Patch73:		0075-elf-Set-the-library-path-for-tst-ptrguard-static-dlo.patch
+Patch74:		0076-io-Fix-silent-readdir-failures-in-ftw-nftw-BZ-33085.patch
+Patch75:		0077-stdio-common-Do-not-write-a-second-NUL-after-wide-s.patch
+Patch76:		0078-posix-Do-not-double-free-regex-arrays-when-allocation.patch
+Patch77:		0071-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
