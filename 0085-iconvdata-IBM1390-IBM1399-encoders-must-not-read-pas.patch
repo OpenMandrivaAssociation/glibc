@@ -1,0 +1,158 @@
+From d6e8c63c471fcd05f171e955fba44f1f942458de Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Wed, 18 Nov 2026 03:30:11 +0100
+Subject: [PATCH] iconvdata: IBM1390/IBM1399 encoders must not read past the
+ input (bug 34914)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GLIBC-SA-2026-0031 / CVE-2026-124024.  No Fix-Commit is on master.
+The posted patch kept the check as inptr + 8 <= inend; the review asked
+for a length comparison so the test does not form a pointer past the
+object.  This backport uses that guard.
+
+U+00E6 is a combining base.  The encoder looks four bytes ahead for the
+next UCS-4 unit, but inptr + 4 < inend is true when only one to three
+bytes follow, and get32 then reads past the buffer.  Require eight
+bytes before looking ahead.  The pre-existing limitation of not storing
+a split combining character in the shift state is unchanged.
+
+Reported-by: slaythemole
+Signed-off-by: Bernhard Rosenkränzer <bero@lindev.ch>
+---
+ NEWS                          |  2 ++
+ iconvdata/Makefile            |  5 ++-
+ iconvdata/ibm1364.c           |  7 +++-
+ iconvdata/tst-iconv-ibm1390.c | 65 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 77 insertions(+), 2 deletions(-)
+ create mode 100644 iconvdata/tst-iconv-ibm1390.c
+
+diff --git a/NEWS b/NEWS
+index 89bdfc9a..2bc39829 100644
+--- a/NEWS
++++ b/NEWS
+@@ -59,6 +59,8 @@ The following bugs are resolved with this release:
+     than USHRT_MAX
+   [34875] string: 2.44 regression: Hygon non-temporal threshold can be
+     zero
++  [34914] locale: iconv: IBM1390 and IBM1399 encoders read past the
++    input buffer (CVE-2026-124024)
+   [34920] math: Bug in SVE pow and powf with mixed positive and negative
+     base lanes with integer exponent
+   [34921] math: Bug in SVE pow and powf with mixed subnormal and
+diff --git a/iconvdata/Makefile b/iconvdata/Makefile
+index ba2eec2b..3b6495c4 100644
+--- a/iconvdata/Makefile
++++ b/iconvdata/Makefile
+@@ -77,7 +77,8 @@ tests = bug-iconv1 bug-iconv2 tst-loading tst-e2big tst-iconv4 bug-iconv4 \
+ 	bug-iconv10 bug-iconv11 bug-iconv12 tst-iconv-big5-hkscs-to-2ucs4 \
+ 	bug-iconv13 bug-iconv14 bug-iconv15 \
+ 	tst-iconv-iso-2022-cn-ext tst-bug33980 \
+-	tst-jisx0213-progress
++	tst-jisx0213-progress \
++	tst-iconv-ibm1390
+ ifeq ($(have-thread-library),yes)
+ tests += bug-iconv3
+ endif
+@@ -338,6 +339,8 @@ $(objpfx)tst-bug33980.out: $(addprefix $(objpfx), $(gconv-modules)) \
+ 			   $(addprefix $(objpfx),$(modules.so))
+ $(objpfx)tst-jisx0213-progress.out: \
+   $(addprefix $(objpfx), $(gconv-modules)) $(addprefix $(objpfx),$(modules.so))
++$(objpfx)tst-iconv-ibm1390.out: $(addprefix $(objpfx), $(gconv-modules)) \
++				$(addprefix $(objpfx),$(modules.so))
+ 
+ $(objpfx)iconv-test.out: run-iconv-test.sh \
+ 			 $(addprefix $(objpfx), $(gconv-modules)) \
+diff --git a/iconvdata/ibm1364.c b/iconvdata/ibm1364.c
+index 8df66ea0..f3a0a11f 100644
+--- a/iconvdata/ibm1364.c
++++ b/iconvdata/ibm1364.c
+@@ -286,7 +286,12 @@ enum
+     while (cmbp->res1 < ch)						      \
+       ++cmbp;								      \
+     /* XXX if last char is beginning of combining store in state */	      \
+-    if (cmbp->res1 == ch && inptr + 4 < inend)				      \
++    /* Two UCS-4 units follow: get32 (inptr + 4) reads four bytes, so   \
++       eight bytes must remain.  inptr + 4 < inend is one unit short    \
++       and reads past the buffer when fewer than four bytes follow      \
++       (CVE-2026-124024, bug 34914).  Compare lengths so the check      \
++       does not form a pointer past the object.  */			      \
++    if (cmbp->res1 == ch && inend - inptr >= 8)				      \
+       {									      \
+ 	/* See if input is part of a combined character.  */		      \
+ 	uint32_t ch_next = get32 (inptr + 4);				      \
+diff --git a/iconvdata/tst-iconv-ibm1390.c b/iconvdata/tst-iconv-ibm1390.c
+new file mode 100644
+index 00000000..3344b70d
+--- /dev/null
++++ b/iconvdata/tst-iconv-ibm1390.c
+@@ -0,0 +1,65 @@
++/* Verify IBM1390/IBM1399 do not read past the input bounds.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <iconv.h>
++#include <string.h>
++#include <wchar.h>
++
++#include <support/check.h>
++#include <support/next_to_fault.h>
++
++static void
++test_ibm139x (const char *coding)
++{
++  /* Use WCHAR_T as input encoding so that the encoder reads directly from
++     the input buffer.  */
++  iconv_t cd = iconv_open (coding, "WCHAR_T");
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++
++  /* Place a combining base one byte before the end of the buffer, to
++     check that the encoder does not read past the end of it.  */
++  struct support_next_to_fault ntf = support_next_to_fault_allocate (9);
++  memcpy (ntf.buffer, L"a\x00E6", 8);
++  ntf.buffer[8] = 0;
++
++  char *inp = ntf.buffer;
++  size_t inleft = 9;
++
++  char outbuf[32];
++  char *outp = outbuf;
++  size_t outleft = sizeof (outbuf);
++
++  TEST_COMPARE (iconv (cd, &inp, &inleft, &outp, &outleft), (size_t) -1);
++  TEST_COMPARE (errno, EINVAL);
++  TEST_COMPARE (inleft, 1);
++  TEST_VERIFY (inp == ntf.buffer + 8);
++  TEST_COMPARE (iconv_close (cd), 0);
++  support_next_to_fault_free (&ntf);
++}
++
++static int
++do_test (void)
++{
++  test_ibm139x ("IBM1390");
++  test_ibm139x ("IBM1399");
++
++  return 0;
++}
++
++#include <support/test-driver.c>
+-- 
+2.56.1
+

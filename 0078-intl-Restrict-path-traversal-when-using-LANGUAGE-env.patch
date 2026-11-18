@@ -1,8 +1,8 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 438677ef498552b28c2060060c9e3947373f1e2c Mon Sep 17 00:00:00 2001
 From: Avinal Kumar <avinal.xlvii@gmail.com>
-Date: Mon, 12 Oct 2026 16:54:53 +0530
-Subject: [PATCH] intl: Restrict path traversal when using LANGUAGE env var
- [BZ #17142, CVE-2026-84243]
+Date: Mon, 2 Nov 2026 17:18:03 -0300
+Subject: [PATCH] intl: Restrict path traversal when using LANGUAGE env var [BZ
+ #17142, CVE-2026-84243]
 
 The fix for CVE-2014-0475 (Bug 17137) added valid_locale_name() in
 locale/findlocale.c to reject locale names containing ".." path
@@ -25,52 +25,40 @@ also reject the bare ".." entry which contains no directory separator
 but still names the parent directory.
 
 Add tst-gettext-path-traversal to verify that locale names containing
-path separators or equal to ".." are rejected by the LANGUAGE
-processing loop.
+path separators or equal to ".." are rejected by the LANGUAGE processing loop.
 
-This fixes bug 17142 and CVE-2026-84243 (GLIBC-SA-2026-0025).
-
-Not committed in glibc master or release/2.44/master as of
-f30fe087c5, which only publishes the advisory.  Taken from libc-alpha
-patch v7, Message-ID <20261012112453.47383-1-avinal.xlvii@gmail.com>.
-The master NEWS hunk is retargeted at the Version 2.44.1 section,
-after the local GLIBC-SA-2026-0027 and GLIBC-SA-2026-0028 notes.
-The bug-list line follows [34966].
+This fixes bug 17142 and CVE-2026-84243.
 
 Suggested-by: Adhemerval Zanella <adhemerval.zanella@linaro.org>
 Signed-off-by: Avinal Kumar <avinal.xlvii@gmail.com>
+Reviewed-by: Adhemerval Zanella <adhemerval.zanella@linaro.org>
+(cherry picked from commit 03067f3c5e39aec5ec250a44bc1b395a1afd45e8)
 ---
- NEWS                              |  5 +++++
- intl/Makefile                     |  4 ++++
- intl/dcigettext.c                 |  8 ++++----
- intl/tst-gettext-path-traversal.c | 83 +++++++++++++++++++++++++++++++++++++++
+ NEWS                              |  5 ++
+ intl/Makefile                     |  4 ++
+ intl/dcigettext.c                 |  8 +--
+ intl/tst-gettext-path-traversal.c | 83 +++++++++++++++++++++++++++++++
  4 files changed, 96 insertions(+), 4 deletions(-)
  create mode 100644 intl/tst-gettext-path-traversal.c
 
 diff --git a/NEWS b/NEWS
-index ee28fadf..1043343d 100644
+index 6a1cdcef..b3fcaba1 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -16,6 +16,10 @@
-   growing an internal array fails (CVE-2026-100290,
-   GLIBC-SA-2026-0028).
+@@ -7,6 +7,11 @@ using `glibc' in the "product" field.
+ 
+ Version 2.44.1
  
++Deprecated and removed features, and other changes affecting compatibility:
 +* The gettext functions now reject LANGUAGE values containing '/' or
 +  equal to '..' for all programs.  Previously this check only applied
-+  to SUID/SGID binaries (CVE-2026-84243, GLIBC-SA-2026-0025).
++  to SUID/SGID binaries.
 +
  The following bugs are resolved with this release:
  
    [33085] libc: nftw: readdir() errors are ignored
-@@ -55,4 +59,5 @@
-   [34966] dynamic-link: Static dlopen fail in elf/tst-ptrguard-static-
-     dlopen
-+  [17142] intl: LANGUAGE path traversal in gettext (CVE-2026-84243)
- 
- Version 2.44
- 
 diff --git a/intl/Makefile b/intl/Makefile
-index a8b41a1993..2547de2744 100644
+index a8b41a19..2547de27 100644
 --- a/intl/Makefile
 +++ b/intl/Makefile
 @@ -61,6 +61,7 @@ $(objpfx)plural.o: $(objpfx)plural.c
@@ -106,7 +94,7 @@ index a8b41a1993..2547de2744 100644
  ifeq ($(have-thread-library),yes)
  ifeq (yes,$(build-shared))
 diff --git a/intl/dcigettext.c b/intl/dcigettext.c
-index 43b99c2dea..e9611dae7a 100644
+index 43b99c2d..e9611dae 100644
 --- a/intl/dcigettext.c
 +++ b/intl/dcigettext.c
 @@ -591,10 +591,10 @@ DCIGETTEXT (const char *domainname, const char *msgid1, const char *msgid2,
@@ -126,7 +114,7 @@ index 43b99c2dea..e9611dae7a 100644
  
 diff --git a/intl/tst-gettext-path-traversal.c b/intl/tst-gettext-path-traversal.c
 new file mode 100644
-index 0000000000..95ad326f64
+index 00000000..95ad326f
 --- /dev/null
 +++ b/intl/tst-gettext-path-traversal.c
 @@ -0,0 +1,83 @@
@@ -214,6 +202,5 @@ index 0000000000..95ad326f64
 +
 +#include <support/test-driver.c>
 -- 
-2.56.0
-
+2.56.1
 

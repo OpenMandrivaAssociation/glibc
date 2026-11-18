@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	13
+Release:	14
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -243,22 +243,27 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # Patches from upstream
 #
 # Every commit on release/2.44/master since the 2.44 tag, through
-# 47e2b570410f (2026-11-09).
+# c90470a5a096 (2026-11-17).
 # git format-patch glibc-2.44..origin/release/2.44/master
 # Includes the $ORIGIN AT_SECURE fix (GLIBC-SA-2026-0022 / CVE-2026-86805
 # and GLIBC-SA-2026-0023 / CVE-2026-95818), the nscd alloca fix
-# (GLIBC-SA-2026-0016 / CVE-2026-89092), and the powerpc strncasecmp
-# overread fix (GLIBC-SA-2026-0024 / CVE-2026-97399).
+# (GLIBC-SA-2026-0016 / CVE-2026-89092), the powerpc strncasecmp
+# overread fix (GLIBC-SA-2026-0024 / CVE-2026-97399), the LANGUAGE path
+# check (GLIBC-SA-2026-0025 / CVE-2026-84243), the wide scanf extra NUL
+# fix (GLIBC-SA-2026-0027 / CVE-2026-115819), and the regex double-free
+# fix (GLIBC-SA-2026-0028 / CVE-2026-100290).
 # GLIBC-SA-2026-0026 / CVE-2026-122054 (BIG5-HKSCS decoding hang, bug
 # 25734) was fixed in 2.32 (c580e6466d) and is already in the 2.44
 # tarball.  Affected versions are 2.18 through 2.31.
-# GLIBC-SA-2026-0027 / CVE-2026-115819 (wide %%s/%%[ extra NUL) and
-# GLIBC-SA-2026-0028 / CVE-2026-100290 (regex double free on allocation
-# failure) were published as advisories only.  Patch75 and Patch76 are
-# the local fixes.
-# GLIBC-SA-2026-0025 / CVE-2026-84243 (LANGUAGE path traversal) is not on
-# the stable branch.  Patch77 is libc-alpha v7.  Its NEWS note follows
-# the 0027/0028 entries, and the bug note follows [34966].
+# GLIBC-SA-2026-0030 / CVE-2026-121758 (ISO-2022-CN-EXT lone SO, bug
+# 34774) is 170ee485 on master and is not on the stable branch.
+# Patch82 is that backport plus the 2.44.1 NEWS line.
+# GLIBC-SA-2026-0031 / CVE-2026-124024 (IBM1390/IBM1399 encoder overread,
+# bug 34914) has no Fix-Commit.  Patch83 uses the reviewed guard
+# inend - inptr >= 8.
+# GLIBC-SA-2026-0029 / CVE-2026-121757 (CP949 U+327E double advance, bug
+# 35016) has no Fix-Commit.  Patch84 rolls the consumed pair back before
+# the error handler.
 Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
 Patch1:		0002-NEWS-start-2.44.1-section.patch
 Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
@@ -334,9 +339,16 @@ Patch71:		0073-aarch64-Fix-SVE-log1pf-special-case-results-BZ-34940.patch
 Patch72:		0074-aarch64-Fix-SVE-tanf-mixed-lane-results-BZ-34922.patch
 Patch73:		0075-elf-Set-the-library-path-for-tst-ptrguard-static-dlo.patch
 Patch74:		0076-io-Fix-silent-readdir-failures-in-ftw-nftw-BZ-33085.patch
-Patch75:		0077-stdio-common-Do-not-write-a-second-NUL-after-wide-s.patch
-Patch76:		0078-posix-Do-not-double-free-regex-arrays-when-allocation.patch
-Patch77:		0071-intl-Reject-LANGUAGE-entries-with-a-path-or-dotdot.patch
+Patch75:		0077-AArch64-Fix-libmvec-archive-member-collisions-BZ-349.patch
+Patch76:		0078-intl-Restrict-path-traversal-when-using-LANGUAGE-env.patch
+Patch77:		0079-posix-Fix-double-free-after-allocation-failure-in-re.patch
+Patch78:		0080-stdio-common-Fix-double-null-terminator-in-wide-scan.patch
+Patch79:		0081-Add-a-few-BZ-entries-to-NEWS.patch
+Patch80:		0082-malloc-Preserve-errno-in-tcache_free_init-BZ-34890.patch
+Patch81:		0083-malloc-Fix-mremap_chunk-statistics-BZ-34706.patch
+Patch82:		0084-iconv-ISO-2022-CN-EXT-fix-SO-handling-without-a-desi.patch
+Patch83:		0085-iconvdata-IBM1390-IBM1399-encoders-must-not-read-pas.patch
+Patch84:		0086-iconvdata-CP949-must-not-advance-twice-on-a-rejected.patch
 
 #-----------------------------------------------------------------------
 # fedora patches

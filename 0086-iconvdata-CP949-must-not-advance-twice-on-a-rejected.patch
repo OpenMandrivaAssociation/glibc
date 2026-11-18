@@ -1,0 +1,286 @@
+From 96f8fd24f6ed004d0d095a46788497d422d327ad Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
+Date: Wed, 18 Nov 2026 03:30:12 +0100
+Subject: [PATCH] iconvdata: CP949 must not advance twice on a rejected KS C
+ 5601 pair (bug 35016)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GLIBC-SA-2026-0029 / CVE-2026-121757.  No Fix-Commit is on master.
+CP949 is an alias of UHC.  The byte pair A2 E8 is a well-formed
+KS C 5601 symbol (index 165) whose table entry is U+327E.  This
+converter rejects that code point, but ksc5601_to_ucs4 has already
+consumed the pair.  STANDARD_FROM_LOOP_ERR_HANDLER (2) then consumes
+two more bytes.  With //IGNORE and the pair at the end of the buffer,
+the decoder reads past the input.
+
+Roll the pair back before the error handler.  //IGNORE then skips it
+once, and the non-ignore path leaves the pointer on the illegal
+sequence.  __UNKNOWN_10646_CHAR is only returned when the pair was
+not consumed, so that path is unchanged.
+
+Reported-by: Dickson Wu (SEAL & CertiK)
+Signed-off-by: Bernhard Rosenkränzer <bero@lindev.ch>
+---
+ NEWS                        |   2 +
+ iconvdata/Makefile          |   5 +-
+ iconvdata/tst-iconv-cp949.c | 188 ++++++++++++++++++++++++++++++++++++
+ iconvdata/uhc.c             |  10 +-
+ 4 files changed, 203 insertions(+), 2 deletions(-)
+ create mode 100644 iconvdata/tst-iconv-cp949.c
+
+diff --git a/NEWS b/NEWS
+index 2bc39829..59e68737 100644
+--- a/NEWS
++++ b/NEWS
+@@ -78,6 +78,8 @@ The following bugs are resolved with this release:
+     past the destination (CVE-2026-115819)
+   [34991] regex: regex: double free after partial realloc failure
+     (CVE-2026-100290)
++  [35016] locale: iconv: CP949 decoder reads past the input on an
++    illegal KS C 5601 pair (CVE-2026-121757)
+ 
+ Version 2.44
+ 
+diff --git a/iconvdata/Makefile b/iconvdata/Makefile
+index 3b6495c4..6011b765 100644
+--- a/iconvdata/Makefile
++++ b/iconvdata/Makefile
+@@ -78,7 +78,8 @@ tests = bug-iconv1 bug-iconv2 tst-loading tst-e2big tst-iconv4 bug-iconv4 \
+ 	bug-iconv13 bug-iconv14 bug-iconv15 \
+ 	tst-iconv-iso-2022-cn-ext tst-bug33980 \
+ 	tst-jisx0213-progress \
+-	tst-iconv-ibm1390
++	tst-iconv-ibm1390 \
++	tst-iconv-cp949
+ ifeq ($(have-thread-library),yes)
+ tests += bug-iconv3
+ endif
+@@ -341,6 +342,8 @@ $(objpfx)tst-jisx0213-progress.out: \
+   $(addprefix $(objpfx), $(gconv-modules)) $(addprefix $(objpfx),$(modules.so))
+ $(objpfx)tst-iconv-ibm1390.out: $(addprefix $(objpfx), $(gconv-modules)) \
+ 				$(addprefix $(objpfx),$(modules.so))
++$(objpfx)tst-iconv-cp949.out: $(addprefix $(objpfx), $(gconv-modules)) \
++			      $(addprefix $(objpfx),$(modules.so))
+ 
+ $(objpfx)iconv-test.out: run-iconv-test.sh \
+ 			 $(addprefix $(objpfx), $(gconv-modules)) \
+diff --git a/iconvdata/tst-iconv-cp949.c b/iconvdata/tst-iconv-cp949.c
+new file mode 100644
+index 00000000..b37c05de
+--- /dev/null
++++ b/iconvdata/tst-iconv-cp949.c
+@@ -0,0 +1,188 @@
++/* Verify CP949 does not read past the input on an illegal KS C 5601 pair.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <iconv.h>
++#include <string.h>
++
++#include <support/check.h>
++#include <support/next_to_fault.h>
++
++/* KS C 5601 index 165 is U+327E.  ksc5601_to_ucs4 consumes that pair
++   before the UHC/CP949 converter rejects it.  Bug 35016.  */
++
++static void
++test_pair_plain (const char *fromcode)
++{
++  iconv_t cd = iconv_open ("UTF-8", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xa2, 0xe8 };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) -1);
++  TEST_COMPARE (errno, EILSEQ);
++  TEST_VERIFY (ip == in);
++  TEST_COMPARE (il, (size_t) 2);
++  TEST_COMPARE (op, out);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static void
++test_caller_skip (const char *fromcode)
++{
++  /* A caller that skips the offending sequence on EILSEQ must be
++     pointed at the pair itself, not two bytes past it.  */
++  iconv_t cd = iconv_open ("UTF-8", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xa2, 0xe8, 'Z' };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) -1);
++  TEST_COMPARE (errno, EILSEQ);
++  TEST_VERIFY_EXIT (ip == in);
++  TEST_VERIFY_EXIT (il == 3);
++  ip += 2;
++  il -= 2;
++  op = out;
++  ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) 0);
++  TEST_COMPARE (il, (size_t) 0);
++  TEST_COMPARE_BLOB (out, op - out, "Z", 1);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static void
++test_ignore_keeps_next (const char *fromcode)
++{
++  iconv_t cd = iconv_open ("UTF-8//IGNORE", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xa2, 0xe8, 'Z' };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  /* glibc still reports EILSEQ: the ignore arm of
++     STANDARD_FROM_LOOP_ERR_HANDLER does not reset result, and iconv()
++     maps __GCONV_ILLEGAL_INPUT to -1 plus EILSEQ.  The following byte
++     must still be converted, and it must not be skipped.  */
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) -1);
++  TEST_COMPARE (errno, EILSEQ);
++  TEST_VERIFY (ip == in + 3);
++  TEST_COMPARE (il, (size_t) 0);
++  TEST_COMPARE_BLOB (out, op - out, "Z", 1);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static void
++test_trailing_ignore (const char *fromcode)
++{
++  /* The advisory reproducer: the illegal pair is the whole input and
++     //IGNORE is set.  Place it against an inaccessible page.  */
++  struct support_next_to_fault ntf = support_next_to_fault_allocate (2);
++  ntf.buffer[0] = 0xa2;
++  ntf.buffer[1] = 0xe8;
++  iconv_t cd = iconv_open ("UTF-8//IGNORE", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char out[8];
++  char *ip = ntf.buffer, *op = out;
++  size_t il = 2, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) -1);
++  TEST_COMPARE (errno, EILSEQ);
++  TEST_VERIFY (ip == ntf.buffer + 2);
++  TEST_COMPARE (il, (size_t) 0);
++  TEST_COMPARE (op, out);
++  TEST_COMPARE (iconv_close (cd), 0);
++  support_next_to_fault_free (&ntf);
++}
++
++static void
++test_registered_sign (const char *fromcode)
++{
++  /* The neighbouring pair, index 164, is U+00AE and must still convert.  */
++  iconv_t cd = iconv_open ("UTF-8", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xa2, 0xe7 };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) 0);
++  TEST_COMPARE (il, (size_t) 0);
++  TEST_COMPARE_BLOB (out, op - out, "\xc2\xae", 2);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static void
++test_hangul (const char *fromcode)
++{
++  iconv_t cd = iconv_open ("UTF-8", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xb0, 0xa1 };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) 0);
++  TEST_COMPARE_BLOB (out, op - out, "\xea\xb0\x80", 3);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static void
++test_hole (const char *fromcode)
++{
++  /* Index 166 is an empty symbol-table slot.  The converter rewinds
++     before reporting it, so the error handler must not rewind again.  */
++  iconv_t cd = iconv_open ("UTF-8//IGNORE", fromcode);
++  TEST_VERIFY_EXIT (cd != (iconv_t) -1);
++  char in[] = { 0xa2, 0xe9, 'Q' };
++  char out[8];
++  char *ip = in, *op = out;
++  size_t il = sizeof in, ol = sizeof out;
++  errno = 0;
++  TEST_COMPARE (iconv (cd, &ip, &il, &op, &ol), (size_t) -1);
++  TEST_COMPARE (errno, EILSEQ);
++  TEST_VERIFY (ip == in + 3);
++  TEST_COMPARE (il, (size_t) 0);
++  TEST_COMPARE_BLOB (out, op - out, "Q", 1);
++  TEST_COMPARE (iconv_close (cd), 0);
++}
++
++static int
++do_test (void)
++{
++  static const char *const codes[] = { "CP949", "UHC" };
++  for (size_t i = 0; i < sizeof (codes) / sizeof (codes[0]); ++i)
++    {
++      test_pair_plain (codes[i]);
++      test_caller_skip (codes[i]);
++      test_ignore_keeps_next (codes[i]);
++      test_trailing_ignore (codes[i]);
++      test_registered_sign (codes[i]);
++      test_hangul (codes[i]);
++      test_hole (codes[i]);
++    }
++  return 0;
++}
++
++#include <support/test-driver.c>
+diff --git a/iconvdata/uhc.c b/iconvdata/uhc.c
+index 8477aeb0..e1ca8b96 100644
+--- a/iconvdata/uhc.c
++++ b/iconvdata/uhc.c
+@@ -3137,7 +3137,15 @@ static const char uhc_hangul_from_ucs[11172][2] =
+ 	    if (__builtin_expect (ch == __UNKNOWN_10646_CHAR, 0)	      \
+ 		|| __builtin_expect (ch == 0x327e, 0))			      \
+ 	      {								      \
+-		/* Illegal.  */						      \
++		/* Illegal.  ksc5601_to_ucs4 consumes a well-formed pair	      \
++		   before returning U+327E, which this converter rejects.	      \
++		   Roll that pair back so the error handler skips it once.	      \
++		   With //IGNORE, skipping an already-consumed pair reads	      \
++		   past the end of the buffer (CVE-2026-121757, bug 35016).      \
++		   __UNKNOWN_10646_CHAR is returned only when the pair was	      \
++		   not consumed.  */						      \
++		if (ch == 0x327e)						      \
++		  inptr -= 2;							      \
+ 		STANDARD_FROM_LOOP_ERR_HANDLER (2);			      \
+ 	      }								      \
+ 	  }								      \
+-- 
+2.56.1
+

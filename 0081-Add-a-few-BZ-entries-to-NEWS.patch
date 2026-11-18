@@ -1,0 +1,74 @@
+From f715e9491c062bbb50d32ccb05a8debc488dda39 Mon Sep 17 00:00:00 2001
+From: Aurelien Jarno <aurelien@aurel32.net>
+Date: Mon, 16 Nov 2026 21:22:57 +0100
+Subject: [PATCH] Add a few BZ entries to NEWS
+
+BZ 17142
+BZ 31026
+BZ 31877
+BZ 34313
+BZ 34360
+BZ 34428
+BZ 34437
+BZ 34574
+BZ 34600
+BZ 34697
+BZ 34989
+BZ 34991
+---
+ NEWS | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/NEWS b/NEWS
+index b3fcaba1..02d30961 100644
+--- a/NEWS
++++ b/NEWS
+@@ -14,9 +14,21 @@ Deprecated and removed features, and other changes affecting compatibility:
+ 
+ The following bugs are resolved with this release:
+ 
++  [17142] locale: LANGUAGE environment variable processing and directory
++    traversal
++  [31026] network: Reachable assertion in resolv_conf.c:570:
++    update_from_conf: Assertion `resolv_conf_matches (resp, conf)'
++  [31877] libc: elf/tst-shstk-legacy-1g test failure on znver4
+   [33085] libc: nftw: readdir() errors are ignored
++  [34313] libc: Erroneous nonnull attributes for fchmodat, faccessat,
++    and fchownat
+   [34338] libc: Cancellable syscall wrappers are missing from backtraces
+     because they tail-call __syscall_cancel
++  [34360] dynamic-link: TOCTOU race condition in processing RPATH with
++    $ORIGIN DST for setuid/setgid binaries (CVE-2026-86805)
++  [34428] dynamic-link: ldd -u prints Relink `' with `/lib64/libc.so.6'
++  [34437] libc: posix_spawn_file_actions_addchdir and
++    posix_spawn_file_actions_addfchdir not available as exported
+   [34438] build: non reproducible build failure: sigaltstack-offsets.h:
+     No such file or directory
+   [34439] build: parallel make install fails on multi-ABI targets: no
+@@ -28,6 +40,12 @@ The following bugs are resolved with this release:
+     cross-testing without python3 on target
+   [34509] libc: [m68k] Regression: Perl locks up after upgrading glibc
+     to 2.43
++  [34574] stdio: Buffer overflow in fopen ,ccs= argument processing
++    (CVE-2026-18374)
++  [34600] dynamic-link: [2.44 regression] ld.so segfaults at startup
++    with an old-format ld.so.cache
++  [34697] malloc: Corrupted trailing content on realloc of mmap
++    allocation but mremap failed
+   [34699] build: Parallel build failures with make check xcheck
+   [34734] libc: sparc: tcgetattr returns uninitialized bytes in c_cc[17]
+     and c_cc[18]
+@@ -52,6 +70,10 @@ The following bugs are resolved with this release:
+     incremental builds
+   [34966] dynamic-link: Static dlopen fail in elf/tst-ptrguard-static-
+     dlopen
++  [34989] stdio: stdio: Wide scanf %s and %[ write an extra null byte
++    past the destination (CVE-2026-115819)
++  [34991] regex: regex: double free after partial realloc failure
++    (CVE-2026-100290)
+ 
+ Version 2.44
+ 
+-- 
+2.56.1
+
