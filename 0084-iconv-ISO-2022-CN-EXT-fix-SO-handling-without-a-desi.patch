@@ -1,41 +1,61 @@
-From dc9380024a7394076f3983b912bcd0b7cbeb6cfc Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= <bero@lindev.ch>
-Date: Wed, 18 Nov 2026 03:30:11 +0100
-Subject: [PATCH] iconv: ISO-2022-CN-EXT: fix SO handling without a designation
- (bug 34774)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+From 625054f30f0e7a961519f045f2364aa3ca6c1c6b Mon Sep 17 00:00:00 2001
+From: JT Wang <skyman-wftw@hotmail.com>
+Date: Thu, 12 Nov 2026 05:08:42 +0000
+Subject: [PATCH 84/85] iconv: ISO-2022-CN-EXT: fix SO handling without a
+ designation (bug 34774)
 
-Backport of 170ee485fa89b95c3bb7d5606c9812c6c100c9be (master, 2.45).
-GLIBC-SA-2026-0030 / CVE-2026-121758.  release/2.44/master does not
-contain that commit.  Record the fix in the 2.44.1 NEWS.
+In the FROM loop, the SO (0x0e) handler advances inptr before
+checking whether an SO designation had been announced.  Without a
+designation the SO byte is an error, but by the time the error is
+reported the byte has already been consumed.  Consequences:
 
-The FROM loop advanced past SO before checking that an SO designation
-had been announced.  A lone SO is an error, but the byte was already
-consumed.  With //IGNORE the error handler then skipped one more byte,
-and a trailing SO read past the end of the input.  Move the increment
-to after the error handler so //IGNORE skips the SO once and the
-non-ignore path leaves the pointer on it.
+* With //IGNORE, STANDARD_FROM_LOOP_ERR_HANDLER skips one more byte
+  after the already-consumed SO.  If the SO is the last input byte,
+  inptr ends up one past inend; the loop condition inptr != inend
+  then no longer terminates the loop, and the converter keeps
+  reading past the end of the input buffer and may convert
+  out-of-bounds bytes into the output, in addition to the
+  *inbytesleft wraparound described in the report.  This is also
+  the path taken by iconv -c, which sets the ignore flag for the
+  conversion.  If the SO is not the last byte, the byte following
+  it is silently dropped.
+* Without //IGNORE there is no out-of-bounds access, but iconv()
+  returns EILSEQ with the SO already consumed, so *inbuf does not
+  point at the offending byte and the reported remaining length is
+  one byte short (or exhausted when the SO is the last byte).  A
+  caller that skips the offending byte on EILSEQ and calls iconv()
+  again then decrements an already-exhausted length.
 
-Reported-by: Ksawery Radziwiłowicz
-Signed-off-by: Bernhard Rosenkränzer <bero@lindev.ch>
+Move the increment after the error handler: the ignore path skips
+the SO exactly once, and the non-ignore path leaves the input
+pointer on the SO byte as POSIX expects.  Sequences with an
+announced designation are unaffected.
+
+Also update the stale comment in that branch, and extend
+tst-iconv-iso-2022-cn-ext with FROM-direction regressions covering
+the error paths, a trailing SO with //IGNORE placed next to an
+inaccessible page, and a designated-SO positive case.
+
+Signed-off-by: JT Wang <skyman-wftw@hotmail.com>
+Reviewed-by: Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+(cherry picked from commit 170ee485fa89b95c3bb7d5606c9812c6c100c9be)
 ---
- NEWS                                  |   2 +
+ NEWS                                  |   3 +
  iconvdata/iso-2022-cn-ext.c           |  10 +-
  iconvdata/tst-iconv-iso-2022-cn-ext.c | 180 ++++++++++++++++++++++++++
- 3 files changed, 186 insertions(+), 6 deletions(-)
+ 3 files changed, 187 insertions(+), 6 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 02d30961..89bdfc9a 100644
+index 02d30961..31cb030b 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -50,6 +50,8 @@ The following bugs are resolved with this release:
+@@ -50,6 +50,9 @@ The following bugs are resolved with this release:
    [34734] libc: sparc: tcgetattr returns uninitialized bytes in c_cc[17]
      and c_cc[18]
    [34752] libc: <sys/pidfd.h> not protected for C++
-+  [34774] locale: iconv: ISO-2022-CN-EXT reads past the input on a lone
-+    SO (CVE-2026-121758)
++  [34774] locale: ISO-2022-CN-EXT iconv decoder: SO byte without a
++    designation advances the input pointer out of bounds
++    (CVE-2026-121758)
    [34775] libc: Regression in fts with FTS_FOLLOW
    [34781] libc: fts: FTS_CWDFD walk breaks after leaving a directory
      followed with FTS_FOLLOW

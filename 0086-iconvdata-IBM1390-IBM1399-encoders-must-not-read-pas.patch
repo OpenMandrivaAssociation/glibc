@@ -32,10 +32,10 @@ diff --git a/NEWS b/NEWS
 index 89bdfc9a..2bc39829 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -59,6 +59,8 @@ The following bugs are resolved with this release:
-     than USHRT_MAX
+@@ -77,6 +77,8 @@
    [34875] string: 2.44 regression: Hygon non-temporal threshold can be
      zero
+   [34890] malloc: free may change errno under some conditions
 +  [34914] locale: iconv: IBM1390 and IBM1399 encoders read past the
 +    input buffer (CVE-2026-124024)
    [34920] math: Bug in SVE pow and powf with mixed positive and negative

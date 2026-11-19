@@ -200,7 +200,7 @@ Source0:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz
 #if %(test $(echo %{version}.0 |cut -d. -f3) -lt 90 && echo 1 || echo 0)
 #Source1:	http://ftp.gnu.org/gnu/glibc/%{oname}-%{version}.tar.xz.sig
 #endif
-Release:	14
+Release:	15
 License:	LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
 Group:		System/Libraries
 Url:		https://www.gnu.org/software/libc/
@@ -243,27 +243,30 @@ Source29:	0016-jemalloc-portable-configure-defs.patch
 # Patches from upstream
 #
 # Every commit on release/2.44/master since the 2.44 tag, through
-# c90470a5a096 (2026-11-17).
+# 049ee6efc26a (2026-11-18).
 # git format-patch glibc-2.44..origin/release/2.44/master
 # Includes the $ORIGIN AT_SECURE fix (GLIBC-SA-2026-0022 / CVE-2026-86805
 # and GLIBC-SA-2026-0023 / CVE-2026-95818), the nscd alloca fix
 # (GLIBC-SA-2026-0016 / CVE-2026-89092), the powerpc strncasecmp
 # overread fix (GLIBC-SA-2026-0024 / CVE-2026-97399), the LANGUAGE path
 # check (GLIBC-SA-2026-0025 / CVE-2026-84243), the wide scanf extra NUL
-# fix (GLIBC-SA-2026-0027 / CVE-2026-115819), and the regex double-free
-# fix (GLIBC-SA-2026-0028 / CVE-2026-100290).
+# fix (GLIBC-SA-2026-0027 / CVE-2026-115819), the regex double-free
+# fix (GLIBC-SA-2026-0028 / CVE-2026-100290), and the ISO-2022-CN-EXT
+# lone SO fix (GLIBC-SA-2026-0030 / CVE-2026-121758).
 # GLIBC-SA-2026-0026 / CVE-2026-122054 (BIG5-HKSCS decoding hang, bug
 # 25734) was fixed in 2.32 (c580e6466d) and is already in the 2.44
 # tarball.  Affected versions are 2.18 through 2.31.
-# GLIBC-SA-2026-0030 / CVE-2026-121758 (ISO-2022-CN-EXT lone SO, bug
-# 34774) is 170ee485 on master and is not on the stable branch.
-# Patch82 is that backport plus the 2.44.1 NEWS line.
 # GLIBC-SA-2026-0031 / CVE-2026-124024 (IBM1390/IBM1399 encoder overread,
-# bug 34914) has no Fix-Commit.  Patch83 uses the reviewed guard
+# bug 34914) has no Fix-Commit.  Patch84 uses the reviewed guard
 # inend - inptr >= 8.
 # GLIBC-SA-2026-0029 / CVE-2026-121757 (CP949 U+327E double advance, bug
-# 35016) has no Fix-Commit.  Patch84 rolls the consumed pair back before
+# 35016) has no Fix-Commit.  Patch85 rolls the consumed pair back before
 # the error handler.
+# GLIBC-SA-2026-0032 / CVE-2026-126765 (glob double free, bug 34993) has
+# no Fix-Commit on master or the stable branch.  The advisory is
+# b1950826.  Patch86 backports the 2026-11-11 libc-alpha fix:
+# prefix_array leaves already-rewritten names in the vector so the
+# caller's globfree is the only free.
 Patch0:		0001-advisories-replace-with-ADVISORIES-text-file.patch
 Patch1:		0002-NEWS-start-2.44.1-section.patch
 Patch2:		0003-hurd-Make-the-readlink-__fstatat64-references-option.patch
@@ -347,8 +350,10 @@ Patch79:		0081-Add-a-few-BZ-entries-to-NEWS.patch
 Patch80:		0082-malloc-Preserve-errno-in-tcache_free_init-BZ-34890.patch
 Patch81:		0083-malloc-Fix-mremap_chunk-statistics-BZ-34706.patch
 Patch82:		0084-iconv-ISO-2022-CN-EXT-fix-SO-handling-without-a-desi.patch
-Patch83:		0085-iconvdata-IBM1390-IBM1399-encoders-must-not-read-pas.patch
-Patch84:		0086-iconvdata-CP949-must-not-advance-twice-on-a-rejected.patch
+Patch83:		0085-Add-a-few-BZ-entries-to-NEWS.patch
+Patch84:		0086-iconvdata-IBM1390-IBM1399-encoders-must-not-read-pas.patch
+Patch85:		0087-iconvdata-CP949-must-not-advance-twice-on-a-rejected.patch
+Patch86:		0088-posix-Fix-double-free-after-allocation-failure-in-glob.patch
 
 #-----------------------------------------------------------------------
 # fedora patches
